@@ -11,6 +11,9 @@ import Drivers from "./pages/Drivers";
 import Maintenance from "./pages/Maintenance";
 import FuelLogs from "./pages/FuelLogs";
 import Clients from "./pages/Clients";
+import Quotations from "./pages/Quotations";
+import Trips from "./pages/Trips";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +32,9 @@ const App = () => (
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="fuel-logs" element={<FuelLogs />} />
             <Route path="clients" element={<Clients />} />
+            <Route path="quotations" element={<Quotations />} />
+            <Route path="trips" element={<Trips />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
