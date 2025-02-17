@@ -9,7 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      drivers: {
+        Row: {
+          avatar_url: string | null
+          contact: string | null
+          created_at: string | null
+          id: string
+          license_expiry: string | null
+          license_number: string
+          license_type: string | null
+          name: string
+          status: Database["public"]["Enums"]["driver_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          contact?: string | null
+          created_at?: string | null
+          id?: string
+          license_expiry?: string | null
+          license_number: string
+          license_type?: string | null
+          name: string
+          status?: Database["public"]["Enums"]["driver_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          contact?: string | null
+          created_at?: string | null
+          id?: string
+          license_expiry?: string | null
+          license_number?: string
+          license_type?: string | null
+          name?: string
+          status?: Database["public"]["Enums"]["driver_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +56,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      driver_status: "active" | "inactive" | "on_leave"
     }
     CompositeTypes: {
       [_ in never]: never
