@@ -1,26 +1,18 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Driver {
-  id: string;
-  name: string;
-  contact: string;
-  license_number: string;
-  license_type: string;
-  license_expiry: string;
-  status: 'active' | 'inactive' | 'on_leave';
-  avatar_url?: string;
-}
+import { DriverFormDialog } from "@/components/driver-form-dialog";
+import type { Driver } from "@/lib/types";
 
 export default function Drivers() {
   const { toast } = useToast();
   const [isAddingDriver, setIsAddingDriver] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
 
   const { data: drivers, isLoading, error } = useQuery({
     queryKey: ["drivers"],
@@ -42,6 +34,28 @@ export default function Drivers() {
       return data as Driver[];
     },
   });
+
+  // Subscribe to real-time changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('drivers-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'drivers' }, 
+        () => {
+          // Refetch drivers when there are changes
+          window.location.reload();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleDriverClick = (driver: Driver) => {
+    setSelectedDriver(driver);
+  };
 
   if (isLoading) {
     return (
@@ -81,7 +95,11 @@ export default function Drivers() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {drivers?.map((driver) => (
-          <Card key={driver.id} className="cursor-pointer hover:shadow-md transition-shadow">
+          <Card 
+            key={driver.id} 
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleDriverClick(driver)}
+          >
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center">
@@ -132,6 +150,15 @@ export default function Drivers() {
           </Card>
         ))}
       </div>
+
+      <DriverFormDialog 
+        open={isAddingDriver || !!selectedDriver} 
+        onOpenChange={(open) => {
+          setIsAddingDriver(open);
+          if (!open) setSelectedDriver(undefined);
+        }}
+        driver={selectedDriver}
+      />
     </div>
   );
 }
