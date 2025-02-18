@@ -14,6 +14,7 @@ export type Database = {
           avatar_url: string | null
           contact: string | null
           created_at: string | null
+          document_url: string | null
           id: string
           license_expiry: string | null
           license_number: string
@@ -26,6 +27,7 @@ export type Database = {
           avatar_url?: string | null
           contact?: string | null
           created_at?: string | null
+          document_url?: string | null
           id?: string
           license_expiry?: string | null
           license_number: string
@@ -38,6 +40,7 @@ export type Database = {
           avatar_url?: string | null
           contact?: string | null
           created_at?: string | null
+          document_url?: string | null
           id?: string
           license_expiry?: string | null
           license_number?: string

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -10,7 +10,7 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver, DriverStatus } from "@/lib/types";
-import { Image, Upload } from "lucide-react";
+import { FileText, Image, Upload } from "lucide-react";
 
 const driverSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -33,7 +33,24 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(driver?.avatar_url || null);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [documentName, setDocumentName] = useState<string | null>(null);
+
+  // Initialize avatar preview when driver prop changes
+  useEffect(() => {
+    if (driver?.avatar_url) {
+      setAvatarPreview(driver.avatar_url);
+    } else {
+      setAvatarPreview(null);
+    }
+    if (driver?.document_url) {
+      const fileName = driver.document_url.split('/').pop() || 'Document';
+      setDocumentName(fileName);
+    } else {
+      setDocumentName(null);
+    }
+  }, [driver]);
 
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverSchema),
@@ -56,15 +73,21 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     }
   };
 
-  async function uploadAvatar(driverId: string): Promise<string | null> {
-    if (!avatarFile) return null;
+  const handleDocumentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setDocumentFile(file);
+      setDocumentName(file.name);
+    }
+  };
 
-    const fileExt = avatarFile.name.split('.').pop();
-    const filePath = `${driverId}/avatar.${fileExt}`;
+  async function uploadFile(file: File, bucket: string, driverId: string, fileType: string): Promise<string | null> {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${driverId}/${fileType}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('driver-avatars')
-      .upload(filePath, avatarFile, {
+      .from(bucket)
+      .upload(filePath, file, {
         upsert: true
       });
 
@@ -73,7 +96,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('driver-avatars')
+      .from(bucket)
       .getPublicUrl(filePath);
 
     return publicUrl;
@@ -83,11 +106,15 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     setIsSubmitting(true);
     try {
       let avatarUrl = null;
+      let documentUrl = null;
       
       if (driver) {
         // Update existing driver
         if (avatarFile) {
-          avatarUrl = await uploadAvatar(driver.id);
+          avatarUrl = await uploadFile(avatarFile, 'driver-avatars', driver.id, 'avatar');
+        }
+        if (documentFile) {
+          documentUrl = await uploadFile(documentFile, 'driver-documents', driver.id, 'document');
         }
 
         const { error } = await supabase
@@ -100,6 +127,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
             license_expiry: data.license_expiry,
             status: data.status,
             ...(avatarUrl && { avatar_url: avatarUrl }),
+            ...(documentUrl && { document_url: documentUrl }),
           })
           .eq("id", driver.id);
 
@@ -121,14 +149,27 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
 
         if (insertError) throw insertError;
 
-        if (avatarFile && newDriver) {
-          avatarUrl = await uploadAvatar(newDriver.id);
-          const { error: updateError } = await supabase
-            .from("drivers")
-            .update({ avatar_url: avatarUrl })
-            .eq("id", newDriver.id);
+        if (newDriver) {
+          const updates: Partial<Driver> = {};
 
-          if (updateError) throw updateError;
+          if (avatarFile) {
+            avatarUrl = await uploadFile(avatarFile, 'driver-avatars', newDriver.id, 'avatar');
+            updates.avatar_url = avatarUrl;
+          }
+
+          if (documentFile) {
+            documentUrl = await uploadFile(documentFile, 'driver-documents', newDriver.id, 'document');
+            updates.document_url = documentUrl;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            const { error: updateError } = await supabase
+              .from("drivers")
+              .update(updates)
+              .eq("id", newDriver.id);
+
+            if (updateError) throw updateError;
+          }
         }
       }
 
@@ -183,6 +224,39 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
                   <Upload className="h-4 w-4" />
                   <span>Upload Avatar</span>
                 </label>
+              </div>
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <label className="text-sm font-medium">License Document</label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleDocumentChange}
+                  className="hidden"
+                  id="document-upload"
+                />
+                <label
+                  htmlFor="document-upload"
+                  className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>{documentName || "Upload Document"}</span>
+                </label>
+                {documentName && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDocumentFile(null);
+                      setDocumentName(null);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
               </div>
             </div>
 

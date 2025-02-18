@@ -10,6 +10,7 @@ export interface Driver {
   license_expiry: string;
   status: DriverStatus;
   avatar_url?: string;
+  document_url?: string;
   created_at?: string;
   updated_at?: string;
 }
