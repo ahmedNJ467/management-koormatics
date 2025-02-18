@@ -10,6 +10,7 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver, DriverStatus } from "@/lib/types";
+import { Image, Upload } from "lucide-react";
 
 const driverSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -31,6 +32,8 @@ interface DriverFormDialogProps {
 export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(driver?.avatar_url || null);
 
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverSchema),
@@ -44,31 +47,90 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     },
   });
 
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setAvatarPreview(objectUrl);
+    }
+  };
+
+  async function uploadAvatar(driverId: string): Promise<string | null> {
+    if (!avatarFile) return null;
+
+    const fileExt = avatarFile.name.split('.').pop();
+    const filePath = `${driverId}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('driver-avatars')
+      .upload(filePath, avatarFile, {
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('driver-avatars')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  }
+
   async function onSubmit(data: DriverFormValues) {
     setIsSubmitting(true);
     try {
-      const { error } = driver
-        ? await supabase
-            .from("drivers")
-            .update({
-              name: data.name,
-              contact: data.contact,
-              license_number: data.license_number,
-              license_type: data.license_type,
-              license_expiry: data.license_expiry,
-              status: data.status
-            })
-            .eq("id", driver.id)
-        : await supabase.from("drivers").insert({
-              name: data.name,
-              contact: data.contact,
-              license_number: data.license_number,
-              license_type: data.license_type,
-              license_expiry: data.license_expiry,
-              status: data.status
-            });
+      let avatarUrl = null;
+      
+      if (driver) {
+        // Update existing driver
+        if (avatarFile) {
+          avatarUrl = await uploadAvatar(driver.id);
+        }
 
-      if (error) throw error;
+        const { error } = await supabase
+          .from("drivers")
+          .update({
+            name: data.name,
+            contact: data.contact,
+            license_number: data.license_number,
+            license_type: data.license_type,
+            license_expiry: data.license_expiry,
+            status: data.status,
+            ...(avatarUrl && { avatar_url: avatarUrl }),
+          })
+          .eq("id", driver.id);
+
+        if (error) throw error;
+      } else {
+        // Create new driver
+        const { data: newDriver, error: insertError } = await supabase
+          .from("drivers")
+          .insert({
+            name: data.name,
+            contact: data.contact,
+            license_number: data.license_number,
+            license_type: data.license_type,
+            license_expiry: data.license_expiry,
+            status: data.status,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        if (avatarFile && newDriver) {
+          avatarUrl = await uploadAvatar(newDriver.id);
+          const { error: updateError } = await supabase
+            .from("drivers")
+            .update({ avatar_url: avatarUrl })
+            .eq("id", newDriver.id);
+
+          if (updateError) throw updateError;
+        }
+      }
 
       toast({
         title: `Driver ${driver ? "updated" : "created"} successfully`,
@@ -94,6 +156,36 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative h-24 w-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image className="h-8 w-8 text-gray-400" />
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <label
+                  htmlFor="avatar-upload"
+                  className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Avatar</span>
+                </label>
+              </div>
+            </div>
+
             <FormField
               control={form.control}
               name="name"
