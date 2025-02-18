@@ -50,9 +50,23 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       const { error } = driver
         ? await supabase
             .from("drivers")
-            .update(data)
+            .update({
+              name: data.name,
+              contact: data.contact,
+              license_number: data.license_number,
+              license_type: data.license_type,
+              license_expiry: data.license_expiry,
+              status: data.status
+            })
             .eq("id", driver.id)
-        : await supabase.from("drivers").insert([data]);
+        : await supabase.from("drivers").insert({
+              name: data.name,
+              contact: data.contact,
+              license_number: data.license_number,
+              license_type: data.license_type,
+              license_expiry: data.license_expiry,
+              status: data.status
+            });
 
       if (error) throw error;
 
@@ -140,6 +154,26 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
                   <FormLabel>License Expiry</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="on_leave">On Leave</option>
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
