@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
 
 interface VehicleFormDialogProps {
   open: boolean;
@@ -28,6 +29,11 @@ export function VehicleFormDialog({ open, onOpenChange }: VehicleFormDialogProps
       model: '',
       registration: '',
       status: 'active',
+      year: undefined,
+      color: '',
+      vin: '',
+      insurance_expiry: undefined,
+      notes: '',
     },
   });
 
@@ -137,6 +143,67 @@ export function VehicleFormDialog({ open, onOpenChange }: VehicleFormDialogProps
 
             <FormField
               control={form.control}
+              name="year"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Year</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="2024"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Color</FormLabel>
+                  <FormControl>
+                    <Input placeholder="White" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="vin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>VIN</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Vehicle Identification Number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="insurance_expiry"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Insurance Expiry</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="status"
               render={({ field }) => (
                 <FormItem>
@@ -153,6 +220,20 @@ export function VehicleFormDialog({ open, onOpenChange }: VehicleFormDialogProps
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Additional notes about the vehicle" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
