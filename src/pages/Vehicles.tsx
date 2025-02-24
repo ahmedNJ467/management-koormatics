@@ -1,4 +1,6 @@
 
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -8,30 +10,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
-
-const vehicles = [
-  {
-    id: "V001",
-    type: "Armoured",
-    make: "Toyota",
-    model: "Land Cruiser",
-    status: "Active",
-    registration: "KBZ 123A",
-    insuranceExpiry: "2024-12-31",
-  },
-  {
-    id: "V002",
-    type: "Soft Skin",
-    make: "Toyota",
-    model: "Hilux",
-    status: "In Service",
-    registration: "KCA 456B",
-    insuranceExpiry: "2024-10-15",
-  },
-];
+import { Plus, Car } from "lucide-react";
+import { Vehicle } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Vehicles() {
+  const { toast } = useToast();
+  
+  const { data: vehicles, isLoading, error } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        toast({
+          title: "Error fetching vehicles",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      return data as Vehicle[];
+    },
+  });
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -45,30 +52,44 @@ export default function Vehicles() {
       </div>
 
       <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Make & Model</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Registration</TableHead>
-              <TableHead>Insurance Expiry</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {vehicles.map((vehicle) => (
-              <TableRow key={vehicle.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell>{vehicle.id}</TableCell>
-                <TableCell>{vehicle.type}</TableCell>
-                <TableCell>{`${vehicle.make} ${vehicle.model}`}</TableCell>
-                <TableCell>{vehicle.status}</TableCell>
-                <TableCell>{vehicle.registration}</TableCell>
-                <TableCell>{vehicle.insuranceExpiry}</TableCell>
+        {isLoading ? (
+          <div className="flex items-center justify-center p-8">
+            <Car className="h-8 w-8 animate-pulse text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center p-8 text-destructive">
+            Failed to load vehicles
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Make & Model</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Registration</TableHead>
+                <TableHead>Insurance Expiry</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {vehicles?.map((vehicle) => (
+                <TableRow key={vehicle.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableCell>{vehicle.id.slice(0, 8)}</TableCell>
+                  <TableCell className="capitalize">{vehicle.type.replace('_', ' ')}</TableCell>
+                  <TableCell>{`${vehicle.make} ${vehicle.model}`}</TableCell>
+                  <TableCell className="capitalize">{vehicle.status.replace('_', ' ')}</TableCell>
+                  <TableCell>{vehicle.registration}</TableCell>
+                  <TableCell>
+                    {vehicle.insurance_expiry 
+                      ? new Date(vehicle.insurance_expiry).toLocaleDateString()
+                      : 'N/A'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

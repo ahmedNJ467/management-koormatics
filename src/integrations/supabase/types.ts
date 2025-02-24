@@ -51,6 +51,54 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicles: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          insurance_expiry: string | null
+          make: string
+          model: string
+          notes: string | null
+          registration: string
+          status: Database["public"]["Enums"]["vehicle_status"] | null
+          type: Database["public"]["Enums"]["vehicle_type"]
+          updated_at: string | null
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          make: string
+          model: string
+          notes?: string | null
+          registration: string
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
+          type: Database["public"]["Enums"]["vehicle_type"]
+          updated_at?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          make?: string
+          model?: string
+          notes?: string | null
+          registration?: string
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
+          type?: Database["public"]["Enums"]["vehicle_type"]
+          updated_at?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -60,6 +108,8 @@ export type Database = {
     }
     Enums: {
       driver_status: "active" | "inactive" | "on_leave"
+      vehicle_status: "active" | "in_service" | "inactive"
+      vehicle_type: "armoured" | "soft_skin"
     }
     CompositeTypes: {
       [_ in never]: never

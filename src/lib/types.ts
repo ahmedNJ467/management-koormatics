@@ -1,4 +1,3 @@
-
 export type DriverStatus = 'active' | 'inactive' | 'on_leave';
 
 export interface Driver {
@@ -11,6 +10,25 @@ export interface Driver {
   status: DriverStatus;
   avatar_url?: string;
   document_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type VehicleType = 'armoured' | 'soft_skin';
+export type VehicleStatus = 'active' | 'in_service' | 'inactive';
+
+export interface Vehicle {
+  id: string;
+  type: VehicleType;
+  make: string;
+  model: string;
+  registration: string;
+  year?: number;
+  color?: string;
+  vin?: string;
+  insurance_expiry?: string;
+  status: VehicleStatus;
+  notes?: string;
   created_at?: string;
   updated_at?: string;
 }
