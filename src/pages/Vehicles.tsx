@@ -14,9 +14,11 @@ import { Plus, Car } from "lucide-react";
 import { Vehicle } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { VehicleFormDialog } from "@/components/vehicle-form-dialog";
 
 export default function Vehicles() {
   const { toast } = useToast();
+  const [formOpen, setFormOpen] = useState(false);
   
   const { data: vehicles, isLoading, error } = useQuery({
     queryKey: ['vehicles'],
@@ -46,7 +48,7 @@ export default function Vehicles() {
           <h2 className="text-3xl font-semibold tracking-tight">Vehicles</h2>
           <p className="text-muted-foreground">Manage your fleet vehicles</p>
         </div>
-        <Button>
+        <Button onClick={() => setFormOpen(true)}>
           <Plus className="mr-2 h-4 w-4" /> Add Vehicle
         </Button>
       </div>
@@ -91,6 +93,11 @@ export default function Vehicles() {
           </Table>
         )}
       </div>
+
+      <VehicleFormDialog 
+        open={formOpen}
+        onOpenChange={setFormOpen}
+      />
     </div>
   );
 }
