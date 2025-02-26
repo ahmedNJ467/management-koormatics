@@ -51,13 +51,8 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
   async function onSubmit(values: DriverFormValues) {
     setIsSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("No active session");
-      }
-
-      let avatarUrl = null;
-      let documentUrl = null;
+      let avatarUrl = driver?.avatar_url || null;
+      let documentUrl = driver?.document_url || null;
       
       const driverData = {
         name: values.name,
