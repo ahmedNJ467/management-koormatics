@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,12 +32,24 @@ interface DriverFormDialogProps {
 
 export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string | null>(null);
-  const queryClient = useQueryClient();
+
+  const form = useForm<DriverFormValues>({
+    resolver: zodResolver(driverSchema),
+    defaultValues: {
+      name: "",
+      contact: "",
+      license_number: "",
+      license_type: "",
+      license_expiry: "",
+      status: "active" as DriverStatus,
+    },
+  });
 
   useEffect(() => {
     if (driver) {
@@ -68,18 +81,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       setDocumentName(null);
     }
   }, [driver, form]);
-
-  const form = useForm<DriverFormValues>({
-    resolver: zodResolver(driverSchema),
-    defaultValues: {
-      name: driver?.name ?? "",
-      contact: driver?.contact ?? "",
-      license_number: driver?.license_number ?? "",
-      license_type: driver?.license_type ?? "",
-      license_expiry: driver?.license_expiry ?? "",
-      status: (driver?.status as DriverStatus) ?? "active",
-    },
-  });
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -137,7 +138,12 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         const { error } = await supabase
           .from("drivers")
           .update({
-            ...data,
+            name: data.name,
+            contact: data.contact,
+            license_number: data.license_number,
+            license_type: data.license_type,
+            license_expiry: data.license_expiry,
+            status: data.status,
             ...(avatarUrl && { avatar_url: avatarUrl }),
             ...(documentUrl && { document_url: documentUrl }),
           })
@@ -154,7 +160,12 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         const { data: newDriver, error: insertError } = await supabase
           .from("drivers")
           .insert({
-            ...data,
+            name: data.name,
+            contact: data.contact,
+            license_number: data.license_number,
+            license_type: data.license_type,
+            license_expiry: data.license_expiry,
+            status: data.status,
           })
           .select()
           .single();
