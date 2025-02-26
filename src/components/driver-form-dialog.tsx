@@ -85,6 +85,11 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     const fileExt = file.name.split('.').pop();
     const filePath = `${driverId}/${fileType}.${fileExt}`;
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error("No active session");
+    }
+
     const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, {
@@ -105,6 +110,11 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
   async function onSubmit(data: DriverFormValues) {
     setIsSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No active session");
+      }
+
       let avatarUrl = null;
       let documentUrl = null;
       
@@ -120,12 +130,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         const { error } = await supabase
           .from("drivers")
           .update({
-            name: data.name,
-            contact: data.contact,
-            license_number: data.license_number,
-            license_type: data.license_type,
-            license_expiry: data.license_expiry,
-            status: data.status,
+            ...data,
             ...(avatarUrl && { avatar_url: avatarUrl }),
             ...(documentUrl && { document_url: documentUrl }),
           })
@@ -137,12 +142,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         const { data: newDriver, error: insertError } = await supabase
           .from("drivers")
           .insert({
-            name: data.name,
-            contact: data.contact,
-            license_number: data.license_number,
-            license_type: data.license_type,
-            license_expiry: data.license_expiry,
-            status: data.status,
+            ...data,
           })
           .select()
           .single();
@@ -150,22 +150,21 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         if (insertError) throw insertError;
 
         if (newDriver) {
-          const updates: Partial<Driver> = {};
-
           if (avatarFile) {
             avatarUrl = await uploadFile(avatarFile, 'driver-avatars', newDriver.id, 'avatar');
-            updates.avatar_url = avatarUrl;
           }
 
           if (documentFile) {
             documentUrl = await uploadFile(documentFile, 'driver-documents', newDriver.id, 'document');
-            updates.document_url = documentUrl;
           }
 
-          if (Object.keys(updates).length > 0) {
+          if (avatarUrl || documentUrl) {
             const { error: updateError } = await supabase
               .from("drivers")
-              .update(updates)
+              .update({
+                ...(avatarUrl && { avatar_url: avatarUrl }),
+                ...(documentUrl && { document_url: documentUrl }),
+              })
               .eq("id", newDriver.id);
 
             if (updateError) throw updateError;
@@ -179,9 +178,10 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       });
       onOpenChange(false);
     } catch (error) {
+      console.error("Error:", error);
       toast({
         title: `Failed to ${driver ? "update" : "create"} driver`,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to save driver",
         variant: "destructive",
       });
     } finally {
