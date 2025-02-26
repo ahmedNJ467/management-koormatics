@@ -11,7 +11,7 @@ import { DocumentUploadField } from "./driver-form/document-upload-field";
 import { DriverFields } from "./driver-form/driver-fields";
 import { useDriverForm } from "./driver-form/use-driver-form";
 import { uploadDriverFile } from "./driver-form/use-driver-uploads";
-import type { DriverFormValues } from "./driver-form/types"; // Added this import
+import type { DriverFormValues } from "./driver-form/types";
 
 interface DriverFormDialogProps {
   open: boolean;
@@ -36,7 +36,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     clearDocument,
   } = useDriverForm(driver);
 
-  // Initialize avatar preview when driver prop changes
   useEffect(() => {
     if (driver?.avatar_url) {
       setAvatarPreview(null);
