@@ -54,7 +54,9 @@ export function useDriverForm(driver?: Driver) {
     avatarFile,
     documentFile,
     avatarPreview,
+    setAvatarPreview, // Added this
     documentName,
+    setDocumentName, // Added this
     handleAvatarChange,
     handleDocumentChange,
     clearDocument,

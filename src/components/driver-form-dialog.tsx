@@ -11,6 +11,7 @@ import { DocumentUploadField } from "./driver-form/document-upload-field";
 import { DriverFields } from "./driver-form/driver-fields";
 import { useDriverForm } from "./driver-form/use-driver-form";
 import { uploadDriverFile } from "./driver-form/use-driver-uploads";
+import type { DriverFormValues } from "./driver-form/types"; // Added this import
 
 interface DriverFormDialogProps {
   open: boolean;
@@ -27,7 +28,9 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     avatarFile,
     documentFile,
     avatarPreview,
+    setAvatarPreview,
     documentName,
+    setDocumentName,
     handleAvatarChange,
     handleDocumentChange,
     clearDocument,
@@ -44,7 +47,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     } else {
       setDocumentName(null);
     }
-  }, [driver]);
+  }, [driver, setAvatarPreview, setDocumentName]);
 
   async function onSubmit(values: DriverFormValues) {
     setIsSubmitting(true);
