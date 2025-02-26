@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver, DriverStatus } from "@/lib/types";
 import { FileText, Image, Upload } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 
 const driverSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -32,55 +31,38 @@ interface DriverFormDialogProps {
 
 export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialogProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string | null>(null);
 
+  // Initialize avatar preview when driver prop changes
+  useEffect(() => {
+    if (driver?.avatar_url) {
+      setAvatarPreview(driver.avatar_url);
+    } else {
+      setAvatarPreview(null);
+    }
+    if (driver?.document_url) {
+      const fileName = driver.document_url.split('/').pop() || 'Document';
+      setDocumentName(fileName);
+    } else {
+      setDocumentName(null);
+    }
+  }, [driver]);
+
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverSchema),
     defaultValues: {
-      name: "",
-      contact: "",
-      license_number: "",
-      license_type: "",
-      license_expiry: "",
-      status: "active" as DriverStatus,
+      name: driver?.name ?? "",
+      contact: driver?.contact ?? "",
+      license_number: driver?.license_number ?? "",
+      license_type: driver?.license_type ?? "",
+      license_expiry: driver?.license_expiry ?? "",
+      status: (driver?.status as DriverStatus) ?? "active",
     },
   });
-
-  useEffect(() => {
-    if (driver) {
-      form.reset({
-        name: driver.name,
-        contact: driver.contact,
-        license_number: driver.license_number,
-        license_type: driver.license_type || '',
-        license_expiry: driver.license_expiry,
-        status: driver.status,
-      });
-      if (driver.avatar_url) {
-        setAvatarPreview(driver.avatar_url);
-      }
-      if (driver.document_url) {
-        const fileName = driver.document_url.split('/').pop() || 'Document';
-        setDocumentName(fileName);
-      }
-    } else {
-      form.reset({
-        name: '',
-        contact: '',
-        license_number: '',
-        license_type: '',
-        license_expiry: '',
-        status: 'active',
-      });
-      setAvatarPreview(null);
-      setDocumentName(null);
-    }
-  }, [driver, form]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -150,11 +132,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
           .eq("id", driver.id);
 
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Driver updated successfully",
-        });
       } else {
         // Create new driver
         const { data: newDriver, error: insertError } = await supabase
@@ -172,7 +149,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
 
         if (insertError) throw insertError;
 
-        if (newDriver && (avatarFile || documentFile)) {
+        if (newDriver) {
           const updates: Partial<Driver> = {};
 
           if (avatarFile) {
@@ -194,25 +171,17 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
             if (updateError) throw updateError;
           }
         }
-
-        toast({
-          title: "Success",
-          description: "Driver created successfully",
-        });
       }
 
-      queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      
-      form.reset();
-      setAvatarFile(null);
-      setDocumentFile(null);
-      setAvatarPreview(null);
-      setDocumentName(null);
+      toast({
+        title: `Driver ${driver ? "updated" : "created"} successfully`,
+        description: `${data.name} has been ${driver ? "updated" : "added"} to the system.`,
+      });
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        title: `Failed to ${driver ? "update" : "create"} driver`,
+        description: error.message,
         variant: "destructive",
       });
     } finally {
