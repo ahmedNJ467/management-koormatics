@@ -191,7 +191,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{driver ? "Edit Driver" : "Add New Driver"}</DialogTitle>
         </DialogHeader>

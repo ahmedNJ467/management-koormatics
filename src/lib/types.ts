@@ -1,3 +1,4 @@
+
 export type DriverStatus = 'active' | 'inactive' | 'on_leave';
 
 export interface Driver {
