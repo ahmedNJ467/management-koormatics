@@ -29,15 +29,20 @@ export function VehicleImagesField({
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    setImages((prev: File[]) => [...prev, ...files]);
+    const newImages = [...images, ...files];
+    setImages(newImages);
     
     const newPreviewUrls = files.map(file => URL.createObjectURL(file));
-    setImagePreviewUrls((prev: string[]) => [...prev, ...newPreviewUrls]);
+    const updatedPreviewUrls = [...imagePreviewUrls, ...newPreviewUrls];
+    setImagePreviewUrls(updatedPreviewUrls);
   };
 
   const removeImage = (index: number) => {
-    setImages((prev: File[]) => prev.filter((_, i) => i !== index));
-    setImagePreviewUrls((prev: string[]) => prev.filter((_, i) => i !== index));
+    const updatedImages = images.filter((_, i) => i !== index);
+    setImages(updatedImages);
+    
+    const updatedPreviewUrls = imagePreviewUrls.filter((_, i) => i !== index);
+    setImagePreviewUrls(updatedPreviewUrls);
   };
 
   return (
