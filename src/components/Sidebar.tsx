@@ -36,7 +36,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "w-64 border-r bg-background transition-transform duration-300",
+        "fixed top-16 bottom-0 w-64 border-r bg-background transition-transform duration-300 ease-in-out z-30",
         !open && "-translate-x-full"
       )}
     >
