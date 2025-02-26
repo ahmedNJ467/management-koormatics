@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -93,10 +94,10 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
 
             const { error: insertError } = await supabase
               .from('vehicle_images')
-              .insert({
+              .insert([{
                 vehicle_id: vehicle.id,
                 image_url: publicUrl
-              });
+              }]);
 
             if (insertError) throw insertError;
           }
@@ -127,10 +128,10 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
 
             const { error: insertError } = await supabase
               .from('vehicle_images')
-              .insert({
+              .insert([{
                 vehicle_id: newVehicle.id,
                 image_url: publicUrl
-              });
+              }]);
 
             if (insertError) throw insertError;
           }
