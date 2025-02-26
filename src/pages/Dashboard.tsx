@@ -2,7 +2,6 @@
 import { Card } from "@/components/ui/card";
 import { Car, Users, Wrench, Fuel, TrendingUp, TrendingDown } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const stats = [
   {
@@ -56,14 +55,11 @@ const fuelConsumptionData = [
 export default function Dashboard() {
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
-            Overview of your fleet management statistics
-          </p>
-        </div>
-        <ThemeToggle />
+      <div>
+        <h2 className="text-3xl font-semibold tracking-tight">Dashboard</h2>
+        <p className="text-muted-foreground">
+          Overview of your fleet management statistics
+        </p>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

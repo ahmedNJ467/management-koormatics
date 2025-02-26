@@ -36,7 +36,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "w-64 border-r bg-white transition-all duration-300",
+        "w-64 border-r bg-background transition-all duration-300",
         !open && "-ml-64"
       )}
     >
@@ -51,7 +51,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 isActive
                   ? "bg-secondary/10 text-secondary font-medium"
-                  : "text-gray-600 hover:bg-gray-100"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
               <item.icon className="h-5 w-5" />
