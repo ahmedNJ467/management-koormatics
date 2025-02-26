@@ -1,6 +1,4 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
@@ -12,21 +10,9 @@ import type { Driver } from "@/lib/types";
 
 export default function Drivers() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddingDriver, setIsAddingDriver] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
-
-  // Check for authentication
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/auth');
-      }
-    };
-    checkSession();
-  }, [navigate]);
 
   const { data: drivers, isLoading, error } = useQuery({
     queryKey: ["drivers"],
