@@ -12,7 +12,7 @@ export default function Layout() {
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex h-[calc(100vh-4rem)]">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className={`flex-1 overflow-y-auto p-6 transition-[margin] duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
           <Outlet />
         </main>
       </div>

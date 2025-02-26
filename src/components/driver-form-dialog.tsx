@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver, DriverStatus } from "@/lib/types";
 import { FileText, Image, Upload } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const driverSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -36,21 +36,38 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  // Initialize avatar preview when driver prop changes
   useEffect(() => {
-    if (driver?.avatar_url) {
-      setAvatarPreview(driver.avatar_url);
+    if (driver) {
+      form.reset({
+        name: driver.name,
+        contact: driver.contact,
+        license_number: driver.license_number,
+        license_type: driver.license_type || '',
+        license_expiry: driver.license_expiry,
+        status: driver.status,
+      });
+      if (driver.avatar_url) {
+        setAvatarPreview(driver.avatar_url);
+      }
+      if (driver.document_url) {
+        const fileName = driver.document_url.split('/').pop() || 'Document';
+        setDocumentName(fileName);
+      }
     } else {
+      form.reset({
+        name: '',
+        contact: '',
+        license_number: '',
+        license_type: '',
+        license_expiry: '',
+        status: 'active',
+      });
       setAvatarPreview(null);
-    }
-    if (driver?.document_url) {
-      const fileName = driver.document_url.split('/').pop() || 'Document';
-      setDocumentName(fileName);
-    } else {
       setDocumentName(null);
     }
-  }, [driver]);
+  }, [driver, form]);
 
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverSchema),
@@ -120,36 +137,31 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         const { error } = await supabase
           .from("drivers")
           .update({
-            name: data.name,
-            contact: data.contact,
-            license_number: data.license_number,
-            license_type: data.license_type,
-            license_expiry: data.license_expiry,
-            status: data.status,
+            ...data,
             ...(avatarUrl && { avatar_url: avatarUrl }),
             ...(documentUrl && { document_url: documentUrl }),
           })
           .eq("id", driver.id);
 
         if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Driver updated successfully",
+        });
       } else {
         // Create new driver
         const { data: newDriver, error: insertError } = await supabase
           .from("drivers")
           .insert({
-            name: data.name,
-            contact: data.contact,
-            license_number: data.license_number,
-            license_type: data.license_type,
-            license_expiry: data.license_expiry,
-            status: data.status,
+            ...data,
           })
           .select()
           .single();
 
         if (insertError) throw insertError;
 
-        if (newDriver) {
+        if (newDriver && (avatarFile || documentFile)) {
           const updates: Partial<Driver> = {};
 
           if (avatarFile) {
@@ -171,17 +183,25 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
             if (updateError) throw updateError;
           }
         }
+
+        toast({
+          title: "Success",
+          description: "Driver created successfully",
+        });
       }
 
-      toast({
-        title: `Driver ${driver ? "updated" : "created"} successfully`,
-        description: `${data.name} has been ${driver ? "updated" : "added"} to the system.`,
-      });
+      queryClient.invalidateQueries({ queryKey: ["drivers"] });
+      
+      form.reset();
+      setAvatarFile(null);
+      setDocumentFile(null);
+      setAvatarPreview(null);
+      setDocumentName(null);
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: `Failed to ${driver ? "update" : "create"} driver`,
-        description: error.message,
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     } finally {

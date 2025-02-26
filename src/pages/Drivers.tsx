@@ -1,16 +1,17 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverFormDialog } from "@/components/driver-form-dialog";
 import type { Driver } from "@/lib/types";
 
 export default function Drivers() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isAddingDriver, setIsAddingDriver] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
 
@@ -35,26 +36,34 @@ export default function Drivers() {
     },
   });
 
-  // Subscribe to real-time changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('drivers-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'drivers' }, 
-        () => {
-          // Refetch drivers when there are changes
-          window.location.reload();
-        }
-      )
-      .subscribe();
+  const handleDelete = async (driverId: string) => {
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .delete()
+        .eq("id", driverId);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Driver deleted successfully",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["drivers"] });
+      setSelectedDriver(undefined);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDriverClick = (driver: Driver) => {
     setSelectedDriver(driver);
+    setIsAddingDriver(true);
   };
 
   if (isLoading) {
@@ -152,7 +161,7 @@ export default function Drivers() {
       </div>
 
       <DriverFormDialog 
-        open={isAddingDriver || !!selectedDriver} 
+        open={isAddingDriver} 
         onOpenChange={(open) => {
           setIsAddingDriver(open);
           if (!open) setSelectedDriver(undefined);

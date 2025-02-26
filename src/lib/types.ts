@@ -1,4 +1,3 @@
-
 export type DriverStatus = 'active' | 'inactive' | 'on_leave';
 
 export interface Driver {
@@ -9,10 +8,10 @@ export interface Driver {
   license_type: string;
   license_expiry: string;
   status: DriverStatus;
-  avatar_url?: string;
-  document_url?: string;
   created_at?: string;
   updated_at?: string;
+  avatar_url?: string;
+  document_url?: string;
 }
 
 export type VehicleType = 'armoured' | 'soft_skin';
