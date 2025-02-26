@@ -107,7 +107,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     return publicUrl;
   }
 
-  async function onSubmit(data: DriverFormValues) {
+  async function onSubmit(values: DriverFormValues) {
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -118,6 +118,16 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       let avatarUrl = null;
       let documentUrl = null;
       
+      // Create the base driver data object with required fields
+      const driverData = {
+        name: values.name,
+        license_number: values.license_number,
+        contact: values.contact,
+        license_type: values.license_type,
+        license_expiry: values.license_expiry,
+        status: values.status,
+      };
+
       if (driver) {
         // Update existing driver
         if (avatarFile) {
@@ -130,7 +140,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         const { error } = await supabase
           .from("drivers")
           .update({
-            ...data,
+            ...driverData,
             ...(avatarUrl && { avatar_url: avatarUrl }),
             ...(documentUrl && { document_url: documentUrl }),
           })
@@ -141,9 +151,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         // Create new driver
         const { data: newDriver, error: insertError } = await supabase
           .from("drivers")
-          .insert({
-            ...data,
-          })
+          .insert(driverData)
           .select()
           .single();
 
@@ -174,7 +182,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
 
       toast({
         title: `Driver ${driver ? "updated" : "created"} successfully`,
-        description: `${data.name} has been ${driver ? "updated" : "added"} to the system.`,
+        description: `${values.name} has been ${driver ? "updated" : "added"} to the system.`,
       });
       onOpenChange(false);
     } catch (error) {
