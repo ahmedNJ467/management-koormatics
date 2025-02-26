@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverFormDialog } from "@/components/driver-form-dialog";
 import type { Driver } from "@/lib/types";
 
 export default function Drivers() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isAddingDriver, setIsAddingDriver] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
 
@@ -43,7 +44,7 @@ export default function Drivers() {
         { event: '*', schema: 'public', table: 'drivers' }, 
         () => {
           // Refetch drivers when there are changes
-          window.location.reload();
+          queryClient.invalidateQueries({ queryKey: ["drivers"] });
         }
       )
       .subscribe();
@@ -51,7 +52,7 @@ export default function Drivers() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [queryClient]);
 
   const handleDriverClick = (driver: Driver) => {
     setSelectedDriver(driver);
@@ -59,7 +60,7 @@ export default function Drivers() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8 animate-fade-in">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-semibold tracking-tight">Drivers</h2>
@@ -72,7 +73,7 @@ export default function Drivers() {
 
   if (error) {
     return (
-      <div className="space-y-8 animate-fade-in">
+      <div className="space-y-8">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight">Error</h2>
           <p className="text-destructive">Failed to load drivers</p>
@@ -82,7 +83,7 @@ export default function Drivers() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight">Drivers</h2>
