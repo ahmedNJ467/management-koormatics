@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
@@ -8,42 +8,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverFormDialog } from "@/components/driver-form-dialog";
 import type { Driver } from "@/lib/types";
-import { useNavigate } from "react-router-dom";
 
 export default function Drivers() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddingDriver, setIsAddingDriver] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
-
-  // Check authentication status when component mounts
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to access this page",
-          variant: "destructive",
-        });
-        navigate("/auth");
-      }
-    };
-
-    checkAuth();
-
-    // Subscribe to auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate("/auth");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, toast]);
 
   const { data: drivers, isLoading, error } = useQuery({
     queryKey: ["drivers"],
