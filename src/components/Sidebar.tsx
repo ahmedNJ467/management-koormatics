@@ -36,8 +36,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "w-64 border-r bg-background transition-all duration-300",
-        !open && "-ml-64"
+        "w-64 border-r bg-background transition-transform duration-300",
+        !open && "-translate-x-full"
       )}
     >
       <nav className="flex flex-col gap-1 p-4">

@@ -18,6 +18,14 @@ export interface Driver {
 export type VehicleType = 'armoured' | 'soft_skin';
 export type VehicleStatus = 'active' | 'in_service' | 'inactive';
 
+export interface VehicleImage {
+  id: string;
+  vehicle_id: string;
+  image_url: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Vehicle {
   id: string;
   type: VehicleType;
@@ -32,4 +40,5 @@ export interface Vehicle {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  vehicle_images?: VehicleImage[];
 }
