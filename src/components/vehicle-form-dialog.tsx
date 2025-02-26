@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Vehicle } from "@/lib/types";
@@ -98,6 +98,9 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{vehicle ? 'Edit Vehicle' : 'Add New Vehicle'}</DialogTitle>
+          <DialogDescription>
+            {vehicle ? 'Update the details of your vehicle below.' : 'Fill in the details of your new vehicle below.'}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

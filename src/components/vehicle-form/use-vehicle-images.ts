@@ -13,17 +13,29 @@ export function useVehicleImages() {
     try {
       const imageUploadPromises = images.map(async (file) => {
         const fileExt = file.name.split('.').pop();
-        const filePath = `${vehicleId}/${crypto.randomUUID()}.${fileExt}`;
+        const fileName = `${vehicleId}/${crypto.randomUUID()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        // First, check if the file already exists
+        const { data: existingFile } = await supabase.storage
           .from('vehicle-images')
-          .upload(filePath, file);
+          .list(vehicleId);
+
+        if (existingFile?.some(f => f.name === fileName)) {
+          throw new Error('File already exists');
+        }
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('vehicle-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
           .from('vehicle-images')
-          .getPublicUrl(filePath);
+          .getPublicUrl(fileName);
 
         return publicUrl;
       });
@@ -47,6 +59,10 @@ export function useVehicleImages() {
           URL.revokeObjectURL(url);
         }
       });
+
+      // Reset the image states after successful upload
+      setImages([]);
+      setImagePreviewUrls([]);
     } catch (error) {
       console.error('Error uploading images:', error);
       throw error;
