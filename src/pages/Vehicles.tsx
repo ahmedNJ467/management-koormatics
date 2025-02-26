@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { formatVehicleId } from "@/lib/utils";
 
@@ -29,7 +29,8 @@ export default function Vehicles() {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [viewMode, setViewMode] = useState<"view" | "edit">("view");
-  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const { data: vehicles, isLoading, error } = useQuery({
     queryKey: ['vehicles'],
     queryFn: async () => {
@@ -83,103 +84,128 @@ export default function Vehicles() {
     if (!selectedVehicle) return null;
 
     return (
-      <Dialog open={!!selectedVehicle} onOpenChange={() => {
-        setSelectedVehicle(null);
-        setViewMode("view");
-      }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
-              <span>Vehicle Details - {formatVehicleId(selectedVehicle.id)}</span>
-              <div className="flex gap-2">
-                {viewMode === "view" ? (
-                  <>
+      <>
+        <Dialog open={!!selectedVehicle} onOpenChange={() => {
+          setSelectedVehicle(null);
+          setViewMode("view");
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex justify-between items-center">
+                <span>Vehicle Details - {formatVehicleId(selectedVehicle.id)}</span>
+                <div className="flex gap-2">
+                  {viewMode === "view" ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewMode("edit")}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </>
+                  ) : (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setViewMode("edit")}
+                      onClick={() => setViewMode("view")}
                     >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel Edit
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(selectedVehicle.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setViewMode("view")}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel Edit
-                  </Button>
+                  )}
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+
+            {viewMode === "view" ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {selectedVehicle.vehicle_images?.map((image, index) => (
+                    <img
+                      key={index}
+                      src={image.image_url}
+                      alt={`Vehicle ${index + 1}`}
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">Basic Information</h3>
+                    <div className="space-y-2">
+                      <p><span className="text-muted-foreground">Make:</span> {selectedVehicle.make}</p>
+                      <p><span className="text-muted-foreground">Model:</span> {selectedVehicle.model}</p>
+                      <p><span className="text-muted-foreground">Type:</span> {selectedVehicle.type}</p>
+                      <p><span className="text-muted-foreground">Registration:</span> {selectedVehicle.registration}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Additional Details</h3>
+                    <div className="space-y-2">
+                      <p><span className="text-muted-foreground">Year:</span> {selectedVehicle.year || 'N/A'}</p>
+                      <p><span className="text-muted-foreground">Color:</span> {selectedVehicle.color || 'N/A'}</p>
+                      <p><span className="text-muted-foreground">VIN:</span> {selectedVehicle.vin || 'N/A'}</p>
+                      <p><span className="text-muted-foreground">Insurance Expiry:</span> {selectedVehicle.insurance_expiry ? new Date(selectedVehicle.insurance_expiry).toLocaleDateString() : 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedVehicle.notes && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Notes</h3>
+                    <p className="text-muted-foreground">{selectedVehicle.notes}</p>
+                  </div>
                 )}
               </div>
-            </DialogTitle>
-          </DialogHeader>
+            ) : (
+              <VehicleFormDialog
+                open={true}
+                onOpenChange={() => {
+                  setViewMode("view");
+                  setSelectedVehicle(null);
+                }}
+                vehicle={selectedVehicle}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
 
-          {viewMode === "view" ? (
-            <div className="space-y-6">
-              {/* Image Gallery */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {selectedVehicle.vehicle_images?.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image.image_url}
-                    alt={`Vehicle ${index + 1}`}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                ))}
-              </div>
-
-              {/* Vehicle Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Basic Information</h3>
-                  <div className="space-y-2">
-                    <p><span className="text-muted-foreground">Make:</span> {selectedVehicle.make}</p>
-                    <p><span className="text-muted-foreground">Model:</span> {selectedVehicle.model}</p>
-                    <p><span className="text-muted-foreground">Type:</span> {selectedVehicle.type}</p>
-                    <p><span className="text-muted-foreground">Registration:</span> {selectedVehicle.registration}</p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Additional Details</h3>
-                  <div className="space-y-2">
-                    <p><span className="text-muted-foreground">Year:</span> {selectedVehicle.year || 'N/A'}</p>
-                    <p><span className="text-muted-foreground">Color:</span> {selectedVehicle.color || 'N/A'}</p>
-                    <p><span className="text-muted-foreground">VIN:</span> {selectedVehicle.vin || 'N/A'}</p>
-                    <p><span className="text-muted-foreground">Insurance Expiry:</span> {selectedVehicle.insurance_expiry ? new Date(selectedVehicle.insurance_expiry).toLocaleDateString() : 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {selectedVehicle.notes && (
-                <div>
-                  <h3 className="font-semibold mb-2">Notes</h3>
-                  <p className="text-muted-foreground">{selectedVehicle.notes}</p>
-                </div>
-              )}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Vehicle</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this vehicle? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end space-x-4 mt-4">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  handleDelete(selectedVehicle.id);
+                  setShowDeleteConfirm(false);
+                }}
+              >
+                Delete
+              </Button>
             </div>
-          ) : (
-            <VehicleFormDialog
-              open={true}
-              onOpenChange={() => {
-                setViewMode("view");
-                setSelectedVehicle(null);
-              }}
-              vehicle={selectedVehicle}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   };
 
@@ -230,10 +256,10 @@ export default function Vehicles() {
                       <img
                         src={vehicle.vehicle_images[0].image_url}
                         alt={`${vehicle.make} ${vehicle.model}`}
-                        className="w-12 h-12 rounded object-cover"
+                        className="w-24 h-24 rounded-lg object-cover"
                       />
                     ) : (
-                      <Car className="h-12 w-12 p-2 text-muted-foreground" />
+                      <Car className="h-24 w-24 p-2 text-muted-foreground" />
                     )}
                   </TableCell>
                   <TableCell className="capitalize">{vehicle.type.replace('_', ' ')}</TableCell>
@@ -252,13 +278,11 @@ export default function Vehicles() {
         )}
       </div>
 
-      {/* Vehicle Form Dialog for new vehicles */}
       <VehicleFormDialog 
         open={formOpen}
         onOpenChange={setFormOpen}
       />
 
-      {/* Vehicle Details Dialog for viewing/editing existing vehicles */}
       <VehicleDetailsDialog />
     </div>
   );

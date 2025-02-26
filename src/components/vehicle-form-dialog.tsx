@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
@@ -48,6 +48,37 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
       notes: '',
     },
   });
+
+  // Set form values when vehicle prop changes
+  useEffect(() => {
+    if (vehicle) {
+      form.reset({
+        type: vehicle.type,
+        make: vehicle.make,
+        model: vehicle.model,
+        registration: vehicle.registration,
+        status: vehicle.status,
+        year: vehicle.year,
+        color: vehicle.color || '',
+        vin: vehicle.vin || '',
+        insurance_expiry: vehicle.insurance_expiry ? new Date(vehicle.insurance_expiry).toISOString().split('T')[0] : undefined,
+        notes: vehicle.notes || '',
+      });
+    } else {
+      form.reset({
+        type: 'soft_skin',
+        make: '',
+        model: '',
+        registration: '',
+        status: 'active',
+        year: undefined,
+        color: '',
+        vin: '',
+        insurance_expiry: undefined,
+        notes: '',
+      });
+    }
+  }, [vehicle, form]);
 
   async function onSubmit(data: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) {
     try {
