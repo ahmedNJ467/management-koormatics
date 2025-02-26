@@ -2,17 +2,14 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function uploadDriverFile(file: File, bucket: string, driverId: string, fileType: string): Promise<string | null> {
-  const fileExt = file.name.split('.').pop();
-  const filePath = `${driverId}/${fileType}.${fileExt}`;
+  if (!file) return null;
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error("No active session");
-  }
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${driverId}-${fileType}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
     .from(bucket)
-    .upload(filePath, file, {
+    .upload(fileName, file, {
       upsert: true
     });
 
@@ -22,7 +19,7 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
 
   const { data: { publicUrl } } = supabase.storage
     .from(bucket)
-    .getPublicUrl(filePath);
+    .getPublicUrl(fileName);
 
   return publicUrl;
 }

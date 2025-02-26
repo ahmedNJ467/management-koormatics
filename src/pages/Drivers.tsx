@@ -1,18 +1,25 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverFormDialog } from "@/components/driver-form-dialog";
 import type { Driver } from "@/lib/types";
+import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Drivers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingDriver, setIsAddingDriver] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [driverToDelete, setDriverToDelete] = useState<Driver | null>(null);
 
   const { data: drivers, isLoading, error } = useQuery({
     queryKey: ["drivers"],
@@ -42,7 +49,6 @@ export default function Drivers() {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'drivers' }, 
         () => {
-          // Refetch drivers when there are changes
           queryClient.invalidateQueries({ queryKey: ["drivers"] });
         }
       )
@@ -56,6 +62,42 @@ export default function Drivers() {
   const handleDriverClick = (driver: Driver) => {
     setSelectedDriver(driver);
   };
+
+  const handleDeleteDriver = async () => {
+    if (!driverToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .delete()
+        .eq("id", driverToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Driver deleted",
+        description: `${driverToDelete.name} has been removed from the system.`,
+      });
+      setDriverToDelete(null);
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Failed to delete driver",
+        description: error instanceof Error ? error.message : "Failed to delete driver",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredDrivers = drivers?.filter((driver) => {
+    const matchesSearch = driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.license_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.contact?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || driver.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   if (isLoading) {
     return (
@@ -93,15 +135,40 @@ export default function Drivers() {
         </Button>
       </div>
 
+      <div className="flex gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search drivers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="on_leave">On Leave</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {drivers?.map((driver) => (
+        {filteredDrivers?.map((driver) => (
           <Card 
             key={driver.id} 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => handleDriverClick(driver)}
+            className="relative"
           >
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
+              <div 
+                className="flex items-center gap-4 cursor-pointer"
+                onClick={() => handleDriverClick(driver)}
+              >
                 <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center">
                   {driver.avatar_url ? (
                     <img
@@ -146,6 +213,17 @@ export default function Drivers() {
                   </span>
                 </div>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDriverToDelete(driver);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
         ))}
@@ -159,6 +237,23 @@ export default function Drivers() {
         }}
         driver={selectedDriver}
       />
+
+      <AlertDialog open={!!driverToDelete} onOpenChange={() => setDriverToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {driverToDelete?.name}'s record. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDriver} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
