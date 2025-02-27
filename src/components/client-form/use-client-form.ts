@@ -152,6 +152,14 @@ export function useClientForm(client?: Client | null) {
           );
         }
 
+        // Convert documents to plain objects for storing in jsonb column
+        const documentsForUpdate = documents.map(doc => ({
+          id: doc.id,
+          name: doc.name,
+          url: doc.url,
+          uploadedAt: doc.uploadedAt
+        }));
+
         // Format values for update
         const formattedValues = {
           name: values.name,
@@ -163,7 +171,7 @@ export function useClientForm(client?: Client | null) {
           email: values.email || null,
           phone: values.phone || null,
           profile_image_url: profileImageUrl,
-          documents: documents
+          documents: documentsForUpdate
         };
 
         // Update client
@@ -258,9 +266,17 @@ export function useClientForm(client?: Client | null) {
             documentFiles.map(file => uploadClientDocument(file, insertedClient.id))
           );
 
+          // Convert documents to plain objects for storing
+          const documentsForUpdate = uploadedDocs.map(doc => ({
+            id: doc.id,
+            name: doc.name,
+            url: doc.url,
+            uploadedAt: doc.uploadedAt
+          }));
+
           await supabase
             .from("clients")
-            .update({ documents: uploadedDocs })
+            .update({ documents: documentsForUpdate })
             .eq("id", insertedClient.id);
         }
 
