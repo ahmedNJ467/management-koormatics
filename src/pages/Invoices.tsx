@@ -1,35 +1,16 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Plus, 
-  Receipt,
-  ArrowUpDown
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
+import { Plus, Receipt } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Invoices() {
-  const [sortBy, setSortBy] = useState<string>("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  
+  // Format currency helper function
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2
     }).format(amount);
-  };
-  
-  const handleSort = (column: string) => {
-    if (sortBy === column) {
-      // Toggle sort order if clicking the same column
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      // Set new sort column and default to descending
-      setSortBy(column);
-      setSortOrder("desc");
-    }
   };
 
   return (
@@ -97,11 +78,12 @@ export default function Invoices() {
         </Card>
       </div>
 
+      {/* Empty state */}
       <div className="rounded-lg border p-8 text-center">
         <Receipt className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
         <h3 className="text-lg font-medium mb-2">No Invoices Yet</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          You haven't created any invoices yet. Get started by creating your first invoice.
+          Create an invoice to get started
         </p>
         <Button>
           <Plus className="mr-2 h-4 w-4" /> Create Invoice
@@ -109,8 +91,9 @@ export default function Invoices() {
       </div>
 
       <div className="text-sm text-muted-foreground mt-8">
-        <p>Note: The invoices feature needs to be set up in the database first.</p>
-        <p>Please create the invoices table in Supabase with the required schema.</p>
+        <p className="text-center">
+          You need to create the invoices table in your Supabase backend to enable full functionality.
+        </p>
       </div>
     </div>
   );
