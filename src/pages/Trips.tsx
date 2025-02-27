@@ -712,7 +712,7 @@ function Trips() {
 
       {/* Edit Trip Dialog */}
       <AlertDialog open={editTrip !== null} onOpenChange={(open) => !open && setEditTrip(null)}>
-        <AlertDialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <AlertDialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>Edit Trip</AlertDialogTitle>
             <AlertDialogDescription>
@@ -739,14 +739,14 @@ function Trips() {
 
       {/* New Trip Drawer */}
       <Drawer open={bookingOpen} onOpenChange={setBookingOpen}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
+        <DrawerContent className="max-h-[80vh]">
+          <DrawerHeader className="text-center">
             <DrawerTitle>Book New Trip</DrawerTitle>
             <DrawerDescription>
               Fill in the details to schedule a new trip.
             </DrawerDescription>
           </DrawerHeader>
-          <div className="px-4 py-2 overflow-y-auto">
+          <div className="px-4 py-2 overflow-y-auto max-w-md mx-auto">
             <TripForm
               clients={clients}
               vehicles={vehicles}
