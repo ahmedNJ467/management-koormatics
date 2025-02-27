@@ -2,14 +2,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverFormDialog } from "@/components/driver-form-dialog";
 import type { Driver } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Drivers() {
@@ -19,7 +18,6 @@ export default function Drivers() {
   const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [driverToDelete, setDriverToDelete] = useState<Driver | null>(null);
 
   const { data: drivers, isLoading, error } = useQuery({
     queryKey: ["drivers"],
@@ -61,32 +59,6 @@ export default function Drivers() {
 
   const handleDriverClick = (driver: Driver) => {
     setSelectedDriver(driver);
-  };
-
-  const handleDeleteDriver = async () => {
-    if (!driverToDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from("drivers")
-        .delete()
-        .eq("id", driverToDelete.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Driver deleted",
-        description: `${driverToDelete.name} has been removed from the system.`,
-      });
-      setDriverToDelete(null);
-    } catch (error) {
-      console.error("Error:", error);
-      toast({
-        title: "Failed to delete driver",
-        description: error instanceof Error ? error.message : "Failed to delete driver",
-        variant: "destructive",
-      });
-    }
   };
 
   const filteredDrivers = drivers?.filter((driver) => {
@@ -162,13 +134,11 @@ export default function Drivers() {
         {filteredDrivers?.map((driver) => (
           <Card 
             key={driver.id} 
-            className="relative"
+            className="relative cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleDriverClick(driver)}
           >
             <CardContent className="p-6">
-              <div 
-                className="flex items-center gap-4 cursor-pointer"
-                onClick={() => handleDriverClick(driver)}
-              >
+              <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center">
                   {driver.avatar_url ? (
                     <img
@@ -213,17 +183,6 @@ export default function Drivers() {
                   </span>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 text-destructive hover:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDriverToDelete(driver);
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </CardContent>
           </Card>
         ))}
@@ -237,23 +196,6 @@ export default function Drivers() {
         }}
         driver={selectedDriver}
       />
-
-      <AlertDialog open={!!driverToDelete} onOpenChange={() => setDriverToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete {driverToDelete?.name}'s record. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteDriver} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
