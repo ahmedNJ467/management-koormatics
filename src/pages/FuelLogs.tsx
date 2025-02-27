@@ -1,4 +1,6 @@
 
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -8,32 +10,73 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
-
-const fuelLogs = [
-  {
-    id: "F001",
-    date: "2024-02-15",
-    vehicleId: "V001",
-    vehicle: "Toyota Land Cruiser",
-    fuelType: "Diesel",
-    volume: 65.5,
-    cost: 98.25,
-    mileage: 45280,
-  },
-  {
-    id: "F002",
-    date: "2024-02-14",
-    vehicleId: "V002",
-    vehicle: "Toyota Hilux",
-    fuelType: "Diesel",
-    volume: 45.0,
-    cost: 67.50,
-    mileage: 32150,
-  },
-];
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import type { FuelLog } from "@/lib/types";
+import { FuelLogFormDialog } from "@/components/fuel-log-form-dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function FuelLogs() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedFuelLog, setSelectedFuelLog] = useState<FuelLog | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { data: fuelLogs, isLoading } = useQuery({
+    queryKey: ['fuel-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('fuel_logs')
+        .select(`
+          *,
+          vehicle:vehicles (
+            make,
+            model,
+            registration
+          )
+        `)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data as FuelLog[];
+    },
+  });
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('fuel_logs')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['fuel-logs'] });
+      toast({
+        title: "Fuel log deleted",
+        description: "The fuel log has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete fuel log",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -41,7 +84,7 @@ export default function FuelLogs() {
           <h2 className="text-3xl font-semibold tracking-tight">Fuel Logs</h2>
           <p className="text-muted-foreground">Track fuel consumption and costs</p>
         </div>
-        <Button>
+        <Button onClick={() => setFormOpen(true)}>
           <Plus className="mr-2 h-4 w-4" /> Add Log
         </Button>
       </div>
@@ -56,22 +99,99 @@ export default function FuelLogs() {
               <TableHead>Volume (L)</TableHead>
               <TableHead>Cost (USD)</TableHead>
               <TableHead>Mileage (km)</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {fuelLogs.map((log) => (
-              <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell>{log.date}</TableCell>
-                <TableCell>{log.vehicle}</TableCell>
-                <TableCell>{log.fuelType}</TableCell>
-                <TableCell>{log.volume.toFixed(1)}</TableCell>
-                <TableCell>${log.cost.toFixed(2)}</TableCell>
-                <TableCell>{log.mileage.toLocaleString()}</TableCell>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center">
+                  Loading...
+                </TableCell>
               </TableRow>
-            ))}
+            ) : fuelLogs?.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center">
+                  No fuel logs found. Add your first one!
+                </TableCell>
+              </TableRow>
+            ) : (
+              fuelLogs?.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell>{new Date(log.date).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {log.vehicle ? `${log.vehicle.make} ${log.vehicle.model}` : "Unknown Vehicle"}
+                  </TableCell>
+                  <TableCell className="capitalize">{log.fuel_type}</TableCell>
+                  <TableCell>{log.volume.toFixed(1)}</TableCell>
+                  <TableCell>${log.cost.toFixed(2)}</TableCell>
+                  <TableCell>{log.mileage.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedFuelLog(log);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedFuelLog(log);
+                          setShowDeleteConfirm(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
+
+      <FuelLogFormDialog 
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) setSelectedFuelLog(null);
+        }}
+        fuelLog={selectedFuelLog || undefined}
+      />
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fuel Log</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this fuel log? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedFuelLog) {
+                  handleDelete(selectedFuelLog.id);
+                  setShowDeleteConfirm(false);
+                  setSelectedFuelLog(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

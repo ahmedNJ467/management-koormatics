@@ -51,6 +51,53 @@ export type Database = {
         }
         Relationships: []
       }
+      fuel_logs: {
+        Row: {
+          cost: number
+          created_at: string | null
+          date: string
+          fuel_type: Database["public"]["Enums"]["fuel_type"]
+          id: string
+          mileage: number
+          notes: string | null
+          updated_at: string | null
+          vehicle_id: string
+          volume: number
+        }
+        Insert: {
+          cost: number
+          created_at?: string | null
+          date: string
+          fuel_type: Database["public"]["Enums"]["fuel_type"]
+          id?: string
+          mileage: number
+          notes?: string | null
+          updated_at?: string | null
+          vehicle_id: string
+          volume: number
+        }
+        Update: {
+          cost?: number
+          created_at?: string | null
+          date?: string
+          fuel_type?: Database["public"]["Enums"]["fuel_type"]
+          id?: string
+          mileage?: number
+          notes?: string | null
+          updated_at?: string | null
+          vehicle_id?: string
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance: {
         Row: {
           cost: number
@@ -190,6 +237,7 @@ export type Database = {
     }
     Enums: {
       driver_status: "active" | "inactive" | "on_leave"
+      fuel_type: "petrol" | "diesel"
       maintenance_status:
         | "scheduled"
         | "in_progress"
