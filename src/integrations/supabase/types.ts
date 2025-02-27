@@ -9,34 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      client_contacts: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_primary: boolean | null
+          name: string
+          phone: string | null
+          position: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name: string
+          phone?: string | null
+          position?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string
+          phone?: string | null
+          position?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           contact: string | null
           created_at: string | null
+          documents: Json | null
           email: string | null
           id: string
           name: string
           phone: string | null
+          profile_image_url: string | null
           type: Database["public"]["Enums"]["client_type"]
           updated_at: string | null
         }
         Insert: {
           contact?: string | null
           created_at?: string | null
+          documents?: Json | null
           email?: string | null
           id?: string
           name: string
           phone?: string | null
+          profile_image_url?: string | null
           type: Database["public"]["Enums"]["client_type"]
           updated_at?: string | null
         }
         Update: {
           contact?: string | null
           created_at?: string | null
+          documents?: Json | null
           email?: string | null
           id?: string
           name?: string
           phone?: string | null
+          profile_image_url?: string | null
           type?: Database["public"]["Enums"]["client_type"]
           updated_at?: string | null
         }

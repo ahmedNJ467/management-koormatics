@@ -22,9 +22,19 @@ interface Client {
   id: string;
   name: string;
   type: "organization" | "individual";
+  description?: string;
+  website?: string;
+  address?: string;
   contact?: string;
   email?: string;
   phone?: string;
+  profile_image_url?: string;
+  documents?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    uploadedAt: string;
+  }>;
   created_at?: string;
   updated_at?: string;
 }
@@ -112,8 +122,14 @@ export default function Clients() {
                 </Button>
               </div>
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center">
-                  {client.type === "organization" ? (
+                <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center overflow-hidden">
+                  {client.profile_image_url ? (
+                    <img
+                      src={client.profile_image_url}
+                      alt={client.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : client.type === "organization" ? (
                     <Building2 className="h-6 w-6 text-secondary" />
                   ) : (
                     <User className="h-6 w-6 text-secondary" />
@@ -125,6 +141,23 @@ export default function Clients() {
                 </div>
               </div>
               <div className="mt-4 space-y-2">
+                {client.description && (
+                  <p className="text-sm text-muted-foreground">{client.description}</p>
+                )}
+                {client.website && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Website:</span>
+                    <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {client.website}
+                    </a>
+                  </div>
+                )}
+                {client.address && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Address:</span>
+                    <span>{client.address}</span>
+                  </div>
+                )}
                 {client.contact && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Contact:</span>
@@ -141,6 +174,24 @@ export default function Clients() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Phone:</span>
                     <span>{client.phone}</span>
+                  </div>
+                )}
+                {client.documents && client.documents.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2">Documents ({client.documents.length})</p>
+                    <div className="space-y-1">
+                      {client.documents.map((doc) => (
+                        <a
+                          key={doc.id}
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline block truncate"
+                        >
+                          {doc.name}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
