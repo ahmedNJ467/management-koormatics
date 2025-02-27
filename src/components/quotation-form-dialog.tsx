@@ -161,7 +161,7 @@ export function QuotationFormDialog({
         status: values.status,
         notes: values.notes || null,
         total_amount: totalAmount,
-        items: values.items as any // Cast to any to avoid TypeScript errors
+        items: values.items as any // Cast to any to handle the JSON type
       };
       
       if (quotation) {

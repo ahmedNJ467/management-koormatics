@@ -74,7 +74,7 @@ export default function Quotations() {
         total_amount: quote.total_amount,
         valid_until: quote.valid_until,
         notes: quote.notes,
-        items: quote.items as QuotationItem[] || [],
+        items: (quote.items as unknown) as QuotationItem[],
         created_at: quote.created_at,
         updated_at: quote.updated_at
       })) as DisplayQuotation[];
@@ -232,7 +232,7 @@ export default function Quotations() {
         total_amount: quotation.total_amount,
         valid_until: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0], // 30 days from now
         notes: quotation.notes,
-        items: quotation.items
+        items: quotation.items as any
       };
       
       const { error } = await supabase
