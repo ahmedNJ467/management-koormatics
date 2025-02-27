@@ -81,6 +81,77 @@ const serviceTypeMap: Record<UIServiceType, TripType> = {
   "full_day_hire": "full_day"
 };
 
+// Map database TripType values to UI service types - this is the inverse of serviceTypeMap
+// This helps us correctly set the form select when editing a trip
+const dbToUIServiceType: Record<string, UIServiceType> = {
+  "airport_pickup": "airport_pickup",
+  "airport_dropoff": "airport_dropoff",
+  "full_day": "full_day_hire"
+  // "other" type will need special handling because it could be multiple UI types
+};
+
+// Helper function to get the specific UI service type from a database trip type and other trip details
+const getUIServiceType = (trip: Trip): UIServiceType => {
+  // First check if it's a direct mapping
+  if (trip.type in dbToUIServiceType) {
+    return dbToUIServiceType[trip.type as keyof typeof dbToUIServiceType];
+  }
+  
+  // If it's "other", try to determine the specific service type
+  if (trip.type === "other") {
+    // These are heuristics - you may need additional metadata in your database to be more accurate
+    if (trip.pickup_location?.toLowerCase().includes("airport") || 
+        trip.dropoff_location?.toLowerCase().includes("airport")) {
+      return "round_trip";
+    }
+    
+    // If notes mention security/escort
+    if (trip.notes?.toLowerCase().includes("security") || 
+        trip.notes?.toLowerCase().includes("escort")) {
+      return "security_escort";
+    }
+    
+    // Default to one_way if we can't determine
+    return "one_way";
+  }
+  
+  // Fallback
+  return "one_way";
+};
+
+// Helper function to get a display name for a trip type
+const getServiceDisplayName = (type: TripType, uiType?: UIServiceType): string => {
+  // Use this mapping for specific UI labels
+  const uiTypeLabels: Record<UIServiceType, string> = {
+    "airport_pickup": "Airport Pickup",
+    "airport_dropoff": "Airport Dropoff",
+    "round_trip": "Round Trip",
+    "security_escort": "Security Escort",
+    "one_way": "One Way Transfer",
+    "full_day_hire": "Full Day Hire"
+  };
+  
+  // If we have a UI type, use its label
+  if (uiType && uiType in uiTypeLabels) {
+    return uiTypeLabels[uiType];
+  }
+  
+  // Fallback to generic database type formatting
+  const dbTypeLabels: Record<TripType, string> = {
+    "airport_pickup": "Airport Pickup",
+    "airport_dropoff": "Airport Dropoff",
+    "other": "Other Service",
+    "hourly": "Hourly Service",
+    "full_day": "Full Day Service",
+    "multi_day": "Multi-Day Service"
+  };
+  
+  return dbTypeLabels[type] || type.replace(/_/g, " ")
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 // Helper function to get the first day of the month (0 = Sunday, 1 = Monday, etc.)
 const getFirstDayOfMonth = (date: Date): number => {
   return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
@@ -133,18 +204,25 @@ export default function Trips() {
 
       if (error) throw error;
 
-      return data.map((trip) => ({
-        ...trip,
-        client_name: trip.clients?.name || "Unknown Client",
-        vehicle_details: `${trip.vehicles?.make} ${trip.vehicles?.model} (${trip.vehicles?.registration})`,
-        driver_name: trip.drivers?.name || "Unknown Driver",
-        driver_avatar: trip.drivers?.avatar_url,
-        driver_contact: trip.drivers?.contact,
-        // Map database fields to UI fields
-        time: trip.start_time,
-        return_time: trip.end_time,
-        special_notes: trip.notes,
-      })) as DisplayTrip[];
+      return data.map((trip) => {
+        // Determine the UI service type for this trip
+        const uiServiceType = getUIServiceType(trip);
+        
+        return {
+          ...trip,
+          client_name: trip.clients?.name || "Unknown Client",
+          vehicle_details: `${trip.vehicles?.make} ${trip.vehicles?.model} (${trip.vehicles?.registration})`,
+          driver_name: trip.drivers?.name || "Unknown Driver",
+          driver_avatar: trip.drivers?.avatar_url,
+          driver_contact: trip.drivers?.contact,
+          // Map database fields to UI fields
+          time: trip.start_time,
+          return_time: trip.end_time,
+          special_notes: trip.notes,
+          // Save the UI service type for easier display/editing
+          ui_service_type: uiServiceType
+        };
+      }) as DisplayTrip[];
     },
   });
 
@@ -275,6 +353,15 @@ export default function Trips() {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // When setting editTrip, set the service type for the form
+  useEffect(() => {
+    if (editTrip) {
+      // Determine the UI service type for this trip
+      const uiType = getUIServiceType(editTrip);
+      setServiceType(uiType);
+    }
+  }, [editTrip]);
 
   // Update trip status
   const updateTripStatus = async (tripId: string, status: TripStatus) => {
@@ -580,21 +667,16 @@ export default function Trips() {
       .join(" ");
   };
   
-  // Format service type for display (using the UI service type)
-  const formatTripType = (type: TripType): string => {
-    const uiTypes: Record<TripType, string> = {
-      "airport_pickup": "Airport Pickup",
-      "airport_dropoff": "Airport Dropoff",
-      "other": "Other Service",
-      "hourly": "Hourly Service",
-      "full_day": "Full Day Service",
-      "multi_day": "Multi-Day Service"
-    };
+  // Format service type for display
+  const formatTripType = (type: TripType, trip?: DisplayTrip): string => {
+    // If we have the trip object with a UI service type, use that for more precise display
+    if (trip && 'ui_service_type' in trip) {
+      const uiType = trip.ui_service_type as UIServiceType;
+      return getServiceDisplayName(type, uiType);
+    }
     
-    return uiTypes[type] || type.replace(/_/g, " ")
-      .split(" ")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+    // Fallback to general display based on trip type
+    return getServiceDisplayName(type);
   };
   
   const formatCurrency = (amount: number): string => {
@@ -784,7 +866,7 @@ export default function Trips() {
                           key={trip.id}
                           onClick={() => setViewTrip(trip)}
                           className="text-xs p-1 rounded cursor-pointer bg-primary/10 hover:bg-primary/20 truncate"
-                          title={`${trip.client_name} - ${formatTripType(trip.type)}`}
+                          title={`${trip.client_name} - ${formatTripType(trip.type, trip)}`}
                         >
                           {formatTime(trip.time)} {trip.client_name}
                         </div>
@@ -847,7 +929,7 @@ export default function Trips() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getTripTypeIcon(trip.type)}
-                        {formatTripType(trip.type)}
+                        {formatTripType(trip.type, trip)}
                       </div>
                     </TableCell>
                     <TableCell>{trip.vehicle_details}</TableCell>
@@ -934,7 +1016,7 @@ export default function Trips() {
               {viewTrip && (
                 <div className="flex items-center gap-2 mt-1 text-sm">
                   {getTripTypeIcon(viewTrip.type)}
-                  <span>{formatTripType(viewTrip.type)}</span>
+                  <span>{formatTripType(viewTrip.type, viewTrip)}</span>
                   {viewTrip.is_recurring && (
                     <Badge variant="secondary" className="ml-2">
                       <Repeat className="mr-1 h-3 w-3" /> Recurring
@@ -1218,11 +1300,7 @@ export default function Trips() {
                 <Label htmlFor="service_type">Service Type</Label>
                 <Select 
                   name="service_type" 
-                  defaultValue={
-                    editTrip?.type === "airport_pickup" ? "airport_pickup" :
-                    editTrip?.type === "airport_dropoff" ? "airport_dropoff" :
-                    editTrip?.type === "full_day" ? "full_day_hire" : "one_way"
-                  }
+                  value={serviceType}
                   onValueChange={(value) => setServiceType(value as UIServiceType)}
                   required
                 >

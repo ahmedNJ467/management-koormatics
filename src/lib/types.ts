@@ -180,4 +180,5 @@ export interface DisplayTrip extends Trip {
   terminal?: string;
   special_notes?: string;
   is_recurring?: boolean; // Added for UI display purposes
+  ui_service_type?: string; // Added to store the UI service type corresponding to database type
 }
