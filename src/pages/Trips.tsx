@@ -440,7 +440,7 @@ function Trips() {
     setIsSendingMessage(true);
 
     try {
-      const { data, error } = await supabase
+      const { data: newMessage, error } = await supabase
         .from("trip_messages")
         .insert([
           {
@@ -460,8 +460,6 @@ function Trips() {
         throw error;
       }
 
-      // Explicitly cast the returned data to TripMessageData to ensure type compatibility
-      const newMessage = data as TripMessageData;
       setTripMessages((prevMessages) => [...prevMessages, newMessage]);
       setMessageText("");
       toast({
