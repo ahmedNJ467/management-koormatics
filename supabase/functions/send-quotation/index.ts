@@ -11,6 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json"
 };
 
 interface QuotationEmailRequest {
@@ -26,7 +27,19 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { quotationId, clientEmail, clientName }: QuotationEmailRequest = await req.json();
+    // Parse request body
+    let requestData: QuotationEmailRequest;
+    try {
+      requestData = await req.json();
+    } catch (e) {
+      console.error("Error parsing request JSON:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid request format" }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+    
+    const { quotationId, clientEmail, clientName } = requestData;
 
     // Initialize Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -43,7 +56,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (quotationError) {
       console.error("Error fetching quotation:", quotationError);
-      throw new Error("Could not find the quotation");
+      return new Response(
+        JSON.stringify({ error: "Could not find the quotation" }),
+        { status: 404, headers: corsHeaders }
+      );
     }
 
     // Format items for the email
@@ -56,13 +72,16 @@ const handler = async (req: Request): Promise<Response> => {
       </tr>
     `).join('');
 
+    // Format the quotation ID to be shorter
+    const shortId = quotationId.substring(0, 8).toUpperCase();
+
     // Create quotation email HTML
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Quotation #${quotation.id}</title>
+        <title>Quotation #${shortId}</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -78,7 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Quotation #${quotation.id}</h1>
+            <h1>Quotation #${shortId}</h1>
           </div>
           
           <p>Dear ${clientName},</p>
@@ -129,30 +148,41 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Send the email
-    const emailResponse = await resend.emails.send({
-      from: "Quotations <onboarding@resend.dev>",
-      to: [clientEmail],
-      subject: `Quotation #${quotation.id} for ${clientName}`,
-      html: htmlContent,
-    });
+    try {
+      // Send the email
+      const emailResponse = await resend.emails.send({
+        from: "Quotations <onboarding@resend.dev>",
+        to: [clientEmail],
+        subject: `Quotation #${shortId} for ${clientName}`,
+        html: htmlContent,
+      });
 
-    console.log("Email sent successfully:", emailResponse);
+      console.log("Email sent successfully:", emailResponse);
 
-    return new Response(JSON.stringify(emailResponse), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+      return new Response(
+        JSON.stringify({ success: true, data: emailResponse }),
+        {
+          status: 200,
+          headers: corsHeaders,
+        }
+      );
+    } catch (emailError: any) {
+      console.error("Error sending email:", emailError);
+      return new Response(
+        JSON.stringify({ error: emailError.message || "Failed to send email" }),
+        {
+          status: 500,
+          headers: corsHeaders,
+        }
+      );
+    }
   } catch (error: any) {
     console.error("Error in send-quotation function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "An unexpected error occurred" }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: corsHeaders,
       }
     );
   }
