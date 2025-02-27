@@ -27,7 +27,16 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
 
   const form = useForm<MaintenanceFormValues>({
     resolver: zodResolver(maintenanceSchema),
-    defaultValues: {
+    defaultValues: maintenance ? {
+      vehicle_id: maintenance.vehicle_id,
+      date: maintenance.date,
+      description: maintenance.description,
+      cost: maintenance.cost,
+      next_scheduled: maintenance.next_scheduled || "",
+      status: maintenance.status,
+      notes: maintenance.notes || "",
+      service_provider: maintenance.service_provider || "",
+    } : {
       vehicle_id: "",
       date: "",
       description: "",
@@ -42,14 +51,18 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
   const handleSubmit = async (values: MaintenanceFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
-      // Ensure all required fields are present and properly formatted
+      // First check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("You must be logged in to perform this action");
+      }
+
       const formattedValues = {
         vehicle_id: values.vehicle_id,
         date: values.date,
         description: values.description,
         cost: Number(values.cost),
         status: values.status,
-        // Optional fields are set to null if empty
         next_scheduled: values.next_scheduled || null,
         notes: values.notes || null,
         service_provider: values.service_provider || null,
