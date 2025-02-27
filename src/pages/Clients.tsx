@@ -1,12 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Building2, User, Pencil, Trash2 } from "lucide-react";
+import { Plus, Building2, User, Pencil, Trash2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientFormDialog } from "@/components/client-form-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +47,8 @@ export default function Clients() {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ['clients'],
@@ -59,7 +63,25 @@ export default function Clients() {
     },
   });
 
-  const handleEdit = (client: Client) => {
+  // Subscribe to real-time changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('clients-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'clients' }, 
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  const handleEdit = (e: React.MouseEvent, client: Client) => {
+    e.stopPropagation();
     setSelectedClient(client);
     setFormOpen(true);
   };
@@ -89,10 +111,39 @@ export default function Clients() {
     }
   };
 
-  const confirmDelete = (client: Client) => {
+  const confirmDelete = (e: React.MouseEvent, client: Client) => {
+    e.stopPropagation();
     setSelectedClient(client);
     setShowDeleteConfirm(true);
   };
+  
+  const handleClientClick = (client: Client) => {
+    setSelectedClient(client);
+    setFormOpen(true);
+  };
+
+  const filteredClients = clients?.filter((client) => {
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = typeFilter === "all" || client.type === typeFilter;
+    
+    return matchesSearch && matchesType;
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-tight">Clients</h2>
+            <p className="text-muted-foreground">Loading clients...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -109,15 +160,41 @@ export default function Clients() {
         </Button>
       </div>
 
+      <div className="flex gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search clients..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="organization">Organization</SelectItem>
+            <SelectItem value="individual">Individual</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {clients?.map((client) => (
-          <Card key={client.id} className="group relative">
+        {filteredClients?.map((client) => (
+          <Card 
+            key={client.id} 
+            className="group relative cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleClientClick(client)}
+          >
             <CardContent className="p-6">
               <div className="absolute right-4 top-4 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
+                <Button variant="ghost" size="icon" onClick={(e) => handleEdit(e, client)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => confirmDelete(client)}>
+                <Button variant="ghost" size="icon" onClick={(e) => confirmDelete(e, client)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -174,24 +251,6 @@ export default function Clients() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Phone:</span>
                     <span>{client.phone}</span>
-                  </div>
-                )}
-                {client.documents && client.documents.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium mb-2">Documents ({client.documents.length})</p>
-                    <div className="space-y-1">
-                      {client.documents.map((doc) => (
-                        <a
-                          key={doc.id}
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline block truncate"
-                        >
-                          {doc.name}
-                        </a>
-                      ))}
-                    </div>
                   </div>
                 )}
               </div>
