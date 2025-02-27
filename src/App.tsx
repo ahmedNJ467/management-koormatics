@@ -1,5 +1,5 @@
 
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Vehicles from "./pages/Vehicles";
@@ -26,6 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="drivers" element={<Drivers />} />
           <Route path="maintenance" element={<Maintenance />} />
@@ -38,7 +39,7 @@ function App() {
           <Route path="auth" element={<Auth />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-        <Route path="/index.html" element={<Index />} />
+        <Route path="/index.html" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster />
     </QueryClientProvider>
