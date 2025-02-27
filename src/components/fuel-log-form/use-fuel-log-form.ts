@@ -66,12 +66,22 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
         throw new Error("You must be logged in to perform this action");
       }
 
+      // Ensure all required fields are present and have the correct types
+      const formattedValues = {
+        vehicle_id: values.vehicle_id,
+        date: values.date,
+        fuel_type: values.fuel_type,
+        volume: Number(values.volume),
+        cost: Number(values.cost),
+        mileage: Number(values.mileage),
+        notes: values.notes || null
+      } satisfies Omit<FuelLog, 'id' | 'created_at' | 'updated_at' | 'vehicle'>;
+
       if (fuelLog) {
         const { error: updateError } = await supabase
           .from("fuel_logs")
-          .update(values)
-          .eq("id", fuelLog.id)
-          .single();
+          .update(formattedValues)
+          .eq("id", fuelLog.id);
 
         if (updateError) throw updateError;
 
@@ -82,8 +92,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       } else {
         const { error: insertError } = await supabase
           .from("fuel_logs")
-          .insert(values)
-          .single();
+          .insert(formattedValues);
 
         if (insertError) throw insertError;
 
