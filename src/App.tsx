@@ -1,4 +1,5 @@
 
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +15,7 @@ import FuelLogs from "./pages/FuelLogs";
 import Clients from "./pages/Clients";
 import Quotations from "./pages/Quotations";
 import Trips from "./pages/Trips";
+import Invoices from "./pages/Invoices";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -38,6 +40,7 @@ const App = () => (
               <Route path="clients" element={<Clients />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="trips" element={<Trips />} />
+              <Route path="invoices" element={<Invoices />} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
@@ -49,3 +52,4 @@ const App = () => (
 );
 
 export default App;
+
