@@ -135,22 +135,10 @@ export function useClientForm(client?: Client | null) {
     }
   };
 
-  const handleSubmit = async (values: ClientFormValues): Promise<void> => {
+  const handleSubmit = async (values: ClientFormValues) => {
     setIsSubmitting(true);
     try {
       let profileImageUrl = client?.profile_image_url;
-
-      const formattedValues = {
-        name: values.name, // Ensure name is always included
-        type: values.type,
-        description: values.description || null,
-        website: values.website || null,
-        address: values.address || null,
-        contact: values.contact || null,
-        email: values.email || null,
-        phone: values.phone || null,
-        profile_image_url: profileImageUrl,
-      };
 
       if (client) {
         // Update existing client
@@ -162,25 +150,26 @@ export function useClientForm(client?: Client | null) {
             client.id,
             "profile"
           );
-          formattedValues.profile_image_url = profileImageUrl;
         }
 
-        // Convert documents to JSON format acceptable for supabase
-        const documentsJson = documents.length > 0 
-          ? documents.map(doc => ({
-              id: doc.id,
-              name: doc.name,
-              url: doc.url,
-              uploadedAt: doc.uploadedAt
-            }))
-          : [];
+        // Format values for update
+        const formattedValues = {
+          name: values.name,
+          type: values.type,
+          description: values.description || null,
+          website: values.website || null,
+          address: values.address || null,
+          contact: values.contact || null,
+          email: values.email || null,
+          phone: values.phone || null,
+          profile_image_url: profileImageUrl,
+          documents: documents
+        };
 
+        // Update client
         const { error: updateError } = await supabase
           .from("clients")
-          .update({
-            ...formattedValues,
-            documents: documentsJson
-          })
+          .update(formattedValues)
           .eq("id", client.id);
 
         if (updateError) throw updateError;
@@ -216,16 +205,27 @@ export function useClientForm(client?: Client | null) {
           title: "Client updated",
           description: "The client has been updated successfully.",
         });
-        
-        return; // Successfully updated, return true
+
+        queryClient.invalidateQueries({ queryKey: ['clients'] });
+        return true;
       } else {
         // Insert new client
+        const formattedValues = {
+          name: values.name,
+          type: values.type,
+          description: values.description || null,
+          website: values.website || null,
+          address: values.address || null,
+          contact: values.contact || null,
+          email: values.email || null,
+          phone: values.phone || null,
+          profile_image_url: null, // We'll update this after creating the client
+          documents: []
+        };
+
         const { data: insertedClient, error: insertError } = await supabase
           .from("clients")
-          .insert({
-            ...formattedValues,
-            documents: [] // Empty array for documents, we'll add them later
-          })
+          .insert(formattedValues)
           .select()
           .single();
 
@@ -237,18 +237,17 @@ export function useClientForm(client?: Client | null) {
 
         // Now that we have a client ID, upload the profile image if provided
         if (profileFile) {
-          const profileImageUrl = await uploadClientFile(
+          const uploadedProfileUrl = await uploadClientFile(
             profileFile,
             "client-profiles",
             insertedClient.id,
             "profile"
           );
 
-          // Update the client with the profile image URL
-          if (profileImageUrl) {
+          if (uploadedProfileUrl) {
             await supabase
               .from("clients")
-              .update({ profile_image_url: profileImageUrl })
+              .update({ profile_image_url: uploadedProfileUrl })
               .eq("id", insertedClient.id);
           }
         }
@@ -259,24 +258,14 @@ export function useClientForm(client?: Client | null) {
             documentFiles.map(file => uploadClientDocument(file, insertedClient.id))
           );
 
-          // Convert documents to a format that can be stored in the database
-          const documentsJson = uploadedDocs.map(doc => ({
-            id: doc.id,
-            name: doc.name,
-            url: doc.url,
-            uploadedAt: doc.uploadedAt
-          }));
-
-          // Update client with documents
           await supabase
             .from("clients")
-            .update({ documents: documentsJson })
+            .update({ documents: uploadedDocs })
             .eq("id", insertedClient.id);
         }
 
         // Add contacts if organization
         if (values.type === "organization" && contacts.length > 0) {
-          // Ensure all contact records have required fields
           const formattedContacts = contacts.map((contact) => ({
             client_id: insertedClient.id,
             name: contact.name, // name is required
@@ -297,17 +286,18 @@ export function useClientForm(client?: Client | null) {
           title: "Client created",
           description: "A new client has been created successfully.",
         });
-        
-        return; // Successfully created, return true
+
+        queryClient.invalidateQueries({ queryKey: ['clients'] });
+        return true;
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error saving client:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save client",
         variant: "destructive",
       });
-      return; // Error occurred, return false
+      return false;
     } finally {
       setIsSubmitting(false);
     }

@@ -101,10 +101,10 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   };
 
   const onSubmit = async (values: any) => {
-    await handleSubmit(values);
-    // After successful submission, refresh the client data and close the dialog
-    queryClient.invalidateQueries({ queryKey: ['clients'] });
-    onOpenChange(false);
+    const success = await handleSubmit(values);
+    if (success) {
+      onOpenChange(false);
+    }
   };
 
   const addContact = () => {
