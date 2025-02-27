@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -24,7 +24,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Quotation, Client, QuotationItem } from "@/pages/Quotations";
+import { Quotation, QuotationStatus, QuotationItem, Client } from "@/lib/types";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, addDays } from "date-fns";

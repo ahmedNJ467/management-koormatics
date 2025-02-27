@@ -240,6 +240,53 @@ export type Database = {
           },
         ]
       }
+      quotations: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          date: string
+          id: string
+          items: Json
+          notes: string | null
+          status: Database["public"]["Enums"]["quotation_status"]
+          total_amount: number
+          updated_at: string | null
+          valid_until: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          date: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: Database["public"]["Enums"]["quotation_status"]
+          total_amount?: number
+          updated_at?: string | null
+          valid_until: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          date?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: Database["public"]["Enums"]["quotation_status"]
+          total_amount?: number
+          updated_at?: string | null
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_images: {
         Row: {
           created_at: string | null
@@ -336,6 +383,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      quotation_status: "draft" | "sent" | "approved" | "rejected" | "expired"
       vehicle_status: "active" | "in_service" | "inactive"
       vehicle_type: "armoured" | "soft_skin"
     }

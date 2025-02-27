@@ -35,8 +35,8 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: quotation, error: quotationError } = await supabase
       .from("quotations")
       .select(`
-        *,
-        clients:client_id (name, email)
+        id, date, client_id, status, total_amount, valid_until, notes, items,
+        clients(name, email)
       `)
       .eq("id", quotationId)
       .single();

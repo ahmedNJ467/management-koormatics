@@ -17,9 +17,7 @@ import {
   FileText, 
   MoreHorizontal, 
   Copy, 
-  Check,
   Trash,
-  Printer,
   Loader2
 } from "lucide-react";
 import { format } from "date-fns";
@@ -36,35 +34,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogTitle, DialogContent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Quotation, Client, QuotationStatus } from "@/lib/types";
 
-export interface Quotation {
-  id: string;
-  date: string;
-  client_id: string;
+interface DisplayQuotation extends Quotation {
   client_name: string;
-  status: "draft" | "sent" | "approved" | "rejected" | "expired";
-  total_amount: number;
-  valid_until: string;
-  notes?: string;
-  items: QuotationItem[];
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface QuotationItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  amount: number;
-}
-
-export interface Client {
-  id: string;
-  name: string;
-  email?: string;
+  client_email?: string;
 }
 
 export default function Quotations() {
@@ -72,10 +48,10 @@ export default function Quotations() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
-  const [quotationToDelete, setQuotationToDelete] = useState<Quotation | null>(null);
+  const [selectedQuotation, setSelectedQuotation] = useState<DisplayQuotation | null>(null);
+  const [quotationToDelete, setQuotationToDelete] = useState<DisplayQuotation | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [viewQuotation, setViewQuotation] = useState<Quotation | null>(null);
+  const [viewQuotation, setViewQuotation] = useState<DisplayQuotation | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   // Get quotations
@@ -85,28 +61,28 @@ export default function Quotations() {
       const { data, error } = await supabase
         .from('quotations')
         .select(`
-          *,
-          clients:client_id (name, email)
+          id, date, client_id, status, total_amount, valid_until, notes, items, created_at, updated_at,
+          clients (id, name, email)
         `)
         .order('date', { ascending: false });
       
       if (error) throw error;
 
-      // Map the data to match our Quotation interface
+      // Map the data to match our DisplayQuotation interface
       return data.map(quote => ({
         id: quote.id,
         date: quote.date,
         client_id: quote.client_id,
         client_name: quote.clients?.name || 'Unknown Client',
         client_email: quote.clients?.email,
-        status: quote.status,
+        status: quote.status as QuotationStatus,
         total_amount: quote.total_amount,
         valid_until: quote.valid_until,
         notes: quote.notes,
         items: quote.items || [],
         created_at: quote.created_at,
         updated_at: quote.updated_at
-      }));
+      })) as DisplayQuotation[];
     },
   });
 
@@ -150,16 +126,16 @@ export default function Quotations() {
     }
   };
 
-  const handleQuotationClick = (quotation: Quotation) => {
+  const handleQuotationClick = (quotation: DisplayQuotation) => {
     setSelectedQuotation(quotation);
     setFormOpen(true);
   };
 
-  const handleViewQuotation = (quotation: Quotation) => {
+  const handleViewQuotation = (quotation: DisplayQuotation) => {
     setViewQuotation(quotation);
   };
 
-  const handleDeleteClick = (quotation: Quotation) => {
+  const handleDeleteClick = (quotation: DisplayQuotation) => {
     setQuotationToDelete(quotation);
     setShowDeleteAlert(true);
   };
@@ -193,7 +169,7 @@ export default function Quotations() {
     }
   };
 
-  const handleSendQuotation = async (quotation: Quotation) => {
+  const handleSendQuotation = async (quotation: DisplayQuotation) => {
     setIsSending(true);
     try {
       const client = clients?.find(c => c.id === quotation.client_id);
@@ -251,13 +227,13 @@ export default function Quotations() {
     }
   };
 
-  const handleDuplicateQuotation = async (quotation: Quotation) => {
+  const handleDuplicateQuotation = async (quotation: DisplayQuotation) => {
     try {
       // Create a new quotation based on the existing one
       const newQuotation = {
         client_id: quotation.client_id,
         date: new Date().toISOString().split('T')[0], // Today's date
-        status: 'draft' as const,
+        status: 'draft' as QuotationStatus,
         total_amount: quotation.total_amount,
         valid_until: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0], // 30 days from now
         notes: quotation.notes,
@@ -285,7 +261,7 @@ export default function Quotations() {
     }
   };
 
-  const getStatusColor = (status: Quotation['status']) => {
+  const getStatusColor = (status: QuotationStatus) => {
     switch (status) {
       case 'draft':
         return 'bg-gray-100 text-gray-700';
