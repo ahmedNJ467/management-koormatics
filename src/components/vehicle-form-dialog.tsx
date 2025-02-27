@@ -83,24 +83,44 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
   async function onSubmit(data: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) {
     try {
       setIsSubmitting(true);
+      console.log("Submitting vehicle data:", data);
 
       if (vehicle) {
+        // Update existing vehicle
         const { error } = await supabase
           .from('vehicles')
           .update(data)
           .eq('id', vehicle.id);
 
-        if (error) throw error;
-        await uploadVehicleImages(vehicle.id);
+        if (error) {
+          console.error("Error updating vehicle:", error);
+          throw error;
+        }
+        
+        console.log("Vehicle updated successfully");
+        
+        if (images.length > 0) {
+          console.log("Uploading vehicle images");
+          await uploadVehicleImages(vehicle.id);
+        }
       } else {
+        // Create new vehicle
+        console.log("Creating new vehicle");
         const { data: newVehicle, error } = await supabase
           .from('vehicles')
           .insert([data])
           .select()
           .single();
 
-        if (error) throw error;
-        if (newVehicle) {
+        if (error) {
+          console.error("Error creating vehicle:", error);
+          throw error;
+        }
+
+        console.log("New vehicle created:", newVehicle);
+        
+        if (newVehicle && images.length > 0) {
+          console.log("Uploading images for new vehicle");
           await uploadVehicleImages(newVehicle.id);
         }
       }
@@ -114,6 +134,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
       form.reset();
       onOpenChange(false);
     } catch (error) {
+      console.error("Form submission error:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save vehicle",
@@ -125,7 +146,11 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!isSubmitting) {
+        onOpenChange(newOpen);
+      }
+    }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{vehicle ? 'Edit Vehicle' : 'Add New Vehicle'}</DialogTitle>
@@ -151,7 +176,12 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
             <VehicleNotesField form={form} />
 
             <div className="flex justify-end space-x-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => !isSubmitting && onOpenChange(false)}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
