@@ -83,7 +83,8 @@ import {
   X,
   Receipt,
   CreditCard,
-  Clock
+  Clock,
+  Car
 } from "lucide-react";
 import {
   Client,
@@ -93,7 +94,8 @@ import {
   InvoiceStatus,
   DisplayTrip,
   DisplayQuotation,
-  Trip
+  Trip,
+  Quotation
 } from "@/lib/types";
 
 export default function Invoices() {
@@ -187,6 +189,16 @@ export default function Invoices() {
           }
         }
         
+        // Parse items from JSON to proper InvoiceItem array
+        const parsedItems = Array.isArray(invoice.items) 
+          ? invoice.items.map(item => ({
+              description: item.description || "",
+              quantity: item.quantity || 0,
+              unit_price: item.unit_price || 0,
+              amount: item.amount || 0
+            }))
+          : [];
+        
         return {
           ...invoice,
           status,
@@ -195,11 +207,12 @@ export default function Invoices() {
           client_address: invoice.clients?.address,
           client_phone: invoice.clients?.phone,
           trips,
-          quotation_number
-        };
+          quotation_number,
+          items: parsedItems
+        } as DisplayInvoice;
       }));
 
-      return updatedInvoices as DisplayInvoice[];
+      return updatedInvoices;
     },
   });
 
@@ -225,13 +238,34 @@ export default function Invoices() {
       
       const { data, error } = await supabase
         .from("quotations")
-        .select("*")
+        .select(`
+          *,
+          clients:client_id(name, email)
+        `)
         .eq("client_id", selectedClient)
         .eq("status", "approved")
         .order("date", { ascending: false });
       
       if (error) throw error;
-      return data as DisplayQuotation[];
+      
+      return data.map(quotation => {
+        // Parse items from JSON to proper QuotationItem array
+        const parsedItems = Array.isArray(quotation.items) 
+          ? quotation.items.map(item => ({
+              description: item.description || "",
+              quantity: item.quantity || 0,
+              unit_price: item.unit_price || 0,
+              amount: item.amount || 0
+            }))
+          : [];
+        
+        return {
+          ...quotation,
+          items: parsedItems,
+          client_name: quotation.clients?.name || "Unknown Client",
+          client_email: quotation.clients?.email
+        } as DisplayQuotation;
+      });
     },
     enabled: !!selectedClient,
   });
@@ -371,11 +405,12 @@ export default function Invoices() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     
+    // Convert InvoiceItem[] to a JSON-compatible format for Supabase
     const invoiceData = {
       client_id: formData.get("client_id") as string,
       date: formData.get("date") as string,
       due_date: formData.get("due_date") as string,
-      items: invoiceItems,
+      items: invoiceItems as any, // Cast to any to bypass type checking
       total_amount: calculateTotal(),
       paid_amount: editInvoice ? editInvoice.paid_amount : 0,
       status: formData.get("status") as InvoiceStatus || "draft",
@@ -403,7 +438,7 @@ export default function Invoices() {
         // Create new invoice
         const { data, error } = await supabase
           .from("invoices")
-          .insert(invoiceData)
+          .insert(invoiceData as any) // Cast to any to bypass type checking
           .select();
           
         if (error) throw error;
