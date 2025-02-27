@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -191,12 +190,15 @@ export default function Invoices() {
         
         // Parse items from JSON to proper InvoiceItem array
         const parsedItems = Array.isArray(invoice.items) 
-          ? invoice.items.map(item => ({
-              description: item.description || "",
-              quantity: item.quantity || 0,
-              unit_price: item.unit_price || 0,
-              amount: item.amount || 0
-            }))
+          ? invoice.items.map(item => {
+              const itemObj = item as Record<string, any>;
+              return {
+                description: itemObj?.description?.toString() || "",
+                quantity: Number(itemObj?.quantity) || 0,
+                unit_price: Number(itemObj?.unit_price) || 0,
+                amount: Number(itemObj?.amount) || 0
+              };
+            })
           : [];
         
         return {
@@ -251,12 +253,15 @@ export default function Invoices() {
       return data.map(quotation => {
         // Parse items from JSON to proper QuotationItem array
         const parsedItems = Array.isArray(quotation.items) 
-          ? quotation.items.map(item => ({
-              description: item.description || "",
-              quantity: item.quantity || 0,
-              unit_price: item.unit_price || 0,
-              amount: item.amount || 0
-            }))
+          ? quotation.items.map(item => {
+              const itemObj = item as Record<string, any>;
+              return {
+                description: itemObj?.description?.toString() || "",
+                quantity: Number(itemObj?.quantity) || 0,
+                unit_price: Number(itemObj?.unit_price) || 0,
+                amount: Number(itemObj?.amount) || 0
+              };
+            })
           : [];
         
         return {
