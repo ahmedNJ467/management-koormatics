@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -123,20 +123,10 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
+            <DialogDescription>
+              Enter the client's information below. Required fields are marked with an asterisk.
+            </DialogDescription>
           </DialogHeader>
-          
-          {client && (
-            <div className="absolute right-12 top-6">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-destructive hover:text-destructive"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
           
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {/* Profile Image Upload */}
@@ -339,12 +329,21 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
               </div>
             </div>
 
-            <div className="flex justify-end space-x-4 pt-4">
+            <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
+              {client && (
+                <Button 
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  Delete
+                </Button>
+              )}
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : client ? "Update" : "Save"}
+                {isSubmitting ? "Saving..." : client ? "Update Client" : "Add Client"}
               </Button>
             </div>
           </form>
