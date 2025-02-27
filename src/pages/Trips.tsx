@@ -341,6 +341,8 @@ export default function Trips() {
         }
       }
       
+      const serviceTypeValue = formData.get("service_type") as TripType;
+      
       const tripData = {
         client_id: formData.get("client_id") as string,
         vehicle_id: formData.get("vehicle_id") as string,
@@ -348,7 +350,7 @@ export default function Trips() {
         date: format(tripDate, "yyyy-MM-dd"),
         time: formData.get("time") as string,
         return_time: formData.get("return_time") as string || null,
-        type: formData.get("service_type") as TripType,
+        type: serviceTypeValue,
         status: "scheduled" as TripStatus,
         amount: parseFloat(formData.get("amount") as string) || 0,
         pickup_location: formData.get("pickup_location") as string || null,
@@ -372,7 +374,7 @@ export default function Trips() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    const serviceType = formData.get("service_type") as TripType;
+    const serviceTypeValue = formData.get("service_type") as TripType;
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
     try {
@@ -387,16 +389,16 @@ export default function Trips() {
             date: formData.get("date") as string,
             time: formData.get("time") as string,
             return_time: formData.get("return_time") as string || null,
-            type: serviceType,
+            type: serviceTypeValue,
             status: formData.get("status") as TripStatus,
             amount: parseFloat(formData.get("amount") as string) || 0,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
-            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
               (formData.get("flight_number") as string) : null,
-            airline: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+            airline: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
               (formData.get("airline") as string) : null,
-            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
               (formData.get("terminal") as string) : null,
             special_notes: formData.get("special_notes") as string || null,
           })
@@ -413,9 +415,9 @@ export default function Trips() {
       } else if (isRecurringChecked) {
         // Create recurring trips
         const occurrences = parseInt(formData.get("occurrences") as string) || 1;
-        const frequency = formData.get("frequency") as "daily" | "weekly" | "monthly";
+        const frequencyValue = formData.get("frequency") as "daily" | "weekly" | "monthly";
         
-        const trips = await createRecurringTrips(formData, occurrences, frequency);
+        const trips = await createRecurringTrips(formData, occurrences, frequencyValue);
         
         const { error } = await supabase
           .from("trips")
@@ -439,19 +441,19 @@ export default function Trips() {
             driver_id: formData.get("driver_id") as string,
             date: formData.get("date") as string,
             time: formData.get("time") as string,
-            return_time: ["round_trip", "security_escort", "full_day_hire"].includes(serviceType) ? 
+            return_time: ["round_trip", "security_escort", "full_day_hire"].includes(serviceTypeValue) ? 
               (formData.get("return_time") as string) : null,
-            type: serviceType,
+            type: serviceTypeValue,
             status: formData.get("status") as TripStatus,
             amount: parseFloat(formData.get("amount") as string) || 0,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
             is_recurring: false,
-            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
               (formData.get("flight_number") as string) : null,
-            airline: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+            airline: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
               (formData.get("airline") as string) : null,
-            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
               (formData.get("terminal") as string) : null,
             special_notes: formData.get("special_notes") as string || null,
           });
@@ -606,7 +608,7 @@ export default function Trips() {
     return format(new Date(dateStr), "MMM d, yyyy");
   };
   
-  const formatTime = (timeStr: string): string => {
+  const formatTime = (timeStr?: string): string => {
     if (!timeStr) return "";
     return format(new Date(`2000-01-01T${timeStr}`), "h:mm a");
   };
@@ -784,7 +786,7 @@ export default function Trips() {
                           className="text-xs p-1 rounded cursor-pointer bg-primary/10 hover:bg-primary/20 truncate"
                           title={`${trip.client_name} - ${formatTripType(trip.type)}`}
                         >
-                          {trip.time && formatTime(trip.time)} {trip.client_name}
+                          {formatTime(trip.time)} {trip.client_name}
                         </div>
                       ))
                     ) : null}
