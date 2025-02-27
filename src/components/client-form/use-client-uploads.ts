@@ -8,6 +8,16 @@ export async function uploadClientFile(file: File, bucket: string, clientId: str
   const fileName = `${clientId}-${fileType}.${fileExt}`;
 
   try {
+    // Check if bucket exists, create if it doesn't
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(b => b.name === bucket);
+    
+    if (!bucketExists) {
+      await supabase.storage.createBucket(bucket, {
+        public: true
+      });
+    }
+
     // Remove any existing file first
     await supabase.storage
       .from(bucket)
@@ -51,20 +61,34 @@ export interface ClientDocument {
 }
 
 export async function uploadClientDocument(file: File, clientId: string): Promise<ClientDocument> {
+  const bucket = "client-documents";
   const timestamp = new Date().toISOString();
   const fileId = crypto.randomUUID();
   const fileExt = file.name.split('.').pop();
   const fileName = `${clientId}/${fileId}.${fileExt}`;
 
   try {
+    // Check if bucket exists, create if it doesn't
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(b => b.name === bucket);
+    
+    if (!bucketExists) {
+      await supabase.storage.createBucket(bucket, {
+        public: true
+      });
+    }
+
     const { error: uploadError } = await supabase.storage
-      .from('client-documents')
-      .upload(fileName, file);
+      .from(bucket)
+      .upload(fileName, file, {
+        contentType: file.type,
+        upsert: false
+      });
 
     if (uploadError) throw uploadError;
 
     const { data: { publicUrl } } = supabase.storage
-      .from('client-documents')
+      .from(bucket)
       .getPublicUrl(fileName);
 
     return {

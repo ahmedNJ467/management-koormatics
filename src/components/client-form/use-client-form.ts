@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,36 @@ export function useClientForm(client?: Client | null) {
     },
   });
 
+  // Fetch client contacts if this is an organization
+  useEffect(() => {
+    if (!client || client.type !== 'organization') return;
+
+    const fetchContacts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('client_contacts')
+          .select('*')
+          .eq('client_id', client.id);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setContacts(data.map(contact => ({
+            name: contact.name,
+            position: contact.position || "",
+            email: contact.email || "",
+            phone: contact.phone || "",
+            is_primary: contact.is_primary || false
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+      }
+    };
+
+    fetchContacts();
+  }, [client]);
+
   const handleProfileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -51,7 +81,14 @@ export function useClientForm(client?: Client | null) {
   };
 
   const handleDocumentUpload = async (files: FileList) => {
-    if (!client?.id) return;
+    if (!client?.id) {
+      toast({
+        title: "Error",
+        description: "Please save the client first before uploading documents",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const newDocs = await Promise.all(
@@ -77,13 +114,19 @@ export function useClientForm(client?: Client | null) {
     try {
       let profileImageUrl = client?.profile_image_url;
 
-      if (profileFile && client?.id) {
-        profileImageUrl = await uploadClientFile(
-          profileFile,
-          "client-profiles",
-          client.id,
-          "profile"
-        );
+      if (profileFile) {
+        if (client) {
+          // Update existing client's profile image
+          profileImageUrl = await uploadClientFile(
+            profileFile,
+            "client-profiles",
+            client.id,
+            "profile"
+          );
+        } else {
+          // For new clients, we'll upload the profile image after creating the client
+          // So we don't do anything with profileFile yet
+        }
       }
 
       const formattedValues = {
@@ -96,7 +139,7 @@ export function useClientForm(client?: Client | null) {
         email: values.email || null,
         phone: values.phone || null,
         profile_image_url: profileImageUrl,
-        documents: documents as any, // Cast to any for JSON column
+        documents: documents.length > 0 ? documents : null, // Ensure documents field is set
       };
 
       if (client) {
@@ -109,7 +152,13 @@ export function useClientForm(client?: Client | null) {
 
         // Update contacts if organization
         if (values.type === "organization" && contacts.length > 0) {
-          // Ensure all contact records have required fields
+          // First delete all existing contacts
+          await supabase
+            .from("client_contacts")
+            .delete()
+            .eq("client_id", client.id);
+
+          // Then insert the new contacts
           const formattedContacts = contacts.map((contact) => ({
             client_id: client.id,
             name: contact.name, // name is required
@@ -121,7 +170,7 @@ export function useClientForm(client?: Client | null) {
 
           const { error: contactsError } = await supabase
             .from("client_contacts")
-            .upsert(formattedContacts);
+            .insert(formattedContacts);
 
           if (contactsError) throw contactsError;
         }
@@ -131,14 +180,37 @@ export function useClientForm(client?: Client | null) {
           description: "The client has been updated successfully.",
         });
       } else {
+        // Insert new client
         const { data: insertedClient, error: insertError } = await supabase
           .from("clients")
-          .insert(formattedValues)
+          .insert({
+            ...formattedValues,
+            documents: documents.length > 0 ? documents : []
+          })
           .select()
           .single();
 
         if (insertError) throw insertError;
 
+        // Now that we have a client ID, upload the profile image if provided
+        if (profileFile && insertedClient) {
+          const profileImageUrl = await uploadClientFile(
+            profileFile,
+            "client-profiles",
+            insertedClient.id,
+            "profile"
+          );
+
+          // Update the client with the profile image URL
+          if (profileImageUrl) {
+            await supabase
+              .from("clients")
+              .update({ profile_image_url: profileImageUrl })
+              .eq("id", insertedClient.id);
+          }
+        }
+
+        // Add contacts if organization
         if (values.type === "organization" && contacts.length > 0 && insertedClient) {
           // Ensure all contact records have required fields
           const formattedContacts = contacts.map((contact) => ({
