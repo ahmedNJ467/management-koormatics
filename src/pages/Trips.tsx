@@ -380,9 +380,12 @@ const Trips = () => {
           </Table>
         </CardContent>
         <CardFooter>
-          <DialogTrigger asChild>
-            <Button onClick={() => setBookingOpen(true)}>Book New Trip</Button>
-          </DialogTrigger>
+          {/* Wrap the Button in Dialog instead of DialogTrigger */}
+          <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
+            <DialogTrigger asChild>
+              <Button>Book New Trip</Button>
+            </DialogTrigger>
+          </Dialog>
         </CardFooter>
       </Card>
 
@@ -506,7 +509,7 @@ const Trips = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Trip Form Dialog (Edit & Create) */}
+      {/* Create/Edit Trip Dialog - Move this outside to prevent nesting issues */}
       <Dialog open={!!editTrip || bookingOpen} onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false))}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh]">
           <DialogHeader>
