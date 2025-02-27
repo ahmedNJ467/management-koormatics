@@ -493,7 +493,7 @@ export default function Trips() {
       const { error: assignError } = await supabase.rpc('insert_trip_assignment', {
         p_trip_id: tripToAssign.id,
         p_driver_id: assignDriver,
-        p_status: "pending",
+        p_status: "pending" as const,
         p_notes: assignNote || null
       });
       
@@ -549,7 +549,7 @@ export default function Trips() {
       // Send message using the rpc endpoint
       const { error: rpcError } = await supabase.rpc('insert_trip_message', {
         p_trip_id: tripToMessage.id,
-        p_sender_type: "admin",
+        p_sender_type: "admin" as const,
         p_sender_name: "Fleet Manager",
         p_message: newMessage.trim(),
         p_is_read: false
