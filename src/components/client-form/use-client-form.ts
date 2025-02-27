@@ -87,9 +87,16 @@ export function useClientForm(client?: Client | null) {
       }
 
       const formattedValues = {
-        ...values,
+        name: values.name, // Ensure name is always included
+        type: values.type,
+        description: values.description || null,
+        website: values.website || null,
+        address: values.address || null,
+        contact: values.contact || null,
+        email: values.email || null,
+        phone: values.phone || null,
         profile_image_url: profileImageUrl,
-        documents: documents,
+        documents: documents as any, // Cast to any for JSON column
       };
 
       if (client) {
@@ -101,15 +108,20 @@ export function useClientForm(client?: Client | null) {
         if (updateError) throw updateError;
 
         // Update contacts if organization
-        if (values.type === "organization") {
+        if (values.type === "organization" && contacts.length > 0) {
+          // Ensure all contact records have required fields
+          const formattedContacts = contacts.map((contact) => ({
+            client_id: client.id,
+            name: contact.name, // name is required
+            position: contact.position || null,
+            email: contact.email || null,
+            phone: contact.phone || null,
+            is_primary: contact.is_primary || false,
+          }));
+
           const { error: contactsError } = await supabase
             .from("client_contacts")
-            .upsert(
-              contacts.map((contact) => ({
-                ...contact,
-                client_id: client.id,
-              }))
-            );
+            .upsert(formattedContacts);
 
           if (contactsError) throw contactsError;
         }
@@ -127,15 +139,20 @@ export function useClientForm(client?: Client | null) {
 
         if (insertError) throw insertError;
 
-        if (values.type === "organization" && insertedClient) {
+        if (values.type === "organization" && contacts.length > 0 && insertedClient) {
+          // Ensure all contact records have required fields
+          const formattedContacts = contacts.map((contact) => ({
+            client_id: insertedClient.id,
+            name: contact.name, // name is required
+            position: contact.position || null,
+            email: contact.email || null,
+            phone: contact.phone || null,
+            is_primary: contact.is_primary || false,
+          }));
+
           const { error: contactsError } = await supabase
             .from("client_contacts")
-            .insert(
-              contacts.map((contact) => ({
-                ...contact,
-                client_id: insertedClient.id,
-              }))
-            );
+            .insert(formattedContacts);
 
           if (contactsError) throw contactsError;
         }
