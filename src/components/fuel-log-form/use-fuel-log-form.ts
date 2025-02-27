@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -61,12 +60,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   const handleSubmit = async (values: FuelLogFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("You must be logged in to perform this action");
-      }
-
-      // Ensure all required fields are present and have the correct types
       const formattedValues = {
         vehicle_id: values.vehicle_id,
         date: values.date,
