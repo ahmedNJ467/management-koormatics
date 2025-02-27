@@ -27,6 +27,7 @@ import {
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Client {
   id: string;
@@ -51,6 +52,7 @@ interface ClientFormDialogProps {
 
 export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }: ClientFormDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const {
@@ -98,6 +100,13 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     }
   };
 
+  const onSubmit = async (values: any) => {
+    await handleSubmit(values);
+    // After successful submission, refresh the client data and close the dialog
+    queryClient.invalidateQueries({ queryKey: ['clients'] });
+    onOpenChange(false);
+  };
+
   const addContact = () => {
     setContacts([
       ...contacts,
@@ -137,7 +146,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* Profile Image Upload */}
             <div className="flex flex-col items-center space-y-4">
               <div className="relative h-24 w-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">

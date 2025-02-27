@@ -150,7 +150,6 @@ export function useClientForm(client?: Client | null) {
         email: values.email || null,
         phone: values.phone || null,
         profile_image_url: profileImageUrl,
-        documents: documents.length > 0 ? documents : null, // Ensure documents field is set
       };
 
       if (client) {
@@ -166,9 +165,22 @@ export function useClientForm(client?: Client | null) {
           formattedValues.profile_image_url = profileImageUrl;
         }
 
+        // Convert documents to JSON format acceptable for supabase
+        const documentsJson = documents.length > 0 
+          ? documents.map(doc => ({
+              id: doc.id,
+              name: doc.name,
+              url: doc.url,
+              uploadedAt: doc.uploadedAt
+            }))
+          : [];
+
         const { error: updateError } = await supabase
           .from("clients")
-          .update(formattedValues)
+          .update({
+            ...formattedValues,
+            documents: documentsJson
+          })
           .eq("id", client.id);
 
         if (updateError) throw updateError;
@@ -204,13 +216,15 @@ export function useClientForm(client?: Client | null) {
           title: "Client updated",
           description: "The client has been updated successfully.",
         });
+        
+        return; // Successfully updated, return true
       } else {
         // Insert new client
         const { data: insertedClient, error: insertError } = await supabase
           .from("clients")
           .insert({
             ...formattedValues,
-            documents: [] // Start with empty documents, we'll add them later
+            documents: [] // Empty array for documents, we'll add them later
           })
           .select()
           .single();
@@ -245,10 +259,18 @@ export function useClientForm(client?: Client | null) {
             documentFiles.map(file => uploadClientDocument(file, insertedClient.id))
           );
 
+          // Convert documents to a format that can be stored in the database
+          const documentsJson = uploadedDocs.map(doc => ({
+            id: doc.id,
+            name: doc.name,
+            url: doc.url,
+            uploadedAt: doc.uploadedAt
+          }));
+
           // Update client with documents
           await supabase
             .from("clients")
-            .update({ documents: uploadedDocs })
+            .update({ documents: documentsJson })
             .eq("id", insertedClient.id);
         }
 
@@ -275,15 +297,9 @@ export function useClientForm(client?: Client | null) {
           title: "Client created",
           description: "A new client has been created successfully.",
         });
+        
+        return; // Successfully created, return true
       }
-
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      form.reset();
-      setContacts([]);
-      setDocuments([]);
-      setDocumentFiles([]);
-      setProfileFile(null);
-      setProfilePreview(null);
     } catch (error) {
       console.error("Error:", error);
       toast({
@@ -291,6 +307,7 @@ export function useClientForm(client?: Client | null) {
         description: error instanceof Error ? error.message : "Failed to save client",
         variant: "destructive",
       });
+      return; // Error occurred, return false
     } finally {
       setIsSubmitting(false);
     }
