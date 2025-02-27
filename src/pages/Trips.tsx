@@ -68,6 +68,16 @@ import {
 } from "@/lib/types";
 import { TripMessageData, TripAssignmentData } from "@/components/trips/types";
 
+// Map UI service types to database TripType values
+const serviceTypeMap: Record<string, TripType> = {
+  "airport_pickup": "airport_pickup",
+  "airport_dropoff": "airport_dropoff",
+  "round_trip": "other",
+  "security_escort": "other",
+  "one_way": "other",
+  "full_day_hire": "full_day"
+};
+
 export default function Trips() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,7 +98,7 @@ export default function Trips() {
   const [activeTab, setActiveTab] = useState("details");
   const [calendarView, setCalendarView] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [serviceType, setServiceType] = useState<TripType>("airport_pickup");
+  const [serviceType, setServiceType] = useState<string>("airport_pickup");
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">("weekly");
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -122,6 +132,9 @@ export default function Trips() {
         driver_name: trip.drivers?.name || "Unknown Driver",
         driver_avatar: trip.drivers?.avatar_url,
         driver_contact: trip.drivers?.contact,
+        // Map database fields to UI fields
+        time: trip.start_time,
+        return_time: trip.end_time,
       })) as DisplayTrip[];
     },
   });
@@ -341,25 +354,25 @@ export default function Trips() {
         }
       }
       
-      const serviceTypeValue = formData.get("service_type") as TripType;
+      const formServiceType = formData.get("service_type") as string;
+      const dbServiceType = serviceTypeMap[formServiceType] || "other";
+      
+      const formTime = formData.get("time") as string;
+      const formReturnTime = formData.get("return_time") as string;
       
       const tripData = {
         client_id: formData.get("client_id") as string,
         vehicle_id: formData.get("vehicle_id") as string,
         driver_id: formData.get("driver_id") as string,
         date: format(tripDate, "yyyy-MM-dd"),
-        time: formData.get("time") as string,
-        return_time: formData.get("return_time") as string || null,
-        type: serviceTypeValue,
+        start_time: formTime,
+        end_time: formReturnTime || null,
+        type: dbServiceType,
         status: "scheduled" as TripStatus,
         amount: parseFloat(formData.get("amount") as string) || 0,
         pickup_location: formData.get("pickup_location") as string || null,
         dropoff_location: formData.get("dropoff_location") as string || null,
-        is_recurring: true,
-        flight_number: formData.get("flight_number") as string || null,
-        airline: formData.get("airline") as string || null,
-        terminal: formData.get("terminal") as string || null,
-        special_notes: formData.get("special_notes") as string || null,
+        notes: formData.get("special_notes") as string || null,
       };
       
       trips.push(tripData);
@@ -374,7 +387,8 @@ export default function Trips() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    const serviceTypeValue = formData.get("service_type") as TripType;
+    const uiServiceType = formData.get("service_type") as string;
+    const dbServiceType = serviceTypeMap[uiServiceType] || "other";
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
     try {
@@ -387,20 +401,14 @@ export default function Trips() {
             vehicle_id: formData.get("vehicle_id") as string,
             driver_id: formData.get("driver_id") as string,
             date: formData.get("date") as string,
-            time: formData.get("time") as string,
-            return_time: formData.get("return_time") as string || null,
-            type: serviceTypeValue,
+            start_time: formData.get("time") as string,
+            end_time: formData.get("return_time") as string || null,
+            type: dbServiceType,
             status: formData.get("status") as TripStatus,
             amount: parseFloat(formData.get("amount") as string) || 0,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
-            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
-              (formData.get("flight_number") as string) : null,
-            airline: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
-              (formData.get("airline") as string) : null,
-            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
-              (formData.get("terminal") as string) : null,
-            special_notes: formData.get("special_notes") as string || null,
+            notes: formData.get("special_notes") as string || null,
           })
           .eq("id", editTrip.id);
         
@@ -433,6 +441,8 @@ export default function Trips() {
         setBookingOpen(false);
       } else {
         // Create new single trip
+        const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(uiServiceType);
+        
         const { error } = await supabase
           .from("trips")
           .insert({
@@ -440,22 +450,14 @@ export default function Trips() {
             vehicle_id: formData.get("vehicle_id") as string,
             driver_id: formData.get("driver_id") as string,
             date: formData.get("date") as string,
-            time: formData.get("time") as string,
-            return_time: ["round_trip", "security_escort", "full_day_hire"].includes(serviceTypeValue) ? 
-              (formData.get("return_time") as string) : null,
-            type: serviceTypeValue,
+            start_time: formData.get("time") as string,
+            end_time: needsReturnTime ? (formData.get("return_time") as string) : null,
+            type: dbServiceType,
             status: formData.get("status") as TripStatus,
             amount: parseFloat(formData.get("amount") as string) || 0,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
-            is_recurring: false,
-            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
-              (formData.get("flight_number") as string) : null,
-            airline: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
-              (formData.get("airline") as string) : null,
-            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceTypeValue) ? 
-              (formData.get("terminal") as string) : null,
-            special_notes: formData.get("special_notes") as string || null,
+            notes: formData.get("special_notes") as string || null,
           });
         
         if (error) throw error;
@@ -590,8 +592,18 @@ export default function Trips() {
       .join(" ");
   };
   
+  // Format service type for display (using the UI service type)
   const formatTripType = (type: TripType): string => {
-    return type.replace(/_/g, " ")
+    const uiTypes: Record<TripType, string> = {
+      "airport_pickup": "Airport Pickup",
+      "airport_dropoff": "Airport Dropoff",
+      "other": "Other Service",
+      "hourly": "Hourly Service",
+      "full_day": "Full Day Service",
+      "multi_day": "Multi-Day Service"
+    };
+    
+    return uiTypes[type] || type.replace(/_/g, " ")
       .split(" ")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
@@ -637,20 +649,20 @@ export default function Trips() {
     return id.substring(0, 8).toUpperCase();
   };
 
+  // Get appropriate icon based on service type
   const getTripTypeIcon = (type: TripType) => {
     switch (type) {
       case "airport_pickup":
-        return <Plane className="h-4 w-4" />;
       case "airport_dropoff":
         return <Plane className="h-4 w-4" />;
-      case "round_trip":
+      case "other":
         return <ArrowRight className="h-4 w-4" />;
-      case "security_escort":
-        return <Shield className="h-4 w-4" />;
-      case "one_way":
-        return <ArrowRight className="h-4 w-4" />;
-      case "full_day_hire":
+      case "hourly":
         return <Clock className="h-4 w-4" />;
+      case "full_day":
+        return <Calendar className="h-4 w-4" />;
+      case "multi_day":
+        return <Calendar className="h-4 w-4" />;
       default:
         return <Car className="h-4 w-4" />;
     }
@@ -1087,8 +1099,8 @@ export default function Trips() {
                     </CardContent>
                   </Card>
                   
-                  {/* Flight Details Section */}
-                  {["airport_pickup", "airport_dropoff"].includes(viewTrip.type) && (
+                  {/* Flight Details Section for airport services */}
+                  {viewTrip.type === "airport_pickup" || viewTrip.type === "airport_dropoff" ? (
                     viewTrip.flight_number || viewTrip.airline || viewTrip.terminal ? (
                       <Card>
                         <CardHeader>
@@ -1118,16 +1130,16 @@ export default function Trips() {
                         </CardContent>
                       </Card>
                     ) : null
-                  )}
+                  ) : null}
                   
                   {/* Special Notes Section */}
-                  {viewTrip.special_notes && (
+                  {viewTrip.notes && (
                     <Card>
                       <CardHeader>
                         <CardTitle>Special Notes</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-muted-foreground">{viewTrip.special_notes}</p>
+                        <p className="text-muted-foreground">{viewTrip.notes}</p>
                       </CardContent>
                     </Card>
                   )}
@@ -1336,8 +1348,12 @@ export default function Trips() {
                   <Select 
                     name="service_type" 
                     value={serviceType}
-                    onValueChange={(value: TripType) => setServiceType(value)}
-                    defaultValue={editTrip?.type || "airport_pickup"} 
+                    onValueChange={(value: string) => setServiceType(value)}
+                    defaultValue={editTrip ? 
+                      (editTrip.type === "airport_pickup" || editTrip.type === "airport_dropoff") 
+                        ? editTrip.type 
+                        : "other" 
+                      : "airport_pickup"} 
                     required
                   >
                     <SelectTrigger>
@@ -1371,7 +1387,7 @@ export default function Trips() {
                     type="time" 
                     id="time"
                     name="time" 
-                    defaultValue={editTrip?.time || ""} 
+                    defaultValue={editTrip?.time || editTrip?.start_time || ""} 
                     required
                   />
                 </div>
@@ -1384,7 +1400,7 @@ export default function Trips() {
                       type="time" 
                       id="return_time"
                       name="return_time" 
-                      defaultValue={editTrip?.return_time || ""} 
+                      defaultValue={editTrip?.return_time || editTrip?.end_time || ""} 
                       required
                     />
                   </div>
@@ -1463,7 +1479,6 @@ export default function Trips() {
                         name="flight_number" 
                         defaultValue={editTrip?.flight_number || ""} 
                         placeholder="e.g. BA123"
-                        required
                       />
                     </div>
                     
@@ -1474,7 +1489,6 @@ export default function Trips() {
                         name="airline" 
                         defaultValue={editTrip?.airline || ""} 
                         placeholder="e.g. British Airways"
-                        required
                       />
                     </div>
                     
@@ -1525,7 +1539,7 @@ export default function Trips() {
                 <Textarea 
                   id="special_notes"
                   name="special_notes" 
-                  defaultValue={editTrip?.special_notes || ""} 
+                  defaultValue={editTrip?.special_notes || editTrip?.notes || ""} 
                   placeholder="Add any special instructions or requirements"
                   rows={3}
                 />

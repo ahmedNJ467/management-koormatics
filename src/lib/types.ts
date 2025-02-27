@@ -120,7 +120,8 @@ export interface Client {
 
 // Trip types and interfaces
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TripType = 'airport_pickup' | 'airport_dropoff' | 'round_trip' | 'security_escort' | 'one_way' | 'full_day_hire' | 'other';
+// Updated to match the database schema
+export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day';
 
 export interface TripMessage {
   id: string;
@@ -153,15 +154,13 @@ export interface Trip {
   status: TripStatus;
   pickup_location?: string;
   dropoff_location?: string;
-  time?: string;
-  return_time?: string;
+  // Using the actual column names from the database schema
+  start_time?: string;
+  end_time?: string;
   amount: number;
   notes?: string;
+  invoice_id?: string;
   is_recurring?: boolean;
-  flight_number?: string;
-  airline?: string;
-  terminal?: string;
-  special_notes?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -172,4 +171,11 @@ export interface DisplayTrip extends Trip {
   driver_name: string;
   driver_avatar?: string;
   driver_contact?: string;
+  // For UI display compatibility
+  time?: string;
+  return_time?: string;
+  flight_number?: string;
+  airline?: string;
+  terminal?: string;
+  special_notes?: string;
 }
