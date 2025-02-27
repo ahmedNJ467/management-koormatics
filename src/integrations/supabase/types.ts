@@ -67,6 +67,7 @@ export type Database = {
           profile_image_url: string | null
           type: Database["public"]["Enums"]["client_type"]
           updated_at: string | null
+          website: string | null
         }
         Insert: {
           address?: string | null
@@ -81,6 +82,7 @@ export type Database = {
           profile_image_url?: string | null
           type: Database["public"]["Enums"]["client_type"]
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
           address?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           profile_image_url?: string | null
           type?: Database["public"]["Enums"]["client_type"]
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
