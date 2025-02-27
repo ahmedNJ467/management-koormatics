@@ -1,4 +1,5 @@
 
+
 export type DriverStatus = 'active' | 'inactive' | 'on_leave';
 
 export interface Driver {
@@ -118,7 +119,6 @@ export interface Client {
   updated_at?: string;
 }
 
-// New types for Invoices
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
 export interface InvoiceItem {
@@ -135,7 +135,7 @@ export interface Invoice {
   client_id: string;
   status: InvoiceStatus;
   total_amount: number;
-  paid_amount: number;
+  paid_amount?: number;
   payment_date?: string;
   payment_method?: string;
   notes?: string;
@@ -148,35 +148,5 @@ export interface Invoice {
 export interface DisplayInvoice extends Invoice {
   client_name: string;
   client_email?: string;
-  quotation?: Quotation;
 }
 
-// New types for Trips
-export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TripType = 'airport_pickup' | 'airport_dropoff' | 'hourly' | 'full_day' | 'multi_day' | 'other';
-
-export interface Trip {
-  id: string;
-  date: string;
-  start_time?: string;
-  end_time?: string;
-  client_id: string;
-  vehicle_id: string;
-  driver_id: string;
-  pickup_location?: string;
-  dropoff_location?: string;
-  type: TripType;
-  status: TripStatus;
-  notes?: string;
-  amount: number;
-  invoice_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface DisplayTrip extends Trip {
-  client_name: string;
-  vehicle_details: string;
-  driver_name: string;
-  invoice?: Invoice;
-}
