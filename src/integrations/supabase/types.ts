@@ -51,6 +51,56 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance: {
+        Row: {
+          cost: number
+          created_at: string | null
+          date: string
+          description: string
+          id: string
+          next_scheduled: string | null
+          notes: string | null
+          service_provider: string | null
+          status: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          cost: number
+          created_at?: string | null
+          date: string
+          description: string
+          id?: string
+          next_scheduled?: string | null
+          notes?: string | null
+          service_provider?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string | null
+          date?: string
+          description?: string
+          id?: string
+          next_scheduled?: string | null
+          notes?: string | null
+          service_provider?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_images: {
         Row: {
           created_at: string | null
@@ -140,6 +190,11 @@ export type Database = {
     }
     Enums: {
       driver_status: "active" | "inactive" | "on_leave"
+      maintenance_status:
+        | "scheduled"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
       vehicle_status: "active" | "in_service" | "inactive"
       vehicle_type: "armoured" | "soft_skin"
     }
