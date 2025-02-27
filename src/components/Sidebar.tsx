@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useMobileContext } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SidebarItemProps {
   to: string;
@@ -24,6 +24,11 @@ interface SidebarItemProps {
   text: string;
   isMobile: boolean;
   isActive: boolean;
+}
+
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
 }
 
 const SidebarItem = ({ to, icon, text, isMobile, isActive }: SidebarItemProps) => (
@@ -40,16 +45,20 @@ const SidebarItem = ({ to, icon, text, isMobile, isActive }: SidebarItemProps) =
   </Link>
 );
 
-export function Sidebar() {
+export function Sidebar({ open = true, onClose }: SidebarProps) {
   const location = useLocation();
-  const { isMobile } = useMobileContext();
+  const isMobile = useIsMobile();
 
   const isActivePath = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 hidden h-full flex-col border-r bg-background md:flex">
+    <aside className={cn(
+      "fixed inset-y-0 left-0 z-20 h-full flex-col border-r bg-background transition-transform duration-300",
+      open ? "translate-x-0" : "-translate-x-full",
+      isMobile ? "block" : "hidden md:flex"
+    )}>
       <ScrollArea className="flex-1 px-4 py-6">
         <div className={cn("flex flex-col gap-2", isMobile ? "items-center" : "")}>
           <SidebarItem
