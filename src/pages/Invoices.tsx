@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -233,7 +234,7 @@ export default function Invoices() {
   });
 
   // Fetch quotations data for dropdown
-  const { data: quotations } = useQuery({
+  const { data: quotations, isLoading: quotationsLoading, error: quotationsError } = useQuery({
     queryKey: ["quotations", selectedClient],
     queryFn: async () => {
       if (!selectedClient) return [];
@@ -276,7 +277,7 @@ export default function Invoices() {
   });
 
   // Fetch uninvoiced trips for selected client
-  const { data: availableTrips } = useQuery({
+  const { data: availableTrips, isLoading: tripsLoading, error: tripsError } = useQuery({
     queryKey: ["trips", "uninvoiced", selectedClient],
     queryFn: async () => {
       if (!selectedClient) return [];
@@ -402,6 +403,13 @@ export default function Invoices() {
   // Calculate total amount from invoice items
   const calculateTotal = (): number => {
     return invoiceItems.reduce((total, item) => total + item.amount, 0);
+  };
+
+  // Handle client selection
+  const handleClientChange = (value: string) => {
+    setSelectedClient(value);
+    setSelectedQuotation("");
+    setSelectedTrips([]);
   };
 
   // Save invoice (create or update)
@@ -709,6 +717,11 @@ export default function Invoices() {
       </div>
     );
   }
+
+  // Handle loading and error states for dependent data
+  const isFormDataLoading = createInvoiceOpen && (
+    (selectedClient && (quotationsLoading || tripsLoading))
+  );
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -1104,246 +1117,255 @@ export default function Invoices() {
           </DialogHeader>
           
           <ScrollArea className="max-h-[calc(90vh-10rem)]">
-            <form onSubmit={handleSaveInvoice} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="client_id">Client</Label>
-                  <Select 
-                    name="client_id" 
-                    value={selectedClient} 
-                    onValueChange={setSelectedClient}
-                    disabled={!!editInvoice}
-                    required
-                  >
-                    <SelectTrigger id="client_id">
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients?.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {isFormDataLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading client data...</p>
                 </div>
-                
-                {selectedClient && !editInvoice && (
+              </div>
+            ) : (
+              <form onSubmit={handleSaveInvoice} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="quotation_id">Based on Quotation (Optional)</Label>
+                    <Label htmlFor="client_id">Client</Label>
                     <Select 
-                      name="quotation_id" 
-                      value={selectedQuotation} 
-                      onValueChange={setSelectedQuotation}
+                      name="client_id" 
+                      value={selectedClient} 
+                      onValueChange={handleClientChange}
+                      disabled={!!editInvoice}
+                      required
                     >
-                      <SelectTrigger id="quotation_id">
-                        <SelectValue placeholder="Select quotation (optional)" />
+                      <SelectTrigger id="client_id">
+                        <SelectValue placeholder="Select client" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
-                        {quotations?.map((quotation) => (
-                          <SelectItem key={quotation.id} value={quotation.id}>
-                            {quotation.id.substring(0, 8).toUpperCase()} ({formatDate(quotation.date)})
+                        {clients?.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-              </div>
+                  
+                  {selectedClient && !editInvoice && (
+                    <div className="space-y-2">
+                      <Label htmlFor="quotation_id">Based on Quotation (Optional)</Label>
+                      <Select 
+                        name="quotation_id" 
+                        value={selectedQuotation} 
+                        onValueChange={setSelectedQuotation}
+                      >
+                        <SelectTrigger id="quotation_id">
+                          <SelectValue placeholder="Select quotation (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {quotations?.map((quotation) => (
+                            <SelectItem key={quotation.id} value={quotation.id}>
+                              {quotation.id.substring(0, 8).toUpperCase()} ({formatDate(quotation.date)})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
 
-              {selectedClient && !selectedQuotation && !editInvoice && availableTrips && availableTrips.length > 0 && (
-                <div className="space-y-2 border p-4 rounded-md">
-                  <Label className="block mb-2">Include Completed Trips (Optional)</Label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {availableTrips.map(trip => (
-                      <div key={trip.id} className="flex items-center space-x-2">
-                        <input 
-                          type="checkbox"
-                          id={`trip-${trip.id}`}
-                          value={trip.id}
-                          checked={selectedTrips.includes(trip.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedTrips([...selectedTrips, trip.id]);
-                            } else {
-                              setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
-                            }
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        <Label htmlFor={`trip-${trip.id}`} className="cursor-pointer text-sm">
-                          {formatDate(trip.date)} - {formatTripType(trip.type)} - {formatCurrency(trip.amount)}
-                        </Label>
-                      </div>
-                    ))}
+                {selectedClient && !selectedQuotation && !editInvoice && availableTrips && availableTrips.length > 0 && (
+                  <div className="space-y-2 border p-4 rounded-md">
+                    <Label className="block mb-2">Include Completed Trips (Optional)</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {availableTrips.map(trip => (
+                        <div key={trip.id} className="flex items-center space-x-2">
+                          <input 
+                            type="checkbox"
+                            id={`trip-${trip.id}`}
+                            value={trip.id}
+                            checked={selectedTrips.includes(trip.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTrips([...selectedTrips, trip.id]);
+                              } else {
+                                setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <Label htmlFor={`trip-${trip.id}`} className="cursor-pointer text-sm">
+                            {formatDate(trip.date)} - {formatTripType(trip.type)} - {formatCurrency(trip.amount)}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Invoice Date</Label>
+                    <Input 
+                      id="date"
+                      name="date"
+                      type="date"
+                      defaultValue={editInvoice?.date || format(new Date(), "yyyy-MM-dd")}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="due_date">Due Date</Label>
+                    <Input 
+                      id="due_date"
+                      name="due_date"
+                      type="date"
+                      defaultValue={editInvoice?.due_date || format(addDays(new Date(), 30), "yyyy-MM-dd")}
+                      required
+                    />
                   </div>
                 </div>
-              )}
 
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Invoice Date</Label>
-                  <Input 
-                    id="date"
-                    name="date"
-                    type="date"
-                    defaultValue={editInvoice?.date || format(new Date(), "yyyy-MM-dd")}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="due_date">Due Date</Label>
-                  <Input 
-                    id="due_date"
-                    name="due_date"
-                    type="date"
-                    defaultValue={editInvoice?.due_date || format(addDays(new Date(), 30), "yyyy-MM-dd")}
-                    required
-                  />
-                </div>
-              </div>
+                  <div className="flex justify-between items-center">
+                    <Label>Invoice Items</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addItem}
+                      disabled={!!selectedQuotation}
+                    >
+                      <Plus className="mr-2 h-4 w-4" /> Add Item
+                    </Button>
+                  </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label>Invoice Items</Label>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={addItem}
-                    disabled={!!selectedQuotation}
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add Item
-                  </Button>
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoiceItems.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Input 
-                            value={item.description}
-                            onChange={(e) => {
-                              const updatedItems = [...invoiceItems];
-                              updatedItems[index].description = e.target.value;
-                              setInvoiceItems(updatedItems);
-                            }}
-                            placeholder="Description"
-                            disabled={!!selectedQuotation}
-                            required
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Input 
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const quantity = parseInt(e.target.value) || 0;
-                              updateItemAmount(index, quantity, item.unit_price);
-                            }}
-                            min="1"
-                            className="w-20 text-right"
-                            disabled={!!selectedQuotation}
-                            required
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Input 
-                            type="number"
-                            value={item.unit_price}
-                            onChange={(e) => {
-                              const unitPrice = parseFloat(e.target.value) || 0;
-                              updateItemAmount(index, item.quantity, unitPrice);
-                            }}
-                            min="0"
-                            step="0.01"
-                            className="w-24 text-right"
-                            disabled={!!selectedQuotation}
-                            required
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.amount)}
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeItem(index)}
-                            disabled={invoiceItems.length === 1 || !!selectedQuotation}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {invoiceItems.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Input 
+                              value={item.description}
+                              onChange={(e) => {
+                                const updatedItems = [...invoiceItems];
+                                updatedItems[index].description = e.target.value;
+                                setInvoiceItems(updatedItems);
+                              }}
+                              placeholder="Description"
+                              disabled={!!selectedQuotation}
+                              required
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const quantity = parseInt(e.target.value) || 0;
+                                updateItemAmount(index, quantity, item.unit_price);
+                              }}
+                              min="1"
+                              className="w-20 text-right"
+                              disabled={!!selectedQuotation}
+                              required
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number"
+                              value={item.unit_price}
+                              onChange={(e) => {
+                                const unitPrice = parseFloat(e.target.value) || 0;
+                                updateItemAmount(index, item.quantity, unitPrice);
+                              }}
+                              min="0"
+                              step="0.01"
+                              className="w-24 text-right"
+                              disabled={!!selectedQuotation}
+                              required
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(item.amount)}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => removeItem(index)}
+                              disabled={invoiceItems.length === 1 || !!selectedQuotation}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
 
-                <div className="flex justify-end pt-4">
-                  <div className="w-1/3 space-y-1">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Total:</span>
-                      <span>{formatCurrency(calculateTotal())}</span>
+                  <div className="flex justify-end pt-4">
+                    <div className="w-1/3 space-y-1">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Total:</span>
+                        <span>{formatCurrency(calculateTotal())}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea 
-                  id="notes"
-                  name="notes"
-                  placeholder="Add any notes or payment instructions"
-                  defaultValue={editInvoice?.notes || ""}
-                  className="min-h-[80px]"
-                />
-              </div>
-
-              {editInvoice && (
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select name="status" defaultValue={editInvoice.status}>
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="sent">Sent</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Textarea 
+                    id="notes"
+                    name="notes"
+                    placeholder="Add any notes or payment instructions"
+                    defaultValue={editInvoice?.notes || ""}
+                    className="min-h-[80px]"
+                  />
                 </div>
-              )}
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setCreateInvoiceOpen(false);
-                  setEditInvoice(null);
-                }}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editInvoice ? "Save Changes" : "Create Invoice"}
-                </Button>
-              </DialogFooter>
-            </form>
+                {editInvoice && (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select name="status" defaultValue={editInvoice.status}>
+                      <SelectTrigger id="status">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="sent">Sent</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="overdue">Overdue</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => {
+                    setCreateInvoiceOpen(false);
+                    setEditInvoice(null);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    {editInvoice ? "Save Changes" : "Create Invoice"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
           </ScrollArea>
         </DialogContent>
       </Dialog>
