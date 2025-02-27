@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
@@ -59,16 +60,9 @@ import {
   Trip,
   DisplayTrip,
   TripStatus,
-  TripType
+  TripType,
+  UIServiceType
 } from "@/lib/types"
-
-type UIServiceType =
-  | "airport_pickup"
-  | "airport_dropoff"
-  | "one_way"
-  | "round_trip"
-  | "full_day_hire"
-  | "security_escort";
 
 function convertToTripType(uiServiceType: UIServiceType): TripType {
   switch (uiServiceType) {
@@ -87,6 +81,7 @@ function convertToUIServiceType(tripType: TripType): UIServiceType {
         case "airport_pickup": return "airport_pickup";
         case "airport_dropoff": return "airport_dropoff";
         case "full_day": return "full_day_hire";
+        case "hourly": return "security_escort";
         default: return "one_way";
     }
 }
@@ -234,7 +229,7 @@ const Trips = () => {
 
   const handleEditTrip = (trip: DisplayTrip) => {
     setEditTrip(trip);
-    setServiceType(trip.ui_service_type || "airport_pickup");
+    setServiceType(trip.ui_service_type || "airport_pickup" as UIServiceType);
   };
 
   const handleDeleteTrip = (tripId: string) => {
@@ -547,7 +542,7 @@ const Trips = () => {
                   <Select 
                     name="service_type" 
                     value={serviceType}
-                    onValueChange={(value) => setServiceType(value as UIServiceType)}
+                    onValueChange={(value: string) => setServiceType(value as UIServiceType)}
                     required
                   >
                     <SelectTrigger id="service_type">

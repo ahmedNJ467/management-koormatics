@@ -122,6 +122,15 @@ export interface Client {
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day';
 
+// UI Service Type for form selection
+export type UIServiceType = 
+  | "airport_pickup"
+  | "airport_dropoff"
+  | "one_way"
+  | "round_trip"
+  | "full_day_hire"
+  | "security_escort";
+
 export interface TripMessage {
   id: string;
   trip_id: string;
@@ -180,5 +189,5 @@ export interface DisplayTrip extends Trip {
   terminal?: string;
   special_notes?: string;
   is_recurring?: boolean; // Added for UI display purposes
-  ui_service_type?: string; // Added to store the UI service type corresponding to database type
+  ui_service_type?: UIServiceType; // Added to store the UI service type corresponding to database type
 }
