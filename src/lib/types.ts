@@ -118,9 +118,8 @@ export interface Client {
   updated_at?: string;
 }
 
-// Trip types and interfaces
+// Trip types and interfaces - Updated to match database schema exactly
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-// Updated to match the database schema
 export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day';
 
 export interface TripMessage {
@@ -131,6 +130,8 @@ export interface TripMessage {
   message: string;
   timestamp: string;
   is_read: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TripAssignment {
@@ -142,25 +143,25 @@ export interface TripAssignment {
   assigned_at: string;
   status: 'pending' | 'accepted' | 'rejected';
   notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Trip {
   id: string;
-  date: string;
   client_id: string;
   vehicle_id: string;
   driver_id: string;
-  type: TripType;
-  status: TripStatus;
-  pickup_location?: string;
-  dropoff_location?: string;
-  // Using the actual column names from the database schema
+  date: string;
   start_time?: string;
   end_time?: string;
+  type: TripType;
+  status: TripStatus;
   amount: number;
+  pickup_location?: string;
+  dropoff_location?: string;
   notes?: string;
   invoice_id?: string;
-  is_recurring?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -171,9 +172,9 @@ export interface DisplayTrip extends Trip {
   driver_name: string;
   driver_avatar?: string;
   driver_contact?: string;
-  // For UI display compatibility
-  time?: string;
-  return_time?: string;
+  // These fields are for UI display only and not stored directly in the database
+  time?: string; // For displaying formatted start_time
+  return_time?: string; // For displaying formatted end_time
   flight_number?: string;
   airline?: string;
   terminal?: string;
