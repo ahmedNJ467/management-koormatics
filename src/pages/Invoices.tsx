@@ -57,7 +57,7 @@ export default function Invoices() {
 
   // Get invoices
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
-    queryKey: ['invoices'],
+    queryKey: ['invoices', sortField, sortDirection],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('invoices')
@@ -71,27 +71,41 @@ export default function Invoices() {
       if (error) throw error;
 
       // Map the data to match our Invoice interface
-      return data.map(invoice => ({
-        id: invoice.id,
-        date: invoice.date,
-        due_date: invoice.due_date,
-        client_id: invoice.client_id,
-        client_name: invoice.clients?.name || 'Unknown Client',
-        client_email: invoice.clients?.email,
-        status: invoice.status as InvoiceStatus,
-        total_amount: invoice.total_amount,
-        paid_amount: invoice.paid_amount,
-        payment_date: invoice.payment_date,
-        payment_method: invoice.payment_method,
-        notes: invoice.notes,
-        items: (invoice.items as unknown) as InvoiceItem[],
-        quotation_id: invoice.quotation_id,
-        quotation: invoice.quotations,
-        created_at: invoice.created_at,
-        updated_at: invoice.updated_at
-      })) as DisplayInvoice[];
+      return data.map(invoice => {
+        const parsedItems = invoice.items as unknown as InvoiceItem[];
+        return {
+          id: invoice.id,
+          date: invoice.date,
+          due_date: invoice.due_date,
+          client_id: invoice.client_id,
+          client_name: invoice.clients?.name || 'Unknown Client',
+          client_email: invoice.clients?.email,
+          status: invoice.status as InvoiceStatus,
+          total_amount: invoice.total_amount,
+          paid_amount: invoice.paid_amount,
+          payment_date: invoice.payment_date,
+          payment_method: invoice.payment_method,
+          notes: invoice.notes,
+          items: parsedItems,
+          quotation_id: invoice.quotation_id,
+          quotation: invoice.quotations ? {
+            ...invoice.quotations,
+            items: invoice.quotations.items as unknown as QuotationItem[]
+          } : undefined,
+          created_at: invoice.created_at,
+          updated_at: invoice.updated_at
+        } as DisplayInvoice;
+      });
     },
   });
+
+  // Define QuotationItem type explicitly here for type checking
+  type QuotationItem = {
+    description: string;
+    quantity: number;
+    unit_price: number;
+    amount: number;
+  };
 
   // Subscribe to real-time changes
   useEffect(() => {
@@ -248,7 +262,7 @@ export default function Invoices() {
         status: 'draft' as InvoiceStatus,
         total_amount: invoice.total_amount,
         paid_amount: 0,
-        items: invoice.items as any,
+        items: JSON.stringify(invoice.items), // Convert to JSON string
         notes: invoice.notes,
         quotation_id: invoice.quotation_id
       };
@@ -287,7 +301,7 @@ export default function Invoices() {
         status: 'draft' as InvoiceStatus,
         total_amount: 0,
         paid_amount: 0,
-        items: [] as InvoiceItem[],
+        items: JSON.stringify([]), // Empty array as JSON
       };
       
       const { data, error } = await supabase
@@ -388,7 +402,7 @@ export default function Invoices() {
         date,
         due_date: dueDate,
         notes,
-        items,
+        items: JSON.stringify(items), // Convert to JSON string
         total_amount: totalAmount,
         quotation_id: quotationId || null
       };
@@ -449,7 +463,7 @@ export default function Invoices() {
         status: 'draft' as InvoiceStatus,
         total_amount: quotationData.total_amount,
         paid_amount: 0,
-        items: quotationData.items,
+        items: quotationData.items, // Pass as is (already JSON in DB)
         quotation_id: quotationId,
         notes: quotationData.notes
       };
@@ -474,8 +488,8 @@ export default function Invoices() {
           ...data[0],
           client_name: quotationData.clients.name,
           client_email: quotationData.clients.email,
-          items: quotationData.items
-        } as DisplayInvoice;
+          items: quotationData.items as unknown as InvoiceItem[]
+        } as unknown as DisplayInvoice;
         setEditInvoice(newlyCreatedInvoice);
       }
     } catch (error) {
