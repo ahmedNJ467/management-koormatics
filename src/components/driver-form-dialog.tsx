@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -14,9 +13,10 @@ interface DriverFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   driver?: Driver;
+  onDriverDeleted?: () => void;
 }
 
-export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialogProps) {
+export function DriverFormDialog({ open, onOpenChange, driver, onDriverDeleted }: DriverFormDialogProps) {
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const {
@@ -34,7 +34,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     clearDocument,
   } = useDriverForm(driver);
 
-  // Reset form and preview when driver changes
   useEffect(() => {
     if (driver) {
       form.reset({
@@ -67,7 +66,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       let avatarUrl = driver?.avatar_url || null;
       let documentUrl = driver?.document_url || null;
       
-      // First create/update the driver record
       const driverData = {
         name: values.name,
         license_number: values.license_number,
@@ -80,7 +78,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       let driverId: string;
 
       if (driver) {
-        // Update existing driver
         const { error: updateError } = await supabase
           .from("drivers")
           .update(driverData)
@@ -89,7 +86,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         if (updateError) throw updateError;
         driverId = driver.id;
       } else {
-        // Create new driver
         const { data: newDriver, error: insertError } = await supabase
           .from("drivers")
           .insert(driverData)
@@ -101,7 +97,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         driverId = newDriver.id;
       }
 
-      // Then handle file uploads if any
       try {
         if (avatarFile) {
           avatarUrl = await uploadDriverFile(avatarFile, 'driver-avatars', driverId, 'avatar');
@@ -110,7 +105,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
           documentUrl = await uploadDriverFile(documentFile, 'driver-documents', driverId, 'document');
         }
 
-        // Update the driver record with file URLs if needed
         if (avatarUrl || documentUrl) {
           const { error: fileUpdateError } = await supabase
             .from("drivers")
@@ -181,6 +175,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         onDelete={() => {
           setShowDeleteDialog(false);
           onOpenChange(false);
+          onDriverDeleted?.();
         }}
       />
     </>

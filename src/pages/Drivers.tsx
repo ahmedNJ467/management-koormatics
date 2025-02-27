@@ -40,6 +40,12 @@ export default function Drivers() {
     },
   });
 
+  const handleDriverDeleted = () => {
+    // Invalidate the drivers query to trigger a refresh
+    queryClient.invalidateQueries({ queryKey: ["drivers"] });
+    setSelectedDriver(undefined);
+  };
+
   // Subscribe to real-time changes
   useEffect(() => {
     const channel = supabase
@@ -195,6 +201,7 @@ export default function Drivers() {
           if (!open) setSelectedDriver(undefined);
         }}
         driver={selectedDriver}
+        onDriverDeleted={handleDriverDeleted}
       />
     </div>
   );

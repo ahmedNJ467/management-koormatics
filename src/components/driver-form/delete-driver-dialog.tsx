@@ -22,24 +22,29 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
       const { error: deleteError } = await supabase
         .from("drivers")
         .delete()
-        .eq("id", driver.id);
+        .eq("id", driver.id)
+        .single();
 
       if (deleteError) throw deleteError;
 
       // Then attempt to clean up storage files if they exist
       try {
         if (driver.avatar_url) {
-          const avatarFileName = `${driver.id}-avatar.${driver.avatar_url.split('.').pop()}`;
-          await supabase.storage
-            .from('driver-avatars')
-            .remove([avatarFileName]);
+          const avatarFileName = driver.avatar_url.split('/').pop();
+          if (avatarFileName) {
+            await supabase.storage
+              .from('driver-avatars')
+              .remove([avatarFileName]);
+          }
         }
         
         if (driver.document_url) {
-          const documentFileName = `${driver.id}-document.${driver.document_url.split('.').pop()}`;
-          await supabase.storage
-            .from('driver-documents')
-            .remove([documentFileName]);
+          const documentFileName = driver.document_url.split('/').pop();
+          if (documentFileName) {
+            await supabase.storage
+              .from('driver-documents')
+              .remove([documentFileName]);
+          }
         }
       } catch (storageError) {
         // Log storage cleanup errors but don't fail the deletion
@@ -50,8 +55,8 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
         title: "Driver deleted",
         description: `${driver.name} has been removed from the system.`,
       });
-      
-      // Close the dialog and refresh the list
+
+      // Trigger the onDelete callback only after everything is done
       onDelete();
     } catch (error) {
       console.error("Error:", error);
