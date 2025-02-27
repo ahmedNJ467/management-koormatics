@@ -456,14 +456,17 @@ export default function Trips() {
             start_time: formData.get("time") as string,
             end_time: needsReturnTime ? (formData.get("return_time") as string) : null,
             type: dbServiceType,
-            status: formData.get("status") as TripStatus,
+            status: formData.get("status") as TripStatus || "scheduled",
             amount: 0, // Default amount
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
             notes: formData.get("special_notes") as string || null,
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating trip:", error);
+          throw error;
+        }
 
         toast({
           title: "Trip created",
@@ -489,27 +492,16 @@ export default function Trips() {
     if (!tripToAssign || !assignDriver) return;
     
     try {
-      // Create assignment record using the rpc endpoint
-      const { error: assignError } = await supabase.rpc('insert_trip_assignment', {
-        p_trip_id: tripToAssign.id,
-        p_driver_id: assignDriver,
-        p_status: "pending" as const,
-        p_notes: assignNote || null
+      // Skip the RPC and use direct insertion
+      const { error } = await supabase.from('trip_assignments').insert({
+        trip_id: tripToAssign.id,
+        driver_id: assignDriver,
+        assigned_at: new Date().toISOString(),
+        status: "pending",
+        notes: assignNote || null
       });
       
-      if (assignError) {
-        // Fallback to direct insertion if RPC isn't available
-        console.log("Falling back to direct insert");
-        const { error } = await supabase.from('trip_assignments').insert({
-          trip_id: tripToAssign.id,
-          driver_id: assignDriver,
-          assigned_at: new Date().toISOString(),
-          status: "pending",
-          notes: assignNote || null
-        });
-        
-        if (error) throw error;
-      }
+      if (error) throw error;
       
       // Update trip with new driver
       const { error: updateError } = await supabase
@@ -546,29 +538,17 @@ export default function Trips() {
     if (!tripToMessage || !newMessage.trim()) return;
     
     try {
-      // Send message using the rpc endpoint
-      const { error: rpcError } = await supabase.rpc('insert_trip_message', {
-        p_trip_id: tripToMessage.id,
-        p_sender_type: "admin" as const,
-        p_sender_name: "Fleet Manager",
-        p_message: newMessage.trim(),
-        p_is_read: false
+      // Skip the RPC and use direct insertion
+      const { error } = await supabase.from('trip_messages').insert({
+        trip_id: tripToMessage.id,
+        sender_type: "admin",
+        sender_name: "Fleet Manager", // In a real app, use the current user's name
+        message: newMessage.trim(),
+        timestamp: new Date().toISOString(),
+        is_read: false
       });
       
-      if (rpcError) {
-        // Fallback to direct insertion if RPC isn't available
-        console.log("Falling back to direct insert for message");
-        const { error } = await supabase.from('trip_messages').insert({
-          trip_id: tripToMessage.id,
-          sender_type: "admin",
-          sender_name: "Fleet Manager", // In a real app, use the current user's name
-          message: newMessage.trim(),
-          timestamp: new Date().toISOString(),
-          is_read: false
-        });
-        
-        if (error) throw error;
-      }
+      if (error) throw error;
       
       toast({
         title: "Message sent",
