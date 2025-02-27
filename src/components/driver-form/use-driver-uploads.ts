@@ -5,14 +5,19 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
   if (!file) return null;
 
   const fileExt = file.name.split('.').pop();
-  const fileName = `${driverId}-${fileType}.${fileExt}`;
+  // Use a simpler filename format that matches what we use in deletion
+  const fileName = `${driverId}-${fileType}`;
 
-  // First, try to remove any existing file
-  await supabase.storage
-    .from(bucket)
-    .remove([fileName]);
+  // Remove any existing file first
+  try {
+    await supabase.storage
+      .from(bucket)
+      .remove([fileName]);
+  } catch (error) {
+    console.log('No existing file to remove or error:', error);
+  }
 
-  // Then upload the new file
+  // Upload the new file
   const { error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(fileName, file, {
@@ -21,9 +26,11 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
     });
 
   if (uploadError) {
+    console.error('Upload error:', uploadError);
     throw uploadError;
   }
 
+  // Get the public URL
   const { data: { publicUrl } } = supabase.storage
     .from(bucket)
     .getPublicUrl(fileName);

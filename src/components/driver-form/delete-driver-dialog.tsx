@@ -18,24 +18,27 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
     if (!driver) return;
 
     try {
+      // First, delete the files from storage
+      if (driver.avatar_url) {
+        const avatarFileName = `${driver.id}-avatar`;
+        await supabase.storage
+          .from('driver-avatars')
+          .remove([avatarFileName]);
+      }
+      if (driver.document_url) {
+        const documentFileName = `${driver.id}-document`;
+        await supabase.storage
+          .from('driver-documents')
+          .remove([documentFileName]);
+      }
+
+      // Then delete the driver record
       const { error } = await supabase
         .from("drivers")
         .delete()
         .eq("id", driver.id);
 
       if (error) throw error;
-
-      // Clean up files from storage
-      if (driver.avatar_url) {
-        await supabase.storage
-          .from('driver-avatars')
-          .remove([`${driver.id}-avatar`]);
-      }
-      if (driver.document_url) {
-        await supabase.storage
-          .from('driver-documents')
-          .remove([`${driver.id}-document`]);
-      }
 
       toast({
         title: "Driver deleted",
