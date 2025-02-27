@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import {
   Table,
   TableBody,
@@ -25,6 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +37,7 @@ import {
 import {
   Plus,
   Search,
-  Calendar,
+  Calendar as CalendarIcon,
   Car,
   User,
   MapPin,
@@ -45,9 +46,14 @@ import {
   FileText,
   Send,
   Clock,
+  Repeat,
   Check,
   X,
   Trash,
+  Plane,
+  ArrowRight,
+  Shield,
+  Calendar,
 } from "lucide-react";
 import {
   TripStatus,
@@ -80,7 +86,18 @@ export default function Trips() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [calendarView, setCalendarView] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [serviceType, setServiceType] = useState<TripType>("airport_pickup");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">("weekly");
   const messageEndRef = useRef<HTMLDivElement>(null);
+
+  // Calculate calendar days
+  const daysInMonth = eachDayOfInterval({
+    start: startOfMonth(currentMonth),
+    end: endOfMonth(currentMonth)
+  });
 
   // Fetch trips data
   const { data: trips, isLoading: tripsLoading } = useQuery({
@@ -302,33 +319,87 @@ export default function Trips() {
     }
   };
 
+  // Create recurring trips
+  const createRecurringTrips = async (formData: FormData, occurrences: number, frequency: "daily" | "weekly" | "monthly") => {
+    const trips = [];
+    const baseDate = new Date(formData.get("date") as string);
+    
+    for (let i = 0; i < occurrences; i++) {
+      let tripDate = new Date(baseDate);
+      
+      if (i > 0) {
+        switch (frequency) {
+          case "daily":
+            tripDate = addDays(tripDate, i);
+            break;
+          case "weekly":
+            tripDate = addDays(tripDate, i * 7);
+            break;
+          case "monthly":
+            tripDate = new Date(tripDate.setMonth(tripDate.getMonth() + i));
+            break;
+        }
+      }
+      
+      const tripData = {
+        client_id: formData.get("client_id") as string,
+        vehicle_id: formData.get("vehicle_id") as string,
+        driver_id: formData.get("driver_id") as string,
+        date: format(tripDate, "yyyy-MM-dd"),
+        time: formData.get("time") as string,
+        return_time: formData.get("return_time") as string || null,
+        type: formData.get("service_type") as TripType,
+        status: "scheduled" as TripStatus,
+        amount: parseFloat(formData.get("amount") as string) || 0,
+        pickup_location: formData.get("pickup_location") as string || null,
+        dropoff_location: formData.get("dropoff_location") as string || null,
+        is_recurring: true,
+        flight_number: formData.get("flight_number") as string || null,
+        airline: formData.get("airline") as string || null,
+        terminal: formData.get("terminal") as string || null,
+        special_notes: formData.get("special_notes") as string || null,
+      };
+      
+      trips.push(tripData);
+    }
+    
+    return trips;
+  };
+
   // Handle saving a trip (new or edit)
   const handleSaveTrip = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    const tripData = {
-      client_id: formData.get("client_id") as string,
-      vehicle_id: formData.get("vehicle_id") as string,
-      driver_id: formData.get("driver_id") as string,
-      date: formData.get("date") as string,
-      type: formData.get("type") as TripType,
-      status: formData.get("status") as TripStatus,
-      amount: parseFloat(formData.get("amount") as string) || 0,
-      pickup_location: formData.get("pickup_location") as string || null,
-      dropoff_location: formData.get("dropoff_location") as string || null,
-      start_time: formData.get("start_time") as string || null,
-      end_time: formData.get("end_time") as string || null,
-      notes: formData.get("notes") as string || null,
-    };
-
+    const serviceType = formData.get("service_type") as TripType;
+    const isRecurringChecked = formData.get("is_recurring") === "on";
+    
     try {
       if (editTrip) {
         // Update existing trip
         const { error } = await supabase
           .from("trips")
-          .update(tripData)
+          .update({
+            client_id: formData.get("client_id") as string,
+            vehicle_id: formData.get("vehicle_id") as string,
+            driver_id: formData.get("driver_id") as string,
+            date: formData.get("date") as string,
+            time: formData.get("time") as string,
+            return_time: formData.get("return_time") as string || null,
+            type: serviceType,
+            status: formData.get("status") as TripStatus,
+            amount: parseFloat(formData.get("amount") as string) || 0,
+            pickup_location: formData.get("pickup_location") as string || null,
+            dropoff_location: formData.get("dropoff_location") as string || null,
+            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+              (formData.get("flight_number") as string) : null,
+            airline: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+              (formData.get("airline") as string) : null,
+            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+              (formData.get("terminal") as string) : null,
+            special_notes: formData.get("special_notes") as string || null,
+          })
           .eq("id", editTrip.id);
         
         if (error) throw error;
@@ -339,11 +410,51 @@ export default function Trips() {
         });
         
         setEditTrip(null);
-      } else {
-        // Create new trip
+      } else if (isRecurringChecked) {
+        // Create recurring trips
+        const occurrences = parseInt(formData.get("occurrences") as string) || 1;
+        const frequency = formData.get("frequency") as "daily" | "weekly" | "monthly";
+        
+        const trips = await createRecurringTrips(formData, occurrences, frequency);
+        
         const { error } = await supabase
           .from("trips")
-          .insert(tripData);
+          .insert(trips);
+        
+        if (error) throw error;
+
+        toast({
+          title: "Recurring trips created",
+          description: `${trips.length} trips have been scheduled successfully`,
+        });
+        
+        setBookingOpen(false);
+      } else {
+        // Create new single trip
+        const { error } = await supabase
+          .from("trips")
+          .insert({
+            client_id: formData.get("client_id") as string,
+            vehicle_id: formData.get("vehicle_id") as string,
+            driver_id: formData.get("driver_id") as string,
+            date: formData.get("date") as string,
+            time: formData.get("time") as string,
+            return_time: ["round_trip", "security_escort", "full_day_hire"].includes(serviceType) ? 
+              (formData.get("return_time") as string) : null,
+            type: serviceType,
+            status: formData.get("status") as TripStatus,
+            amount: parseFloat(formData.get("amount") as string) || 0,
+            pickup_location: formData.get("pickup_location") as string || null,
+            dropoff_location: formData.get("dropoff_location") as string || null,
+            is_recurring: false,
+            flight_number: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+              (formData.get("flight_number") as string) : null,
+            airline: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+              (formData.get("airline") as string) : null,
+            terminal: ["airport_pickup", "airport_dropoff"].includes(serviceType) ? 
+              (formData.get("terminal") as string) : null,
+            special_notes: formData.get("special_notes") as string || null,
+          });
         
         if (error) throw error;
 
@@ -524,6 +635,25 @@ export default function Trips() {
     return id.substring(0, 8).toUpperCase();
   };
 
+  const getTripTypeIcon = (type: TripType) => {
+    switch (type) {
+      case "airport_pickup":
+        return <Plane className="h-4 w-4" />;
+      case "airport_dropoff":
+        return <Plane className="h-4 w-4" />;
+      case "round_trip":
+        return <ArrowRight className="h-4 w-4" />;
+      case "security_escort":
+        return <Shield className="h-4 w-4" />;
+      case "one_way":
+        return <ArrowRight className="h-4 w-4" />;
+      case "full_day_hire":
+        return <Clock className="h-4 w-4" />;
+      default:
+        return <Car className="h-4 w-4" />;
+    }
+  };
+
   // Filter trips based on search and status filter
   const filteredTrips = trips?.filter(trip => {
     const matchesSearch = 
@@ -558,9 +688,18 @@ export default function Trips() {
           <h2 className="text-3xl font-semibold tracking-tight">Trips</h2>
           <p className="text-muted-foreground">Manage trip reservations and driver assignments</p>
         </div>
-        <Button onClick={() => setBookingOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Book Trip
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setCalendarView(!calendarView)}
+          >
+            {calendarView ? <Table className="mr-2 h-4 w-4" /> : <Calendar className="mr-2 h-4 w-4" />}
+            {calendarView ? "List View" : "Calendar View"}
+          </Button>
+          <Button onClick={() => setBookingOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Book Trip
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filter */}
@@ -588,120 +727,206 @@ export default function Trips() {
         </Select>
       </div>
 
-      {/* Trips Table */}
-      {!filteredTrips || filteredTrips.length === 0 ? (
-        <div className="rounded-lg border p-8 text-center">
-          <Calendar className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Trips Found</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {searchTerm || statusFilter !== "all"
-              ? "No trips match your search criteria"
-              : "Schedule a new trip to get started"}
-          </p>
-          <Button onClick={() => setBookingOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Book Trip
-          </Button>
+      {/* Calendar View */}
+      {calendarView ? (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+            >
+              Previous Month
+            </Button>
+            <h3 className="text-xl font-medium">
+              {format(currentMonth, "MMMM yyyy")}
+            </h3>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+            >
+              Next Month
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div key={day} className="p-2 font-medium">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: getFirstDayOfMonth(currentMonth) }).map((_, index) => (
+              <div key={`empty-${index}`} className="p-4 border rounded-md bg-gray-50" />
+            ))}
+
+            {daysInMonth.map((day) => {
+              const tripsOnDay = trips?.filter(trip => 
+                trip.date === format(day, "yyyy-MM-dd")
+              );
+              
+              return (
+                <div 
+                  key={day.toString()} 
+                  className={`p-2 border rounded-md min-h-[100px] ${
+                    isSameDay(day, new Date()) ? "bg-blue-50 border-blue-200" : ""
+                  }`}
+                >
+                  <div className="font-medium mb-1">{format(day, "d")}</div>
+                  
+                  <div className="space-y-1">
+                    {tripsOnDay && tripsOnDay.length > 0 ? (
+                      tripsOnDay.slice(0, 3).map(trip => (
+                        <div 
+                          key={trip.id}
+                          onClick={() => setViewTrip(trip)}
+                          className="text-xs p-1 rounded cursor-pointer bg-primary/10 hover:bg-primary/20 truncate"
+                          title={`${trip.client_name} - ${formatTripType(trip.type)}`}
+                        >
+                          {trip.time && formatTime(trip.time)} {trip.client_name}
+                        </div>
+                      ))
+                    ) : null}
+                    
+                    {tripsOnDay && tripsOnDay.length > 3 ? (
+                      <div className="text-xs text-muted-foreground text-center">
+                        +{tripsOnDay.length - 3} more
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTrips.map((trip) => (
-                <TableRow key={trip.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setViewTrip(trip)}>
-                  <TableCell>{formatTripId(trip.id)}</TableCell>
-                  <TableCell>{formatDate(trip.date)}</TableCell>
-                  <TableCell>{trip.client_name}</TableCell>
-                  <TableCell>{trip.vehicle_details}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        {trip.driver_avatar ? (
-                          <AvatarImage src={trip.driver_avatar} alt={trip.driver_name} />
-                        ) : (
-                          <AvatarFallback>{trip.driver_name.charAt(0)}</AvatarFallback>
-                        )}
-                      </Avatar>
-                      {trip.driver_name}
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatTripType(trip.type)}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusColor(trip.status)}>
-                      {formatStatus(trip.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => setViewTrip(trip)}>
-                          <FileText className="mr-2 h-4 w-4" /> View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditTrip(trip)}>
-                          <FileText className="mr-2 h-4 w-4" /> Edit Trip
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          setTripToAssign(trip);
-                          setAssignOpen(true);
-                        }}>
-                          <User className="mr-2 h-4 w-4" /> Assign Driver
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          setTripToMessage(trip);
-                          setMessageOpen(true);
-                        }}>
-                          <MessageCircle className="mr-2 h-4 w-4" /> Send Message
-                        </DropdownMenuItem>
-                        
-                        {trip.status !== "completed" && trip.status !== "cancelled" && (
-                          <>
-                            <DropdownMenuSeparator />
-                            {trip.status !== "in_progress" && (
-                              <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "in_progress")}>
-                                <Clock className="mr-2 h-4 w-4" /> Mark as In Progress
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "completed")}>
-                              <Check className="mr-2 h-4 w-4" /> Mark as Completed
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "cancelled")}>
-                              <X className="mr-2 h-4 w-4" /> Mark as Cancelled
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          setTripToDelete(trip.id);
-                          setDeleteDialogOpen(true);
-                        }}>
-                          <Trash className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+        // List View
+        !filteredTrips || filteredTrips.length === 0 ? (
+          <div className="rounded-lg border p-8 text-center">
+            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Trips Found</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {searchTerm || statusFilter !== "all"
+                ? "No trips match your search criteria"
+                : "Schedule a new trip to get started"}
+            </p>
+            <Button onClick={() => setBookingOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Book Trip
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date & Time</TableHead>
+                  <TableHead>Service Type</TableHead>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead>Driver</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredTrips.map((trip) => (
+                  <TableRow key={trip.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setViewTrip(trip)}>
+                    <TableCell>{formatTripId(trip.id)}</TableCell>
+                    <TableCell>{trip.client_name}</TableCell>
+                    <TableCell>
+                      {formatDate(trip.date)}
+                      <div className="text-xs text-muted-foreground">
+                        {trip.time && `Time: ${formatTime(trip.time)}`}
+                        {trip.return_time && <div>Return: {formatTime(trip.return_time)}</div>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getTripTypeIcon(trip.type)}
+                        {formatTripType(trip.type)}
+                      </div>
+                    </TableCell>
+                    <TableCell>{trip.vehicle_details}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          {trip.driver_avatar ? (
+                            <AvatarImage src={trip.driver_avatar} alt={trip.driver_name} />
+                          ) : (
+                            <AvatarFallback>{trip.driver_name.charAt(0)}</AvatarFallback>
+                          )}
+                        </Avatar>
+                        {trip.driver_name}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusColor(trip.status)}>
+                        {formatStatus(trip.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => setViewTrip(trip)}>
+                            <FileText className="mr-2 h-4 w-4" /> View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setEditTrip(trip)}>
+                            <FileText className="mr-2 h-4 w-4" /> Edit Trip
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setTripToAssign(trip);
+                            setAssignOpen(true);
+                          }}>
+                            <User className="mr-2 h-4 w-4" /> Assign Driver
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setTripToMessage(trip);
+                            setMessageOpen(true);
+                          }}>
+                            <MessageCircle className="mr-2 h-4 w-4" /> Send Message
+                          </DropdownMenuItem>
+                          
+                          {trip.status !== "completed" && trip.status !== "cancelled" && (
+                            <>
+                              <DropdownMenuSeparator />
+                              {trip.status !== "in_progress" && (
+                                <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "in_progress")}>
+                                  <Clock className="mr-2 h-4 w-4" /> Mark as In Progress
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "completed")}>
+                                <Check className="mr-2 h-4 w-4" /> Mark as Completed
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "cancelled")}>
+                                <X className="mr-2 h-4 w-4" /> Mark as Cancelled
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            setTripToDelete(trip.id);
+                            setDeleteDialogOpen(true);
+                          }}>
+                            <Trash className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )
       )}
 
       {/* View Trip Dialog */}
@@ -716,6 +941,19 @@ export default function Trips() {
                 </Badge>
               )}
             </div>
+            <DialogDescription>
+              {viewTrip && (
+                <div className="flex items-center gap-2 mt-1 text-sm">
+                  {getTripTypeIcon(viewTrip.type)}
+                  <span>{formatTripType(viewTrip.type)}</span>
+                  {viewTrip.is_recurring && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Repeat className="mr-1 h-3 w-3" /> Recurring
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </DialogDescription>
           </DialogHeader>
           
           {viewTrip && (
@@ -782,22 +1020,22 @@ export default function Trips() {
                             <span className="text-muted-foreground">Date:</span>
                             <span>{formatDate(viewTrip.date)}</span>
                           </div>
+                          {viewTrip.time && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Time:</span>
+                              <span>{formatTime(viewTrip.time)}</span>
+                            </div>
+                          )}
+                          {viewTrip.return_time && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Return Time:</span>
+                              <span>{formatTime(viewTrip.return_time)}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Type:</span>
+                            <span className="text-muted-foreground">Service Type:</span>
                             <span>{formatTripType(viewTrip.type)}</span>
                           </div>
-                          {viewTrip.start_time && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Start Time:</span>
-                              <span>{formatTime(viewTrip.start_time)}</span>
-                            </div>
-                          )}
-                          {viewTrip.end_time && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">End Time:</span>
-                              <span>{formatTime(viewTrip.end_time)}</span>
-                            </div>
-                          )}
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Amount:</span>
                             <span>{formatCurrency(viewTrip.amount)}</span>
@@ -847,13 +1085,47 @@ export default function Trips() {
                     </CardContent>
                   </Card>
                   
-                  {viewTrip.notes && (
+                  {/* Flight Details Section */}
+                  {["airport_pickup", "airport_dropoff"].includes(viewTrip.type) && (
+                    viewTrip.flight_number || viewTrip.airline || viewTrip.terminal ? (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Flight Details</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {viewTrip.flight_number && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Flight Number:</span>
+                                <span>{viewTrip.flight_number}</span>
+                              </div>
+                            )}
+                            {viewTrip.airline && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Airline:</span>
+                                <span>{viewTrip.airline}</span>
+                              </div>
+                            )}
+                            {viewTrip.terminal && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Terminal:</span>
+                                <span>{viewTrip.terminal}</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : null
+                  )}
+                  
+                  {/* Special Notes Section */}
+                  {viewTrip.special_notes && (
                     <Card>
                       <CardHeader>
-                        <CardTitle>Notes</CardTitle>
+                        <CardTitle>Special Notes</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-muted-foreground">{viewTrip.notes}</p>
+                        <p className="text-muted-foreground">{viewTrip.special_notes}</p>
                       </CardContent>
                     </Card>
                   )}
@@ -1025,174 +1297,325 @@ export default function Trips() {
           if (!open) {
             setBookingOpen(false);
             setEditTrip(null);
+            setIsRecurring(false);
+            setServiceType("airport_pickup");
           }
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editTrip ? "Edit Trip" : "Book New Trip"}</DialogTitle>
+            <DialogDescription>
+              {editTrip ? "Update the trip details" : "Schedule a new trip reservation"}
+            </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleSaveTrip}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-              <div className="space-y-2">
-                <Label htmlFor="client_id">Client *</Label>
-                <Select name="client_id" defaultValue={editTrip?.client_id} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients?.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="client_id">Client *</Label>
+                  <Select name="client_id" defaultValue={editTrip?.client_id} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients?.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="service_type">Service Type *</Label>
+                  <Select 
+                    name="service_type" 
+                    value={serviceType}
+                    onValueChange={(value: TripType) => setServiceType(value)}
+                    defaultValue={editTrip?.type || "airport_pickup"} 
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select service type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="airport_pickup">Airport Pickup</SelectItem>
+                      <SelectItem value="airport_dropoff">Airport Dropoff</SelectItem>
+                      <SelectItem value="round_trip">Round Trip</SelectItem>
+                      <SelectItem value="security_escort">Security Escort Only</SelectItem>
+                      <SelectItem value="one_way">One Way</SelectItem>
+                      <SelectItem value="full_day_hire">Full Day Hire</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date *</Label>
+                  <Input 
+                    type="date" 
+                    id="date"
+                    name="date" 
+                    defaultValue={editTrip?.date || new Date().toISOString().split("T")[0]} 
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="time">Time *</Label>
+                  <Input 
+                    type="time" 
+                    id="time"
+                    name="time" 
+                    defaultValue={editTrip?.time || ""} 
+                    required
+                  />
+                </div>
+                
+                {/* Return Time for relevant service types */}
+                {["round_trip", "security_escort", "full_day_hire"].includes(serviceType) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="return_time">Return Time *</Label>
+                    <Input 
+                      type="time" 
+                      id="return_time"
+                      name="return_time" 
+                      defaultValue={editTrip?.return_time || ""} 
+                      required
+                    />
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle_id">Vehicle *</Label>
+                  <Select name="vehicle_id" defaultValue={editTrip?.vehicle_id} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicles?.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.make} {vehicle.model} ({vehicle.registration})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="driver_id">Driver *</Label>
+                  <Select name="driver_id" defaultValue={editTrip?.driver_id} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a driver" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {drivers?.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          {driver.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status *</Label>
+                  <Select name="status" defaultValue={editTrip?.status || "scheduled"} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount *</Label>
+                  <Input 
+                    type="number" 
+                    id="amount"
+                    name="amount" 
+                    defaultValue={editTrip?.amount || 0} 
+                    min="0" 
+                    step="0.01" 
+                    required
+                  />
+                </div>
               </div>
               
+              {/* Flight details for airport pickups/dropoffs */}
+              {["airport_pickup", "airport_dropoff"].includes(serviceType) && (
+                <div>
+                  <h3 className="text-lg font-medium mb-3">Flight Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="flight_number">Flight Number *</Label>
+                      <Input 
+                        id="flight_number"
+                        name="flight_number" 
+                        defaultValue={editTrip?.flight_number || ""} 
+                        placeholder="e.g. BA123"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="airline">Airline *</Label>
+                      <Input 
+                        id="airline"
+                        name="airline" 
+                        defaultValue={editTrip?.airline || ""} 
+                        placeholder="e.g. British Airways"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="terminal">Terminal</Label>
+                      <Input 
+                        id="terminal"
+                        name="terminal" 
+                        defaultValue={editTrip?.terminal || ""} 
+                        placeholder="e.g. Terminal 5"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Location details */}
+              <div>
+                <h3 className="text-lg font-medium mb-3">Location Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pickup_location">Pickup Location</Label>
+                    <Input 
+                      id="pickup_location"
+                      name="pickup_location" 
+                      defaultValue={editTrip?.pickup_location || ""} 
+                      placeholder="Enter pickup address or location"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="dropoff_location">Dropoff Location</Label>
+                    <Input 
+                      id="dropoff_location"
+                      name="dropoff_location" 
+                      defaultValue={editTrip?.dropoff_location || ""} 
+                      placeholder="Enter dropoff address or location"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Special Notes */}
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
-                <Input 
-                  type="date" 
-                  id="date"
-                  name="date" 
-                  defaultValue={editTrip?.date || new Date().toISOString().split("T")[0]} 
-                  required
+                <Label htmlFor="special_notes">Special Notes</Label>
+                <Textarea 
+                  id="special_notes"
+                  name="special_notes" 
+                  defaultValue={editTrip?.special_notes || ""} 
+                  placeholder="Add any special instructions or requirements"
+                  rows={3}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="start_time">Start Time</Label>
-                <Input 
-                  type="time" 
-                  id="start_time"
-                  name="start_time" 
-                  defaultValue={editTrip?.start_time || ""} 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="end_time">End Time</Label>
-                <Input 
-                  type="time" 
-                  id="end_time"
-                  name="end_time" 
-                  defaultValue={editTrip?.end_time || ""} 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="vehicle_id">Vehicle *</Label>
-                <Select name="vehicle_id" defaultValue={editTrip?.vehicle_id} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicles?.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.make} {vehicle.model} ({vehicle.registration})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="driver_id">Driver *</Label>
-                <Select name="driver_id" defaultValue={editTrip?.driver_id} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a driver" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {drivers?.map((driver) => (
-                      <SelectItem key={driver.id} value={driver.id}>
-                        {driver.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="type">Trip Type *</Label>
-                <Select name="type" defaultValue={editTrip?.type || "airport_pickup"} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select trip type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="airport_pickup">Airport Pickup</SelectItem>
-                    <SelectItem value="airport_dropoff">Airport Dropoff</SelectItem>
-                    <SelectItem value="hourly">Hourly</SelectItem>
-                    <SelectItem value="full_day">Full Day</SelectItem>
-                    <SelectItem value="multi_day">Multi Day</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
-                <Select name="status" defaultValue={editTrip?.status || "scheduled"} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount *</Label>
-                <Input 
-                  type="number" 
-                  id="amount"
-                  name="amount" 
-                  defaultValue={editTrip?.amount || 0} 
-                  min="0" 
-                  step="0.01" 
-                  required
-                />
-              </div>
+              {/* Recurring Details */}
+              {!editTrip && (
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="is_recurring" 
+                      name="is_recurring"
+                      checked={isRecurring}
+                      onCheckedChange={(checked) => setIsRecurring(checked === true)}
+                    />
+                    <Label 
+                      htmlFor="is_recurring" 
+                      className="text-base font-medium cursor-pointer"
+                    >
+                      This is a recurring trip
+                    </Label>
+                  </div>
+                  
+                  {isRecurring && (
+                    <div className="space-y-4 pl-6">
+                      <h3 className="text-md font-medium">Recurrence Details</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="start_date">Start Date</Label>
+                          <Input 
+                            type="date" 
+                            id="start_date"
+                            name="start_date" 
+                            defaultValue={new Date().toISOString().split("T")[0]} 
+                            required={isRecurring}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="end_date">End Date</Label>
+                          <Input 
+                            type="date" 
+                            id="end_date"
+                            name="end_date" 
+                            defaultValue={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split("T")[0]} 
+                            required={isRecurring}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="frequency">Frequency</Label>
+                          <Select 
+                            name="frequency" 
+                            value={frequency}
+                            onValueChange={(value: "daily" | "weekly" | "monthly") => setFrequency(value)}
+                            defaultValue="weekly"
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select frequency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="occurrences">Number of Occurrences</Label>
+                          <Input 
+                            type="number" 
+                            id="occurrences"
+                            name="occurrences" 
+                            defaultValue={4}
+                            min={1}
+                            max={52}
+                            required={isRecurring}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="space-y-2 my-4">
-              <Label htmlFor="pickup_location">Pickup Location</Label>
-              <Input 
-                id="pickup_location"
-                name="pickup_location" 
-                defaultValue={editTrip?.pickup_location || ""} 
-                placeholder="Enter pickup location"
-              />
-            </div>
-            
-            <div className="space-y-2 my-4">
-              <Label htmlFor="dropoff_location">Dropoff Location</Label>
-              <Input 
-                id="dropoff_location"
-                name="dropoff_location" 
-                defaultValue={editTrip?.dropoff_location || ""} 
-                placeholder="Enter dropoff location"
-              />
-            </div>
-            
-            <div className="space-y-2 my-4">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea 
-                id="notes"
-                name="notes" 
-                defaultValue={editTrip?.notes || ""} 
-                placeholder="Additional information about the trip"
-                rows={3}
-              />
-            </div>
-            
-            <DialogFooter className="mt-4">
-              <Button type="submit">{editTrip ? "Save Changes" : "Book Trip"}</Button>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editTrip ? "Save Changes" : isRecurring ? "Book Recurring Trips" : "Book Trip"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -1358,5 +1781,18 @@ export default function Trips() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+// Helper functions for calendar
+function getFirstDayOfMonth(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+}
+
+function isSameDay(date1: Date, date2: Date): boolean {
+  return (
+    date1.getDate() === date2.getDate() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getFullYear() === date2.getFullYear()
   );
 }
