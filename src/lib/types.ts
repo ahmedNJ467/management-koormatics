@@ -117,3 +117,54 @@ export interface Client {
   created_at?: string;
   updated_at?: string;
 }
+
+// Trip types and interfaces
+export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type TripType = 'airport_pickup' | 'airport_dropoff' | 'hourly' | 'full_day' | 'multi_day' | 'other';
+
+export interface TripMessage {
+  id: string;
+  trip_id: string;
+  sender_type: 'admin' | 'driver' | 'client';
+  sender_name: string;
+  message: string;
+  timestamp: string;
+  is_read: boolean;
+}
+
+export interface TripAssignment {
+  id: string;
+  trip_id: string;
+  driver_id: string;
+  driver_name?: string;
+  driver_avatar?: string;
+  assigned_at: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  notes?: string;
+}
+
+export interface Trip {
+  id: string;
+  date: string;
+  client_id: string;
+  vehicle_id: string;
+  driver_id: string;
+  type: TripType;
+  status: TripStatus;
+  pickup_location?: string;
+  dropoff_location?: string;
+  start_time?: string;
+  end_time?: string;
+  amount: number;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DisplayTrip extends Trip {
+  client_name: string;
+  vehicle_details: string;
+  driver_name: string;
+  driver_avatar?: string;
+  driver_contact?: string;
+}
