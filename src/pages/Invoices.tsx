@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -410,6 +409,15 @@ export default function Invoices() {
     setSelectedClient(value);
     setSelectedQuotation("");
     setSelectedTrips([]);
+  };
+
+  // Handle quotation selection
+  const handleQuotationChange = (value: string) => {
+    if (value === "_none") {
+      setSelectedQuotation("");
+    } else {
+      setSelectedQuotation(value);
+    }
   };
 
   // Save invoice (create or update)
@@ -1154,14 +1162,14 @@ export default function Invoices() {
                       <Label htmlFor="quotation_id">Based on Quotation (Optional)</Label>
                       <Select 
                         name="quotation_id" 
-                        value={selectedQuotation} 
-                        onValueChange={setSelectedQuotation}
+                        value={selectedQuotation || "_none"} 
+                        onValueChange={handleQuotationChange}
                       >
                         <SelectTrigger id="quotation_id">
                           <SelectValue placeholder="Select quotation (optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="_none">None</SelectItem>
                           {quotations?.map((quotation) => (
                             <SelectItem key={quotation.id} value={quotation.id}>
                               {quotation.id.substring(0, 8).toUpperCase()} ({formatDate(quotation.date)})
