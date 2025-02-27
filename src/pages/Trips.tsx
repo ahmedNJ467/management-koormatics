@@ -157,6 +157,21 @@ const getFirstDayOfMonth = (date: Date): number => {
   return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 };
 
+// Helper function to parse flight details from notes
+const parseFlightDetails = (notes?: string) => {
+  if (!notes) return { flight: null, airline: null, terminal: null };
+  
+  const flightMatch = notes.match(/Flight: ([^\n]+)/);
+  const airlineMatch = notes.match(/Airline: ([^\n]+)/);
+  const terminalMatch = notes.match(/Terminal: ([^\n]+)/);
+  
+  return {
+    flight: flightMatch ? flightMatch[1].trim() : null,
+    airline: airlineMatch ? airlineMatch[1].trim() : null,
+    terminal: terminalMatch ? terminalMatch[1].trim() : null
+  };
+};
+
 export default function Trips() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -487,6 +502,18 @@ export default function Trips() {
     const dbServiceType = serviceTypeMap[uiServiceType];
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
+    // Add flight details to notes if it's an airport trip
+    let notes = formData.get("special_notes") as string || "";
+    if (uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff") {
+      const flight = formData.get("flight_number") as string;
+      const airline = formData.get("airline") as string;
+      const terminal = formData.get("terminal") as string;
+      
+      if (flight) notes += `\nFlight: ${flight}`;
+      if (airline) notes += `\nAirline: ${airline}`;
+      if (terminal) notes += `\nTerminal: ${terminal}`;
+    }
+    
     try {
       if (editTrip) {
         // Update existing trip
@@ -503,7 +530,7 @@ export default function Trips() {
             status: formData.get("status") as TripStatus,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
-            notes: formData.get("special_notes") as string || null,
+            notes: notes || null,
           })
           .eq("id", editTrip.id);
         
@@ -552,7 +579,7 @@ export default function Trips() {
             amount: 0, // Default amount
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
-            notes: formData.get("special_notes") as string || null,
+            notes: notes || null,
           });
         
         if (error) {
@@ -1111,6 +1138,36 @@ export default function Trips() {
                       </div>
                     </div>
 
+                    {/* Flight Details Section - Only for airport trips */}
+                    {(viewTrip.type === "airport_pickup" || viewTrip.type === "airport_dropoff") && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/50 p-4 rounded-lg">
+                        {(() => {
+                          // Parse flight details from notes
+                          const { flight, airline, terminal } = parseFlightDetails(viewTrip.notes);
+                          
+                          return (
+                            <>
+                              <div>
+                                <h4 className="text-sm font-medium mb-1">Flight Number</h4>
+                                <div className="flex items-center gap-2">
+                                  <Plane className="h-4 w-4 text-muted-foreground" />
+                                  <p>{flight || "Not specified"}</p>
+                                </div>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium mb-1">Airline</h4>
+                                <p>{airline || "Not specified"}</p>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium mb-1">Terminal</h4>
+                                <p>{terminal || "Not specified"}</p>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+
                     {viewTrip.special_notes && (
                       <div>
                         <h4 className="text-sm font-medium mb-1">Special Notes</h4>
@@ -1268,7 +1325,7 @@ export default function Trips() {
 
       {/* Trip Form Dialog (Edit & Create) */}
       <Dialog open={!!editTrip || bookingOpen} onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false))}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{editTrip ? "Edit Trip" : "Book New Trip"}</DialogTitle>
             <DialogDescription>
@@ -1278,222 +1335,266 @@ export default function Trips() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveTrip} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="client_id">Client</Label>
-                <Select name="client_id" defaultValue={editTrip?.client_id} required>
-                  <SelectTrigger id="client_id">
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients?.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="service_type">Service Type</Label>
-                <Select 
-                  name="service_type" 
-                  value={serviceType}
-                  onValueChange={(value) => setServiceType(value as UIServiceType)}
-                  required
-                >
-                  <SelectTrigger id="service_type">
-                    <SelectValue placeholder="Select service type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="airport_pickup">Airport Pickup</SelectItem>
-                    <SelectItem value="airport_dropoff">Airport Dropoff</SelectItem>
-                    <SelectItem value="one_way">One Way Transfer</SelectItem>
-                    <SelectItem value="round_trip">Round Trip</SelectItem>
-                    <SelectItem value="full_day_hire">Full Day Hire</SelectItem>
-                    <SelectItem value="security_escort">Security Escort</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input 
-                  id="date"
-                  name="date"
-                  type="date"
-                  defaultValue={editTrip?.date}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="time">Time</Label>
-                <Input 
-                  id="time"
-                  name="time"
-                  type="time"
-                  defaultValue={editTrip?.time || editTrip?.start_time}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Show return time for round trips, security escorts, and full day hires */}
-            {["round_trip", "security_escort", "full_day_hire"].includes(serviceType) && (
-              <div className="space-y-2">
-                <Label htmlFor="return_time">Return Time</Label>
-                <Input 
-                  id="return_time"
-                  name="return_time"
-                  type="time"
-                  defaultValue={editTrip?.return_time || editTrip?.end_time}
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="vehicle_id">Vehicle</Label>
-                <Select name="vehicle_id" defaultValue={editTrip?.vehicle_id} required>
-                  <SelectTrigger id="vehicle_id">
-                    <SelectValue placeholder="Select vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicles?.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.make} {vehicle.model} ({vehicle.registration})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="driver_id">Driver</Label>
-                <Select name="driver_id" defaultValue={editTrip?.driver_id} required>
-                  <SelectTrigger id="driver_id">
-                    <SelectValue placeholder="Select driver" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {drivers?.map((driver) => (
-                      <SelectItem key={driver.id} value={driver.id}>
-                        {driver.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="pickup_location">Pickup Location</Label>
-                <Input 
-                  id="pickup_location"
-                  name="pickup_location"
-                  placeholder="Enter pickup location"
-                  defaultValue={editTrip?.pickup_location || ""}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dropoff_location">Dropoff Location</Label>
-                <Input 
-                  id="dropoff_location"
-                  name="dropoff_location"
-                  placeholder="Enter dropoff location"
-                  defaultValue={editTrip?.dropoff_location || ""}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="special_notes">Notes</Label>
-              <Textarea 
-                id="special_notes"
-                name="special_notes"
-                placeholder="Add any special instructions or notes"
-                defaultValue={editTrip?.special_notes || editTrip?.notes || ""}
-                className="min-h-[80px]"
-              />
-            </div>
-
-            {editTrip && (
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select name="status" defaultValue={editTrip.status} required>
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {!editTrip && (
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="is_recurring" 
-                  name="is_recurring"
-                  checked={isRecurring}
-                  onCheckedChange={(checked) => setIsRecurring(checked === true)}
-                />
-                <Label htmlFor="is_recurring" className="cursor-pointer">This is a recurring trip</Label>
-              </div>
-            )}
-
-            {!editTrip && isRecurring && (
-              <div className="grid grid-cols-2 gap-4 border p-4 rounded-md">
+          <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
+            <form onSubmit={handleSaveTrip} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="occurrences">Number of Occurrences</Label>
-                  <Input 
-                    id="occurrences"
-                    name="occurrences"
-                    type="number"
-                    defaultValue="4"
-                    min="2"
-                    required={isRecurring}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequency</Label>
-                  <Select 
-                    name="frequency" 
-                    value={frequency}
-                    onValueChange={(value) => setFrequency(value as "daily" | "weekly" | "monthly")}
-                  >
-                    <SelectTrigger id="frequency">
-                      <SelectValue placeholder="Select frequency" />
+                  <Label htmlFor="client_id">Client</Label>
+                  <Select name="client_id" defaultValue={editTrip?.client_id} required>
+                    <SelectTrigger id="client_id">
+                      <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
+                      {clients?.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="service_type">Service Type</Label>
+                  <Select 
+                    name="service_type" 
+                    value={serviceType}
+                    onValueChange={(value: string) => setServiceType(value as UIServiceType)}
+                    required
+                  >
+                    <SelectTrigger id="service_type">
+                      <SelectValue placeholder="Select service type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="airport_pickup">Airport Pickup</SelectItem>
+                      <SelectItem value="airport_dropoff">Airport Dropoff</SelectItem>
+                      <SelectItem value="one_way">One Way Transfer</SelectItem>
+                      <SelectItem value="round_trip">Round Trip</SelectItem>
+                      <SelectItem value="full_day_hire">Full Day Hire</SelectItem>
+                      <SelectItem value="security_escort">Security Escort</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-            )}
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => editTrip ? setEditTrip(null) : setBookingOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {editTrip ? "Save Changes" : "Book Trip"}
-              </Button>
-            </DialogFooter>
-          </form>
+              {/* Flight Details Section - Only show for airport trips */}
+              {(serviceType === "airport_pickup" || serviceType === "airport_dropoff") && (
+                <div className="border p-4 rounded-md space-y-4">
+                  <h3 className="text-sm font-medium">Flight Details</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="flight_number">Flight Number</Label>
+                      <Input 
+                        id="flight_number"
+                        name="flight_number"
+                        placeholder="e.g. BA123"
+                        defaultValue={parseFlightDetails(editTrip?.notes).flight || ""}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="airline">Airline</Label>
+                      <Input 
+                        id="airline"
+                        name="airline"
+                        placeholder="e.g. British Airways"
+                        defaultValue={parseFlightDetails(editTrip?.notes).airline || ""}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="terminal">Terminal</Label>
+                      <Input 
+                        id="terminal"
+                        name="terminal"
+                        placeholder="e.g. Terminal 5"
+                        defaultValue={parseFlightDetails(editTrip?.notes).terminal || ""}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input 
+                    id="date"
+                    name="date"
+                    type="date"
+                    defaultValue={editTrip?.date}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="time">Time</Label>
+                  <Input 
+                    id="time"
+                    name="time"
+                    type="time"
+                    defaultValue={editTrip?.time || editTrip?.start_time}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Show return time for round trips, security escorts, and full day hires */}
+              {["round_trip", "security_escort", "full_day_hire"].includes(serviceType) && (
+                <div className="space-y-2">
+                  <Label htmlFor="return_time">Return Time</Label>
+                  <Input 
+                    id="return_time"
+                    name="return_time"
+                    type="time"
+                    defaultValue={editTrip?.return_time || editTrip?.end_time}
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle_id">Vehicle</Label>
+                  <Select name="vehicle_id" defaultValue={editTrip?.vehicle_id} required>
+                    <SelectTrigger id="vehicle_id">
+                      <SelectValue placeholder="Select vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicles?.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.make} {vehicle.model} ({vehicle.registration})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="driver_id">Driver</Label>
+                  <Select name="driver_id" defaultValue={editTrip?.driver_id} required>
+                    <SelectTrigger id="driver_id">
+                      <SelectValue placeholder="Select driver" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {drivers?.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          {driver.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pickup_location">Pickup Location</Label>
+                  <Input 
+                    id="pickup_location"
+                    name="pickup_location"
+                    placeholder="Enter pickup location"
+                    defaultValue={editTrip?.pickup_location || ""}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dropoff_location">Dropoff Location</Label>
+                  <Input 
+                    id="dropoff_location"
+                    name="dropoff_location"
+                    placeholder="Enter dropoff location"
+                    defaultValue={editTrip?.dropoff_location || ""}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="special_notes">Notes</Label>
+                <Textarea 
+                  id="special_notes"
+                  name="special_notes"
+                  placeholder="Add any special instructions or notes"
+                  defaultValue={editTrip?.special_notes || editTrip?.notes?.replace(/Flight: .*\n?/g, '')
+                                          .replace(/Airline: .*\n?/g, '')
+                                          .replace(/Terminal: .*\n?/g, '')
+                                          .trim() || ""}
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              {editTrip && (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select name="status" defaultValue={editTrip.status} required>
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {!editTrip && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="is_recurring" 
+                    name="is_recurring"
+                    checked={isRecurring}
+                    onCheckedChange={(checked) => setIsRecurring(checked === true)}
+                  />
+                  <Label htmlFor="is_recurring" className="cursor-pointer">This is a recurring trip</Label>
+                </div>
+              )}
+
+              {!editTrip && isRecurring && (
+                <div className="grid grid-cols-2 gap-4 border p-4 rounded-md">
+                  <div className="space-y-2">
+                    <Label htmlFor="occurrences">Number of Occurrences</Label>
+                    <Input 
+                      id="occurrences"
+                      name="occurrences"
+                      type="number"
+                      defaultValue="4"
+                      min="2"
+                      required={isRecurring}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="frequency">Frequency</Label>
+                    <Select 
+                      name="frequency" 
+                      value={frequency}
+                      onValueChange={(value) => setFrequency(value as "daily" | "weekly" | "monthly")}
+                    >
+                      <SelectTrigger id="frequency">
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="pt-4">
+                <Button type="button" variant="outline" onClick={() => editTrip ? setEditTrip(null) : setBookingOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editTrip ? "Save Changes" : "Book Trip"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
