@@ -13,7 +13,6 @@ import { useDriverForm } from "./driver-form/use-driver-form";
 import { uploadDriverFile } from "./driver-form/use-driver-uploads";
 import type { DriverFormValues } from "./driver-form/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface DriverFormDialogProps {
@@ -40,17 +39,32 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
     clearDocument,
   } = useDriverForm(driver);
 
+  // Reset form and preview when driver changes
   useEffect(() => {
-    if (driver?.avatar_url) {
+    if (driver) {
+      form.reset({
+        name: driver.name,
+        contact: driver.contact,
+        license_number: driver.license_number,
+        license_type: driver.license_type,
+        license_expiry: driver.license_expiry,
+        status: driver.status,
+      });
       setAvatarPreview(driver.avatar_url);
-    }
-    if (driver?.document_url) {
-      const fileName = driver.document_url.split('/').pop() || 'Document';
-      setDocumentName(fileName);
+      setDocumentName(driver.document_url ? driver.document_url.split('/').pop() : null);
     } else {
+      form.reset({
+        name: "",
+        contact: "",
+        license_number: "",
+        license_type: "",
+        license_expiry: "",
+        status: "active",
+      });
+      setAvatarPreview(null);
       setDocumentName(null);
     }
-  }, [driver, setAvatarPreview, setDocumentName]);
+  }, [driver, form, setAvatarPreview, setDocumentName]);
 
   const handleDeleteDriver = async () => {
     if (!driver) return;
@@ -62,6 +76,18 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         .eq("id", driver.id);
 
       if (error) throw error;
+
+      // Clean up files from storage
+      if (driver.avatar_url) {
+        await supabase.storage
+          .from('driver-avatars')
+          .remove([`${driver.id}-avatar`]);
+      }
+      if (driver.document_url) {
+        await supabase.storage
+          .from('driver-documents')
+          .remove([`${driver.id}-document`]);
+      }
 
       toast({
         title: "Driver deleted",
@@ -166,19 +192,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>{driver ? "Edit Driver" : "Add New Driver"}</DialogTitle>
-              {driver && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <DialogTitle>{driver ? "Edit Driver" : "Add New Driver"}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -199,6 +213,15 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
+                {driver && (
+                  <Button 
+                    type="button"
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    Delete
+                  </Button>
+                )}
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "Saving..." : driver ? "Update Driver" : "Add Driver"}
                 </Button>

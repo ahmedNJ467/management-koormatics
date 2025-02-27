@@ -7,10 +7,17 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
   const fileExt = file.name.split('.').pop();
   const fileName = `${driverId}-${fileType}.${fileExt}`;
 
+  // First, try to remove any existing file
+  await supabase.storage
+    .from(bucket)
+    .remove([fileName]);
+
+  // Then upload the new file
   const { error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(fileName, file, {
-      upsert: true
+      upsert: true,
+      contentType: file.type
     });
 
   if (uploadError) {
