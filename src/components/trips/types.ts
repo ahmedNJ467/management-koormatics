@@ -1,13 +1,5 @@
 
-import { TripStatus, DisplayTrip } from "@/lib/types";
-
-export type TripServiceType = 
-  | 'airport_pickup'
-  | 'airport_dropoff'
-  | 'round_trip'
-  | 'security_escort'
-  | 'one_way'
-  | 'full_day_hire';
+import { TripStatus, TripType, DisplayTrip } from "@/lib/types";
 
 export interface TripMessageData {
   id: string;
@@ -36,35 +28,4 @@ export interface TripAssignmentData {
   };
   driver_name?: string;
   driver_avatar?: string;
-}
-
-export interface RecurrenceDetails {
-  start_date: string;
-  end_date: string;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  occurrences: number;
-}
-
-export interface FlightDetails {
-  flight_number: string;
-  airline: string;
-  terminal?: string;
-}
-
-export interface TripFormData {
-  client_id: string;
-  vehicle_id: string;
-  driver_id: string;
-  date: string;
-  time: string;
-  return_time?: string;
-  service_type: TripServiceType;
-  status: TripStatus;
-  amount: number;
-  pickup_location?: string;
-  dropoff_location?: string;
-  is_recurring: boolean;
-  recurrence_details?: RecurrenceDetails;
-  flight_details?: FlightDetails;
-  special_notes?: string;
 }
