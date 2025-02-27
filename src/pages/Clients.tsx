@@ -59,6 +59,7 @@ export default function Clients() {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'clients' }, 
         () => {
+          // Force refresh the clients data when any changes occur
           queryClient.invalidateQueries({ queryKey: ["clients"] });
         }
       )
@@ -82,6 +83,15 @@ export default function Clients() {
   const handleClientClick = (client: Client) => {
     setSelectedClient(client);
     setFormOpen(true);
+  };
+
+  const handleFormClose = (open: boolean) => {
+    setFormOpen(open);
+    // When dialog closes, refresh the data
+    if (!open) {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setSelectedClient(null);
+    }
   };
 
   const filteredClients = clients?.filter((client) => {
@@ -215,7 +225,7 @@ export default function Clients() {
 
       <ClientFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={handleFormClose}
         client={selectedClient}
         onClientDeleted={handleClientDeleted}
       />
