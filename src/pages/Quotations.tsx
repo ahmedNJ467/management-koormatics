@@ -175,6 +175,7 @@ export default function Quotations() {
           description: "Client does not have an email address.",
           variant: "destructive",
         });
+        setIsSending(false);
         return;
       }
 
@@ -193,14 +194,12 @@ export default function Quotations() {
       });
       
       // Check if response is JSON before parsing
-      const contentType = response.headers.get("content-type");
       let result;
-      
-      if (contentType && contentType.includes("application/json")) {
+      try {
         result = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(`Unexpected response format: ${text.substring(0, 100)}...`);
+      } catch (error) {
+        console.error("Error parsing response:", error);
+        throw new Error("Failed to parse response from server");
       }
       
       if (!response.ok) {
@@ -208,10 +207,12 @@ export default function Quotations() {
       }
 
       // Update quotation status to "sent"
-      await supabase
+      const { error } = await supabase
         .from('quotations')
         .update({ status: 'sent' as QuotationStatus })
         .eq('id', quotation.id);
+        
+      if (error) throw error;
 
       toast({
         title: "Quotation sent",
@@ -219,6 +220,11 @@ export default function Quotations() {
       });
       
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      
+      // Close the dialog if it was opened
+      if (viewQuotation) {
+        setViewQuotation(null);
+      }
     } catch (error) {
       console.error("Error sending quotation:", error);
       toast({
@@ -288,10 +294,13 @@ export default function Quotations() {
     return id.substring(0, 8).toUpperCase();
   };
 
-  const filteredQuotations = quotations?.filter(quote => 
-    quote.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    quote.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Only filter quotations if we have data and a search term
+  const filteredQuotations = searchTerm && quotations 
+    ? quotations.filter(quote => 
+        quote.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quote.id.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : quotations;
 
   if (quotationsLoading) {
     return (
@@ -307,7 +316,7 @@ export default function Quotations() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight">Quotations</h2>
@@ -342,14 +351,14 @@ export default function Quotations() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredQuotations?.length === 0 ? (
+            {!filteredQuotations || filteredQuotations.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                  No quotations found. Create your first quotation!
+                  {searchTerm ? "No matching quotations found." : "No quotations found. Create your first quotation!"}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredQuotations?.map((quote) => (
+              filteredQuotations.map((quote) => (
                 <TableRow key={quote.id}>
                   <TableCell className="font-medium">{formatId(quote.id)}</TableCell>
                   <TableCell>{format(new Date(quote.date), 'MMM d, yyyy')}</TableCell>

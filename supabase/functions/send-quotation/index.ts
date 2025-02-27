@@ -166,20 +166,24 @@ const handler = async (req: Request): Promise<Response> => {
           headers: corsHeaders,
         }
       );
-    } catch (emailError: any) {
+    } catch (emailError) {
       console.error("Error sending email:", emailError);
       return new Response(
-        JSON.stringify({ error: emailError.message || "Failed to send email" }),
+        JSON.stringify({ 
+          error: emailError instanceof Error ? emailError.message : "Failed to send email" 
+        }),
         {
           status: 500,
           headers: corsHeaders,
         }
       );
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in send-quotation function:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "An unexpected error occurred" }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : "An unexpected error occurred" 
+      }),
       {
         status: 500,
         headers: corsHeaders,

@@ -123,8 +123,8 @@ export function QuotationFormDialog({
   // Calculate item amount when quantity or unit price changes
   const calculateItemAmount = (index: number) => {
     const items = form.getValues("items");
-    const quantity = items[index].quantity;
-    const unitPrice = items[index].unit_price;
+    const quantity = items[index].quantity || 0;
+    const unitPrice = items[index].unit_price || 0;
     const amount = quantity * unitPrice;
     form.setValue(`items.${index}.amount`, amount);
     return amount;
@@ -133,7 +133,11 @@ export function QuotationFormDialog({
   // Calculate total amount
   const calculateTotalAmount = () => {
     const items = form.getValues("items");
-    return items.reduce((total, item) => total + (item.quantity * item.unit_price), 0);
+    return items.reduce((total, item) => {
+      const quantity = item.quantity || 0;
+      const unitPrice = item.unit_price || 0;
+      return total + (quantity * unitPrice);
+    }, 0);
   };
 
   // Add a new item
@@ -209,7 +213,7 @@ export function QuotationFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{quotation ? "Edit Quotation" : "Create New Quotation"}</DialogTitle>
         </DialogHeader>
@@ -226,6 +230,7 @@ export function QuotationFormDialog({
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -254,6 +259,7 @@ export function QuotationFormDialog({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -365,10 +371,11 @@ export function QuotationFormDialog({
                                 min={1}
                                 {...field}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value);
-                                  field.onChange(value);
+                                  const value = parseInt(e.target.value || "0");
+                                  field.onChange(value || 1);
                                   calculateItemAmount(index);
                                 }}
+                                value={field.value}
                               />
                             </FormControl>
                             <FormMessage />
@@ -391,10 +398,11 @@ export function QuotationFormDialog({
                                 min={0}
                                 {...field}
                                 onChange={(e) => {
-                                  const value = parseFloat(e.target.value);
-                                  field.onChange(value);
+                                  const value = parseFloat(e.target.value || "0");
+                                  field.onChange(value || 0);
                                   calculateItemAmount(index);
                                 }}
+                                value={field.value}
                               />
                             </FormControl>
                             <FormMessage />
@@ -413,7 +421,7 @@ export function QuotationFormDialog({
                             <FormControl>
                               <Input 
                                 type="number" 
-                                value={`${field.value.toFixed(2)}`}
+                                value={field.value.toFixed(2)}
                                 disabled 
                                 className="bg-muted"
                               />
@@ -451,6 +459,7 @@ export function QuotationFormDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
