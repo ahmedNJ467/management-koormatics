@@ -18,33 +18,40 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
     if (!driver) return;
 
     try {
-      // First, delete the files from storage if they exist
-      if (driver.avatar_url) {
-        const avatarFileName = `${driver.id}-avatar.${driver.avatar_url.split('.').pop()}`;
-        await supabase.storage
-          .from('driver-avatars')
-          .remove([avatarFileName]);
-      }
-      
-      if (driver.document_url) {
-        const documentFileName = `${driver.id}-document.${driver.document_url.split('.').pop()}`;
-        await supabase.storage
-          .from('driver-documents')
-          .remove([documentFileName]);
-      }
-
-      // Then delete the driver record
-      const { error } = await supabase
+      // Delete the driver record first
+      const { error: deleteError } = await supabase
         .from("drivers")
         .delete()
         .eq("id", driver.id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
+
+      // Then attempt to clean up storage files if they exist
+      try {
+        if (driver.avatar_url) {
+          const avatarFileName = `${driver.id}-avatar.${driver.avatar_url.split('.').pop()}`;
+          await supabase.storage
+            .from('driver-avatars')
+            .remove([avatarFileName]);
+        }
+        
+        if (driver.document_url) {
+          const documentFileName = `${driver.id}-document.${driver.document_url.split('.').pop()}`;
+          await supabase.storage
+            .from('driver-documents')
+            .remove([documentFileName]);
+        }
+      } catch (storageError) {
+        // Log storage cleanup errors but don't fail the deletion
+        console.error("Error cleaning up storage files:", storageError);
+      }
 
       toast({
         title: "Driver deleted",
         description: `${driver.name} has been removed from the system.`,
       });
+      
+      // Close the dialog and refresh the list
       onDelete();
     } catch (error) {
       console.error("Error:", error);
