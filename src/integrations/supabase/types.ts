@@ -190,6 +190,72 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          date: string
+          due_date: string
+          id: string
+          items: Json
+          notes: string | null
+          paid_amount: number
+          payment_date: string | null
+          payment_method: string | null
+          quotation_id: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          date: string
+          due_date: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          paid_amount?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          quotation_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          date?: string
+          due_date?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          paid_amount?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          quotation_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance: {
         Row: {
           cost: number
@@ -287,6 +353,92 @@ export type Database = {
           },
         ]
       }
+      trips: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string | null
+          date: string
+          driver_id: string
+          dropoff_location: string | null
+          end_time: string | null
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          pickup_location: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["trip_status"]
+          type: Database["public"]["Enums"]["trip_type"]
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          amount?: number
+          client_id: string
+          created_at?: string | null
+          date: string
+          driver_id: string
+          dropoff_location?: string | null
+          end_time?: string | null
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          pickup_location?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["trip_status"]
+          type?: Database["public"]["Enums"]["trip_type"]
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string | null
+          date?: string
+          driver_id?: string
+          dropoff_location?: string | null
+          end_time?: string | null
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          pickup_location?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["trip_status"]
+          type?: Database["public"]["Enums"]["trip_type"]
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_images: {
         Row: {
           created_at: string | null
@@ -378,12 +530,21 @@ export type Database = {
       client_type: "organization" | "individual"
       driver_status: "active" | "inactive" | "on_leave"
       fuel_type: "petrol" | "diesel"
+      invoice_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
       maintenance_status:
         | "scheduled"
         | "in_progress"
         | "completed"
         | "cancelled"
       quotation_status: "draft" | "sent" | "approved" | "rejected" | "expired"
+      trip_status: "scheduled" | "in_progress" | "completed" | "cancelled"
+      trip_type:
+        | "airport_pickup"
+        | "airport_dropoff"
+        | "hourly"
+        | "full_day"
+        | "multi_day"
+        | "other"
       vehicle_status: "active" | "in_service" | "inactive"
       vehicle_type: "armoured" | "soft_skin"
     }
