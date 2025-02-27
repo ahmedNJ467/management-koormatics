@@ -1,19 +1,14 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver } from "@/lib/types";
-import { AvatarUploadField } from "./driver-form/avatar-upload-field";
-import { DocumentUploadField } from "./driver-form/document-upload-field";
-import { DriverFields } from "./driver-form/driver-fields";
 import { useDriverForm } from "./driver-form/use-driver-form";
 import { uploadDriverFile } from "./driver-form/use-driver-uploads";
 import type { DriverFormValues } from "./driver-form/types";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { DeleteDriverDialog } from "./driver-form/delete-driver-dialog";
+import { DriverFormContent } from "./driver-form/driver-form-content";
 
 interface DriverFormDialogProps {
   open: boolean;
@@ -65,45 +60,6 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       setDocumentName(null);
     }
   }, [driver, form, setAvatarPreview, setDocumentName]);
-
-  const handleDeleteDriver = async () => {
-    if (!driver) return;
-
-    try {
-      const { error } = await supabase
-        .from("drivers")
-        .delete()
-        .eq("id", driver.id);
-
-      if (error) throw error;
-
-      // Clean up files from storage
-      if (driver.avatar_url) {
-        await supabase.storage
-          .from('driver-avatars')
-          .remove([`${driver.id}-avatar`]);
-      }
-      if (driver.document_url) {
-        await supabase.storage
-          .from('driver-documents')
-          .remove([`${driver.id}-document`]);
-      }
-
-      toast({
-        title: "Driver deleted",
-        description: `${driver.name} has been removed from the system.`,
-      });
-      setShowDeleteDialog(false);
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error:", error);
-      toast({
-        title: "Failed to delete driver",
-        description: error instanceof Error ? error.message : "Failed to delete driver",
-        variant: "destructive",
-      });
-    }
-  };
 
   async function onSubmit(values: DriverFormValues) {
     setIsSubmitting(true);
@@ -194,59 +150,31 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
           <DialogHeader>
             <DialogTitle>{driver ? "Edit Driver" : "Add New Driver"}</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <AvatarUploadField
-                avatarPreview={avatarPreview}
-                onAvatarChange={handleAvatarChange}
-              />
-
-              <DocumentUploadField
-                documentName={documentName}
-                onDocumentChange={handleDocumentChange}
-                onDocumentClear={clearDocument}
-              />
-
-              <DriverFields form={form} />
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                {driver && (
-                  <Button 
-                    type="button"
-                    variant="destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    Delete
-                  </Button>
-                )}
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : driver ? "Update Driver" : "Add Driver"}
-                </Button>
-              </div>
-            </form>
-          </Form>
+          <DriverFormContent
+            form={form}
+            driver={driver}
+            isSubmitting={isSubmitting}
+            avatarPreview={avatarPreview}
+            documentName={documentName}
+            onAvatarChange={handleAvatarChange}
+            onDocumentChange={handleDocumentChange}
+            onDocumentClear={clearDocument}
+            onCancel={() => onOpenChange(false)}
+            onDelete={() => setShowDeleteDialog(true)}
+            onSubmit={onSubmit}
+          />
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete {driver?.name}'s record. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteDriver} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteDriverDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        driver={driver}
+        onDelete={() => {
+          setShowDeleteDialog(false);
+          onOpenChange(false);
+        }}
+      />
     </>
   );
 }
