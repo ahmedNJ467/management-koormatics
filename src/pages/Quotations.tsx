@@ -191,20 +191,11 @@ export default function Quotations() {
           clientName: client.name
         })
       });
-      
-      // Check if response is JSON before parsing
-      const contentType = response.headers.get("content-type");
-      let result;
-      
-      if (contentType && contentType.includes("application/json")) {
-        result = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(`Unexpected response format: ${text.substring(0, 100)}...`);
-      }
+
+      const result = await response.json();
       
       if (!response.ok) {
-        throw new Error(result?.error || "Failed to send quotation");
+        throw new Error(result.error || "Failed to send quotation");
       }
 
       // Update quotation status to "sent"
@@ -282,12 +273,6 @@ export default function Quotations() {
     }
   };
 
-  // Format the ID to show only the short version
-  const formatId = (id: string) => {
-    // Return just the first 8 characters of the UUID
-    return id.substring(0, 8).toUpperCase();
-  };
-
   const filteredQuotations = quotations?.filter(quote => 
     quote.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quote.id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -351,7 +336,7 @@ export default function Quotations() {
             ) : (
               filteredQuotations?.map((quote) => (
                 <TableRow key={quote.id}>
-                  <TableCell className="font-medium">{formatId(quote.id)}</TableCell>
+                  <TableCell className="font-medium">{quote.id}</TableCell>
                   <TableCell>{format(new Date(quote.date), 'MMM d, yyyy')}</TableCell>
                   <TableCell>{quote.client_name}</TableCell>
                   <TableCell>
@@ -420,7 +405,7 @@ export default function Quotations() {
             <div className="space-y-6">
               <div className="flex justify-between items-start border-b pb-4">
                 <div>
-                  <h3 className="text-xl font-semibold">#{formatId(viewQuotation.id)}</h3>
+                  <h3 className="text-xl font-semibold">#{viewQuotation.id}</h3>
                   <p className="text-muted-foreground">
                     Created: {format(new Date(viewQuotation.date), 'MMM d, yyyy')}
                   </p>
