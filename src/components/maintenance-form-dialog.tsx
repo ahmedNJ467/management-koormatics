@@ -48,12 +48,17 @@ export function MaintenanceFormDialog({
         description: "",
         cost: 0,
         next_scheduled: "",
-        status: "scheduled",
+        status: "scheduled" as const,
         notes: "",
         service_provider: "",
       });
     }
   }, [maintenance, form]);
+
+  const onSubmit = async (values: any) => {
+    await handleSubmit(values);
+    onOpenChange(false);
+  };
 
   return (
     <>
@@ -71,7 +76,7 @@ export function MaintenanceFormDialog({
             isSubmitting={isSubmitting}
             onCancel={() => onOpenChange(false)}
             onDelete={() => setShowDeleteDialog(true)}
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
           />
         </DialogContent>
       </Dialog>

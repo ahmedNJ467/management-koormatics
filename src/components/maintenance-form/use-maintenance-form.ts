@@ -39,13 +39,21 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
     },
   });
 
-  const handleSubmit = async (values: MaintenanceFormValues) => {
+  const handleSubmit = async (values: MaintenanceFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
+      const formattedValues = {
+        ...values,
+        cost: Number(values.cost),
+        next_scheduled: values.next_scheduled || null,
+        notes: values.notes || null,
+        service_provider: values.service_provider || null,
+      };
+
       if (maintenance) {
         const { error: updateError } = await supabase
           .from("maintenance")
-          .update(values)
+          .update(formattedValues)
           .eq("id", maintenance.id)
           .single();
 
@@ -58,7 +66,7 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
       } else {
         const { error: insertError } = await supabase
           .from("maintenance")
-          .insert(values)
+          .insert(formattedValues)
           .single();
 
         if (insertError) throw insertError;
@@ -70,7 +78,6 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
       }
 
       form.reset();
-      return true;
     } catch (error) {
       console.error("Error:", error);
       toast({
@@ -78,7 +85,6 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
         description: error instanceof Error ? error.message : "Failed to save maintenance record",
         variant: "destructive",
       });
-      return false;
     } finally {
       setIsSubmitting(false);
     }
