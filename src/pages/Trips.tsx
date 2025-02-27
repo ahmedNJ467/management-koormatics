@@ -1,9 +1,9 @@
-<lov-code>
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import {
   Table,
   TableBody,
@@ -79,6 +79,11 @@ const serviceTypeMap: Record<UIServiceType, TripType> = {
   "security_escort": "other",
   "one_way": "other",
   "full_day_hire": "full_day"
+};
+
+// Helper function to get the first day of the month (0 = Sunday, 1 = Monday, etc.)
+const getFirstDayOfMonth = (date: Date): number => {
+  return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 };
 
 export default function Trips() {
@@ -886,4 +891,658 @@ export default function Trips() {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             setTripToMessage(trip);
-                            setMessageOpen(
+                            setMessageOpen(true);
+                          }}>
+                            <MessageCircle className="mr-2 h-4 w-4" /> Send Message
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "in_progress")} disabled={trip.status === "in_progress"}>
+                            <Clock className="mr-2 h-4 w-4" /> Mark In Progress
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "completed")} disabled={trip.status === "completed"}>
+                            <Check className="mr-2 h-4 w-4" /> Mark Completed
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "cancelled")} disabled={trip.status === "cancelled"}>
+                            <X className="mr-2 h-4 w-4" /> Mark Cancelled
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            setTripToDelete(trip.id);
+                            setDeleteDialogOpen(true);
+                          }} className="text-red-500">
+                            <Trash className="mr-2 h-4 w-4" /> Delete Trip
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )
+      )}
+
+      {/* View Trip Dialog */}
+      <Dialog open={!!viewTrip} onOpenChange={(open) => !open && setViewTrip(null)}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              Trip Details {viewTrip && <span className="text-muted-foreground ml-2 font-normal text-base">#{formatTripId(viewTrip.id)}</span>}
+            </DialogTitle>
+            <DialogDescription>
+              {viewTrip && (
+                <div className="flex items-center gap-2 mt-1 text-sm">
+                  {getTripTypeIcon(viewTrip.type)}
+                  <span>{formatTripType(viewTrip.type)}</span>
+                  {viewTrip.is_recurring && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Repeat className="mr-1 h-3 w-3" /> Recurring
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewTrip && (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="details">Trip Details</TabsTrigger>
+                <TabsTrigger value="communication">Messages ({messages?.length || 0})</TabsTrigger>
+                <TabsTrigger value="history">Assignment History ({assignments?.length || 0})</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      <Badge variant="outline" className={getStatusColor(viewTrip.status)}>
+                        {formatStatus(viewTrip.status)}
+                      </Badge>
+                      <span className="ml-2">
+                        {formatDate(viewTrip.date)} 
+                        {viewTrip.time && ` at ${formatTime(viewTrip.time)}`}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Client</h4>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <p>{viewTrip.client_name}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Vehicle</h4>
+                        <div className="flex items-center gap-2">
+                          <Car className="h-4 w-4 text-muted-foreground" />
+                          <p>{viewTrip.vehicle_details}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Driver</h4>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            {viewTrip.driver_avatar ? (
+                              <AvatarImage src={viewTrip.driver_avatar} alt={viewTrip.driver_name} />
+                            ) : (
+                              <AvatarFallback>{viewTrip.driver_name.charAt(0)}</AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div>
+                            <p>{viewTrip.driver_name}</p>
+                            {viewTrip.driver_contact && (
+                              <p className="text-xs text-muted-foreground">{viewTrip.driver_contact}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Return Time</h4>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <p>{viewTrip.return_time ? formatTime(viewTrip.return_time) : "Not specified"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Pickup Location</h4>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <p>{viewTrip.pickup_location || "Not specified"}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Dropoff Location</h4>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <p>{viewTrip.dropoff_location || "Not specified"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {viewTrip.special_notes && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Special Notes</h4>
+                        <p className="text-sm p-3 bg-muted rounded-md">{viewTrip.special_notes}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="justify-between border-t pt-4">
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditTrip(viewTrip)}>
+                        Edit Trip
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setTripToAssign(viewTrip);
+                          setAssignOpen(true);
+                        }}
+                      >
+                        Assign Driver
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => updateTripStatus(viewTrip.id, 
+                          viewTrip.status === "scheduled" ? "in_progress" : 
+                          viewTrip.status === "in_progress" ? "completed" : "scheduled"
+                        )}
+                        disabled={viewTrip.status === "cancelled"}
+                      >
+                        {viewTrip.status === "scheduled" ? "Mark In Progress" : 
+                         viewTrip.status === "in_progress" ? "Mark Completed" : "Reactivate"}
+                      </Button>
+                      {viewTrip.status !== "cancelled" && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => updateTripStatus(viewTrip.id, "cancelled")}
+                        >
+                          Cancel Trip
+                        </Button>
+                      )}
+                    </div>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="communication" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Messages</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[300px] pr-4">
+                      {messages && messages.length > 0 ? (
+                        <div className="space-y-4">
+                          {messages.map((message) => (
+                            <div key={message.id} className={`flex ${message.sender_type === "admin" ? "justify-end" : "justify-start"}`}>
+                              <div className={`max-w-[80%] rounded-lg p-3 ${
+                                message.sender_type === "admin" 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-muted"
+                              }`}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-medium">{message.sender_name}</span>
+                                  <span className="text-xs opacity-70">{formatDateTime(message.timestamp)}</span>
+                                </div>
+                                <p className="text-sm">{message.message}</p>
+                              </div>
+                            </div>
+                          ))}
+                          <div ref={messageEndRef} />
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <MessageCircle className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                          <p>No messages yet</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                  <CardFooter className="flex items-center border-t pt-4">
+                    <div className="flex w-full gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setTripToMessage(viewTrip);
+                          setMessageOpen(true);
+                        }}
+                      >
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Send Message
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="history" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Assignment History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {assignments && assignments.length > 0 ? (
+                      <div className="space-y-4">
+                        {assignments.map((assignment) => (
+                          <div key={assignment.id} className="border rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  {assignment.driver_avatar ? (
+                                    <AvatarImage src={assignment.driver_avatar} alt={assignment.driver_name || 'Driver'} />
+                                  ) : (
+                                    <AvatarFallback>{assignment.driver_name ? assignment.driver_name.charAt(0) : 'D'}</AvatarFallback>
+                                  )}
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{assignment.driver_name || "Unknown Driver"}</p>
+                                  <p className="text-xs text-muted-foreground">{formatDateTime(assignment.assigned_at)}</p>
+                                </div>
+                              </div>
+                              <Badge variant={
+                                assignment.status === "accepted" ? "default" : 
+                                assignment.status === "rejected" ? "destructive" : "secondary"
+                              }>
+                                {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
+                              </Badge>
+                            </div>
+                            {assignment.notes && (
+                              <div className="text-sm bg-muted p-2 rounded-md mt-2">
+                                <p>{assignment.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <User className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                        <p>No assignment history</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Trip Form Dialog (Edit & Create) */}
+      <Dialog open={!!editTrip || bookingOpen} onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false))}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editTrip ? "Edit Trip" : "Book New Trip"}</DialogTitle>
+            <DialogDescription>
+              {editTrip 
+                ? `Edit trip details for ${editTrip.client_name}`
+                : "Create a new trip reservation"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveTrip} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="client_id">Client</Label>
+                <Select name="client_id" defaultValue={editTrip?.client_id} required>
+                  <SelectTrigger id="client_id">
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients?.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="service_type">Service Type</Label>
+                <Select 
+                  name="service_type" 
+                  defaultValue={
+                    editTrip?.type === "airport_pickup" ? "airport_pickup" :
+                    editTrip?.type === "airport_dropoff" ? "airport_dropoff" :
+                    editTrip?.type === "full_day" ? "full_day_hire" : "one_way"
+                  }
+                  onValueChange={(value) => setServiceType(value as UIServiceType)}
+                  required
+                >
+                  <SelectTrigger id="service_type">
+                    <SelectValue placeholder="Select service type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="airport_pickup">Airport Pickup</SelectItem>
+                    <SelectItem value="airport_dropoff">Airport Dropoff</SelectItem>
+                    <SelectItem value="one_way">One Way Transfer</SelectItem>
+                    <SelectItem value="round_trip">Round Trip</SelectItem>
+                    <SelectItem value="full_day_hire">Full Day Hire</SelectItem>
+                    <SelectItem value="security_escort">Security Escort</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Input 
+                  id="date"
+                  name="date"
+                  type="date"
+                  defaultValue={editTrip?.date}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="time">Time</Label>
+                <Input 
+                  id="time"
+                  name="time"
+                  type="time"
+                  defaultValue={editTrip?.time || editTrip?.start_time}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Show return time for round trips, security escorts, and full day hires */}
+            {["round_trip", "security_escort", "full_day_hire"].includes(serviceType) && (
+              <div className="space-y-2">
+                <Label htmlFor="return_time">Return Time</Label>
+                <Input 
+                  id="return_time"
+                  name="return_time"
+                  type="time"
+                  defaultValue={editTrip?.return_time || editTrip?.end_time}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="vehicle_id">Vehicle</Label>
+                <Select name="vehicle_id" defaultValue={editTrip?.vehicle_id} required>
+                  <SelectTrigger id="vehicle_id">
+                    <SelectValue placeholder="Select vehicle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicles?.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.make} {vehicle.model} ({vehicle.registration})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="driver_id">Driver</Label>
+                <Select name="driver_id" defaultValue={editTrip?.driver_id} required>
+                  <SelectTrigger id="driver_id">
+                    <SelectValue placeholder="Select driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {drivers?.map((driver) => (
+                      <SelectItem key={driver.id} value={driver.id}>
+                        {driver.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pickup_location">Pickup Location</Label>
+                <Input 
+                  id="pickup_location"
+                  name="pickup_location"
+                  placeholder="Enter pickup location"
+                  defaultValue={editTrip?.pickup_location || ""}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dropoff_location">Dropoff Location</Label>
+                <Input 
+                  id="dropoff_location"
+                  name="dropoff_location"
+                  placeholder="Enter dropoff location"
+                  defaultValue={editTrip?.dropoff_location || ""}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="special_notes">Notes</Label>
+              <Textarea 
+                id="special_notes"
+                name="special_notes"
+                placeholder="Add any special instructions or notes"
+                defaultValue={editTrip?.special_notes || editTrip?.notes || ""}
+                className="min-h-[80px]"
+              />
+            </div>
+
+            {editTrip && (
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select name="status" defaultValue={editTrip.status} required>
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {!editTrip && (
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="is_recurring" 
+                  name="is_recurring"
+                  checked={isRecurring}
+                  onCheckedChange={(checked) => setIsRecurring(checked === true)}
+                />
+                <Label htmlFor="is_recurring" className="cursor-pointer">This is a recurring trip</Label>
+              </div>
+            )}
+
+            {!editTrip && isRecurring && (
+              <div className="grid grid-cols-2 gap-4 border p-4 rounded-md">
+                <div className="space-y-2">
+                  <Label htmlFor="occurrences">Number of Occurrences</Label>
+                  <Input 
+                    id="occurrences"
+                    name="occurrences"
+                    type="number"
+                    defaultValue="4"
+                    min="2"
+                    required={isRecurring}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select 
+                    name="frequency" 
+                    value={frequency}
+                    onValueChange={(value) => setFrequency(value as "daily" | "weekly" | "monthly")}
+                  >
+                    <SelectTrigger id="frequency">
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => editTrip ? setEditTrip(null) : setBookingOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {editTrip ? "Save Changes" : "Book Trip"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Driver Assignment Dialog */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Driver</DialogTitle>
+            <DialogDescription>
+              {tripToAssign && (
+                <span>Assign a driver to trip on {formatDate(tripToAssign.date)} for {tripToAssign.client_name}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="driver_select">Select Driver</Label>
+              <Select value={assignDriver} onValueChange={setAssignDriver}>
+                <SelectTrigger id="driver_select">
+                  <SelectValue placeholder="Select a driver" />
+                </SelectTrigger>
+                <SelectContent>
+                  {drivers?.map((driver) => (
+                    <SelectItem key={driver.id} value={driver.id}>
+                      {driver.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="assignment_note">Note (Optional)</Label>
+              <Textarea 
+                id="assignment_note"
+                placeholder="Add a note for this assignment"
+                value={assignNote}
+                onChange={(e) => setAssignNote(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setAssignOpen(false);
+              setAssignDriver("");
+              setAssignNote("");
+              setTripToAssign(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAssignDriver}
+              disabled={!assignDriver}
+            >
+              Assign Driver
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Dialog */}
+      <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Message</DialogTitle>
+            <DialogDescription>
+              {tripToMessage && (
+                <span>Send a message about the trip on {formatDate(tripToMessage.date)} for {tripToMessage.client_name}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="message_content">Message</Label>
+              <Textarea 
+                id="message_content"
+                placeholder="Type your message here"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setMessageOpen(false);
+              setNewMessage("");
+              setTripToMessage(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim()}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Send Message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the trip and all related data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteDialogOpen(false);
+              setTripToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={deleteTrip}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
