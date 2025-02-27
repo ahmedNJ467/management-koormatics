@@ -179,4 +179,5 @@ export interface DisplayTrip extends Trip {
   airline?: string;
   terminal?: string;
   special_notes?: string;
+  is_recurring?: boolean; // Added for UI display purposes
 }
