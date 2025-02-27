@@ -36,12 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogTitle, DialogContent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Quotation, Client, QuotationStatus } from "@/lib/types";
-
-interface DisplayQuotation extends Quotation {
-  client_name: string;
-  client_email?: string;
-}
+import { QuotationItem, QuotationStatus, Client, DisplayQuotation } from "@/lib/types";
 
 export default function Quotations() {
   const { toast } = useToast();
@@ -61,14 +56,14 @@ export default function Quotations() {
       const { data, error } = await supabase
         .from('quotations')
         .select(`
-          id, date, client_id, status, total_amount, valid_until, notes, items, created_at, updated_at,
-          clients (id, name, email)
+          *,
+          clients:client_id(name, email)
         `)
         .order('date', { ascending: false });
       
       if (error) throw error;
 
-      // Map the data to match our DisplayQuotation interface
+      // Map the data to match our Quotation interface
       return data.map(quote => ({
         id: quote.id,
         date: quote.date,
@@ -79,7 +74,7 @@ export default function Quotations() {
         total_amount: quote.total_amount,
         valid_until: quote.valid_until,
         notes: quote.notes,
-        items: quote.items || [],
+        items: quote.items as QuotationItem[] || [],
         created_at: quote.created_at,
         updated_at: quote.updated_at
       })) as DisplayQuotation[];
@@ -206,7 +201,7 @@ export default function Quotations() {
       // Update quotation status to "sent"
       await supabase
         .from('quotations')
-        .update({ status: 'sent' })
+        .update({ status: 'sent' as QuotationStatus })
         .eq('id', quotation.id);
 
       toast({

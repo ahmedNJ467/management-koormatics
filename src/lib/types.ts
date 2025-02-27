@@ -98,6 +98,11 @@ export interface Quotation {
   updated_at?: string;
 }
 
+export interface DisplayQuotation extends Quotation {
+  client_name: string;
+  client_email?: string;
+}
+
 export interface Client {
   id: string;
   name: string;

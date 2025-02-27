@@ -24,7 +24,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Quotation, QuotationStatus, QuotationItem, Client } from "@/lib/types";
+import { Quotation, QuotationStatus, Client } from "@/lib/types";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, addDays } from "date-fns";
@@ -161,7 +161,7 @@ export function QuotationFormDialog({
         status: values.status,
         notes: values.notes || null,
         total_amount: totalAmount,
-        items: values.items
+        items: values.items as any // Cast to any to avoid TypeScript errors
       };
       
       if (quotation) {

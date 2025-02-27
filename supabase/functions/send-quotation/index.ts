@@ -35,8 +35,8 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: quotation, error: quotationError } = await supabase
       .from("quotations")
       .select(`
-        id, date, client_id, status, total_amount, valid_until, notes, items,
-        clients(name, email)
+        *,
+        clients:client_id(name, email)
       `)
       .eq("id", quotationId)
       .single();
@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Format items for the email
-    const items = quotation.items.map((item: any) => `
+    const items = (quotation.items as any[]).map((item: any) => `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.description}</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
