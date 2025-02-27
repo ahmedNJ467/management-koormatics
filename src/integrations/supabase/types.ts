@@ -353,6 +353,98 @@ export type Database = {
           },
         ]
       }
+      trip_assignments: {
+        Row: {
+          assigned_at: string
+          created_at: string | null
+          driver_id: string
+          id: string
+          notes: string | null
+          status: string
+          trip_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          created_at?: string | null
+          driver_id: string
+          id?: string
+          notes?: string | null
+          status: string
+          trip_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          created_at?: string | null
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          trip_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean
+          message: string
+          sender_name: string
+          sender_type: string
+          timestamp: string
+          trip_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          sender_name: string
+          sender_type: string
+          timestamp?: string
+          trip_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          sender_name?: string
+          sender_type?: string
+          timestamp?: string
+          trip_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_messages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           amount: number

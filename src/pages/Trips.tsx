@@ -60,6 +60,7 @@ import {
   TripMessage,
   TripAssignment,
 } from "@/lib/types";
+import { TripMessageData, TripAssignmentData } from "@/components/trips/types";
 
 export default function Trips() {
   const { toast } = useToast();
@@ -113,6 +114,8 @@ export default function Trips() {
     queryKey: ["tripMessages", viewTrip?.id],
     queryFn: async () => {
       if (!viewTrip) return [];
+      
+      // Use a raw query to get the messages
       const { data, error } = await supabase
         .from("trip_messages")
         .select("*")
@@ -120,7 +123,7 @@ export default function Trips() {
         .order("timestamp", { ascending: true });
 
       if (error) throw error;
-      return data as TripMessage[];
+      return data as TripMessageData[];
     },
     enabled: !!viewTrip,
   });
@@ -130,6 +133,8 @@ export default function Trips() {
     queryKey: ["tripAssignments", viewTrip?.id],
     queryFn: async () => {
       if (!viewTrip) return [];
+      
+      // Use a raw query to get the assignments with driver details
       const { data, error } = await supabase
         .from("trip_assignments")
         .select(`
@@ -145,7 +150,7 @@ export default function Trips() {
         ...assignment,
         driver_name: assignment.drivers?.name,
         driver_avatar: assignment.drivers?.avatar_url
-      })) as TripAssignment[];
+      })) as TripAssignmentData[];
     },
     enabled: !!viewTrip,
   });
@@ -366,20 +371,27 @@ export default function Trips() {
     if (!tripToAssign || !assignDriver) return;
     
     try {
-      // Create assignment record
-      const assignmentData = {
-        trip_id: tripToAssign.id,
-        driver_id: assignDriver,
-        assigned_at: new Date().toISOString(),
-        status: "pending",
-        notes: assignNote || null,
-      };
+      // Create assignment record using the rpc endpoint
+      const { error: assignError } = await supabase.rpc('insert_trip_assignment', {
+        p_trip_id: tripToAssign.id,
+        p_driver_id: assignDriver,
+        p_status: "pending",
+        p_notes: assignNote || null
+      });
       
-      const { error: assignError } = await supabase
-        .from("trip_assignments")
-        .insert(assignmentData);
-      
-      if (assignError) throw assignError;
+      if (assignError) {
+        // Fallback to direct insertion if RPC isn't available
+        console.log("Falling back to direct insert");
+        const { error } = await supabase.from('trip_assignments').insert({
+          trip_id: tripToAssign.id,
+          driver_id: assignDriver,
+          assigned_at: new Date().toISOString(),
+          status: "pending",
+          notes: assignNote || null
+        });
+        
+        if (error) throw error;
+      }
       
       // Update trip with new driver
       const { error: updateError } = await supabase
@@ -416,20 +428,29 @@ export default function Trips() {
     if (!tripToMessage || !newMessage.trim()) return;
     
     try {
-      const messageData = {
-        trip_id: tripToMessage.id,
-        sender_type: "admin",
-        sender_name: "Fleet Manager", // In a real app, use the current user's name
-        message: newMessage.trim(),
-        timestamp: new Date().toISOString(),
-        is_read: false,
-      };
+      // Send message using the rpc endpoint
+      const { error: rpcError } = await supabase.rpc('insert_trip_message', {
+        p_trip_id: tripToMessage.id,
+        p_sender_type: "admin",
+        p_sender_name: "Fleet Manager",
+        p_message: newMessage.trim(),
+        p_is_read: false
+      });
       
-      const { error } = await supabase
-        .from("trip_messages")
-        .insert(messageData);
-      
-      if (error) throw error;
+      if (rpcError) {
+        // Fallback to direct insertion if RPC isn't available
+        console.log("Falling back to direct insert for message");
+        const { error } = await supabase.from('trip_messages').insert({
+          trip_id: tripToMessage.id,
+          sender_type: "admin",
+          sender_name: "Fleet Manager", // In a real app, use the current user's name
+          message: newMessage.trim(),
+          timestamp: new Date().toISOString(),
+          is_read: false
+        });
+        
+        if (error) throw error;
+      }
       
       toast({
         title: "Message sent",
