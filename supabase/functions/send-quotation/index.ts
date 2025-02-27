@@ -7,12 +7,23 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 
+// Define CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Content-Type": "application/json"
 };
+
+// Handle CORS preflight requests
+function handleCors(req: Request) {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
+  return null;
+}
 
 interface QuotationEmailRequest {
   quotationId: string;
@@ -22,9 +33,8 @@ interface QuotationEmailRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
     // Parse request body
@@ -160,7 +170,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Email sent successfully:", emailResponse);
 
       return new Response(
-        JSON.stringify({ success: true, data: emailResponse }),
+        JSON.stringify({ success: true, message: "Email sent successfully" }),
         {
           status: 200,
           headers: corsHeaders,

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogTitle, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuotationItem, QuotationStatus, Client, DisplayQuotation } from "@/lib/types";
 
@@ -113,27 +113,33 @@ export default function Quotations() {
     },
   });
 
-  const handleFormClose = (open: boolean) => {
+  const handleFormClose = useCallback((open: boolean) => {
     setFormOpen(open);
     // When dialog closes, reset the selected quotation
     if (!open) {
       setSelectedQuotation(null);
     }
-  };
+  }, []);
 
-  const handleQuotationClick = (quotation: DisplayQuotation) => {
+  const handleQuotationClick = useCallback((quotation: DisplayQuotation) => {
     setSelectedQuotation(quotation);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleViewQuotation = (quotation: DisplayQuotation) => {
+  const handleViewQuotation = useCallback((quotation: DisplayQuotation) => {
     setViewQuotation(quotation);
-  };
+  }, []);
 
-  const handleDeleteClick = (quotation: DisplayQuotation) => {
+  const handleViewDialogClose = useCallback((open: boolean) => {
+    if (!open) {
+      setViewQuotation(null);
+    }
+  }, []);
+
+  const handleDeleteClick = useCallback((quotation: DisplayQuotation) => {
     setQuotationToDelete(quotation);
     setShowDeleteAlert(true);
-  };
+  }, []);
 
   const handleDeleteConfirm = async () => {
     if (!quotationToDelete) return;
@@ -222,9 +228,7 @@ export default function Quotations() {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       
       // Close the dialog if it was opened
-      if (viewQuotation) {
-        setViewQuotation(null);
-      }
+      setViewQuotation(null);
     } catch (error) {
       console.error("Error sending quotation:", error);
       toast({
@@ -422,7 +426,7 @@ export default function Quotations() {
       />
 
       {/* Quotation view dialog */}
-      <Dialog open={!!viewQuotation} onOpenChange={(open) => !open && setViewQuotation(null)}>
+      <Dialog open={!!viewQuotation} onOpenChange={handleViewDialogClose}>
         <DialogContent className="max-w-3xl">
           <DialogTitle>Quotation Details</DialogTitle>
           {viewQuotation && (
@@ -491,7 +495,10 @@ export default function Quotations() {
                 <Button variant="outline" onClick={() => setViewQuotation(null)}>
                   Close
                 </Button>
-                <Button onClick={() => handleSendQuotation(viewQuotation)} disabled={viewQuotation.status === 'sent' || viewQuotation.status === 'approved' || isSending}>
+                <Button 
+                  onClick={() => handleSendQuotation(viewQuotation)} 
+                  disabled={viewQuotation.status === 'sent' || viewQuotation.status === 'approved' || isSending}
+                >
                   {isSending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
