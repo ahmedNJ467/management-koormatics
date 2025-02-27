@@ -177,5 +177,7 @@ export interface DisplayTrip extends Trip {
   flight_number?: string;
   airline?: string;
   terminal?: string;
+  hours?: string | number;
+  days?: string | number;
   special_notes?: string;
 }

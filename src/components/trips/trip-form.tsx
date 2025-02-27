@@ -50,12 +50,21 @@ export const dbServiceTypeMap: { [key in TripType]: UIServiceType } = {
   other: "round_trip", // Default mapping for 'other'
 };
 
+// Extended Trip type for additional UI fields
+interface ExtendedTrip extends Trip {
+  airline?: string;
+  flight_number?: string;
+  terminal?: string;
+  hours?: string | number;
+  days?: string | number;
+}
+
 interface TripFormProps {
   clients: Client[];
   vehicles: Vehicle[];
   drivers: Driver[];
   onSubmit: (formData: FormData) => Promise<void>;
-  initialTrip?: Trip | null;
+  initialTrip?: ExtendedTrip | null;
   isSubmitting: boolean;
 }
 
