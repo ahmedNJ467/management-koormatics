@@ -1,5 +1,4 @@
 
-
 export type DriverStatus = 'active' | 'inactive' | 'on_leave';
 
 export interface Driver {
@@ -118,35 +117,3 @@ export interface Client {
   created_at?: string;
   updated_at?: string;
 }
-
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-
-export interface InvoiceItem {
-  description: string;
-  quantity: number;
-  unit_price: number;
-  amount: number;
-}
-
-export interface Invoice {
-  id: string;
-  date: string;
-  due_date: string;
-  client_id: string;
-  status: InvoiceStatus;
-  total_amount: number;
-  paid_amount?: number;
-  payment_date?: string;
-  payment_method?: string;
-  notes?: string;
-  items: InvoiceItem[];
-  quotation_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface DisplayInvoice extends Invoice {
-  client_name: string;
-  client_email?: string;
-}
-

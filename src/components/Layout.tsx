@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
-import { Sidebar } from "./Sidebar";  // Using named import
+import Sidebar from "./Sidebar";
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
