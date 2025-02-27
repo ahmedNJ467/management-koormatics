@@ -5,35 +5,40 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
   if (!file) return null;
 
   const fileExt = file.name.split('.').pop();
-  // Use a simpler filename format that matches what we use in deletion
-  const fileName = `${driverId}-${fileType}`;
+  const fileName = `${driverId}-${fileType}.${fileExt}`;
 
-  // Remove any existing file first
   try {
+    // Remove any existing file first
     await supabase.storage
       .from(bucket)
-      .remove([fileName]);
+      .remove([fileName])
+      .then(({ error }) => {
+        if (error && error.message !== 'Object not found') {
+          console.error('Error removing existing file:', error);
+        }
+      });
+
+    // Upload the new file
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file, {
+        upsert: true,
+        contentType: file.type
+      });
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw uploadError;
+    }
+
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+
+    return publicUrl;
   } catch (error) {
-    console.log('No existing file to remove or error:', error);
+    console.error('File operation error:', error);
+    throw error;
   }
-
-  // Upload the new file
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(fileName, file, {
-      upsert: true,
-      contentType: file.type
-    });
-
-  if (uploadError) {
-    console.error('Upload error:', uploadError);
-    throw uploadError;
-  }
-
-  // Get the public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(fileName);
-
-  return publicUrl;
 }

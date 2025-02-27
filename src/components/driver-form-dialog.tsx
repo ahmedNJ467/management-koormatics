@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver } from "@/lib/types";
@@ -67,6 +67,7 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
       let avatarUrl = driver?.avatar_url || null;
       let documentUrl = driver?.document_url || null;
       
+      // First create/update the driver record
       const driverData = {
         name: values.name,
         license_number: values.license_number,
@@ -76,25 +77,19 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         status: values.status,
       };
 
-      if (driver) {
-        if (avatarFile) {
-          avatarUrl = await uploadDriverFile(avatarFile, 'driver-avatars', driver.id, 'avatar');
-        }
-        if (documentFile) {
-          documentUrl = await uploadDriverFile(documentFile, 'driver-documents', driver.id, 'document');
-        }
+      let driverId: string;
 
-        const { error } = await supabase
+      if (driver) {
+        // Update existing driver
+        const { error: updateError } = await supabase
           .from("drivers")
-          .update({
-            ...driverData,
-            ...(avatarUrl && { avatar_url: avatarUrl }),
-            ...(documentUrl && { document_url: documentUrl }),
-          })
+          .update(driverData)
           .eq("id", driver.id);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
+        driverId = driver.id;
       } else {
+        // Create new driver
         const { data: newDriver, error: insertError } = await supabase
           .from("drivers")
           .insert(driverData)
@@ -102,28 +97,38 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
           .single();
 
         if (insertError) throw insertError;
+        if (!newDriver) throw new Error("Failed to create driver");
+        driverId = newDriver.id;
+      }
 
-        if (newDriver) {
-          if (avatarFile) {
-            avatarUrl = await uploadDriverFile(avatarFile, 'driver-avatars', newDriver.id, 'avatar');
-          }
-
-          if (documentFile) {
-            documentUrl = await uploadDriverFile(documentFile, 'driver-documents', newDriver.id, 'document');
-          }
-
-          if (avatarUrl || documentUrl) {
-            const { error: updateError } = await supabase
-              .from("drivers")
-              .update({
-                ...(avatarUrl && { avatar_url: avatarUrl }),
-                ...(documentUrl && { document_url: documentUrl }),
-              })
-              .eq("id", newDriver.id);
-
-            if (updateError) throw updateError;
-          }
+      // Then handle file uploads if any
+      try {
+        if (avatarFile) {
+          avatarUrl = await uploadDriverFile(avatarFile, 'driver-avatars', driverId, 'avatar');
         }
+        if (documentFile) {
+          documentUrl = await uploadDriverFile(documentFile, 'driver-documents', driverId, 'document');
+        }
+
+        // Update the driver record with file URLs if needed
+        if (avatarUrl || documentUrl) {
+          const { error: fileUpdateError } = await supabase
+            .from("drivers")
+            .update({
+              ...(avatarUrl && { avatar_url: avatarUrl }),
+              ...(documentUrl && { document_url: documentUrl }),
+            })
+            .eq("id", driverId);
+
+          if (fileUpdateError) throw fileUpdateError;
+        }
+      } catch (fileError) {
+        console.error("File upload error:", fileError);
+        toast({
+          title: "File upload failed",
+          description: "Driver was saved but there was an error uploading files.",
+          variant: "destructive",
+        });
       }
 
       toast({
@@ -149,6 +154,9 @@ export function DriverFormDialog({ open, onOpenChange, driver }: DriverFormDialo
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{driver ? "Edit Driver" : "Add New Driver"}</DialogTitle>
+            <DialogDescription>
+              Enter the driver's information below. Required fields are marked with an asterisk.
+            </DialogDescription>
           </DialogHeader>
           <DriverFormContent
             form={form}
