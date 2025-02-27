@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      clients: {
+        Row: {
+          contact: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          type: Database["public"]["Enums"]["client_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          type: Database["public"]["Enums"]["client_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          type?: Database["public"]["Enums"]["client_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           avatar_url: string | null
@@ -236,6 +269,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      client_type: "organization" | "individual"
       driver_status: "active" | "inactive" | "on_leave"
       fuel_type: "petrol" | "diesel"
       maintenance_status:
