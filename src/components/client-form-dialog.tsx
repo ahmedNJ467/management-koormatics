@@ -83,6 +83,9 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
       
       if (onClientDeleted) {
         onClientDeleted();
+      } else {
+        // If no onClientDeleted callback is provided, close the dialog
+        onOpenChange(false);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -119,7 +122,12 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={(newOpen) => {
+        // Only allow dialog to close if we're not in the middle of confirming a delete
+        if (!showDeleteConfirm) {
+          onOpenChange(newOpen);
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
@@ -350,7 +358,12 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         </DialogContent>
       </Dialog>
       
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialog 
+        open={showDeleteConfirm} 
+        onOpenChange={(open) => {
+          setShowDeleteConfirm(open);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
