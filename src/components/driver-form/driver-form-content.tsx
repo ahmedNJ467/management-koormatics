@@ -45,6 +45,7 @@ export function DriverFormContent({
 
         <DocumentUploadField
           documentName={documentName}
+          documentUrl={driver?.document_url}
           onDocumentChange={onDocumentChange}
           onDocumentClear={onDocumentClear}
         />

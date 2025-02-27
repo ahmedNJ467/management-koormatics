@@ -18,15 +18,16 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
     if (!driver) return;
 
     try {
-      // First, delete the files from storage
+      // First, delete the files from storage if they exist
       if (driver.avatar_url) {
-        const avatarFileName = `${driver.id}-avatar`;
+        const avatarFileName = `${driver.id}-avatar.${driver.avatar_url.split('.').pop()}`;
         await supabase.storage
           .from('driver-avatars')
           .remove([avatarFileName]);
       }
+      
       if (driver.document_url) {
-        const documentFileName = `${driver.id}-document`;
+        const documentFileName = `${driver.id}-document.${driver.document_url.split('.').pop()}`;
         await supabase.storage
           .from('driver-documents')
           .remove([documentFileName]);
@@ -61,7 +62,7 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete {driver?.name}'s record. This action cannot be undone.
+            This will permanently delete {driver?.name}'s record and all associated files. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
