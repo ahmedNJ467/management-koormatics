@@ -22,6 +22,7 @@ export function useClientForm(client?: Client | null) {
   const [documents, setDocuments] = useState<ClientDocument[]>(
     client?.documents || []
   );
+  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(
     client?.profile_image_url || null
@@ -41,9 +42,34 @@ export function useClientForm(client?: Client | null) {
     },
   });
 
+  // Reset form when client changes
+  useEffect(() => {
+    if (client) {
+      form.reset(client);
+      setProfilePreview(client.profile_image_url || null);
+      setDocuments(client.documents || []);
+    } else {
+      form.reset({
+        name: "",
+        type: "individual",
+        description: "",
+        website: "",
+        address: "",
+        contact: "",
+        email: "",
+        phone: "",
+      });
+      setProfilePreview(null);
+      setDocuments([]);
+    }
+  }, [client, form]);
+
   // Fetch client contacts if this is an organization
   useEffect(() => {
-    if (!client || client.type !== 'organization') return;
+    if (!client || client.type !== 'organization') {
+      setContacts([]);
+      return;
+    }
 
     const fetchContacts = async () => {
       try {
@@ -62,9 +88,12 @@ export function useClientForm(client?: Client | null) {
             phone: contact.phone || "",
             is_primary: contact.is_primary || false
           })));
+        } else {
+          setContacts([]);
         }
       } catch (error) {
         console.error('Error fetching contacts:', error);
+        setContacts([]);
       }
     };
 
@@ -81,12 +110,9 @@ export function useClientForm(client?: Client | null) {
   };
 
   const handleDocumentUpload = async (files: FileList) => {
+    // For new clients, just store the files temporarily
     if (!client?.id) {
-      toast({
-        title: "Error",
-        description: "Please save the client first before uploading documents",
-        variant: "destructive",
-      });
+      setDocumentFiles(prev => [...prev, ...Array.from(files)]);
       return;
     }
 
@@ -114,21 +140,6 @@ export function useClientForm(client?: Client | null) {
     try {
       let profileImageUrl = client?.profile_image_url;
 
-      if (profileFile) {
-        if (client) {
-          // Update existing client's profile image
-          profileImageUrl = await uploadClientFile(
-            profileFile,
-            "client-profiles",
-            client.id,
-            "profile"
-          );
-        } else {
-          // For new clients, we'll upload the profile image after creating the client
-          // So we don't do anything with profileFile yet
-        }
-      }
-
       const formattedValues = {
         name: values.name, // Ensure name is always included
         type: values.type,
@@ -143,6 +154,18 @@ export function useClientForm(client?: Client | null) {
       };
 
       if (client) {
+        // Update existing client
+        if (profileFile) {
+          // Update existing client's profile image
+          profileImageUrl = await uploadClientFile(
+            profileFile,
+            "client-profiles",
+            client.id,
+            "profile"
+          );
+          formattedValues.profile_image_url = profileImageUrl;
+        }
+
         const { error: updateError } = await supabase
           .from("clients")
           .update(formattedValues)
@@ -151,28 +174,30 @@ export function useClientForm(client?: Client | null) {
         if (updateError) throw updateError;
 
         // Update contacts if organization
-        if (values.type === "organization" && contacts.length > 0) {
+        if (values.type === "organization") {
           // First delete all existing contacts
           await supabase
             .from("client_contacts")
             .delete()
             .eq("client_id", client.id);
 
-          // Then insert the new contacts
-          const formattedContacts = contacts.map((contact) => ({
-            client_id: client.id,
-            name: contact.name, // name is required
-            position: contact.position || null,
-            email: contact.email || null,
-            phone: contact.phone || null,
-            is_primary: contact.is_primary || false,
-          }));
+          // Then insert the new contacts if any
+          if (contacts.length > 0) {
+            const formattedContacts = contacts.map((contact) => ({
+              client_id: client.id,
+              name: contact.name, // name is required
+              position: contact.position || null,
+              email: contact.email || null,
+              phone: contact.phone || null,
+              is_primary: contact.is_primary || false,
+            }));
 
-          const { error: contactsError } = await supabase
-            .from("client_contacts")
-            .insert(formattedContacts);
+            const { error: contactsError } = await supabase
+              .from("client_contacts")
+              .insert(formattedContacts);
 
-          if (contactsError) throw contactsError;
+            if (contactsError) throw contactsError;
+          }
         }
 
         toast({
@@ -185,15 +210,19 @@ export function useClientForm(client?: Client | null) {
           .from("clients")
           .insert({
             ...formattedValues,
-            documents: documents.length > 0 ? documents : []
+            documents: [] // Start with empty documents, we'll add them later
           })
           .select()
           .single();
 
         if (insertError) throw insertError;
 
+        if (!insertedClient) {
+          throw new Error("Failed to create client");
+        }
+
         // Now that we have a client ID, upload the profile image if provided
-        if (profileFile && insertedClient) {
+        if (profileFile) {
           const profileImageUrl = await uploadClientFile(
             profileFile,
             "client-profiles",
@@ -210,8 +239,21 @@ export function useClientForm(client?: Client | null) {
           }
         }
 
+        // Upload any documents
+        if (documentFiles.length > 0) {
+          const uploadedDocs = await Promise.all(
+            documentFiles.map(file => uploadClientDocument(file, insertedClient.id))
+          );
+
+          // Update client with documents
+          await supabase
+            .from("clients")
+            .update({ documents: uploadedDocs })
+            .eq("id", insertedClient.id);
+        }
+
         // Add contacts if organization
-        if (values.type === "organization" && contacts.length > 0 && insertedClient) {
+        if (values.type === "organization" && contacts.length > 0) {
           // Ensure all contact records have required fields
           const formattedContacts = contacts.map((contact) => ({
             client_id: insertedClient.id,
@@ -239,6 +281,7 @@ export function useClientForm(client?: Client | null) {
       form.reset();
       setContacts([]);
       setDocuments([]);
+      setDocumentFiles([]);
       setProfileFile(null);
       setProfilePreview(null);
     } catch (error) {
@@ -260,6 +303,7 @@ export function useClientForm(client?: Client | null) {
     setContacts,
     documents,
     setDocuments,
+    documentFiles,
     profilePreview,
     handleProfileChange,
     handleDocumentUpload,

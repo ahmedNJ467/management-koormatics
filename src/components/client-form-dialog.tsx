@@ -60,6 +60,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     setContacts,
     documents,
     setDocuments,
+    documentFiles,
     profilePreview,
     handleProfileChange,
     handleDocumentUpload,
@@ -171,7 +172,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
             {/* Basic Information */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">Name *</Label>
                 <Input id="name" {...form.register("name")} />
                 {form.formState.errors.name && (
                   <p className="text-sm text-destructive">
@@ -181,9 +182,9 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type">Type</Label>
+                <Label htmlFor="type">Type *</Label>
                 <Select
-                  defaultValue={form.getValues("type")}
+                  value={form.getValues("type")}
                   onValueChange={(value) =>
                     form.setValue("type", value as "organization" | "individual")
                   }
@@ -255,7 +256,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
                       <X className="h-4 w-4" />
                     </Button>
                     <div className="space-y-2">
-                      <Label>Name</Label>
+                      <Label>Name *</Label>
                       <Input
                         value={contact.name}
                         onChange={(e) => updateContact(index, { name: e.target.value })}
@@ -308,32 +309,49 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
                 </label>
               </div>
               <div className="space-y-2">
-                {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between p-2 border rounded-md"
-                  >
-                    <span className="text-sm truncate flex-1">{doc.name}</span>
-                    <div className="flex items-center space-x-2">
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 hover:bg-gray-100 rounded-md"
-                      >
-                        <Download className="h-4 w-4" />
-                      </a>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeDocument(doc.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                {documents.length > 0 ? (
+                  documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between p-2 border rounded-md"
+                    >
+                      <span className="text-sm truncate flex-1">{doc.name}</span>
+                      <div className="flex items-center space-x-2">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 hover:bg-gray-100 rounded-md"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeDocument(doc.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : documentFiles && documentFiles.length > 0 ? (
+                  // Display pending uploads for new clients
+                  documentFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 border rounded-md"
+                    >
+                      <span className="text-sm truncate flex-1">{file.name}</span>
+                      <div className="flex items-center">
+                        <span className="text-xs text-muted-foreground italic mr-2">Pending upload</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground italic">No documents uploaded</div>
+                )}
               </div>
             </div>
 
