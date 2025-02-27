@@ -42,9 +42,14 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
   const handleSubmit = async (values: MaintenanceFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
+      // Ensure all required fields are present and properly formatted
       const formattedValues = {
-        ...values,
+        vehicle_id: values.vehicle_id,
+        date: values.date,
+        description: values.description,
         cost: Number(values.cost),
+        status: values.status,
+        // Optional fields are set to null if empty
         next_scheduled: values.next_scheduled || null,
         notes: values.notes || null,
         service_provider: values.service_provider || null,
