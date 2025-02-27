@@ -31,6 +31,16 @@ interface Client {
   updated_at?: string;
 }
 
+interface ClientContact {
+  id: string;
+  client_id: string;
+  name: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  is_primary?: boolean;
+}
+
 export default function Clients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -39,7 +49,8 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  const { data: clients, isLoading } = useQuery({
+  // Get clients data
+  const { data: clients, isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -51,8 +62,8 @@ export default function Clients() {
       return data as Client[];
     },
   });
-
-  // Subscribe to real-time changes
+  
+  // Subscribe to real-time changes for clients
   useEffect(() => {
     const channel = supabase
       .channel('clients-changes')
@@ -60,6 +71,24 @@ export default function Clients() {
         { event: '*', schema: 'public', table: 'clients' }, 
         () => {
           // Force refresh the clients data when any changes occur
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // Subscribe to real-time changes for client contacts
+  useEffect(() => {
+    const channel = supabase
+      .channel('client-contacts-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'client_contacts' }, 
+        () => {
+          // Force refresh the clients data when any contact changes occur
           queryClient.invalidateQueries({ queryKey: ["clients"] });
         }
       )
@@ -104,7 +133,7 @@ export default function Clients() {
     return matchesSearch && matchesType;
   });
   
-  if (isLoading) {
+  if (clientsLoading) {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-between">
