@@ -68,8 +68,11 @@ import {
 } from "@/lib/types";
 import { TripMessageData, TripAssignmentData } from "@/components/trips/types";
 
+// Define custom service types for UI display
+type UIServiceType = "airport_pickup" | "airport_dropoff" | "round_trip" | "security_escort" | "one_way" | "full_day_hire";
+
 // Map UI service types to database TripType values
-const serviceTypeMap: Record<string, TripType> = {
+const serviceTypeMap: Record<UIServiceType, TripType> = {
   "airport_pickup": "airport_pickup",
   "airport_dropoff": "airport_dropoff",
   "round_trip": "other",
@@ -98,7 +101,7 @@ export default function Trips() {
   const [activeTab, setActiveTab] = useState("details");
   const [calendarView, setCalendarView] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [serviceType, setServiceType] = useState<string>("airport_pickup");
+  const [serviceType, setServiceType] = useState<UIServiceType>("airport_pickup");
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">("weekly");
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -135,6 +138,7 @@ export default function Trips() {
         // Map database fields to UI fields
         time: trip.start_time,
         return_time: trip.end_time,
+        special_notes: trip.notes,
       })) as DisplayTrip[];
     },
   });
@@ -354,8 +358,8 @@ export default function Trips() {
         }
       }
       
-      const formServiceType = formData.get("service_type") as string;
-      const dbServiceType = serviceTypeMap[formServiceType] || "other";
+      const formServiceType = formData.get("service_type") as UIServiceType;
+      const dbServiceType = serviceTypeMap[formServiceType];
       
       const formTime = formData.get("time") as string;
       const formReturnTime = formData.get("return_time") as string;
@@ -369,7 +373,7 @@ export default function Trips() {
         end_time: formReturnTime || null,
         type: dbServiceType,
         status: "scheduled" as TripStatus,
-        amount: parseFloat(formData.get("amount") as string) || 0,
+        amount: 0, // Default amount
         pickup_location: formData.get("pickup_location") as string || null,
         dropoff_location: formData.get("dropoff_location") as string || null,
         notes: formData.get("special_notes") as string || null,
@@ -387,8 +391,8 @@ export default function Trips() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    const uiServiceType = formData.get("service_type") as string;
-    const dbServiceType = serviceTypeMap[uiServiceType] || "other";
+    const uiServiceType = formData.get("service_type") as UIServiceType;
+    const dbServiceType = serviceTypeMap[uiServiceType];
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
     try {
@@ -405,7 +409,6 @@ export default function Trips() {
             end_time: formData.get("return_time") as string || null,
             type: dbServiceType,
             status: formData.get("status") as TripStatus,
-            amount: parseFloat(formData.get("amount") as string) || 0,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
             notes: formData.get("special_notes") as string || null,
@@ -454,7 +457,7 @@ export default function Trips() {
             end_time: needsReturnTime ? (formData.get("return_time") as string) : null,
             type: dbServiceType,
             status: formData.get("status") as TripStatus,
-            amount: parseFloat(formData.get("amount") as string) || 0,
+            amount: 0, // Default amount
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
             notes: formData.get("special_notes") as string || null,
@@ -1348,7 +1351,7 @@ export default function Trips() {
                   <Select 
                     name="service_type" 
                     value={serviceType}
-                    onValueChange={(value: string) => setServiceType(value)}
+                    onValueChange={(value: UIServiceType) => setServiceType(value)}
                     defaultValue={editTrip ? 
                       (editTrip.type === "airport_pickup" || editTrip.type === "airport_dropoff") 
                         ? editTrip.type 
@@ -1451,19 +1454,6 @@ export default function Trips() {
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount *</Label>
-                  <Input 
-                    type="number" 
-                    id="amount"
-                    name="amount" 
-                    defaultValue={editTrip?.amount || 0} 
-                    min="0" 
-                    step="0.01" 
-                    required
-                  />
                 </div>
               </div>
               
