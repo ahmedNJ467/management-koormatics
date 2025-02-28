@@ -33,7 +33,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Download, BarChart3, TrendingUp, Car, Fuel, Wrench, Users } from "lucide-react";
+import { Calendar, Download, BarChart3, TrendingUp, Car, Fuel, Wrench, Users, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface TabProps {
   title: string;
@@ -163,11 +165,11 @@ const Reports = () => {
     },
   });
 
-  const exportToCSV = (data: any[], filename: string) => {
-    if (!data || data.length === 0) return;
+  // Helper function to flatten nested objects for export
+  const flattenData = (data: any[]) => {
+    if (!data || data.length === 0) return [];
     
-    // Flatten nested objects
-    const flattenedData = data.map(item => {
+    return data.map(item => {
       const flattened: Record<string, any> = {};
       
       Object.entries(item).forEach(([key, value]) => {
@@ -182,6 +184,90 @@ const Reports = () => {
       
       return flattened;
     });
+  };
+
+  const exportToPDF = (data: any[], title: string, filename: string) => {
+    if (!data || data.length === 0) return;
+    
+    // Create a new PDF document
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(18);
+    doc.text(title, 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, 14, 30);
+    
+    // Prepare the data
+    const flattenedData = flattenData(data);
+    
+    // Get headers from first item
+    const firstItem = flattenedData[0];
+    const headers = Object.keys(firstItem);
+    
+    // Prepare rows data
+    const rows = flattenedData.map(item => 
+      headers.map(header => {
+        const val = item[header];
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object') return JSON.stringify(val);
+        return String(val);
+      })
+    );
+    
+    // Custom headers for specific report types
+    let tableHeaders: string[] = [];
+    
+    switch(filename) {
+      case 'vehicles-report':
+        tableHeaders = ['Make', 'Model', 'Type', 'Registration', 'Status', 'Year'];
+        break;
+      case 'fuel-report':
+        tableHeaders = ['Date', 'Vehicle', 'Volume (L)', 'Type', 'Mileage (km)', 'Cost ($)'];
+        break;
+      case 'maintenance-report':
+        tableHeaders = ['Date', 'Vehicle', 'Description', 'Status', 'Provider', 'Cost ($)'];
+        break;
+      case 'trips-report':
+        tableHeaders = ['Date', 'Vehicle', 'Driver', 'Client', 'Status', 'Amount ($)'];
+        break;
+      case 'drivers-report':
+        tableHeaders = ['Name', 'Contact', 'License Type', 'License No.', 'Expiry', 'Status'];
+        break;
+      default:
+        tableHeaders = headers.map(h => h.charAt(0).toUpperCase() + h.slice(1).replace(/_/g, ' '));
+    }
+
+    // Generate the table
+    autoTable(doc, {
+      head: [tableHeaders],
+      body: rows,
+      startY: 40,
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [66, 139, 202],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      margin: { top: 40 },
+    });
+    
+    // Save the PDF
+    doc.save(`${filename}.pdf`);
+  };
+
+  // Original CSV export function
+  const exportToCSV = (data: any[], filename: string) => {
+    if (!data || data.length === 0) return;
+    
+    // Flatten nested objects
+    const flattenedData = flattenData(data);
     
     // Get all headers
     const headers: string[] = Array.from(
@@ -317,14 +403,24 @@ const Reports = () => {
                 <CardTitle>Vehicles Report</CardTitle>
                 <CardDescription>Overview of all vehicles and their stats</CardDescription>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportToCSV(vehiclesData || [], 'vehicles-report')}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToPDF(vehiclesData || [], 'Vehicles Report', 'vehicles-report')}
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToCSV(vehiclesData || [], 'vehicles-report')}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  CSV
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -372,14 +468,24 @@ const Reports = () => {
                 <CardTitle>Fuel Consumption Report</CardTitle>
                 <CardDescription>All fuel expenses for the selected period</CardDescription>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportToCSV(fuelData || [], 'fuel-report')}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToPDF(fuelData || [], 'Fuel Consumption Report', 'fuel-report')}
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToCSV(fuelData || [], 'fuel-report')}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  CSV
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -431,14 +537,24 @@ const Reports = () => {
                 <CardTitle>Maintenance Report</CardTitle>
                 <CardDescription>All maintenance records for the selected period</CardDescription>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportToCSV(maintenanceData || [], 'maintenance-report')}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToPDF(maintenanceData || [], 'Maintenance Report', 'maintenance-report')}
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToCSV(maintenanceData || [], 'maintenance-report')}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  CSV
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -490,14 +606,24 @@ const Reports = () => {
                 <CardTitle>Trips Report</CardTitle>
                 <CardDescription>All trips for the selected period</CardDescription>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportToCSV(tripsData || [], 'trips-report')}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToPDF(tripsData || [], 'Trips Report', 'trips-report')}
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToCSV(tripsData || [], 'trips-report')}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  CSV
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -549,14 +675,24 @@ const Reports = () => {
                 <CardTitle>Drivers Report</CardTitle>
                 <CardDescription>Overview of all drivers</CardDescription>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportToCSV(driversData || [], 'drivers-report')}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToPDF(driversData || [], 'Drivers Report', 'drivers-report')}
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportToCSV(driversData || [], 'drivers-report')}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  CSV
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
