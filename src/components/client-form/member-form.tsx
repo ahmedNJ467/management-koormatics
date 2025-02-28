@@ -48,6 +48,7 @@ export function MemberForm({
           <Input
             value={member.name}
             onChange={(e) => onMemberChange({...member, name: e.target.value})}
+            placeholder="Full name"
           />
         </div>
         <div className="space-y-2">
@@ -55,6 +56,7 @@ export function MemberForm({
           <Input
             value={member.role || ""}
             onChange={(e) => onMemberChange({...member, role: e.target.value})}
+            placeholder="Position at organization"
           />
         </div>
         <div className="space-y-2">
@@ -63,6 +65,7 @@ export function MemberForm({
             type="email"
             value={member.email || ""}
             onChange={(e) => onMemberChange({...member, email: e.target.value})}
+            placeholder="Contact email"
           />
         </div>
         <div className="space-y-2">
@@ -70,10 +73,11 @@ export function MemberForm({
           <Input
             value={member.phone || ""}
             onChange={(e) => onMemberChange({...member, phone: e.target.value})}
+            placeholder="Contact number"
           />
         </div>
         
-        {/* Document Upload */}
+        {/* Passport Upload */}
         <div className="col-span-2">
           {clientId ? (
             <MemberDocumentUpload
@@ -86,7 +90,7 @@ export function MemberForm({
             />
           ) : (
             <div className="text-sm text-muted-foreground">
-              Document upload will be available after saving the client.
+              Passport/ID upload will be available after saving the client.
             </div>
           )}
         </div>
@@ -97,6 +101,7 @@ export function MemberForm({
             value={member.notes || ""}
             onChange={(e) => onMemberChange({...member, notes: e.target.value})}
             rows={3}
+            placeholder="Additional information about this member"
           />
         </div>
       </div>

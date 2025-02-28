@@ -54,7 +54,7 @@ export function MemberDocumentUpload({
     
     try {
       setIsUploading(true);
-      console.log(`Uploading document for client ${clientId}, member ${actualMemberId}, file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+      console.log(`Uploading passport for client ${clientId}, member ${actualMemberId}, file: ${file.name}, size: ${file.size}, type: ${file.type}`);
       
       const result = await uploadMemberDocument(file, clientId, actualMemberId);
       
@@ -62,15 +62,15 @@ export function MemberDocumentUpload({
       onDocumentUploaded(result.url, result.name);
       
       toast({
-        title: "Document uploaded",
-        description: "Member document has been uploaded successfully."
+        title: "Passport uploaded",
+        description: "Member passport has been uploaded successfully."
       });
     } catch (error) {
-      console.error("Failed to upload document:", error);
+      console.error("Failed to upload passport:", error);
       
       toast({
         title: "Upload failed",
-        description: "Failed to upload member document. Please try again.",
+        description: "Failed to upload member passport. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -80,7 +80,7 @@ export function MemberDocumentUpload({
 
   return (
     <div className="flex flex-col space-y-2">
-      <label className="text-sm font-medium">Document / ID / Passport</label>
+      <label className="text-sm font-medium">Passport / ID Document</label>
       <div className="flex items-center space-x-2">
         <Input
           type="file"
@@ -99,7 +99,7 @@ export function MemberDocumentUpload({
           ) : (
             <Upload className="h-4 w-4" />
           )}
-          <span>{isUploading ? "Uploading..." : documentName || "Upload Document"}</span>
+          <span>{isUploading ? "Uploading..." : documentName || "Upload Passport/ID"}</span>
         </label>
         {documentName && !isUploading && (
           <div className="flex items-center space-x-2">
@@ -125,6 +125,9 @@ export function MemberDocumentUpload({
           </div>
         )}
       </div>
+      <p className="text-xs text-gray-500">
+        Upload passport, national ID or other official identification document. Supported formats: PDF, DOC, JPG, PNG.
+      </p>
     </div>
   );
 }
