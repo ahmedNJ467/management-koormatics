@@ -35,12 +35,7 @@ export function useMemberState(members: MemberFormValues[], setMembers: (members
 
   const editMember = (index: number) => {
     setEditingMemberIndex(index);
-    // Make sure we create a new object with all required properties explicitly set
-    const member = members[index];
-    setMemberFormState({
-      ...member,
-      name: member.name || "", // Ensure name is always a string
-    });
+    setMemberFormState({...members[index]});
     setIsAddingMember(true);
   };
 
