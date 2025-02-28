@@ -140,7 +140,7 @@ const formatTripType = (tripType: string, trip: Trip) => {
     case "airport_transfer":
       return "Airport Transfer";
     case "hourly":
-      return `Hourly (${trip.hours} hrs)`;
+      return "Hourly Service";
     case "long_distance":
       return "Long Distance";
     default:
@@ -983,7 +983,7 @@ export default function Trips() {
               {editTrip && (
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select name="status" defaultValue={editTrip.status} required>
+                  <Select name="status" defaultValue={editTrip.status as TripStatus} required>
                     <SelectTrigger id="status">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
