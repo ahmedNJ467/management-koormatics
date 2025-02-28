@@ -12,6 +12,7 @@ import {
   FileText,
   Calendar,
   Receipt,
+  BarChart,
 } from "lucide-react";
 
 const navigation = [
@@ -24,6 +25,7 @@ const navigation = [
   { name: "Quotations", href: "/quotations", icon: FileText },
   { name: "Invoices", href: "/invoices", icon: Receipt },
   { name: "Trips", href: "/trips", icon: Calendar },
+  { name: "Reports", href: "/reports", icon: BarChart },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
