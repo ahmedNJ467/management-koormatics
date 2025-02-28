@@ -91,6 +91,23 @@
   .dark .text-muted-foreground {
     @apply text-gray-400;
   }
+  
+  /* Table dark mode overrides */
+  .dark table {
+    @apply text-gray-200;
+  }
+  
+  .dark th {
+    @apply text-gray-400 border-gray-700;
+  }
+  
+  .dark td {
+    @apply border-gray-700;
+  }
+  
+  .dark tr:hover td {
+    @apply bg-gray-800/50;
+  }
 }
 
 /* Custom utilities */
