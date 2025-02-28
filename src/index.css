@@ -84,8 +84,9 @@
     @apply bg-dark-secondary;
   }
   
+  /* Fix: Replace @apply with direct CSS to avoid circular dependency */
   .dark .border {
-    @apply border-gray-700;
+    border-color: rgb(55 65 81); /* Equivalent to border-gray-700 */
   }
   
   .dark .text-muted-foreground {
@@ -98,11 +99,12 @@
   }
   
   .dark th {
-    @apply text-gray-400 border-gray-700;
+    @apply text-gray-400;
+    border-color: rgb(55 65 81); /* Equivalent to border-gray-700 */
   }
   
   .dark td {
-    @apply border-gray-700;
+    border-color: rgb(55 65 81); /* Equivalent to border-gray-700 */
   }
   
   .dark tr:hover td {
@@ -112,9 +114,11 @@
 
 /* Custom utilities */
 .glass-effect {
-  @apply backdrop-blur-sm bg-white/10 border border-white/20;
+  @apply backdrop-blur-sm bg-white/10;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .dark .glass-effect {
-  @apply backdrop-blur-sm bg-black/30 border border-gray-700;
+  @apply backdrop-blur-sm bg-black/30;
+  border: 1px solid rgb(55 65 81);
 }
