@@ -31,6 +31,9 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
     document_name: ""
   });
 
+  console.log("MembersTab render - clientId:", clientId);
+  console.log("Current members:", members);
+
   const addMember = () => {
     setIsAddingMember(true);
     setMemberFormState({
@@ -71,7 +74,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   };
 
   const saveMember = () => {
-    if (!memberFormState.name || memberFormState.name.trim().length < 2) {
+    if (!memberFormState.name || memberFormState.name.length < 2) {
       toast({
         title: "Validation Error",
         description: "Member name must be at least 2 characters long",
@@ -132,6 +135,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   };
 
   const handleMemberDocumentUpload = (url: string, name: string) => {
+    console.log("Document uploaded successfully:", { url, name });
     setMemberFormState({
       ...memberFormState,
       document_url: url,
@@ -140,6 +144,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   };
 
   const clearMemberDocument = () => {
+    console.log("Clearing document");
     setMemberFormState({
       ...memberFormState,
       document_url: "",
