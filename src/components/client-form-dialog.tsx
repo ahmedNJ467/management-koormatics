@@ -90,6 +90,10 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   };
 
   const onSubmit = async (values: any) => {
+    console.log("Form submitted with values:", values);
+    console.log("Current members:", members);
+    console.log("Current contacts:", contacts);
+    
     const success = await handleSubmit(values);
     if (success) {
       onOpenChange(false);

@@ -188,6 +188,7 @@ export function useClientForm(client?: Client | null) {
 
   const handleSubmit = async (values: ClientFormValues) => {
     console.log("Submitting client form with values:", values);
+    console.log("Current members state:", members);
     setIsSubmitting(true);
     try {
       let profileImageUrl = client?.profile_image_url;
@@ -242,10 +243,14 @@ export function useClientForm(client?: Client | null) {
         // Update contacts if organization
         if (values.type === "organization") {
           // First delete all existing contacts
-          await supabase
+          const { error: deleteContactsError } = await supabase
             .from("client_contacts")
             .delete()
             .eq("client_id", client.id);
+
+          if (deleteContactsError) {
+            console.error("Error deleting existing contacts:", deleteContactsError);
+          }
 
           // Then insert the new contacts if any
           if (contacts.length > 0) {
@@ -258,19 +263,27 @@ export function useClientForm(client?: Client | null) {
               is_primary: contact.is_primary || false,
             }));
 
+            console.log("Inserting contacts:", formattedContacts);
             const { error: contactsError } = await supabase
               .from("client_contacts")
               .insert(formattedContacts);
 
-            if (contactsError) throw contactsError;
+            if (contactsError) {
+              console.error("Error inserting contacts:", contactsError);
+              throw contactsError;
+            }
           }
 
           // Update members if any
           // First delete all existing members
-          await supabase
+          const { error: deleteMembersError } = await supabase
             .from("client_members")
             .delete()
             .eq("client_id", client.id);
+
+          if (deleteMembersError) {
+            console.error("Error deleting existing members:", deleteMembersError);
+          }
 
           // Then insert the new members if any
           if (members.length > 0) {
@@ -285,6 +298,7 @@ export function useClientForm(client?: Client | null) {
               document_name: member.document_name || null
             }));
 
+            console.log("Inserting members:", formattedMembers);
             const { error: membersError } = await supabase
               .from("client_members")
               .insert(formattedMembers);
