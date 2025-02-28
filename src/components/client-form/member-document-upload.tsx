@@ -1,9 +1,10 @@
 
-import { FileText, Download, X } from "lucide-react";
+import { FileText, Download, X, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { uploadMemberDocument } from "./use-member-uploads";
+import { useToast } from "@/hooks/use-toast";
 
 interface MemberDocumentUploadProps {
   documentName: string | null;
@@ -22,18 +23,34 @@ export function MemberDocumentUpload({
   onDocumentUploaded, 
   onDocumentClear 
 }: MemberDocumentUploadProps) {
+  const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
 
   const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !clientId || !memberId) return;
+    if (!file || !clientId || !memberId) {
+      if (!clientId) console.error("Missing clientId for document upload");
+      if (!memberId) console.error("Missing memberId for document upload");
+      return;
+    }
     
     try {
       setIsUploading(true);
+      console.log(`Uploading document for client ${clientId}, member ${memberId}`);
       const result = await uploadMemberDocument(file, clientId, memberId);
+      console.log("Upload result:", result);
       onDocumentUploaded(result.url, result.name);
+      toast({
+        title: "Document uploaded",
+        description: "Member document has been uploaded successfully."
+      });
     } catch (error) {
       console.error("Failed to upload document:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload member document. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsUploading(false);
     }
@@ -55,7 +72,11 @@ export function MemberDocumentUpload({
           htmlFor="member-document-upload"
           className={`flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          <FileText className="h-4 w-4" />
+          {isUploading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
           <span>{isUploading ? "Uploading..." : documentName || "Upload Document"}</span>
         </label>
         {documentName && !isUploading && (

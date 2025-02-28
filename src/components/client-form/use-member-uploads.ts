@@ -24,6 +24,7 @@ export async function uploadMemberDocument(file: File, clientId: string, memberI
       await supabase.storage.from(bucket).remove([fileName]);
     } catch(err) {
       // Ignore error if file doesn't exist
+      console.log("No existing file to remove or other error:", err);
     }
 
     // Upload the new file

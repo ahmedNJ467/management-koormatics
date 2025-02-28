@@ -29,18 +29,23 @@ export function useClientForm(client?: Client | null) {
     client?.profile_image_url || null
   );
 
+  // Set default values based on client data or empty form
+  const defaultValues = client 
+    ? { ...client } 
+    : {
+        name: "",
+        type: "individual" as const,
+        description: "",
+        website: "",
+        address: "",
+        contact: "",
+        email: "",
+        phone: "",
+      };
+
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
-    defaultValues: client || {
-      name: "",
-      type: "individual",
-      description: "",
-      website: "",
-      address: "",
-      contact: "",
-      email: "",
-      phone: "",
-    },
+    defaultValues,
   });
 
   // Reset form when client changes
@@ -182,6 +187,7 @@ export function useClientForm(client?: Client | null) {
   };
 
   const handleSubmit = async (values: ClientFormValues) => {
+    console.log("Submitting client form with values:", values);
     setIsSubmitting(true);
     try {
       let profileImageUrl = client?.profile_image_url;
@@ -220,13 +226,18 @@ export function useClientForm(client?: Client | null) {
           documents: documentsForUpdate
         };
 
+        console.log("Updating client with values:", formattedValues);
+
         // Update client
         const { error: updateError } = await supabase
           .from("clients")
           .update(formattedValues)
           .eq("id", client.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Error updating client:", updateError);
+          throw updateError;
+        }
 
         // Update contacts if organization
         if (values.type === "organization") {
@@ -313,13 +324,18 @@ export function useClientForm(client?: Client | null) {
           documents: []
         };
 
+        console.log("Creating new client with values:", formattedValues);
+
         const { data: insertedClient, error: insertError } = await supabase
           .from("clients")
           .insert(formattedValues)
           .select()
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error("Error creating client:", insertError);
+          throw insertError;
+        }
 
         if (!insertedClient) {
           throw new Error("Failed to create client");
