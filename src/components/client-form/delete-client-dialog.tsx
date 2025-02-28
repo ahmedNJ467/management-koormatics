@@ -17,6 +17,7 @@ interface DeleteClientDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   error?: string | null;
+  archiveMode?: boolean;
 }
 
 export function DeleteClientDialog({
@@ -24,13 +25,24 @@ export function DeleteClientDialog({
   isOpen,
   onOpenChange,
   onConfirm,
-  error
+  error,
+  archiveMode = false
 }: DeleteClientDialogProps) {
+  const title = archiveMode
+    ? `Are you sure you want to archive this client?`
+    : `Are you sure you want to delete this client?`;
+    
+  const description = archiveMode
+    ? `This will move ${clientName} to the archive. You can restore it later if needed.`
+    : `This will permanently delete ${clientName} and all of their data. This action cannot be undone.`;
+    
+  const confirmButtonText = archiveMode ? "Archive" : "Delete";
+  
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to delete this client?</AlertDialogTitle>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
             {error ? (
               <div className="flex items-start gap-2 p-3 bg-destructive/10 text-destructive rounded-md">
@@ -39,8 +51,7 @@ export function DeleteClientDialog({
               </div>
             ) : (
               <>
-                This will permanently delete <strong>{clientName}</strong> and all of their data.
-                This action cannot be undone.
+                {description}
               </>
             )}
           </AlertDialogDescription>
@@ -48,8 +59,13 @@ export function DeleteClientDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           {!error && (
-            <AlertDialogAction onClick={onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+            <AlertDialogAction 
+              onClick={onConfirm} 
+              className={archiveMode 
+                ? "bg-amber-600 text-white hover:bg-amber-700" 
+                : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            >
+              {confirmButtonText}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

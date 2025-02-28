@@ -10,6 +10,7 @@ interface Client extends ClientFormValues {
   id: string;
   profile_image_url?: string;
   documents?: ClientDocument[];
+  is_archived?: boolean;
 }
 
 export function useClientSave() {
@@ -43,7 +44,9 @@ export function useClientSave() {
       email: values.email || null,
       phone: values.phone || null,
       profile_image_url: profileImageUrl,
-      documents: documentsForUpdate
+      documents: documentsForUpdate,
+      // Preserve the archive status
+      is_archived: client.is_archived || false
     };
 
     console.log("Updating client with values:", formattedValues);
@@ -88,7 +91,8 @@ export function useClientSave() {
       email: values.email || null,
       phone: values.phone || null,
       profile_image_url: null, // We'll update this after creating the client
-      documents: []
+      documents: [],
+      is_archived: false // New clients are not archived by default
     };
 
     console.log("Creating new client with values:", formattedValues);

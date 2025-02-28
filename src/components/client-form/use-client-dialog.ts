@@ -23,24 +23,17 @@ export function useClientDialog(client: any | null, onOpenChange: (open: boolean
       if (tripsError) throw tripsError;
       
       if (tripsData && tripsData.length > 0) {
-        setDeletionError("This client cannot be deleted because it has associated trips. Please delete all trips for this client first.");
+        setDeletionError("This client cannot be archived because it has associated trips. Please delete all trips for this client first.");
         return;
       }
       
+      // Instead of deleting, we're archiving the client by setting is_archived to true
       const { error } = await supabase
         .from('clients')
-        .delete()
+        .update({ is_archived: true })
         .eq('id', client.id);
 
       if (error) {
-        // Check if this is a foreign key constraint error
-        if (error.code === '23503') {
-          // Get the constraint details to display a more helpful error
-          const match = error.details.match(/table "([^"]+)"/);
-          const relatedTable = match ? match[1] : 'another table';
-          setDeletionError(`This client cannot be deleted because it is referenced in ${relatedTable}. Please delete all ${relatedTable} entries for this client first.`);
-          return;
-        }
         throw error;
       }
       
@@ -55,14 +48,48 @@ export function useClientDialog(client: any | null, onOpenChange: (open: boolean
       }
       
       toast({
-        title: "Client deleted",
-        description: "The client has been deleted successfully.",
+        title: "Client archived",
+        description: "The client has been moved to archive successfully.",
       });
     } catch (error) {
       console.error("Error:", error);
       toast({
         title: "Error",
-        description: "Failed to delete client",
+        description: "Failed to archive client",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!client?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ is_archived: false })
+        .eq('id', client.id);
+
+      if (error) {
+        throw error;
+      }
+      
+      if (onClientDeleted) {
+        onClientDeleted();
+      } else {
+        // If no callback is provided, close the dialog
+        onOpenChange(false);
+      }
+      
+      toast({
+        title: "Client restored",
+        description: "The client has been restored successfully.",
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to restore client",
         variant: "destructive",
       });
     }
@@ -75,6 +102,7 @@ export function useClientDialog(client: any | null, onOpenChange: (open: boolean
     setActiveTab,
     deletionError,
     setDeletionError,
-    handleDelete
+    handleDelete,
+    handleRestore
   };
 }

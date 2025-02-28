@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Building2, User, Search, UserPlus } from "lucide-react";
+import { Plus, Building2, User, Search, UserPlus, Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientFormDialog } from "@/components/client-form-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Client {
   id: string;
@@ -22,6 +23,7 @@ interface Client {
   email?: string;
   phone?: string;
   profile_image_url?: string;
+  is_archived?: boolean;
   documents?: Array<{
     id: string;
     name: string;
@@ -59,6 +61,7 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<string>("active");
 
   // Get clients data
   const { data: clients, isLoading: clientsLoading } = useQuery({
@@ -223,8 +226,8 @@ export default function Clients() {
     setFormOpen(false);
     setSelectedClient(null);
     toast({
-      title: "Client deleted",
-      description: "The client has been deleted successfully.",
+      title: "Client archived",
+      description: "The client has been moved to the archive.",
     });
   };
   
@@ -244,15 +247,23 @@ export default function Clients() {
     }
   };
 
-  const filteredClients = clients?.filter((client) => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = typeFilter === "all" || client.type === typeFilter;
-    
-    return matchesSearch && matchesType;
-  });
+  const activeClients = clients?.filter(client => !client.is_archived) || [];
+  const archivedClients = clients?.filter(client => client.is_archived) || [];
+
+  const getFilteredClients = (clientList: Client[]) => {
+    return clientList.filter((client) => {
+      const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesType = typeFilter === "all" || client.type === typeFilter;
+      
+      return matchesSearch && matchesType;
+    });
+  };
+
+  const filteredActiveClients = getFilteredClients(activeClients);
+  const filteredArchivedClients = getFilteredClients(archivedClients);
   
   if (clientsLoading) {
     return (
@@ -304,92 +315,191 @@ export default function Clients() {
         </Select>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredClients?.map((client) => (
-          <Card 
-            key={client.id} 
-            className="group relative cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => handleClientClick(client)}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center overflow-hidden">
-                  {client.profile_image_url ? (
-                    <img
-                      src={client.profile_image_url}
-                      alt={client.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : client.type === "organization" ? (
-                    <Building2 className="h-6 w-6 text-secondary" />
-                  ) : (
-                    <User className="h-6 w-6 text-secondary" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold">{client.name}</h3>
-                  <p className="text-sm text-muted-foreground capitalize">{client.type}</p>
-                </div>
+      <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="active" className="flex items-center gap-1">
+            Active <Badge variant="secondary">{activeClients.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="archived" className="flex items-center gap-1">
+            Archived <Badge variant="secondary">{archivedClients.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredActiveClients.length > 0 ? (
+              filteredActiveClients.map((client) => (
+                <Card 
+                  key={client.id} 
+                  className="group relative cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => handleClientClick(client)}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center overflow-hidden">
+                        {client.profile_image_url ? (
+                          <img
+                            src={client.profile_image_url}
+                            alt={client.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : client.type === "organization" ? (
+                          <Building2 className="h-6 w-6 text-secondary" />
+                        ) : (
+                          <User className="h-6 w-6 text-secondary" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{client.name}</h3>
+                        <p className="text-sm text-muted-foreground capitalize">{client.type}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {client.description && (
+                        <p className="text-sm text-muted-foreground">{client.description}</p>
+                      )}
+                      {client.website && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Website:</span>
+                          <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            {client.website}
+                          </a>
+                        </div>
+                      )}
+                      {client.address && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Address:</span>
+                          <span>{client.address}</span>
+                        </div>
+                      )}
+                      {client.contact && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Contact:</span>
+                          <span>{client.contact}</span>
+                        </div>
+                      )}
+                      {client.email && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Email:</span>
+                          <span>{client.email}</span>
+                        </div>
+                      )}
+                      {client.phone && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Phone:</span>
+                          <span>{client.phone}</span>
+                        </div>
+                      )}
+                      
+                      {/* Display contacts and members badges for organizations */}
+                      {client.type === "organization" && (
+                        <div className="flex gap-2 mt-3">
+                          {contactCounts && contactCounts[client.id] > 0 && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {contactCounts[client.id]} Contact{contactCounts[client.id] !== 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                          {memberCounts && memberCounts[client.id] > 0 && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <UserPlus className="h-3 w-3" />
+                              {memberCounts[client.id]} Member{memberCounts[client.id] !== 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-10">
+                <p className="text-muted-foreground">No active clients found with the current filter.</p>
               </div>
-              <div className="mt-4 space-y-2">
-                {client.description && (
-                  <p className="text-sm text-muted-foreground">{client.description}</p>
-                )}
-                {client.website && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Website:</span>
-                    <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {client.website}
-                    </a>
-                  </div>
-                )}
-                {client.address && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Address:</span>
-                    <span>{client.address}</span>
-                  </div>
-                )}
-                {client.contact && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Contact:</span>
-                    <span>{client.contact}</span>
-                  </div>
-                )}
-                {client.email && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Email:</span>
-                    <span>{client.email}</span>
-                  </div>
-                )}
-                {client.phone && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Phone:</span>
-                    <span>{client.phone}</span>
-                  </div>
-                )}
-                
-                {/* Display contacts and members badges for organizations */}
-                {client.type === "organization" && (
-                  <div className="flex gap-2 mt-3">
-                    {contactCounts && contactCounts[client.id] > 0 && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        {contactCounts[client.id]} Contact{contactCounts[client.id] !== 1 ? 's' : ''}
-                      </Badge>
-                    )}
-                    {memberCounts && memberCounts[client.id] > 0 && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <UserPlus className="h-3 w-3" />
-                        {memberCounts[client.id]} Member{memberCounts[client.id] !== 1 ? 's' : ''}
-                      </Badge>
-                    )}
-                  </div>
-                )}
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="archived">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredArchivedClients.length > 0 ? (
+              filteredArchivedClients.map((client) => (
+                <Card 
+                  key={client.id} 
+                  className="group relative cursor-pointer hover:shadow-md transition-shadow border-dashed"
+                  onClick={() => handleClientClick(client)}
+                >
+                  <Badge variant="outline" className="absolute top-2 right-2 bg-muted">
+                    <Archive className="h-3 w-3 mr-1" /> Archived
+                  </Badge>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center overflow-hidden opacity-70">
+                        {client.profile_image_url ? (
+                          <img
+                            src={client.profile_image_url}
+                            alt={client.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : client.type === "organization" ? (
+                          <Building2 className="h-6 w-6 text-secondary" />
+                        ) : (
+                          <User className="h-6 w-6 text-secondary" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{client.name}</h3>
+                        <p className="text-sm text-muted-foreground capitalize">{client.type}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {client.description && (
+                        <p className="text-sm text-muted-foreground">{client.description}</p>
+                      )}
+                      {client.website && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Website:</span>
+                          <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            {client.website}
+                          </a>
+                        </div>
+                      )}
+                      {client.address && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Address:</span>
+                          <span>{client.address}</span>
+                        </div>
+                      )}
+                      {client.contact && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Contact:</span>
+                          <span>{client.contact}</span>
+                        </div>
+                      )}
+                      {client.email && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Email:</span>
+                          <span>{client.email}</span>
+                        </div>
+                      )}
+                      {client.phone && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Phone:</span>
+                          <span>{client.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-10">
+                <p className="text-muted-foreground">No archived clients found with the current filter.</p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <ClientFormDialog
         open={formOpen}

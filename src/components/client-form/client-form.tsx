@@ -23,7 +23,9 @@ interface ClientFormProps {
   removeDocument: (docId: string) => void;
   onCancel: () => void;
   onDelete: () => void;
+  onRestore?: () => void;
   handleSubmitForm: (values: any) => Promise<boolean>;
+  isArchived?: boolean;
 }
 
 export function ClientForm({
@@ -44,7 +46,9 @@ export function ClientForm({
   removeDocument,
   onCancel,
   onDelete,
-  handleSubmitForm
+  onRestore,
+  handleSubmitForm,
+  isArchived = false
 }: ClientFormProps) {
   const clientType = form.watch("type");
   
@@ -86,13 +90,16 @@ export function ClientForm({
         addContact={addContact}
         updateContact={updateContact}
         removeContact={removeContact}
+        isArchived={isArchived}
       />
       
       <ClientFormFooter 
         isSubmitting={isSubmitting}
         onCancel={onCancel}
         onDelete={onDelete}
+        onRestore={onRestore}
         isEditing={!!client}
+        isArchived={isArchived}
       />
     </form>
   );

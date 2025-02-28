@@ -18,6 +18,7 @@ interface Client {
   email?: string;
   phone?: string;
   profile_image_url?: string;
+  is_archived?: boolean;
   documents?: ClientDocument[];
 }
 
@@ -36,7 +37,8 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     setActiveTab,
     deletionError,
     setDeletionError,
-    handleDelete
+    handleDelete,
+    handleRestore
   } = useClientDialog(client, onOpenChange, onClientDeleted);
   
   const {
@@ -75,7 +77,11 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     return result;
   };
 
-  const dialogTitle = client ? `Edit Client: ${client.name}` : "Add New Client";
+  const dialogTitle = client 
+    ? client.is_archived
+      ? `Archived Client: ${client.name}`
+      : `Edit Client: ${client.name}`
+    : "Add New Client";
 
   return (
     <>
@@ -89,7 +95,9 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
-              Enter the client's information below. Required fields are marked with an asterisk.
+              {client?.is_archived 
+                ? "This client is archived. You can view its details or restore it."
+                : "Enter the client's information below. Required fields are marked with an asterisk."}
             </DialogDescription>
           </DialogHeader>
           
@@ -116,7 +124,9 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
               setDeletionError(null);
               setShowDeleteConfirm(true);
             }}
+            onRestore={client?.is_archived ? handleRestore : undefined}
             handleSubmitForm={handleFormSubmit}
+            isArchived={!!client?.is_archived}
           />
         </DialogContent>
       </Dialog>
@@ -127,6 +137,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         onOpenChange={setShowDeleteConfirm}
         onConfirm={handleDelete}
         error={deletionError}
+        archiveMode={true}
       />
     </>
   );

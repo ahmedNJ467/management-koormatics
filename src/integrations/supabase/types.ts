@@ -112,6 +112,7 @@ export type Database = {
           documents: Json | null
           email: string | null
           id: string
+          is_archived: boolean | null
           name: string
           phone: string | null
           profile_image_url: string | null
@@ -127,6 +128,7 @@ export type Database = {
           documents?: Json | null
           email?: string | null
           id?: string
+          is_archived?: boolean | null
           name: string
           phone?: string | null
           profile_image_url?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           documents?: Json | null
           email?: string | null
           id?: string
+          is_archived?: boolean | null
           name?: string
           phone?: string | null
           profile_image_url?: string | null
