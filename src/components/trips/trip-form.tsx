@@ -41,7 +41,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Clock, Car, User, Users, Calendar as CalendarIcon, MapPin, DollarSign } from "lucide-react";
+import { 
+  CalendarDays, 
+  Clock, 
+  Car, 
+  User, 
+  Users, 
+  Calendar as CalendarIcon, 
+  MapPin, 
+  DollarSign 
+} from "lucide-react";
 
 // Form schema definition with Zod
 const formSchema = z.object({
@@ -224,7 +233,43 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                   </FormItem>
                 )}
               />
+            </div>
 
+            {/* Amount field added to its own row for prominence */}
+            <div className="mt-4">
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount</FormLabel>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input
+                          type="number" 
+                          step="0.01"
+                          min="0"
+                          className="pl-9"
+                          placeholder="0.00"
+                          value={field.value === undefined ? "" : field.value}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value === "" ? undefined : parseFloat(value));
+                          }}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormDescription>
+                      The trip amount for billing purposes
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <FormField
                 control={form.control}
                 name="type"
@@ -279,37 +324,6 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Amount</FormLabel>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input
-                          type="number" 
-                          step="0.01"
-                          min="0"
-                          className="pl-9"
-                          placeholder="0.00"
-                          value={field.value === undefined ? "" : field.value}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === "" ? undefined : parseFloat(value));
-                          }}
-                        />
-                      </FormControl>
-                    </div>
-                    <FormDescription>
-                      The trip amount for billing purposes
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
