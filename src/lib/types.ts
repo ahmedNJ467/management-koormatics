@@ -168,6 +168,7 @@ export interface Trip {
 
 export interface DisplayTrip extends Trip {
   client_name: string;
+  client_type?: "organization" | "individual";
   vehicle_details: string;
   driver_name: string;
   driver_avatar?: string;
@@ -219,4 +220,3 @@ export interface DisplayInvoice extends Invoice {
   trips?: DisplayTrip[];
   quotation_number?: string;
 }
-

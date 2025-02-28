@@ -63,8 +63,6 @@ import {
   Driver,
   Vehicle,
   Client,
-  TripMessage,
-  TripAssignment,
 } from "@/lib/types";
 import { TripMessageData, TripAssignmentData } from "@/components/trips/types";
 
@@ -79,77 +77,6 @@ const serviceTypeMap: Record<UIServiceType, TripType> = {
   "security_escort": "other",
   "one_way": "other",
   "full_day_hire": "full_day"
-};
-
-// Map database TripType values to UI service types - this is the inverse of serviceTypeMap
-// This helps us correctly set the form select when editing a trip
-const dbToUIServiceType: Record<string, UIServiceType> = {
-  "airport_pickup": "airport_pickup",
-  "airport_dropoff": "airport_dropoff",
-  "full_day": "full_day_hire"
-  // "other" type will need special handling because it could be multiple UI types
-};
-
-// Helper function to get the specific UI service type from a database trip type and other trip details
-const getUIServiceType = (trip: Trip): UIServiceType => {
-  // First check if it's a direct mapping
-  if (trip.type in dbToUIServiceType) {
-    return dbToUIServiceType[trip.type as keyof typeof dbToUIServiceType];
-  }
-  
-  // If it's "other", try to determine the specific service type
-  if (trip.type === "other") {
-    // These are heuristics - you may need additional metadata in your database to be more accurate
-    if (trip.pickup_location?.toLowerCase().includes("airport") || 
-        trip.dropoff_location?.toLowerCase().includes("airport")) {
-      return "round_trip";
-    }
-    
-    // If notes mention security/escort
-    if (trip.notes?.toLowerCase().includes("security") || 
-        trip.notes?.toLowerCase().includes("escort")) {
-      return "security_escort";
-    }
-    
-    // Default to one_way if we can't determine
-    return "one_way";
-  }
-  
-  // Fallback
-  return "one_way";
-};
-
-// Helper function to get a display name for a trip type
-const getServiceDisplayName = (type: TripType, uiType?: UIServiceType): string => {
-  // Use this mapping for specific UI labels
-  const uiTypeLabels: Record<UIServiceType, string> = {
-    "airport_pickup": "Airport Pickup",
-    "airport_dropoff": "Airport Dropoff",
-    "round_trip": "Round Trip",
-    "security_escort": "Security Escort",
-    "one_way": "One Way Transfer",
-    "full_day_hire": "Full Day Hire"
-  };
-  
-  // If we have a UI type, use its label
-  if (uiType && uiType in uiTypeLabels) {
-    return uiTypeLabels[uiType];
-  }
-  
-  // Fallback to generic database type formatting
-  const dbTypeLabels: Record<TripType, string> = {
-    "airport_pickup": "Airport Pickup",
-    "airport_dropoff": "Airport Dropoff",
-    "other": "Other Service",
-    "hourly": "Hourly Service",
-    "full_day": "Full Day Service",
-    "multi_day": "Multi-Day Service"
-  };
-  
-  return dbTypeLabels[type] || type.replace(/_/g, " ")
-    .split(" ")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 };
 
 // Helper function to get the first day of the month (0 = Sunday, 1 = Monday, etc.)
@@ -170,6 +97,52 @@ const parseFlightDetails = (notes?: string) => {
     airline: airlineMatch ? airlineMatch[1].trim() : null,
     terminal: terminalMatch ? terminalMatch[1].trim() : null
   };
+};
+
+// Helper function to parse passengers from notes
+const parsePassengers = (notes?: string): string[] => {
+  if (!notes) return [];
+  
+  const passengersMatch = notes.match(/Passengers:\s*\n(.*?)(\n\n|\n$|$)/s);
+  if (passengersMatch && passengersMatch[1]) {
+    return passengersMatch[1].split('\n').filter(p => p.trim());
+  }
+  
+  return [];
+};
+
+// Format service type for display
+const formatUIServiceType = (trip: Trip): UIServiceType => {
+  // For known direct mappings
+  if (trip.type === "airport_pickup") return "airport_pickup";
+  if (trip.type === "airport_dropoff") return "airport_dropoff";
+  if (trip.type === "full_day") return "full_day_hire";
+  
+  // For "other" type, try to determine the specific service type
+  if (trip.type === "other") {
+    // If pickup/dropoff has "airport" in it, it might be related to airport service
+    if (trip.pickup_location?.toLowerCase().includes("airport") || 
+        trip.dropoff_location?.toLowerCase().includes("airport")) {
+      return "round_trip";
+    }
+    
+    // Check for keywords in notes
+    if (trip.notes?.toLowerCase().includes("security") || 
+        trip.notes?.toLowerCase().includes("escort")) {
+      return "security_escort";
+    }
+    
+    // Check if there's both start and end time, suggesting round trip
+    if (trip.start_time && trip.end_time) {
+      return "round_trip";
+    }
+    
+    // Default to one-way if we can't determine
+    return "one_way";
+  }
+  
+  // Default fallback
+  return "one_way";
 };
 
 export default function Trips() {
@@ -196,6 +169,9 @@ export default function Trips() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">("weekly");
   const messageEndRef = useRef<HTMLDivElement>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [selectedClientType, setSelectedClientType] = useState<string>("");
+  const [passengers, setPassengers] = useState<string[]>([""]);
 
   // Calculate calendar days
   const daysInMonth = eachDayOfInterval({
@@ -211,7 +187,7 @@ export default function Trips() {
         .from("trips")
         .select(`
           *,
-          clients:client_id(name, email),
+          clients:client_id(name, email, type),
           vehicles:vehicle_id(make, model, registration),
           drivers:driver_id(name, contact, avatar_url)
         `)
@@ -221,11 +197,12 @@ export default function Trips() {
 
       return data.map((trip) => {
         // Determine the UI service type for this trip
-        const uiServiceType = getUIServiceType(trip);
+        const uiServiceType = formatUIServiceType(trip);
         
         return {
           ...trip,
           client_name: trip.clients?.name || "Unknown Client",
+          client_type: trip.clients?.type || "individual",
           vehicle_details: `${trip.vehicles?.make} ${trip.vehicles?.model} (${trip.vehicles?.registration})`,
           driver_name: trip.drivers?.name || "Unknown Driver",
           driver_avatar: trip.drivers?.avatar_url,
@@ -293,7 +270,7 @@ export default function Trips() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name")
+        .select("id, name, type")
         .order("name");
       if (error) throw error;
       return data as Client[];
@@ -369,14 +346,67 @@ export default function Trips() {
     }
   }, [messages]);
 
-  // When setting editTrip, set the service type for the form
+  // When editing a trip, initialize form values
   useEffect(() => {
     if (editTrip) {
-      // Determine the UI service type for this trip
-      const uiType = getUIServiceType(editTrip);
-      setServiceType(uiType);
+      setServiceType(editTrip.ui_service_type as UIServiceType || formatUIServiceType(editTrip));
+      setSelectedClientId(editTrip.client_id);
+      
+      if (editTrip.client_type === "organization") {
+        setSelectedClientType("organization");
+        // Extract passengers from notes
+        const extractedPassengers = parsePassengers(editTrip.notes);
+        setPassengers(extractedPassengers.length > 0 ? extractedPassengers : [""]);
+      } else {
+        setSelectedClientType("individual");
+        setPassengers([""]);
+      }
+    } else {
+      // Reset form values when not editing
+      setServiceType("airport_pickup");
+      setSelectedClientId("");
+      setSelectedClientType("");
+      setPassengers([""]);
     }
   }, [editTrip]);
+
+  // Handle client selection to show passenger fields if organization
+  const handleClientChange = (clientId: string) => {
+    setSelectedClientId(clientId);
+    
+    if (!clientId) {
+      setSelectedClientType("");
+      setPassengers([""]);
+      return;
+    }
+    
+    // Find the selected client and check its type
+    const selectedClient = clients?.find(client => client.id === clientId);
+    if (selectedClient) {
+      setSelectedClientType(selectedClient.type || "individual");
+      // Reset passengers when client changes
+      setPassengers([""]);
+    }
+  };
+
+  // Add new passenger field
+  const addPassengerField = () => {
+    setPassengers([...passengers, ""]);
+  };
+
+  // Update passenger at specific index
+  const updatePassenger = (index: number, value: string) => {
+    const updatedPassengers = [...passengers];
+    updatedPassengers[index] = value;
+    setPassengers(updatedPassengers);
+  };
+
+  // Remove passenger field
+  const removePassengerField = (index: number) => {
+    if (passengers.length <= 1) return; // Keep at least one field
+    const updatedPassengers = passengers.filter((_, i) => i !== index);
+    setPassengers(updatedPassengers);
+  };
 
   // Update trip status
   const updateTripStatus = async (tripId: string, status: TripStatus) => {
@@ -514,6 +544,14 @@ export default function Trips() {
       if (terminal) notes += `\nTerminal: ${terminal}`;
     }
     
+    // Add passenger names to notes if client is organization
+    if (selectedClientType === "organization" && passengers.filter(p => p.trim()).length > 0) {
+      const passengersList = passengers.filter(p => p.trim());
+      if (passengersList.length > 0) {
+        notes += `\n\nPassengers:\n${passengersList.join('\n')}`;
+      }
+    }
+    
     try {
       if (editTrip) {
         // Update existing trip
@@ -561,6 +599,8 @@ export default function Trips() {
         });
         
         setBookingOpen(false);
+        // Reset passengers after booking
+        setPassengers([""]);
       } else {
         // Create new single trip
         const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(uiServiceType);
@@ -593,6 +633,8 @@ export default function Trips() {
         });
         
         setBookingOpen(false);
+        // Reset passengers after booking
+        setPassengers([""]);
       }
       
       queryClient.invalidateQueries({ queryKey: ["trips"] });
@@ -696,14 +738,27 @@ export default function Trips() {
   
   // Format service type for display
   const formatTripType = (type: TripType, trip?: DisplayTrip): string => {
-    // If we have the trip object with a UI service type, use that for more precise display
-    if (trip && 'ui_service_type' in trip) {
-      const uiType = trip.ui_service_type as UIServiceType;
-      return getServiceDisplayName(type, uiType);
+    if (trip?.ui_service_type) {
+      // Custom labels for UI service types
+      const labels: Record<string, string> = {
+        "airport_pickup": "Airport Pickup",
+        "airport_dropoff": "Airport Dropoff",
+        "round_trip": "Round Trip",
+        "security_escort": "Security Escort",
+        "one_way": "One Way Transfer",
+        "full_day_hire": "Full Day Hire"
+      };
+      
+      if (trip.ui_service_type in labels) {
+        return labels[trip.ui_service_type];
+      }
     }
     
-    // Fallback to general display based on trip type
-    return getServiceDisplayName(type);
+    // Fallback
+    return type.replace(/_/g, " ")
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
   
   const formatCurrency = (amount: number): string => {
@@ -840,491 +895,296 @@ export default function Trips() {
 
       {/* Calendar View */}
       {calendarView ? (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-            >
-              Previous Month
-            </Button>
-            <h3 className="text-xl font-medium">
-              {format(currentMonth, "MMMM yyyy")}
-            </h3>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-            >
-              Next Month
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center mb-2">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="p-2 font-medium">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: getFirstDayOfMonth(currentMonth) }).map((_, index) => (
-              <div key={`empty-${index}`} className="p-4 border rounded-md bg-gray-50" />
-            ))}
-
-            {daysInMonth.map((day) => {
-              const tripsOnDay = trips?.filter(trip => 
-                trip.date === format(day, "yyyy-MM-dd")
-              );
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Trip Calendar</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+              >
+                Previous
+              </Button>
+              <span className="font-medium">
+                {format(currentMonth, "MMMM yyyy")}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div key={day} className="text-center font-medium text-sm py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {/* Empty cells for days before the first day of the month */}
+              {Array.from({ length: getFirstDayOfMonth(startOfMonth(currentMonth)) }).map((_, i) => (
+                <div key={`empty-${i}`} className="h-24 p-1 border rounded-md bg-muted/30"></div>
+              ))}
               
-              return (
-                <div 
-                  key={day.toString()} 
-                  className={`p-2 border rounded-md min-h-[100px] ${
-                    isSameDay(day, new Date()) ? "bg-blue-50 border-blue-200" : ""
-                  }`}
-                >
-                  <div className="font-medium mb-1">{format(day, "d")}</div>
-                  
-                  <div className="space-y-1">
-                    {tripsOnDay && tripsOnDay.length > 0 ? (
-                      tripsOnDay.slice(0, 3).map(trip => (
+              {/* Calendar days */}
+              {daysInMonth.map((day) => {
+                const dayTrips = filteredTrips?.filter(trip => {
+                  return isSameDay(new Date(trip.date), day);
+                }) || [];
+                
+                return (
+                  <div 
+                    key={day.toString()} 
+                    className={`h-24 p-1 border rounded-md overflow-hidden ${
+                      isSameDay(day, new Date()) ? "bg-blue-50 border-blue-200" : ""
+                    }`}
+                  >
+                    <div className="font-medium text-sm mb-1">
+                      {format(day, "d")}
+                    </div>
+                    <div className="space-y-1 overflow-y-auto max-h-[calc(100%-22px)]">
+                      {dayTrips.slice(0, 3).map((trip) => (
                         <div 
                           key={trip.id}
+                          className="text-xs p-1 rounded cursor-pointer bg-primary/10 truncate"
                           onClick={() => setViewTrip(trip)}
-                          className="text-xs p-1 rounded cursor-pointer bg-primary/10 hover:bg-primary/20 truncate"
-                          title={`${trip.client_name} - ${formatTripType(trip.type, trip)}`}
                         >
-                          {formatTime(trip.time)} {trip.client_name}
+                          {formatTime(trip.time)} - {trip.client_name}
                         </div>
-                      ))
-                    ) : null}
-                    
-                    {tripsOnDay && tripsOnDay.length > 3 ? (
-                      <div className="text-xs text-muted-foreground text-center">
-                        +{tripsOnDay.length - 3} more
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : (
-        // List View
-        !filteredTrips || filteredTrips.length === 0 ? (
-          <div className="rounded-lg border p-8 text-center">
-            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Trips Found</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {searchTerm || statusFilter !== "all"
-                ? "No trips match your search criteria"
-                : "Schedule a new trip to get started"}
-            </p>
-            <Button onClick={() => setBookingOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" /> Book Trip
-            </Button>
-          </div>
-        ) : (
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Service Type</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Driver</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTrips.map((trip) => (
-                  <TableRow key={trip.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setViewTrip(trip)}>
-                    <TableCell>{formatTripId(trip.id)}</TableCell>
-                    <TableCell>{trip.client_name}</TableCell>
-                    <TableCell>
-                      {formatDate(trip.date)}
-                      <div className="text-xs text-muted-foreground">
-                        {trip.time && `Time: ${formatTime(trip.time)}`}
-                        {trip.return_time && <div>Return: {formatTime(trip.return_time)}</div>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTripTypeIcon(trip.type)}
-                        {formatTripType(trip.type, trip)}
-                      </div>
-                    </TableCell>
-                    <TableCell>{trip.vehicle_details}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          {trip.driver_avatar ? (
-                            <AvatarImage src={trip.driver_avatar} alt={trip.driver_name} />
-                          ) : (
-                            <AvatarFallback>{trip.driver_name.charAt(0)}</AvatarFallback>
-                          )}
-                        </Avatar>
-                        {trip.driver_name}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(trip.status)}>
-                        {formatStatus(trip.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => setViewTrip(trip)}>
-                            <FileText className="mr-2 h-4 w-4" /> View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditTrip(trip)}>
-                            <FileText className="mr-2 h-4 w-4" /> Edit Trip
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            setTripToAssign(trip);
-                            setAssignOpen(true);
-                          }}>
-                            <User className="mr-2 h-4 w-4" /> Assign Driver
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            setTripToMessage(trip);
-                            setMessageOpen(true);
-                          }}>
-                            <MessageCircle className="mr-2 h-4 w-4" /> Send Message
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "in_progress")} disabled={trip.status === "in_progress"}>
-                            <Clock className="mr-2 h-4 w-4" /> Mark In Progress
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "completed")} disabled={trip.status === "completed"}>
-                            <Check className="mr-2 h-4 w-4" /> Mark Completed
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateTripStatus(trip.id, "cancelled")} disabled={trip.status === "cancelled"}>
-                            <X className="mr-2 h-4 w-4" /> Mark Cancelled
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => {
-                            setTripToDelete(trip.id);
-                            setDeleteDialogOpen(true);
-                          }} className="text-red-500">
-                            <Trash className="mr-2 h-4 w-4" /> Delete Trip
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )
-      )}
-
-      {/* View Trip Dialog */}
-      <Dialog open={!!viewTrip} onOpenChange={(open) => !open && setViewTrip(null)}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Trip Details {viewTrip && <span className="text-muted-foreground ml-2 font-normal text-base">#{formatTripId(viewTrip.id)}</span>}
-            </DialogTitle>
-            <DialogDescription>
-              {viewTrip && (
-                <div className="flex items-center gap-2 mt-1 text-sm">
-                  {getTripTypeIcon(viewTrip.type)}
-                  <span>{formatTripType(viewTrip.type, viewTrip)}</span>
-                  {viewTrip.is_recurring && (
-                    <Badge variant="secondary" className="ml-2">
-                      <Repeat className="mr-1 h-3 w-3" /> Recurring
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          {viewTrip && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="details">Trip Details</TabsTrigger>
-                <TabsTrigger value="communication">Messages ({messages?.length || 0})</TabsTrigger>
-                <TabsTrigger value="history">Assignment History ({assignments?.length || 0})</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      <Badge variant="outline" className={getStatusColor(viewTrip.status)}>
-                        {formatStatus(viewTrip.status)}
-                      </Badge>
-                      <span className="ml-2">
-                        {formatDate(viewTrip.date)} 
-                        {viewTrip.time && ` at ${formatTime(viewTrip.time)}`}
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Client</h4>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <p>{viewTrip.client_name}</p>
+                      ))}
+                      {dayTrips.length > 3 && (
+                        <div className="text-xs text-center text-muted-foreground">
+                          +{dayTrips.length - 3} more
                         </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Vehicle</h4>
-                        <div className="flex items-center gap-2">
-                          <Car className="h-4 w-4 text-muted-foreground" />
-                          <p>{viewTrip.vehicle_details}</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Driver</h4>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="bg-white rounded-lg shadow">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Trip ID</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Service</TableHead>
+                <TableHead>Route</TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTrips?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    No trips found. Try adjusting your search or create a new trip.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTrips?.map((trip) => {
+                  // Extract passengers from notes
+                  const tripPassengers = parsePassengers(trip.notes);
+                  
+                  return (
+                    <TableRow key={trip.id} className="group">
+                      <TableCell className="font-medium">
+                        {formatTripId(trip.id)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{formatDate(trip.date)}</div>
+                        <div className="text-sm text-muted-foreground">{formatTime(trip.time)}</div>
+                        {trip.return_time && (
+                          <div className="text-xs text-muted-foreground">Return: {formatTime(trip.return_time)}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{trip.client_name}</div>
+                        {trip.client_type === "organization" && (
+                          <>
+                            <Badge variant="outline" className="text-xs">Organization</Badge>
+                            {tripPassengers.length > 0 && (
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                {tripPassengers.length === 1 ? (
+                                  <span>Passenger: {tripPassengers[0]}</span>
+                                ) : (
+                                  <span>Passengers: {tripPassengers.length}</span>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {getTripTypeIcon(trip.type)}
+                          {formatTripType(trip.type, trip)} 
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {trip.pickup_location && (
+                          <div className="flex items-start gap-1 truncate">
+                            <MapPin className="h-3 w-3 mt-1 shrink-0" />
+                            <span className="truncate">{trip.pickup_location}</span>
+                          </div>
+                        )}
+                        {trip.dropoff_location && (
+                          <div className="flex items-start gap-1 truncate">
+                            <ArrowRight className="h-3 w-3 mt-1 shrink-0" />
+                            <span className="truncate">{trip.dropoff_location}</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            {viewTrip.driver_avatar ? (
-                              <AvatarImage src={viewTrip.driver_avatar} alt={viewTrip.driver_name} />
+                          <Avatar className="h-8 w-8">
+                            {trip.driver_avatar ? (
+                              <AvatarImage src={trip.driver_avatar} alt={trip.driver_name} />
                             ) : (
-                              <AvatarFallback>{viewTrip.driver_name.charAt(0)}</AvatarFallback>
+                              <AvatarFallback className="bg-primary/10 text-primary">
+                                {trip.driver_name?.charAt(0) || 'D'}
+                              </AvatarFallback>
                             )}
                           </Avatar>
                           <div>
-                            <p>{viewTrip.driver_name}</p>
-                            {viewTrip.driver_contact && (
-                              <p className="text-xs text-muted-foreground">{viewTrip.driver_contact}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Return Time</h4>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <p>{viewTrip.return_time ? formatTime(viewTrip.return_time) : "Not specified"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Pickup Location</h4>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <p>{viewTrip.pickup_location || "Not specified"}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Dropoff Location</h4>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <p>{viewTrip.dropoff_location || "Not specified"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Flight Details Section - Only for airport trips */}
-                    {(viewTrip.type === "airport_pickup" || viewTrip.type === "airport_dropoff") && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/50 p-4 rounded-lg">
-                        {(() => {
-                          // Parse flight details from notes
-                          const { flight, airline, terminal } = parseFlightDetails(viewTrip.notes);
-                          
-                          return (
-                            <>
-                              <div>
-                                <h4 className="text-sm font-medium mb-1">Flight Number</h4>
-                                <div className="flex items-center gap-2">
-                                  <Plane className="h-4 w-4 text-muted-foreground" />
-                                  <p>{flight || "Not specified"}</p>
-                                </div>
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium mb-1">Airline</h4>
-                                <p>{airline || "Not specified"}</p>
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium mb-1">Terminal</h4>
-                                <p>{terminal || "Not specified"}</p>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                    {viewTrip.special_notes && (
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Special Notes</h4>
-                        <p className="text-sm p-3 bg-muted rounded-md">{viewTrip.special_notes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter className="justify-between border-t pt-4">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setEditTrip(viewTrip)}>
-                        Edit Trip
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => {
-                          setTripToAssign(viewTrip);
-                          setAssignOpen(true);
-                        }}
-                      >
-                        Assign Driver
-                      </Button>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => updateTripStatus(viewTrip.id, 
-                          viewTrip.status === "scheduled" ? "in_progress" : 
-                          viewTrip.status === "in_progress" ? "completed" : "scheduled"
-                        )}
-                        disabled={viewTrip.status === "cancelled"}
-                      >
-                        {viewTrip.status === "scheduled" ? "Mark In Progress" : 
-                         viewTrip.status === "in_progress" ? "Mark Completed" : "Reactivate"}
-                      </Button>
-                      {viewTrip.status !== "cancelled" && (
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => updateTripStatus(viewTrip.id, "cancelled")}
-                        >
-                          Cancel Trip
-                        </Button>
-                      )}
-                    </div>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="communication" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Messages</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[300px] pr-4">
-                      {messages && messages.length > 0 ? (
-                        <div className="space-y-4">
-                          {messages.map((message) => (
-                            <div key={message.id} className={`flex ${message.sender_type === "admin" ? "justify-end" : "justify-start"}`}>
-                              <div className={`max-w-[80%] rounded-lg p-3 ${
-                                message.sender_type === "admin" 
-                                  ? "bg-primary text-primary-foreground" 
-                                  : "bg-muted"
-                              }`}>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-medium">{message.sender_name}</span>
-                                  <span className="text-xs opacity-70">{formatDateTime(message.timestamp)}</span>
-                                </div>
-                                <p className="text-sm">{message.message}</p>
-                              </div>
-                            </div>
-                          ))}
-                          <div ref={messageEndRef} />
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <MessageCircle className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                          <p>No messages yet</p>
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                  <CardFooter className="flex items-center border-t pt-4">
-                    <div className="flex w-full gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setTripToMessage(viewTrip);
-                          setMessageOpen(true);
-                        }}
-                      >
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Send Message
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="history" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Assignment History</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {assignments && assignments.length > 0 ? (
-                      <div className="space-y-4">
-                        {assignments.map((assignment) => (
-                          <div key={assignment.id} className="border rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  {assignment.driver_avatar ? (
-                                    <AvatarImage src={assignment.driver_avatar} alt={assignment.driver_name || 'Driver'} />
-                                  ) : (
-                                    <AvatarFallback>{assignment.driver_name ? assignment.driver_name.charAt(0) : 'D'}</AvatarFallback>
-                                  )}
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium">{assignment.driver_name || "Unknown Driver"}</p>
-                                  <p className="text-xs text-muted-foreground">{formatDateTime(assignment.assigned_at)}</p>
-                                </div>
-                              </div>
-                              <Badge variant={
-                                assignment.status === "accepted" ? "default" : 
-                                assignment.status === "rejected" ? "destructive" : "secondary"
-                              }>
-                                {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
-                              </Badge>
-                            </div>
-                            {assignment.notes && (
-                              <div className="text-sm bg-muted p-2 rounded-md mt-2">
-                                <p>{assignment.notes}</p>
+                            <div className="font-medium text-sm">{trip.driver_name}</div>
+                            {trip.driver_contact && (
+                              <div className="text-xs text-muted-foreground truncate max-w-[120px]">
+                                {trip.driver_contact}
                               </div>
                             )}
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <User className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                        <p>No assignment history</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          )}
-        </DialogContent>
-      </Dialog>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(trip.status)}>
+                          {formatStatus(trip.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setViewTrip(trip)}
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span className="sr-only">View details</span>
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Actions</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => setViewTrip(trip)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditTrip(trip)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Edit Trip
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setTripToMessage(trip);
+                                setMessageOpen(true);
+                              }}>
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Send Message
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setTripToAssign(trip);
+                                setAssignOpen(true);
+                              }}>
+                                <User className="h-4 w-4 mr-2" />
+                                Assign Driver
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+
+                              {/* Status change options */}
+                              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+
+                              {trip.status !== "scheduled" && (
+                                <DropdownMenuItem 
+                                  onClick={() => updateTripStatus(trip.id, "scheduled")}
+                                  className="text-blue-600"
+                                >
+                                  <Calendar className="h-4 w-4 mr-2" />
+                                  Set as Scheduled
+                                </DropdownMenuItem>
+                              )}
+
+                              {trip.status !== "in_progress" && (
+                                <DropdownMenuItem 
+                                  onClick={() => updateTripStatus(trip.id, "in_progress")}
+                                  className="text-yellow-600"
+                                >
+                                  <Clock className="h-4 w-4 mr-2" />
+                                  Set as In Progress
+                                </DropdownMenuItem>
+                              )}
+
+                              {trip.status !== "completed" && (
+                                <DropdownMenuItem 
+                                  onClick={() => updateTripStatus(trip.id, "completed")}
+                                  className="text-green-600"
+                                >
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Mark as Completed
+                                </DropdownMenuItem>
+                              )}
+
+                              {trip.status !== "cancelled" && (
+                                <DropdownMenuItem 
+                                  onClick={() => updateTripStatus(trip.id, "cancelled")}
+                                  className="text-red-600"
+                                >
+                                  <X className="h-4 w-4 mr-2" />
+                                  Cancel Trip
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+                              
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setTripToDelete(trip.id);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                className="text-red-600"
+                              >
+                                <Trash className="h-4 w-4 mr-2" />
+                                Delete Trip
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Trip Form Dialog (Edit & Create) */}
-      <Dialog open={!!editTrip || bookingOpen} onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false))}>
+      <Dialog open={!!editTrip || bookingOpen} onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false), setPassengers([""]))}> 
         <DialogContent className="sm:max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{editTrip ? "Edit Trip" : "Book New Trip"}</DialogTitle>
@@ -1340,14 +1200,19 @@ export default function Trips() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="client_id">Client</Label>
-                  <Select name="client_id" defaultValue={editTrip?.client_id} required>
+                  <Select 
+                    name="client_id" 
+                    defaultValue={editTrip?.client_id} 
+                    onValueChange={handleClientChange}
+                    required
+                  >
                     <SelectTrigger id="client_id">
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
                       {clients?.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
-                          {client.name}
+                          {client.name} {client.type === "organization" && "🏢"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1376,6 +1241,48 @@ export default function Trips() {
                   </Select>
                 </div>
               </div>
+
+              {/* Passengers Section - Only show for organization clients */}
+              {selectedClientType === "organization" && (
+                <div className="border p-4 rounded-md space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-medium">Passengers</h3>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addPassengerField}
+                      className="h-8 px-2"
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Add Passenger
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {passengers.map((passenger, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          placeholder={`Passenger ${index + 1} name`}
+                          value={passenger}
+                          onChange={(e) => updatePassenger(index, e.target.value)}
+                          className="flex-1"
+                        />
+                        {passengers.length > 1 && (
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => removePassengerField(index)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Flight Details Section - Only show for airport trips */}
               {(serviceType === "airport_pickup" || serviceType === "airport_dropoff") && (
@@ -1516,9 +1423,10 @@ export default function Trips() {
                   name="special_notes"
                   placeholder="Add any special instructions or notes"
                   defaultValue={editTrip?.special_notes || editTrip?.notes?.replace(/Flight: .*\n?/g, '')
-                                          .replace(/Airline: .*\n?/g, '')
-                                          .replace(/Terminal: .*\n?/g, '')
-                                          .trim() || ""}
+                                        .replace(/Airline: .*\n?/g, '')
+                                        .replace(/Terminal: .*\n?/g, '')
+                                        .replace(/\n\nPassengers:\n.*$/s, '') // Remove existing passengers list
+                                        .trim() || ""}
                   className="min-h-[80px]"
                 />
               </div>
@@ -1586,7 +1494,14 @@ export default function Trips() {
               )}
 
               <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => editTrip ? setEditTrip(null) : setBookingOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  if (editTrip) {
+                    setEditTrip(null);
+                  } else {
+                    setBookingOpen(false);
+                  }
+                  setPassengers([""]);
+                }}>
                   Cancel
                 </Button>
                 <Button type="submit">
@@ -1598,24 +1513,338 @@ export default function Trips() {
         </DialogContent>
       </Dialog>
 
-      {/* Driver Assignment Dialog */}
+      {/* Trip Detail View Dialog */}
+      <Dialog open={!!viewTrip} onOpenChange={(open) => !open && setViewTrip(null)}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh]">
+          {viewTrip && (
+            <>
+              <DialogHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <DialogTitle className="text-xl flex items-center gap-2">
+                      {getTripTypeIcon(viewTrip.type)}
+                      {formatTripType(viewTrip.type, viewTrip)}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Trip ID: {formatTripId(viewTrip.id)}
+                    </DialogDescription>
+                  </div>
+                  <Badge className={getStatusColor(viewTrip.status)}>
+                    {formatStatus(viewTrip.status)}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+                <TabsList className="grid grid-cols-3 mb-4">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="history">
+                    Assignment History
+                  </TabsTrigger>
+                  <TabsTrigger value="messages">
+                    Messages {messages?.length ? `(${messages.length})` : ""}
+                  </TabsTrigger>
+                </TabsList>
+
+                <ScrollArea className="max-h-[calc(90vh-160px)]">
+                  <TabsContent value="details" className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-semibold">Date & Time</h3>
+                        <p className="text-sm">{formatDate(viewTrip.date)} at {formatTime(viewTrip.time)}</p>
+                        {viewTrip.return_time && (
+                          <p className="text-sm text-muted-foreground">Return: {formatTime(viewTrip.return_time)}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-semibold">Client</h3>
+                        <p className="text-sm flex items-center gap-1">
+                          {viewTrip.client_name}
+                          {viewTrip.client_type === "organization" && (
+                            <Badge variant="outline" className="text-xs">Organization</Badge>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Display passengers list if client is organization */}
+                    {viewTrip.client_type === "organization" && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-semibold">Passengers</h3>
+                        <div className="text-sm space-y-1">
+                          {parsePassengers(viewTrip.notes).length > 0 ? 
+                            parsePassengers(viewTrip.notes).map((passenger, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5">
+                                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>{passenger}</span>
+                              </div>
+                            )) : 
+                            <p className="text-muted-foreground">No passengers listed</p>
+                          }
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold">Route</h3>
+                      {viewTrip.pickup_location && (
+                        <div className="flex items-start gap-2 text-sm">
+                          <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">Pickup</div>
+                            <div>{viewTrip.pickup_location}</div>
+                          </div>
+                        </div>
+                      )}
+                      {viewTrip.dropoff_location && (
+                        <div className="flex items-start gap-2 text-sm mt-2">
+                          <ArrowRight className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">Dropoff</div>
+                            <div>{viewTrip.dropoff_location}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {(viewTrip.type === "airport_pickup" || viewTrip.type === "airport_dropoff") && (
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-semibold">Flight Details</h3>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div>
+                            <div className="font-medium">Flight</div>
+                            <div>{parseFlightDetails(viewTrip.notes).flight || "N/A"}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium">Airline</div>
+                            <div>{parseFlightDetails(viewTrip.notes).airline || "N/A"}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium">Terminal</div>
+                            <div>{parseFlightDetails(viewTrip.notes).terminal || "N/A"}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold">Driver & Vehicle</h3>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          {viewTrip.driver_avatar ? (
+                            <AvatarImage src={viewTrip.driver_avatar} alt={viewTrip.driver_name} />
+                          ) : (
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {viewTrip.driver_name?.charAt(0) || 'D'}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div>
+                          <div className="text-sm font-medium">{viewTrip.driver_name}</div>
+                          {viewTrip.driver_contact && (
+                            <div className="text-xs text-muted-foreground">{viewTrip.driver_contact}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm">
+                        <span className="font-medium">Vehicle:</span> {viewTrip.vehicle_details}
+                      </div>
+                    </div>
+
+                    {viewTrip.notes && (
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-semibold">Notes</h3>
+                        <div className="text-sm whitespace-pre-wrap rounded-md bg-muted p-3">
+                          {viewTrip.notes
+                            // Remove flight details and passenger list from notes display 
+                            // since we show them in their own sections
+                            ?.replace(/Flight: .*\n?/g, '')
+                            .replace(/Airline: .*\n?/g, '')
+                            .replace(/Terminal: .*\n?/g, '')
+                            .replace(/\n\nPassengers:\n.*$/s, '')
+                            .trim()}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="history" className="space-y-4">
+                    {assignments?.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No driver assignment history available</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {assignments?.map((assignment) => (
+                          <Card key={assignment.id}>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-8 w-8">
+                                    {assignment.driver_avatar ? (
+                                      <AvatarImage src={assignment.driver_avatar} alt={assignment.driver_name} />
+                                    ) : (
+                                      <AvatarFallback className="bg-primary/10 text-primary">
+                                        {assignment.driver_name?.charAt(0) || 'D'}
+                                      </AvatarFallback>
+                                    )}
+                                  </Avatar>
+                                  <div>
+                                    <div className="font-medium">{assignment.driver_name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {formatDateTime(assignment.assigned_at)}
+                                    </div>
+                                  </div>
+                                </div>
+                                <Badge 
+                                  className={
+                                    assignment.status === "accepted" ? "bg-green-100 text-green-700" :
+                                    assignment.status === "rejected" ? "bg-red-100 text-red-700" :
+                                    "bg-yellow-100 text-yellow-700"
+                                  }
+                                >
+                                  {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
+                                </Badge>
+                              </div>
+                              {assignment.notes && (
+                                <div className="text-sm mt-2 bg-muted p-3 rounded-md">
+                                  {assignment.notes}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="messages" className="space-y-4">
+                    <div className="border rounded-md p-3 h-[300px] flex flex-col">
+                      <div className="flex-1 overflow-y-auto mb-3">
+                        {messages?.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>No messages yet</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {messages?.map((message) => (
+                              <div 
+                                key={message.id} 
+                                className={`flex flex-col ${
+                                  message.sender_type === "admin" ? "items-end" : "items-start"
+                                }`}
+                              >
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  {message.sender_name} ({message.sender_type}) - {formatDateTime(message.timestamp)}
+                                </div>
+                                <div 
+                                  className={`p-3 rounded-lg max-w-[80%] ${
+                                    message.sender_type === "admin" 
+                                      ? "bg-primary text-primary-foreground" 
+                                      : "bg-muted"
+                                  }`}
+                                >
+                                  {message.message}
+                                </div>
+                              </div>
+                            ))}
+                            <div ref={messageEndRef} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder="Type your message here..."
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && newMessage.trim()) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                        />
+                        <Button 
+                          onClick={handleSendMessage}
+                          disabled={!newMessage.trim()}
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </ScrollArea>
+              </Tabs>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setTripToAssign(viewTrip);
+                      setAssignOpen(true);
+                    }}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Assign Driver
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setTripToMessage(viewTrip);
+                      setMessageOpen(true);
+                    }}
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Message
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setEditTrip(viewTrip)}
+                  >
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      setTripToDelete(viewTrip.id);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Driver Dialog */}
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign Driver</DialogTitle>
             <DialogDescription>
-              {tripToAssign && (
-                <span>Assign a driver to trip on {formatDate(tripToAssign.date)} for {tripToAssign.client_name}</span>
-              )}
+              Assign a driver to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4">
+
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="driver_select">Select Driver</Label>
-              <Select value={assignDriver} onValueChange={setAssignDriver}>
-                <SelectTrigger id="driver_select">
-                  <SelectValue placeholder="Select a driver" />
+              <Label htmlFor="driver">Select Driver</Label>
+              <Select 
+                value={assignDriver} 
+                onValueChange={setAssignDriver}
+              >
+                <SelectTrigger id="driver">
+                  <SelectValue placeholder="Select driver" />
                 </SelectTrigger>
                 <SelectContent>
                   {drivers?.map((driver) => (
@@ -1626,24 +1855,25 @@ export default function Trips() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="assignment_note">Note (Optional)</Label>
+              <Label htmlFor="assignment-note">Note (Optional)</Label>
               <Textarea 
-                id="assignment_note"
-                placeholder="Add a note for this assignment"
+                id="assignment-note" 
+                placeholder="Add any instructions or notes for the driver"
                 value={assignNote}
                 onChange={(e) => setAssignNote(e.target.value)}
+                className="min-h-[100px]"
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setAssignOpen(false);
+              setTripToAssign(null);
               setAssignDriver("");
               setAssignNote("");
-              setTripToAssign(null);
             }}>
               Cancel
             </Button>
@@ -1657,43 +1887,44 @@ export default function Trips() {
         </DialogContent>
       </Dialog>
 
-      {/* Message Dialog */}
+      {/* Send Message Dialog */}
       <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Send Message</DialogTitle>
             <DialogDescription>
-              {tripToMessage && (
-                <span>Send a message about the trip on {formatDate(tripToMessage.date)} for {tripToMessage.client_name}</span>
-              )}
+              Send a message regarding trip {tripToMessage ? formatTripId(tripToMessage.id) : ""}
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4">
+
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="message_content">Message</Label>
+              <Label htmlFor="message">Message</Label>
               <Textarea 
-                id="message_content"
-                placeholder="Type your message here"
+                id="message" 
+                placeholder="Type your message here..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                className="min-h-[120px]"
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setMessageOpen(false);
-              setNewMessage("");
               setTripToMessage(null);
+              setNewMessage("");
             }}>
               Cancel
             </Button>
             <Button 
-              onClick={handleSendMessage}
+              onClick={() => {
+                handleSendMessage();
+                setMessageOpen(false);
+              }}
               disabled={!newMessage.trim()}
             >
-              <Send className="mr-2 h-4 w-4" />
               Send Message
             </Button>
           </DialogFooter>
@@ -1706,7 +1937,8 @@ export default function Trips() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the trip and all related data.
+              This action cannot be undone. This will permanently delete the
+              trip and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1716,7 +1948,7 @@ export default function Trips() {
             }}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={deleteTrip}>
+            <AlertDialogAction onClick={deleteTrip} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
