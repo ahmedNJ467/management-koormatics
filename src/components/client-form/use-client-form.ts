@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { clientSchema, type ClientFormValues, type ContactFormValues, type ClientDocument, type MemberFormValues } from "./types";
-import { uploadClientFile, uploadClientDocument } from "./use-client-uploads";
+import { clientSchema, type ClientFormValues, type ClientDocument } from "./types";
+import { useClientContacts } from "./use-client-contacts";
+import { useClientMembers } from "./use-client-members";
+import { useClientDocuments } from "./use-client-documents";
+import { useClientProfile } from "./use-client-profile";
+import { useClientSave } from "./use-client-save";
 
 interface Client extends ClientFormValues {
   id: string;
@@ -15,20 +16,8 @@ interface Client extends ClientFormValues {
 }
 
 export function useClientForm(client?: Client | null) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contacts, setContacts] = useState<ContactFormValues[]>([]);
-  const [members, setMembers] = useState<MemberFormValues[]>([]);
-  const [documents, setDocuments] = useState<ClientDocument[]>(
-    client?.documents || []
-  );
-  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
-  const [profileFile, setProfileFile] = useState<File | null>(null);
-  const [profilePreview, setProfilePreview] = useState<string | null>(
-    client?.profile_image_url || null
-  );
-
+  
   // Set default values based on client data or empty form
   const defaultValues = client 
     ? { ...client } 
@@ -52,8 +41,8 @@ export function useClientForm(client?: Client | null) {
   useEffect(() => {
     if (client) {
       form.reset(client);
-      setProfilePreview(client.profile_image_url || null);
-      setDocuments(client.documents || []);
+      resetProfile(client.profile_image_url || null);
+      resetDocuments(client.documents || []);
     } else {
       form.reset({
         name: "",
@@ -65,400 +54,53 @@ export function useClientForm(client?: Client | null) {
         email: "",
         phone: "",
       });
-      setProfilePreview(null);
-      setDocuments([]);
+      resetProfile(null);
+      resetDocuments([]);
     }
-  }, [client, form]);
-
-  // Fetch client contacts if this is an organization
-  useEffect(() => {
-    if (!client || client.type !== 'organization') {
-      setContacts([]);
-      return;
-    }
-
-    const fetchContacts = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('client_contacts')
-          .select('*')
-          .eq('client_id', client.id);
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          setContacts(data.map(contact => ({
-            id: contact.id,
-            name: contact.name,
-            position: contact.position || "",
-            email: contact.email || "",
-            phone: contact.phone || "",
-            is_primary: contact.is_primary || false
-          })));
-        } else {
-          setContacts([]);
-        }
-      } catch (error) {
-        console.error('Error fetching contacts:', error);
-        setContacts([]);
-      }
-    };
-
-    fetchContacts();
   }, [client]);
 
-  // Fetch client members if this is an organization
-  useEffect(() => {
-    if (!client || client.type !== 'organization') {
-      setMembers([]);
-      return;
-    }
+  // Get the current client type from the form
+  const clientType = form.watch("type");
 
-    const fetchMembers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('client_members')
-          .select('*')
-          .eq('client_id', client.id);
-
-        if (error) {
-          // If the table doesn't exist yet or other error
-          console.error('Error fetching members:', error);
-          setMembers([]);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          setMembers(data.map(member => ({
-            id: member.id,
-            name: member.name,
-            role: member.role || "",
-            email: member.email || "",
-            phone: member.phone || "",
-            notes: member.notes || "",
-            document_url: member.document_url || "",
-            document_name: member.document_name || ""
-          })));
-        } else {
-          setMembers([]);
-        }
-      } catch (error) {
-        console.error('Error fetching members:', error);
-        setMembers([]);
-      }
-    };
-
-    fetchMembers();
-  }, [client]);
-
-  const handleProfileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setProfileFile(file);
-      const objectUrl = URL.createObjectURL(file);
-      setProfilePreview(objectUrl);
-    }
-  };
-
-  const handleDocumentUpload = async (files: FileList) => {
-    // For new clients, just store the files temporarily
-    if (!client?.id) {
-      setDocumentFiles(prev => [...prev, ...Array.from(files)]);
-      return;
-    }
-
-    try {
-      const newDocs = await Promise.all(
-        Array.from(files).map((file) => uploadClientDocument(file, client.id))
-      );
-      setDocuments((prev) => [...prev, ...newDocs]);
-      toast({
-        title: "Documents uploaded",
-        description: `Successfully uploaded ${files.length} document(s)`,
-      });
-    } catch (error) {
-      console.error("Document upload error:", error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload one or more documents",
-        variant: "destructive",
-      });
-    }
-  };
+  // Use our custom hooks for different parts of the form
+  const { contacts, setContacts } = useClientContacts(client?.id, clientType);
+  const { members, setMembers } = useClientMembers(client?.id, clientType);
+  
+  const { 
+    documents, 
+    setDocuments, 
+    documentFiles, 
+    handleDocumentUpload,
+    resetDocuments 
+  } = useClientDocuments(client?.documents);
+  
+  const { 
+    profilePreview, 
+    handleProfileChange, 
+    uploadProfile,
+    resetProfile 
+  } = useClientProfile(client?.profile_image_url);
+  
+  const { saveClient } = useClientSave();
 
   const handleSubmit = async (values: ClientFormValues) => {
     console.log("Submitting client form with values:", values);
     console.log("Current members state:", members);
     setIsSubmitting(true);
+    
     try {
-      let profileImageUrl = client?.profile_image_url;
-
-      if (client) {
-        // Update existing client
-        if (profileFile) {
-          // Update existing client's profile image
-          profileImageUrl = await uploadClientFile(
-            profileFile,
-            "client-profiles",
-            client.id,
-            "profile"
-          );
-        }
-
-        // Convert documents to plain objects for storing in jsonb column
-        const documentsForUpdate = documents.map(doc => ({
-          id: doc.id,
-          name: doc.name,
-          url: doc.url,
-          uploadedAt: doc.uploadedAt
-        }));
-
-        // Format values for update
-        const formattedValues = {
-          name: values.name,
-          type: values.type,
-          description: values.description || null,
-          website: values.website || null,
-          address: values.address || null,
-          contact: values.contact || null,
-          email: values.email || null,
-          phone: values.phone || null,
-          profile_image_url: profileImageUrl,
-          documents: documentsForUpdate
-        };
-
-        console.log("Updating client with values:", formattedValues);
-
-        // Update client
-        const { error: updateError } = await supabase
-          .from("clients")
-          .update(formattedValues)
-          .eq("id", client.id);
-
-        if (updateError) {
-          console.error("Error updating client:", updateError);
-          throw updateError;
-        }
-
-        // Only update contacts/members if we're dealing with an organization
-        if (values.type === "organization") {
-          // First delete all existing contacts
-          const { error: deleteContactsError } = await supabase
-            .from("client_contacts")
-            .delete()
-            .eq("client_id", client.id);
-
-          if (deleteContactsError) {
-            console.error("Error deleting existing contacts:", deleteContactsError);
-            throw deleteContactsError;
-          }
-
-          // Then insert the new contacts if any
-          if (contacts.length > 0) {
-            const formattedContacts = contacts.map((contact) => ({
-              client_id: client.id,
-              name: contact.name, // name is required
-              position: contact.position || null,
-              email: contact.email || null,
-              phone: contact.phone || null,
-              is_primary: contact.is_primary || false,
-            }));
-
-            console.log("Inserting contacts:", formattedContacts);
-            const { error: contactsError } = await supabase
-              .from("client_contacts")
-              .insert(formattedContacts);
-
-            if (contactsError) {
-              console.error("Error inserting contacts:", contactsError);
-              throw contactsError;
-            }
-          }
-
-          // Update members
-          // First delete all existing members
-          const { error: deleteMembersError } = await supabase
-            .from("client_members")
-            .delete()
-            .eq("client_id", client.id);
-
-          if (deleteMembersError) {
-            console.error("Error deleting existing members:", deleteMembersError);
-            throw deleteMembersError;
-          }
-
-          // Then insert the new members if any
-          if (members.length > 0) {
-            // Make sure each member has an ID for the database
-            const formattedMembers = members.map((member) => ({
-              client_id: client.id,
-              name: member.name,
-              role: member.role || null,
-              email: member.email || null,
-              phone: member.phone || null,
-              notes: member.notes || null,
-              document_url: member.document_url || null,
-              document_name: member.document_name || null
-            }));
-
-            console.log("Inserting members:", formattedMembers);
-            const { error: membersError } = await supabase
-              .from("client_members")
-              .insert(formattedMembers);
-
-            if (membersError) {
-              console.error('Error updating members:', membersError);
-              toast({
-                title: "Warning",
-                description: "Client updated but there was an issue with the member data",
-                variant: "destructive",
-              });
-            }
-          }
-        }
-
-        toast({
-          title: "Client updated",
-          description: "The client has been updated successfully.",
-        });
-
-        queryClient.invalidateQueries({ queryKey: ['clients'] });
-        queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
-        queryClient.invalidateQueries({ queryKey: ['client_members_count'] });
-        return true;
-      } else {
-        // Insert new client
-        const formattedValues = {
-          name: values.name,
-          type: values.type,
-          description: values.description || null,
-          website: values.website || null,
-          address: values.address || null,
-          contact: values.contact || null,
-          email: values.email || null,
-          phone: values.phone || null,
-          profile_image_url: null, // We'll update this after creating the client
-          documents: []
-        };
-
-        console.log("Creating new client with values:", formattedValues);
-
-        const { data: insertedClient, error: insertError } = await supabase
-          .from("clients")
-          .insert(formattedValues)
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Error creating client:", insertError);
-          throw insertError;
-        }
-
-        if (!insertedClient) {
-          throw new Error("Failed to create client");
-        }
-
-        // Now that we have a client ID, upload the profile image if provided
-        if (profileFile) {
-          const uploadedProfileUrl = await uploadClientFile(
-            profileFile,
-            "client-profiles",
-            insertedClient.id,
-            "profile"
-          );
-
-          if (uploadedProfileUrl) {
-            await supabase
-              .from("clients")
-              .update({ profile_image_url: uploadedProfileUrl })
-              .eq("id", insertedClient.id);
-          }
-        }
-
-        // Upload any documents
-        if (documentFiles.length > 0) {
-          const uploadedDocs = await Promise.all(
-            documentFiles.map(file => uploadClientDocument(file, insertedClient.id))
-          );
-
-          // Convert documents to plain objects for storing
-          const documentsForUpdate = uploadedDocs.map(doc => ({
-            id: doc.id,
-            name: doc.name,
-            url: doc.url,
-            uploadedAt: doc.uploadedAt
-          }));
-
-          await supabase
-            .from("clients")
-            .update({ documents: documentsForUpdate })
-            .eq("id", insertedClient.id);
-        }
-
-        // Add contacts if organization
-        if (values.type === "organization" && contacts.length > 0) {
-          const formattedContacts = contacts.map((contact) => ({
-            client_id: insertedClient.id,
-            name: contact.name, // name is required
-            position: contact.position || null,
-            email: contact.email || null,
-            phone: contact.phone || null,
-            is_primary: contact.is_primary || false,
-          }));
-
-          const { error: contactsError } = await supabase
-            .from("client_contacts")
-            .insert(formattedContacts);
-
-          if (contactsError) throw contactsError;
-        }
-
-        // Add members if organization
-        if (values.type === "organization" && members.length > 0) {
-          // Make sure we're not sending temporary IDs to the database
-          const formattedMembers = members.map(({ id, ...rest }) => ({
-            client_id: insertedClient.id,
-            name: rest.name,
-            role: rest.role || null,
-            email: rest.email || null,
-            phone: rest.phone || null,
-            notes: rest.notes || null,
-            document_url: rest.document_url || null,
-            document_name: rest.document_name || null
-          }));
-
-          const { error: membersError } = await supabase
-            .from("client_members")
-            .insert(formattedMembers);
-
-          if (membersError) {
-            console.error('Error adding members:', membersError);
-            toast({
-              title: "Warning",
-              description: "Client created but there was an issue with the member data",
-              variant: "destructive",
-            });
-          }
-        }
-
-        toast({
-          title: "Client created",
-          description: "A new client has been created successfully.",
-        });
-
-        queryClient.invalidateQueries({ queryKey: ['clients'] });
-        queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
-        queryClient.invalidateQueries({ queryKey: ['client_members_count'] });
-        return true;
-      }
-    } catch (error) {
-      console.error("Error saving client:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save client",
-        variant: "destructive",
-      });
-      return false;
+      const result = await saveClient(
+        client,
+        values,
+        uploadProfile,
+        documents,
+        documentFiles,
+        contacts,
+        members,
+        handleDocumentUpload
+      );
+      
+      return result;
     } finally {
       setIsSubmitting(false);
     }
@@ -473,7 +115,7 @@ export function useClientForm(client?: Client | null) {
     setMembers,
     documents,
     setDocuments,
-    documentFiles,
+    documentFiles: documentFiles,
     profilePreview,
     handleProfileChange,
     handleDocumentUpload,
