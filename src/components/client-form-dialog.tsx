@@ -6,7 +6,7 @@ import { DeleteClientDialog } from "./client-form/delete-client-dialog";
 import { ClientForm } from "./client-form/client-form";
 import { useClientDialog } from "./client-form/use-client-dialog";
 import { useClientFormSubmit } from "./client-form/use-client-form-submit";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 interface Client {
   id: string;
@@ -64,6 +64,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   // Memoize the handleFormSubmit function to prevent recreation on each render
   const handleFormSubmit = useCallback(async (values: any) => {
     try {
+      setIsSubmitting(true);
       const result = await submitFormFn({
         client,
         values,
@@ -79,6 +80,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
       return result;
     } catch (error) {
       console.error("Error submitting form:", error);
+      setIsSubmitting(false);
       return false;
     }
   }, [
@@ -93,6 +95,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     submitFormFn
   ]);
 
+  // Use effect to handle the title generation only when needed
   const dialogTitle = client 
     ? client.is_archived
       ? `Archived Client: ${client.name}`

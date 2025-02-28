@@ -66,7 +66,7 @@ export function useClientForm(client: any | null) {
     }
   }, [handleDocUpload]);
 
-  // Reset form when client changes, but with proper dependency array
+  // Reset form when client changes
   useEffect(() => {
     if (client) {
       form.reset({
@@ -79,6 +79,8 @@ export function useClientForm(client: any | null) {
         email: client.email || "",
         phone: client.phone || "",
       });
+      
+      // Reset profile and documents
       resetProfile(client.profile_image_url);
       resetDocuments(client.documents || []);
     } else {
@@ -92,10 +94,12 @@ export function useClientForm(client: any | null) {
         email: "",
         phone: "",
       });
+      
+      // Reset profile and documents for new client
       resetProfile();
       resetDocuments();
     }
-  }, [client, form.reset, resetProfile, resetDocuments]); // Fixed dependency array
+  }, [client, form, resetProfile, resetDocuments]);
 
   return {
     form,
