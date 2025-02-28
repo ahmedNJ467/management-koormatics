@@ -2,20 +2,43 @@
 import { FileText, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { uploadMemberDocument } from "./use-member-uploads";
 
 interface MemberDocumentUploadProps {
   documentName: string | null;
   documentUrl: string | null;
-  onDocumentChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  clientId?: string;
+  memberId?: string;
+  onDocumentUploaded: (url: string, name: string) => void;
   onDocumentClear: () => void;
 }
 
 export function MemberDocumentUpload({ 
   documentName, 
   documentUrl,
-  onDocumentChange, 
+  clientId,
+  memberId,
+  onDocumentUploaded, 
   onDocumentClear 
 }: MemberDocumentUploadProps) {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !clientId || !memberId) return;
+    
+    try {
+      setIsUploading(true);
+      const result = await uploadMemberDocument(file, clientId, memberId);
+      onDocumentUploaded(result.url, result.name);
+    } catch (error) {
+      console.error("Failed to upload document:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-2">
       <label className="text-sm font-medium">Document / ID / Passport</label>
@@ -23,18 +46,19 @@ export function MemberDocumentUpload({
         <Input
           type="file"
           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-          onChange={onDocumentChange}
+          onChange={handleDocumentChange}
           className="hidden"
           id="member-document-upload"
+          disabled={isUploading}
         />
         <label
           htmlFor="member-document-upload"
-          className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
+          className={`flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <FileText className="h-4 w-4" />
-          <span>{documentName || "Upload Document"}</span>
+          <span>{isUploading ? "Uploading..." : documentName || "Upload Document"}</span>
         </label>
-        {documentName && (
+        {documentName && !isUploading && (
           <div className="flex items-center space-x-2">
             {documentUrl && (
               <a 
