@@ -63,7 +63,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
     setIsAddingMember(false);
     setEditingMemberIndex(null);
     setMemberFormState({
-      name: "",
+      name: "", // Ensure name is explicitly set
       role: "",
       email: "",
       phone: "",
@@ -106,7 +106,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
     setIsAddingMember(false);
     setEditingMemberIndex(null);
     setMemberFormState({
-      name: "",
+      name: "", // Ensure name is explicitly set here as well
       role: "",
       email: "",
       phone: "",
