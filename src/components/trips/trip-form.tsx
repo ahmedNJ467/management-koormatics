@@ -56,7 +56,7 @@ const formSchema = z.object({
   pickup_location: z.string().optional(),
   dropoff_location: z.string().optional(),
   notes: z.string().optional(),
-  amount: z.number().min(0, "Amount must be a positive number").optional().default(0),
+  amount: z.number().min(0, "Amount must be a positive number").optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -81,11 +81,10 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
       end_time: initialData.end_time,
       type: initialData.type || "other",
       status: initialData.status || "scheduled",
-      amount: initialData.amount || 0,
+      amount: initialData.amount,
     } : {
       type: "other",
       status: "scheduled",
-      amount: 0,
     },
   });
 
@@ -300,8 +299,11 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                           min="0"
                           className="pl-9"
                           placeholder="0.00"
-                          value={field.value}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value === undefined ? "" : field.value}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value === "" ? undefined : parseFloat(value));
+                          }}
                         />
                       </FormControl>
                     </div>
