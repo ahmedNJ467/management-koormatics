@@ -325,8 +325,8 @@ const Reports = () => {
       tableWidth: 'auto',
     });
     
-    // Add page number at the bottom
-    const pageCount = doc.internal.getNumberOfPages();
+    // Add page number at the bottom - fix for the getNumberOfPages issue
+    const pageCount = (doc as any)._getPageCount();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
