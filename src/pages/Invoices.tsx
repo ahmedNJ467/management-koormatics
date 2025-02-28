@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -83,7 +84,10 @@ import {
   Receipt,
   CreditCard,
   Clock,
-  Car
+  Car,
+  AlertCircle,
+  TrendingUp,
+  ArrowUp
 } from "lucide-react";
 import {
   Client,
@@ -307,6 +311,84 @@ export default function Invoices() {
     },
     enabled: !!selectedClient,
   });
+
+  // Calculate dashboard metrics
+  const getDashboardMetrics = () => {
+    if (!invoices) return {
+      totalInvoiced: 0,
+      totalPaid: 0,
+      totalPending: 0,
+      totalOverdue: 0,
+      averagePaymentTime: 0,
+      invoiceCount: 0,
+      overdueCount: 0
+    };
+
+    const totalInvoiced = invoices.reduce((sum, invoice) => sum + invoice.total_amount, 0);
+    const totalPaid = invoices.reduce((sum, invoice) => sum + invoice.paid_amount, 0);
+    const totalPending = totalInvoiced - totalPaid;
+    
+    const overdueInvoices = invoices.filter(invoice => invoice.status === 'overdue');
+    const totalOverdue = overdueInvoices.reduce((sum, invoice) => sum + (invoice.total_amount - invoice.paid_amount), 0);
+    const overdueCount = overdueInvoices.length;
+    
+    // Calculate average payment time for paid invoices (in days)
+    let totalPaymentDays = 0;
+    let paidInvoicesCount = 0;
+    
+    invoices.forEach(invoice => {
+      if (invoice.status === 'paid' && invoice.payment_date) {
+        const invoiceDate = new Date(invoice.date);
+        const paymentDate = new Date(invoice.payment_date);
+        const daysDifference = Math.round((paymentDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24));
+        totalPaymentDays += daysDifference;
+        paidInvoicesCount++;
+      }
+    });
+    
+    const averagePaymentTime = paidInvoicesCount > 0 ? Math.round(totalPaymentDays / paidInvoicesCount) : 0;
+    
+    return {
+      totalInvoiced,
+      totalPaid,
+      totalPending,
+      totalOverdue,
+      averagePaymentTime,
+      invoiceCount: invoices.length,
+      overdueCount
+    };
+  };
+
+  // Get month-over-month revenue growth
+  const getRevenueGrowth = () => {
+    if (!invoices || invoices.length === 0) return 0;
+    
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const currentMonthYear = currentMonth === 0 ? today.getFullYear() - 1 : today.getFullYear();
+    
+    // Calculate current month revenue
+    const currentMonthInvoices = invoices.filter(invoice => {
+      const invoiceDate = new Date(invoice.date);
+      return invoiceDate.getMonth() === currentMonth && invoiceDate.getFullYear() === today.getFullYear();
+    });
+    
+    const currentMonthRevenue = currentMonthInvoices.reduce((sum, invoice) => sum + invoice.total_amount, 0);
+    
+    // Calculate last month revenue
+    const lastMonthInvoices = invoices.filter(invoice => {
+      const invoiceDate = new Date(invoice.date);
+      return invoiceDate.getMonth() === lastMonth && invoiceDate.getFullYear() === currentMonthYear;
+    });
+    
+    const lastMonthRevenue = lastMonthInvoices.reduce((sum, invoice) => sum + invoice.total_amount, 0);
+    
+    // Calculate growth rate
+    if (lastMonthRevenue === 0) return currentMonthRevenue > 0 ? 100 : 0;
+    
+    return Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
+  };
 
   // Subscribe to real-time changes
   useEffect(() => {
@@ -713,6 +795,10 @@ export default function Invoices() {
     return matchesSearch && matchesStatus;
   });
 
+  // Calculate dashboard metrics
+  const metrics = getDashboardMetrics();
+  const revenueGrowth = getRevenueGrowth();
+
   if (invoicesLoading) {
     return (
       <div className="space-y-8">
@@ -743,6 +829,89 @@ export default function Invoices() {
             <Plus className="mr-2 h-4 w-4" /> Create Invoice
           </Button>
         </div>
+      </div>
+
+      {/* Dashboard Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium">
+                Total Invoiced
+              </CardTitle>
+            </div>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(metrics.totalInvoiced)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {revenueGrowth > 0 ? (
+                <span className="text-green-600 flex items-center">
+                  <ArrowUp className="h-3 w-3 mr-1" />
+                  {revenueGrowth}% from last month
+                </span>
+              ) : revenueGrowth < 0 ? (
+                <span className="text-red-600 flex items-center">
+                  <ArrowUp className="h-3 w-3 mr-1 rotate-180" />
+                  {Math.abs(revenueGrowth)}% from last month
+                </span>
+              ) : (
+                <span>No change from last month</span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium">
+                Total Paid
+              </CardTitle>
+            </div>
+            <Check className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(metrics.totalPaid)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {Math.round((metrics.totalPaid / metrics.totalInvoiced) * 100) || 0}% of total invoiced
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium">
+                Pending Payments
+              </CardTitle>
+            </div>
+            <Clock className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(metrics.totalPending)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              From {invoices?.filter(inv => inv.status === 'sent').length || 0} pending invoices
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium">
+                Overdue Payments
+              </CardTitle>
+            </div>
+            <AlertCircle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(metrics.totalOverdue)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              From {metrics.overdueCount} overdue {metrics.overdueCount === 1 ? 'invoice' : 'invoices'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filter */}
