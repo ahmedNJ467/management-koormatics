@@ -78,6 +78,10 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
       },
+      backgroundColor: {
+        'dark-primary': '#111827', // dark gray/blue color for dark mode background
+        'dark-secondary': '#1F2937', // slightly lighter for components
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
