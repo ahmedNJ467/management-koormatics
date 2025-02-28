@@ -38,7 +38,6 @@ export function useClientDialog(client: any | null, onOpenChange: (open: boolean
       }
       
       setShowDeleteConfirm(false);
-      setDeletionError(null);
       
       if (onClientDeleted) {
         onClientDeleted();
@@ -101,7 +100,7 @@ export function useClientDialog(client: any | null, onOpenChange: (open: boolean
     activeTab,
     setActiveTab,
     deletionError,
-    setDeletionError,
+    setDeletionError: (error: string | null) => setDeletionError(error),
     handleDelete,
     handleRestore
   };

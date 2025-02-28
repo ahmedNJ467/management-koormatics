@@ -36,7 +36,6 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     activeTab,
     setActiveTab,
     deletionError,
-    setDeletionError,
     handleDelete,
     handleRestore
   } = useClientDialog(client, onOpenChange, onClientDeleted);
@@ -121,7 +120,6 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
             }}
             onCancel={() => onOpenChange(false)}
             onDelete={() => {
-              setDeletionError(null);
               setShowDeleteConfirm(true);
             }}
             onRestore={client?.is_archived ? handleRestore : undefined}
