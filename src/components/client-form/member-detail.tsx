@@ -1,20 +1,11 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Download, Edit } from "lucide-react";
+import { Download, FileText } from "lucide-react";
+import { MemberFormValues } from "./types";
 
 interface MemberDetailProps {
-  member: {
-    id?: string;
-    name: string;
-    role?: string;
-    email?: string;
-    phone?: string;
-    notes?: string;
-    document_url?: string;
-    document_name?: string;
-  };
+  member: MemberFormValues;
   isOpen: boolean;
   onClose: () => void;
   onEdit: () => void;
@@ -23,70 +14,71 @@ interface MemberDetailProps {
 export function MemberDetail({ member, isOpen, onClose, onEdit }: MemberDetailProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{member.name}</DialogTitle>
-          <DialogDescription>
-            {member.role ? `${member.role}` : "Organization Member"}
-          </DialogDescription>
+          <DialogTitle>Member Details</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <div className="text-sm font-medium">Name:</div>
+            <div className="col-span-3">{member.name}</div>
+          </div>
+          
+          {member.role && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="text-sm font-medium">Role:</div>
+              <div className="col-span-3">{member.role}</div>
+            </div>
+          )}
+          
           {member.email && (
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Email</Label>
-              <div className="col-span-3">
-                <a href={`mailto:${member.email}`} className="text-blue-600 hover:underline">
-                  {member.email}
-                </a>
-              </div>
+              <div className="text-sm font-medium">Email:</div>
+              <div className="col-span-3">{member.email}</div>
             </div>
           )}
           
           {member.phone && (
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Phone</Label>
-              <div className="col-span-3">
-                <a href={`tel:${member.phone}`} className="text-blue-600 hover:underline">
-                  {member.phone}
-                </a>
-              </div>
+              <div className="text-sm font-medium">Phone:</div>
+              <div className="col-span-3">{member.phone}</div>
             </div>
           )}
           
           {member.document_url && (
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Passport/ID</Label>
+              <div className="text-sm font-medium">Document:</div>
               <div className="col-span-3">
                 <a 
-                  href={member.document_url} 
-                  target="_blank" 
+                  href={member.document_url}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center text-blue-600 hover:underline"
+                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
                 >
-                  <Download className="h-4 w-4 mr-1" />
-                  {member.document_name || "View Document"}
+                  <FileText className="h-4 w-4" />
+                  <span>{member.document_name || "View Document"}</span>
                 </a>
               </div>
             </div>
           )}
           
           {member.notes && (
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label className="text-right">Notes</Label>
-              <div className="col-span-3 text-sm">
-                {member.notes}
-              </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="text-sm font-medium">Notes:</div>
+              <div className="col-span-3 whitespace-pre-wrap">{member.notes}</div>
             </div>
           )}
         </div>
         
-        <div className="flex justify-end">
-          <Button onClick={onEdit} type="button" className="flex items-center">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Member
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Close
           </Button>
-        </div>
+          <Button onClick={onEdit}>
+            Edit
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
