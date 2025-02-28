@@ -304,7 +304,7 @@ const Reports = () => {
       );
     }
 
-    // Generate the table
+    // Include footer with page numbers in the table options
     autoTable(doc, {
       head: [tableHeaders],
       body: tableData,
@@ -321,31 +321,32 @@ const Reports = () => {
       alternateRowStyles: {
         fillColor: [245, 245, 245],
       },
-      margin: { top: 1.5, left: 0.5, right: 0.5 },
+      margin: { top: 1.5, left: 0.5, right: 0.5, bottom: 0.5 },
       tableWidth: 'auto',
+      didDrawPage: (data) => {
+        // Footer with page numbers
+        const pageSize = doc.internal.pageSize;
+        const pageHeight = pageSize.height;
+        
+        // Page number
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text(
+          `Page ${doc.internal.getCurrentPageInfo().pageNumber}`, 
+          pageSize.width / 2, 
+          pageHeight - 0.3, 
+          { align: 'center' }
+        );
+        
+        // Generation timestamp
+        doc.text(
+          `Generated: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`,
+          pageSize.width - 0.5,
+          pageHeight - 0.3,
+          { align: 'right' }
+        );
+      }
     });
-    
-    // Add page number at the bottom - fix for the getNumberOfPages issue
-    const pageCount = (doc as any)._getPageCount();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      const pageSize = doc.internal.pageSize;
-      const pageHeight = pageSize.height;
-      doc.text(
-        `Page ${i} of ${pageCount}`, 
-        pageSize.width / 2, 
-        pageHeight - 0.3, 
-        { align: 'center' }
-      );
-      doc.text(
-        `Generated: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`,
-        pageSize.width - 0.5,
-        pageHeight - 0.3,
-        { align: 'right' }
-      );
-    }
     
     // Save the PDF
     doc.save(`${filename}.pdf`);
