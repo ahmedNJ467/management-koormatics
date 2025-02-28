@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,4 +99,52 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Dark theme styles for tables */
+  .dark .bg-white {
+    @apply bg-dark-secondary;
+  }
+  
+  .dark .border-gray-200 {
+    border-color: rgb(55 65 81); /* Equivalent to border-gray-700 */
+  }
+  
+  .dark .text-muted-foreground {
+    @apply text-gray-400;
+  }
+  
+  /* Table dark mode overrides */
+  .dark table {
+    @apply text-gray-200;
+  }
+  
+  .dark thead {
+    @apply bg-dark-accent;
+  }
+  
+  .dark th {
+    @apply text-gray-400;
+    border-color: rgb(55 65 81); /* Equivalent to border-gray-700 */
+  }
+  
+  .dark td {
+    border-color: rgb(55 65 81); /* Equivalent to border-gray-700 */
+  }
+  
+  .dark tr:hover {
+    background-color: rgba(55, 65, 81, 0.3); /* Equivalent to bg-gray-800/30 */
+  }
+}
+
+/* Custom utilities */
+.glass-effect {
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-effect {
+  backdrop-filter: blur(8px);
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgb(55 65 81);
 }

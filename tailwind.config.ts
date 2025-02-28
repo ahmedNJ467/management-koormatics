@@ -53,6 +53,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Add dark theme colors
+        dark: {
+          primary: "#121212",
+          secondary: "#1e1e1e",
+          accent: "#2a2a2a",
+          border: "#333333",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
