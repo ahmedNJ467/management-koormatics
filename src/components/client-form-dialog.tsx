@@ -61,19 +61,24 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const { handleSubmit: submitForm } = useClientFormSubmit();
   
   const handleFormSubmit = async (values: any) => {
-    const result = await submitForm({
-      client,
-      values,
-      profileUploadFn: uploadProfile,
-      documents,
-      documentFiles,
-      contacts,
-      members,
-      uploadDocumentFn: uploadClientDocument,
-      setIsSubmitting
-    });
-    
-    return result;
+    try {
+      const result = await submitForm({
+        client,
+        values,
+        profileUploadFn: uploadProfile,
+        documents,
+        documentFiles,
+        contacts,
+        members,
+        uploadDocumentFn: uploadClientDocument,
+        setIsSubmitting
+      });
+      
+      return result;
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      return false;
+    }
   };
 
   const dialogTitle = client 

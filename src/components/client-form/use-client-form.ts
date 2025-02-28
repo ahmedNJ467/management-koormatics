@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clientSchema, type ClientFormValues } from "./types";
@@ -7,7 +7,6 @@ import { useClientContacts } from "./use-client-contacts";
 import { useClientMembers } from "./use-client-members";
 import { useClientDocuments } from "./use-client-documents";
 import { useClientProfile } from "./use-client-profile";
-import { uploadClientDocument } from "./use-client-uploads";
 
 export function useClientForm(client: any | null) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,23 +48,23 @@ export function useClientForm(client: any | null) {
   } = useClientProfile(client?.profile_image_url);
 
   // Handle document upload with client ID if available
-  const handleDocumentUpload = async (files: FileList) => {
+  const handleDocumentUpload = useCallback((files: FileList) => {
     if (client?.id) {
       return handleDocUpload(files, client.id);
     } else {
-      handleDocUpload(files);
+      return handleDocUpload(files);
     }
-  };
+  }, [client?.id, handleDocUpload]);
 
   // Function to upload document with client ID
-  const uploadClientDocument = async (files: FileList, clientId: string) => {
+  const uploadClientDocument = useCallback(async (files: FileList, clientId: string) => {
     try {
       return await handleDocUpload(files, clientId);
     } catch (error) {
       console.error("Error uploading document:", error);
       throw error;
     }
-  };
+  }, [handleDocUpload]);
 
   // Reset form when client changes
   useEffect(() => {

@@ -28,8 +28,25 @@ export function MemberForm({
   onDocumentUploaded,
   onDocumentClear
 }: MemberFormProps) {
-  console.log("MemberForm render - clientId:", clientId, "memberId:", member.id);
-  console.log("Member document info:", { url: member.document_url, name: member.document_name });
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, name: e.target.value});
+  };
+
+  const handleRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, role: e.target.value});
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, email: e.target.value});
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, phone: e.target.value});
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onMemberChange({...member, notes: e.target.value});
+  };
 
   return (
     <div className="space-y-4 border p-4 rounded-md">
@@ -47,14 +64,14 @@ export function MemberForm({
           <Label>Name *</Label>
           <Input
             value={member.name}
-            onChange={(e) => onMemberChange({...member, name: e.target.value})}
+            onChange={handleNameChange}
           />
         </div>
         <div className="space-y-2">
           <Label>Role</Label>
           <Input
             value={member.role || ""}
-            onChange={(e) => onMemberChange({...member, role: e.target.value})}
+            onChange={handleRoleChange}
           />
         </div>
         <div className="space-y-2">
@@ -62,14 +79,14 @@ export function MemberForm({
           <Input
             type="email"
             value={member.email || ""}
-            onChange={(e) => onMemberChange({...member, email: e.target.value})}
+            onChange={handleEmailChange}
           />
         </div>
         <div className="space-y-2">
           <Label>Phone</Label>
           <Input
             value={member.phone || ""}
-            onChange={(e) => onMemberChange({...member, phone: e.target.value})}
+            onChange={handlePhoneChange}
           />
         </div>
         
@@ -95,7 +112,7 @@ export function MemberForm({
           <Label>Notes</Label>
           <Textarea
             value={member.notes || ""}
-            onChange={(e) => onMemberChange({...member, notes: e.target.value})}
+            onChange={handleNotesChange}
             rows={3}
           />
         </div>
