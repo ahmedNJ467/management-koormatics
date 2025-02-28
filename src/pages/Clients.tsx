@@ -74,48 +74,93 @@ export default function Clients() {
     },
   });
 
-  // Get client contacts and members counts
+  // Get client contacts counts
   const { data: contactCounts } = useQuery({
     queryKey: ['client_contacts_count'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('client_contacts')
-        .select('client_id, count')
-        .group('client_id');
+      // First get all client IDs
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id');
       
-      if (error) throw error;
+      if (clientError) throw clientError;
       
+      const clientIds = clientData.map(client => client.id);
+      
+      // For each client, count contacts
+      const countsPromises = clientIds.map(async (clientId) => {
+        const { count, error } = await supabase
+          .from('client_contacts')
+          .select('*', { count: 'exact', head: true })
+          .eq('client_id', clientId);
+        
+        if (error) throw error;
+        
+        return { clientId, count: count || 0 };
+      });
+      
+      const countsResults = await Promise.all(countsPromises);
+      
+      // Convert to record
       const counts: Record<string, number> = {};
-      data.forEach(item => {
-        counts[item.client_id] = parseInt(item.count);
+      countsResults.forEach(result => {
+        counts[result.clientId] = result.count;
       });
       
       return counts;
     },
   });
 
+  // Get client members counts
   const { data: memberCounts } = useQuery({
     queryKey: ['client_members_count'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('client_members')
-        .select('client_id, count')
-        .group('client_id');
-      
-      if (error) {
-        // If the table doesn't exist yet, we'll just return an empty object
+      try {
+        // Check if the table exists first
+        try {
+          await supabase.from('client_members').select('id').limit(1);
+        } catch (error) {
+          console.error("Error checking client_members table:", error);
+          return {};
+        }
+
+        // First get all client IDs
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
+          .select('id');
+        
+        if (clientError) throw clientError;
+        
+        const clientIds = clientData.map(client => client.id);
+        
+        // For each client, count members
+        const countsPromises = clientIds.map(async (clientId) => {
+          const { count, error } = await supabase
+            .from('client_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('client_id', clientId);
+          
+          if (error) {
+            console.error("Error counting members for client", clientId, error);
+            return { clientId, count: 0 };
+          }
+          
+          return { clientId, count: count || 0 };
+        });
+        
+        const countsResults = await Promise.all(countsPromises);
+        
+        // Convert to record
+        const counts: Record<string, number> = {};
+        countsResults.forEach(result => {
+          counts[result.clientId] = result.count;
+        });
+        
+        return counts;
+      } catch (error) {
         console.error("Error fetching member counts:", error);
         return {};
       }
-      
-      const counts: Record<string, number> = {};
-      if (data) {
-        data.forEach(item => {
-          counts[item.client_id] = parseInt(item.count);
-        });
-      }
-      
-      return counts;
     },
   });
   
