@@ -240,7 +240,7 @@ export function useClientForm(client?: Client | null) {
           throw updateError;
         }
 
-        // Update contacts if organization
+        // Only update contacts/members if we're dealing with an organization
         if (values.type === "organization") {
           // First delete all existing contacts
           const { error: deleteContactsError } = await supabase
@@ -250,6 +250,7 @@ export function useClientForm(client?: Client | null) {
 
           if (deleteContactsError) {
             console.error("Error deleting existing contacts:", deleteContactsError);
+            throw deleteContactsError;
           }
 
           // Then insert the new contacts if any
@@ -274,7 +275,7 @@ export function useClientForm(client?: Client | null) {
             }
           }
 
-          // Update members if any
+          // Update members
           // First delete all existing members
           const { error: deleteMembersError } = await supabase
             .from("client_members")
@@ -283,13 +284,15 @@ export function useClientForm(client?: Client | null) {
 
           if (deleteMembersError) {
             console.error("Error deleting existing members:", deleteMembersError);
+            throw deleteMembersError;
           }
 
           // Then insert the new members if any
           if (members.length > 0) {
+            // Make sure each member has an ID for the database
             const formattedMembers = members.map((member) => ({
               client_id: client.id,
-              name: member.name, // name is required
+              name: member.name,
               role: member.role || null,
               email: member.email || null,
               phone: member.phone || null,
@@ -412,15 +415,16 @@ export function useClientForm(client?: Client | null) {
 
         // Add members if organization
         if (values.type === "organization" && members.length > 0) {
-          const formattedMembers = members.map((member) => ({
+          // Make sure we're not sending temporary IDs to the database
+          const formattedMembers = members.map(({ id, ...rest }) => ({
             client_id: insertedClient.id,
-            name: member.name, // name is required
-            role: member.role || null,
-            email: member.email || null,
-            phone: member.phone || null,
-            notes: member.notes || null,
-            document_url: member.document_url || null,
-            document_name: member.document_name || null
+            name: rest.name,
+            role: rest.role || null,
+            email: rest.email || null,
+            phone: rest.phone || null,
+            notes: rest.notes || null,
+            document_url: rest.document_url || null,
+            document_name: rest.document_name || null
           }));
 
           const { error: membersError } = await supabase
