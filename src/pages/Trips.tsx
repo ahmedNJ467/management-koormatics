@@ -1,3 +1,4 @@
+
 import {
   Avatar,
   AvatarFallback,
@@ -201,6 +202,17 @@ const parsePassengers = (notes?: string) => {
   return [];
 };
 
+// Function to validate the trip status
+const validateTripStatus = (status: string): TripStatus => {
+  const validStatuses: TripStatus[] = ['scheduled', 'in_progress', 'completed', 'cancelled'];
+  if (validStatuses.includes(status as TripStatus)) {
+    return status as TripStatus;
+  }
+  // Default fallback if invalid status is provided
+  console.warn(`Invalid trip status: ${status}, defaulting to 'scheduled'`);
+  return 'scheduled';
+};
+
 export default function Trips() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -222,6 +234,37 @@ export default function Trips() {
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [passengers, setPassengers] = useState<string[]>([""]);
+
+  // Update trip status
+  const updateTripStatus = async (tripId: string, status: TripStatus) => {
+    try {
+      const { error } = await supabase
+        .from("trips")
+        .update({ status })
+        .eq("id", tripId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Trip updated",
+        description: `Trip status changed to ${formatStatus(status)}`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      
+      // Update local viewTrip state if it's the current trip
+      if (viewTrip && viewTrip.id === tripId) {
+        setViewTrip({...viewTrip, status});
+      }
+    } catch (error) {
+      console.error("Error updating trip status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update trip status",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Fetch trips data
   const { data: trips, isLoading } = useQuery({
@@ -382,37 +425,6 @@ export default function Trips() {
     },
   });
 
-  // Update trip status
-  const updateTripStatus = async (tripId: string, status: TripStatus) => {
-    try {
-      const { error } = await supabase
-        .from("trips")
-        .update({ status })
-        .eq("id", tripId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Trip updated",
-        description: `Trip status changed to ${formatStatus(status)}`,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
-      
-      // Update local viewTrip state if it's the current trip
-      if (viewTrip && viewTrip.id === tripId) {
-        setViewTrip({...viewTrip, status});
-      }
-    } catch (error) {
-      console.error("Error updating trip status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update trip status",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Handle saving a trip (new or edit)
   const handleSaveTrip = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -430,6 +442,11 @@ export default function Trips() {
     
     try {
       if (editTrip) {
+        // Get form values and ensure proper typing
+        const statusValue = formData.get("status") as string;
+        const validStatus = validateTripStatus(statusValue);
+        const tripType = formData.get("service_type") as TripType;
+        
         // Update existing trip
         const { error } = await supabase
           .from("trips")
@@ -440,8 +457,8 @@ export default function Trips() {
             date: formData.get("date") as string,
             start_time: formData.get("time") as string,
             end_time: formData.get("return_time") as string || null,
-            type: formData.get("service_type") as TripType,
-            status: formData.get("status") as TripStatus,
+            type: tripType,
+            status: validStatus,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
             notes: notes || null,
@@ -458,6 +475,8 @@ export default function Trips() {
         setEditTrip(null);
       } else {
         // Create new single trip
+        const tripType = formData.get("service_type") as TripType;
+        
         const { error } = await supabase
           .from("trips")
           .insert({
@@ -467,8 +486,8 @@ export default function Trips() {
             date: formData.get("date") as string,
             start_time: formData.get("time") as string,
             end_time: formData.get("return_time") as string || null,
-            type: formData.get("service_type") as TripType,
-            status: "scheduled" as TripStatus,
+            type: tripType,
+            status: 'scheduled' as TripStatus,
             amount: 0, // Default amount
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
@@ -982,7 +1001,11 @@ export default function Trips() {
               {editTrip && (
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select name="status" defaultValue={editTrip.status as TripStatus} required>
+                  <Select 
+                    name="status" 
+                    defaultValue={editTrip.status}
+                    required
+                  >
                     <SelectTrigger id="status">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
