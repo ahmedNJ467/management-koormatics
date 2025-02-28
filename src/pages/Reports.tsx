@@ -304,7 +304,7 @@ const Reports = () => {
       );
     }
 
-    // Include footer with page numbers in the table options
+    // Create table with options including footer
     autoTable(doc, {
       head: [tableHeaders],
       body: tableData,
@@ -324,21 +324,24 @@ const Reports = () => {
       margin: { top: 1.5, left: 0.5, right: 0.5, bottom: 0.5 },
       tableWidth: 'auto',
       didDrawPage: (data) => {
-        // Footer with page numbers
+        // Add footer on each page
         const pageSize = doc.internal.pageSize;
         const pageHeight = pageSize.height;
         
-        // Page number
+        // Simple page number without total pages
         doc.setFontSize(8);
         doc.setTextColor(100);
+        
+        // Add page number
+        const pageNumber = doc.getNumberOfPages(); // This is safer than getCurrentPageInfo
         doc.text(
-          `Page ${doc.internal.getCurrentPageInfo().pageNumber}`, 
+          `Page ${pageNumber}`, 
           pageSize.width / 2, 
           pageHeight - 0.3, 
           { align: 'center' }
         );
         
-        // Generation timestamp
+        // Add timestamp
         doc.text(
           `Generated: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`,
           pageSize.width - 0.5,
