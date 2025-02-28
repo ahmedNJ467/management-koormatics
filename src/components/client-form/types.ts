@@ -10,6 +10,15 @@ export const contactSchema = z.object({
   is_primary: z.boolean().default(false),
 });
 
+export const memberSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  role: z.string().optional(),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export const clientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   type: z.enum(["organization", "individual"]),
@@ -22,6 +31,7 @@ export const clientSchema = z.object({
 });
 
 export type ContactFormValues = z.infer<typeof contactSchema>;
+export type MemberFormValues = z.infer<typeof memberSchema>;
 export type ClientFormValues = z.infer<typeof clientSchema>;
 export type ClientDocument = {
   id: string;

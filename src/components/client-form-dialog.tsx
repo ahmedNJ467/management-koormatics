@@ -12,8 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useClientForm } from "./client-form/use-client-form";
-import { ContactFormValues, ClientDocument } from "./client-form/types";
-import { X, Upload, Download, User, Trash2 } from "lucide-react";
+import { ContactFormValues, ClientDocument, MemberFormValues } from "./client-form/types";
+import { X, Upload, Download, User, Trash2, UserPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,12 +55,15 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   
   const {
     form,
     isSubmitting,
     contacts,
     setContacts,
+    members,
+    setMembers,
     documents,
     setDocuments,
     documentFiles,
@@ -124,6 +128,23 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     setContacts(contacts.filter((_, i) => i !== index));
   };
 
+  const addMember = () => {
+    setMembers([
+      ...members,
+      { name: "", role: "", email: "", phone: "", notes: "" },
+    ]);
+  };
+
+  const updateMember = (index: number, data: Partial<MemberFormValues>) => {
+    const newMembers = [...members];
+    newMembers[index] = { ...newMembers[index], ...data };
+    setMembers(newMembers);
+  };
+
+  const removeMember = (index: number) => {
+    setMembers(members.filter((_, i) => i !== index));
+  };
+
   const removeDocument = (docId: string) => {
     setDocuments(documents.filter((doc) => doc.id !== docId));
   };
@@ -146,242 +167,363 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Profile Image Upload */}
-            <div className="flex flex-col items-center space-y-4">
-              <div className="relative h-24 w-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
-                {profilePreview ? (
-                  <img
-                    src={profilePreview}
-                    alt="Profile preview"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-8 w-8 text-gray-400" />
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfileChange}
-                  className="hidden"
-                  id="profile-upload"
-                />
-                <label
-                  htmlFor="profile-upload"
-                  className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Upload Profile Image</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Basic Information */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input id="name" {...form.register("name")} />
-                {form.formState.errors.name && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.name.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="type">Type *</Label>
-                <Select
-                  value={form.getValues("type")}
-                  onValueChange={(value) =>
-                    form.setValue("type", value as "organization" | "individual")
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="organization">Organization</SelectItem>
-                    <SelectItem value="individual">Individual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" {...form.register("description")} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <Input id="website" {...form.register("website")} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" {...form.register("address")} />
-              </div>
-            </div>
-
-            {clientType === "individual" ? (
-              // Individual Contact Information
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contact">Contact</Label>
-                  <Input id="contact" {...form.register("contact")} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" {...form.register("email")} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" {...form.register("phone")} />
-                </div>
-              </div>
-            ) : (
-              // Organization Contacts
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Contact Persons</Label>
-                  <Button type="button" variant="outline" onClick={addContact}>
-                    Add Contact Person
-                  </Button>
-                </div>
-                {contacts.map((contact, index) => (
-                  <div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded-md relative">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-2"
-                      onClick={() => removeContact(index)}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              {clientType === "organization" && (
+                <>
+                  <TabsTrigger value="contacts">Contacts</TabsTrigger>
+                  <TabsTrigger value="members">Members</TabsTrigger>
+                </>
+              )}
+            </TabsList>
+            
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <TabsContent value="details" className="space-y-4 mt-4">
+                {/* Profile Image Upload */}
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="relative h-24 w-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                    {profilePreview ? (
+                      <img
+                        src={profilePreview}
+                        alt="Profile preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-8 w-8 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfileChange}
+                      className="hidden"
+                      id="profile-upload"
+                    />
+                    <label
+                      htmlFor="profile-upload"
+                      className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      <Upload className="h-4 w-4" />
+                      <span>Upload Profile Image</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Basic Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name *</Label>
+                    <Input id="name" {...form.register("name")} />
+                    {form.formState.errors.name && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Type *</Label>
+                    <Select
+                      value={form.getValues("type")}
+                      onValueChange={(value) => {
+                        form.setValue("type", value as "organization" | "individual");
+                        // Reset to details tab when changing type
+                        setActiveTab("details");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="organization">Organization</SelectItem>
+                        <SelectItem value="individual">Individual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea id="description" {...form.register("description")} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="website">Website</Label>
+                    <Input id="website" {...form.register("website")} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input id="address" {...form.register("address")} />
+                  </div>
+                </div>
+
+                {clientType === "individual" ? (
+                  // Individual Contact Information
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Name *</Label>
-                      <Input
-                        value={contact.name}
-                        onChange={(e) => updateContact(index, { name: e.target.value })}
-                      />
+                      <Label htmlFor="contact">Contact</Label>
+                      <Input id="contact" {...form.register("contact")} />
                     </div>
+
                     <div className="space-y-2">
-                      <Label>Position</Label>
-                      <Input
-                        value={contact.position}
-                        onChange={(e) => updateContact(index, { position: e.target.value })}
-                      />
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" {...form.register("email")} />
                     </div>
+
                     <div className="space-y-2">
-                      <Label>Email</Label>
-                      <Input
-                        type="email"
-                        value={contact.email}
-                        onChange={(e) => updateContact(index, { email: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Phone</Label>
-                      <Input
-                        value={contact.phone}
-                        onChange={(e) => updateContact(index, { phone: e.target.value })}
-                      />
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input id="phone" {...form.register("phone")} />
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ) : null}
 
-            {/* Document Upload Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>Documents</Label>
-                <Input
-                  type="file"
-                  multiple
-                  className="hidden"
-                  id="document-upload"
-                  onChange={(e) => e.target.files && handleDocumentUpload(e.target.files)}
-                />
-                <label
-                  htmlFor="document-upload"
-                  className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Upload Documents</span>
-                </label>
-              </div>
-              <div className="space-y-2">
-                {documents.length > 0 ? (
-                  documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-2 border rounded-md"
+                {/* Document Upload Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Documents</Label>
+                    <Input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      id="document-upload"
+                      onChange={(e) => e.target.files && handleDocumentUpload(e.target.files)}
+                    />
+                    <label
+                      htmlFor="document-upload"
+                      className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
                     >
-                      <span className="text-sm truncate flex-1">{doc.name}</span>
-                      <div className="flex items-center space-x-2">
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 hover:bg-gray-100 rounded-md"
+                      <Upload className="h-4 w-4" />
+                      <span>Upload Documents</span>
+                    </label>
+                  </div>
+                  <div className="space-y-2">
+                    {documents.length > 0 ? (
+                      documents.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between p-2 border rounded-md"
                         >
-                          <Download className="h-4 w-4" />
-                        </a>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeDocument(doc.id)}
+                          <span className="text-sm truncate flex-1">{doc.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 hover:bg-gray-100 rounded-md"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeDocument(doc.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : documentFiles && documentFiles.length > 0 ? (
+                      // Display pending uploads for new clients
+                      documentFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 border rounded-md"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <span className="text-sm truncate flex-1">{file.name}</span>
+                          <div className="flex items-center">
+                            <span className="text-xs text-muted-foreground italic mr-2">Pending upload</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground italic">No documents uploaded</div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              {clientType === "organization" && (
+                <>
+                  <TabsContent value="contacts" className="space-y-4 mt-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Contact Persons</Label>
+                      <Button type="button" variant="outline" onClick={addContact}>
+                        Add Contact Person
+                      </Button>
+                    </div>
+                    {contacts.length === 0 ? (
+                      <div className="text-center py-6 border rounded-md">
+                        <User className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-muted-foreground">No contacts added yet</p>
+                        <Button variant="outline" size="sm" className="mt-2" onClick={addContact}>
+                          Add Contact Person
                         </Button>
                       </div>
+                    ) : (
+                      contacts.map((contact, index) => (
+                        <div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded-md relative">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-2"
+                            onClick={() => removeContact(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <div className="space-y-2">
+                            <Label>Name *</Label>
+                            <Input
+                              value={contact.name}
+                              onChange={(e) => updateContact(index, { name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Position</Label>
+                            <Input
+                              value={contact.position}
+                              onChange={(e) => updateContact(index, { position: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input
+                              type="email"
+                              value={contact.email}
+                              onChange={(e) => updateContact(index, { email: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Phone</Label>
+                            <Input
+                              value={contact.phone}
+                              onChange={(e) => updateContact(index, { phone: e.target.value })}
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="flex items-center space-x-2">
+                              <input 
+                                type="checkbox" 
+                                checked={contact.is_primary}
+                                onChange={(e) => {
+                                  // Uncheck all others when this is checked
+                                  if (e.target.checked) {
+                                    const updatedContacts = contacts.map((c, i) => ({
+                                      ...c,
+                                      is_primary: i === index
+                                    }));
+                                    setContacts(updatedContacts);
+                                  } else {
+                                    updateContact(index, { is_primary: false });
+                                  }
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="text-sm font-medium">Primary Contact</span>
+                            </label>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </TabsContent>
+                
+                  <TabsContent value="members" className="space-y-4 mt-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Organization Members</Label>
+                      <Button type="button" variant="outline" onClick={addMember}>
+                        <UserPlus className="mr-2 h-4 w-4" /> Add Member
+                      </Button>
                     </div>
-                  ))
-                ) : documentFiles && documentFiles.length > 0 ? (
-                  // Display pending uploads for new clients
-                  documentFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 border rounded-md"
-                    >
-                      <span className="text-sm truncate flex-1">{file.name}</span>
-                      <div className="flex items-center">
-                        <span className="text-xs text-muted-foreground italic mr-2">Pending upload</span>
+                    
+                    {members.length === 0 ? (
+                      <div className="text-center py-6 border rounded-md">
+                        <UserPlus className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-muted-foreground">No members added yet</p>
+                        <Button variant="outline" size="sm" className="mt-2" onClick={addMember}>
+                          <UserPlus className="mr-2 h-4 w-4" /> Add Member
+                        </Button>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-muted-foreground italic">No documents uploaded</div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              {client && (
-                <Button 
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  Delete
-                </Button>
+                    ) : (
+                      members.map((member, index) => (
+                        <div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded-md relative">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-2"
+                            onClick={() => removeMember(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <div className="space-y-2">
+                            <Label>Name *</Label>
+                            <Input
+                              value={member.name}
+                              onChange={(e) => updateMember(index, { name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Role</Label>
+                            <Input
+                              value={member.role}
+                              onChange={(e) => updateMember(index, { role: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input
+                              type="email"
+                              value={member.email}
+                              onChange={(e) => updateMember(index, { email: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Phone</Label>
+                            <Input
+                              value={member.phone}
+                              onChange={(e) => updateMember(index, { phone: e.target.value })}
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-2">
+                            <Label>Notes</Label>
+                            <Textarea
+                              value={member.notes}
+                              onChange={(e) => updateMember(index, { notes: e.target.value })}
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </TabsContent>
+                </>
               )}
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : client ? "Update Client" : "Add Client"}
-              </Button>
-            </div>
-          </form>
+              
+              <div className="flex justify-end space-x-2 pt-4 mt-4">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                {client && (
+                  <Button 
+                    type="button"
+                    variant="destructive"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    Delete
+                  </Button>
+                )}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : client ? "Update Client" : "Add Client"}
+                </Button>
+              </div>
+            </form>
+          </Tabs>
         </DialogContent>
       </Dialog>
       

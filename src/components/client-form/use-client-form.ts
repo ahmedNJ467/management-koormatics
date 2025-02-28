@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { clientSchema, type ClientFormValues, type ContactFormValues, type ClientDocument } from "./types";
+import { clientSchema, type ClientFormValues, type ContactFormValues, type ClientDocument, type MemberFormValues } from "./types";
 import { uploadClientFile, uploadClientDocument } from "./use-client-uploads";
 
 interface Client extends ClientFormValues {
@@ -19,6 +19,7 @@ export function useClientForm(client?: Client | null) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contacts, setContacts] = useState<ContactFormValues[]>([]);
+  const [members, setMembers] = useState<MemberFormValues[]>([]);
   const [documents, setDocuments] = useState<ClientDocument[]>(
     client?.documents || []
   );
@@ -82,6 +83,7 @@ export function useClientForm(client?: Client | null) {
 
         if (data && data.length > 0) {
           setContacts(data.map(contact => ({
+            id: contact.id,
             name: contact.name,
             position: contact.position || "",
             email: contact.email || "",
@@ -98,6 +100,57 @@ export function useClientForm(client?: Client | null) {
     };
 
     fetchContacts();
+  }, [client]);
+
+  // Fetch client members if this is an organization
+  useEffect(() => {
+    if (!client || client.type !== 'organization') {
+      setMembers([]);
+      return;
+    }
+
+    const fetchMembers = async () => {
+      try {
+        // Check if the client_members table exists
+        const { data: tableExists } = await supabase
+          .from('client_members')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+
+        // If the table doesn't exist yet, just return empty array
+        if (tableExists === null) {
+          console.info('client_members table does not exist yet');
+          setMembers([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('client_members')
+          .select('*')
+          .eq('client_id', client.id);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setMembers(data.map(member => ({
+            id: member.id,
+            name: member.name,
+            role: member.role || "",
+            email: member.email || "",
+            phone: member.phone || "",
+            notes: member.notes || ""
+          })));
+        } else {
+          setMembers([]);
+        }
+      } catch (error) {
+        console.error('Error fetching members:', error);
+        setMembers([]);
+      }
+    };
+
+    fetchMembers();
   }, [client]);
 
   const handleProfileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,6 +192,27 @@ export function useClientForm(client?: Client | null) {
     setIsSubmitting(true);
     try {
       let profileImageUrl = client?.profile_image_url;
+
+      // Check if the client_members table exists and create it if not
+      if (values.type === "organization" && members.length > 0) {
+        try {
+          const { data: tableCheck } = await supabase
+            .from('client_members')
+            .select('id')
+            .limit(1)
+            .maybeSingle();
+
+          if (tableCheck === null) {
+            // Create the client_members table if it doesn't exist
+            console.info('Creating client_members table...');
+            const createTableResult = await supabase.rpc('create_client_members_table');
+            console.log('Create table result:', createTableResult);
+          }
+        } catch (error) {
+          console.error('Error checking/creating client_members table:', error);
+          // Continue anyway, the form submission might still work if the table exists
+        }
+      }
 
       if (client) {
         // Update existing client
@@ -207,6 +281,41 @@ export function useClientForm(client?: Client | null) {
 
             if (contactsError) throw contactsError;
           }
+
+          // Update members if any
+          try {
+            // First delete all existing members
+            await supabase
+              .from("client_members")
+              .delete()
+              .eq("client_id", client.id);
+
+            // Then insert the new members if any
+            if (members.length > 0) {
+              const formattedMembers = members.map((member) => ({
+                client_id: client.id,
+                name: member.name, // name is required
+                role: member.role || null,
+                email: member.email || null,
+                phone: member.phone || null,
+                notes: member.notes || null,
+              }));
+
+              const { error: membersError } = await supabase
+                .from("client_members")
+                .insert(formattedMembers);
+
+              if (membersError) throw membersError;
+            }
+          } catch (error) {
+            console.error('Error updating members:', error);
+            // Continue anyway, we don't want to block the entire update if just the members fail
+            toast({
+              title: "Warning",
+              description: "Client updated but there was an issue with the member data",
+              variant: "destructive",
+            });
+          }
         }
 
         toast({
@@ -215,6 +324,8 @@ export function useClientForm(client?: Client | null) {
         });
 
         queryClient.invalidateQueries({ queryKey: ['clients'] });
+        queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
+        queryClient.invalidateQueries({ queryKey: ['client_members_count'] });
         return true;
       } else {
         // Insert new client
@@ -298,12 +409,42 @@ export function useClientForm(client?: Client | null) {
           if (contactsError) throw contactsError;
         }
 
+        // Add members if organization
+        if (values.type === "organization" && members.length > 0) {
+          try {
+            const formattedMembers = members.map((member) => ({
+              client_id: insertedClient.id,
+              name: member.name, // name is required
+              role: member.role || null,
+              email: member.email || null,
+              phone: member.phone || null,
+              notes: member.notes || null,
+            }));
+
+            const { error: membersError } = await supabase
+              .from("client_members")
+              .insert(formattedMembers);
+
+            if (membersError) throw membersError;
+          } catch (error) {
+            console.error('Error adding members:', error);
+            // Continue anyway, we don't want to block the entire creation if just the members fail
+            toast({
+              title: "Warning",
+              description: "Client created but there was an issue with the member data",
+              variant: "destructive",
+            });
+          }
+        }
+
         toast({
           title: "Client created",
           description: "A new client has been created successfully.",
         });
 
         queryClient.invalidateQueries({ queryKey: ['clients'] });
+        queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
+        queryClient.invalidateQueries({ queryKey: ['client_members_count'] });
         return true;
       }
     } catch (error) {
@@ -324,6 +465,8 @@ export function useClientForm(client?: Client | null) {
     isSubmitting,
     contacts,
     setContacts,
+    members,
+    setMembers,
     documents,
     setDocuments,
     documentFiles,

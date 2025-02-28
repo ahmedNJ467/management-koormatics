@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Building2, User, Search } from "lucide-react";
+import { Plus, Building2, User, Search, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientFormDialog } from "@/components/client-form-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface Client {
   id: string;
@@ -41,6 +42,16 @@ interface ClientContact {
   is_primary?: boolean;
 }
 
+interface ClientMember {
+  id: string;
+  client_id: string;
+  name: string;
+  role?: string; 
+  email?: string;
+  phone?: string;
+  notes?: string;
+}
+
 export default function Clients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -60,6 +71,51 @@ export default function Clients() {
       
       if (error) throw error;
       return data as Client[];
+    },
+  });
+
+  // Get client contacts and members counts
+  const { data: contactCounts } = useQuery({
+    queryKey: ['client_contacts_count'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('client_contacts')
+        .select('client_id, count')
+        .group('client_id');
+      
+      if (error) throw error;
+      
+      const counts: Record<string, number> = {};
+      data.forEach(item => {
+        counts[item.client_id] = parseInt(item.count);
+      });
+      
+      return counts;
+    },
+  });
+
+  const { data: memberCounts } = useQuery({
+    queryKey: ['client_members_count'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('client_members')
+        .select('client_id, count')
+        .group('client_id');
+      
+      if (error) {
+        // If the table doesn't exist yet, we'll just return an empty object
+        console.error("Error fetching member counts:", error);
+        return {};
+      }
+      
+      const counts: Record<string, number> = {};
+      if (data) {
+        data.forEach(item => {
+          counts[item.client_id] = parseInt(item.count);
+        });
+      }
+      
+      return counts;
     },
   });
   
@@ -89,7 +145,25 @@ export default function Clients() {
         { event: '*', schema: 'public', table: 'client_contacts' }, 
         () => {
           // Force refresh the clients data when any contact changes occur
-          queryClient.invalidateQueries({ queryKey: ["clients"] });
+          queryClient.invalidateQueries({ queryKey: ["client_contacts_count"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // Subscribe to real-time changes for client members
+  useEffect(() => {
+    const channel = supabase
+      .channel('client-members-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'client_members' }, 
+        () => {
+          // Force refresh the member counts when any member changes occur
+          queryClient.invalidateQueries({ queryKey: ["client_members_count"] });
         }
       )
       .subscribe();
@@ -119,6 +193,8 @@ export default function Clients() {
     // When dialog closes, refresh the data
     if (!open) {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
+      queryClient.invalidateQueries({ queryKey: ['client_members_count'] });
       setSelectedClient(null);
     }
   };
@@ -244,6 +320,24 @@ export default function Clients() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Phone:</span>
                     <span>{client.phone}</span>
+                  </div>
+                )}
+                
+                {/* Display contacts and members badges for organizations */}
+                {client.type === "organization" && (
+                  <div className="flex gap-2 mt-3">
+                    {contactCounts && contactCounts[client.id] > 0 && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {contactCounts[client.id]} Contact{contactCounts[client.id] !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {memberCounts && memberCounts[client.id] > 0 && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <UserPlus className="h-3 w-3" />
+                        {memberCounts[client.id]} Member{memberCounts[client.id] !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>
