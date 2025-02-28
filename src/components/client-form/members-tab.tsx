@@ -22,7 +22,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   const [viewingMemberIndex, setViewingMemberIndex] = useState<number | null>(null);
   const [isAddingMember, setIsAddingMember] = useState<boolean>(false);
   const [memberFormState, setMemberFormState] = useState<MemberFormValues>({
-    name: "",
+    name: "", // Ensuring name is explicitly set as a string
     role: "",
     email: "",
     phone: "",
@@ -38,7 +38,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
     setIsAddingMember(true);
     setMemberFormState({
       id: crypto.randomUUID(), // Generate a temporary ID for new members
-      name: "",
+      name: "", // Ensuring name is explicitly set
       role: "",
       email: "",
       phone: "",
