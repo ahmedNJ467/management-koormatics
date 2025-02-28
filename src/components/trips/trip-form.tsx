@@ -388,17 +388,13 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Time</FormLabel>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input
-                          type="time"
-                          className="pl-9"
-                          placeholder="HH:MM"
-                          {...field}
-                        />
-                      </FormControl>
-                    </div>
+                    <FormControl>
+                      <Input
+                        type="time"
+                        placeholder="HH:MM"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -410,17 +406,13 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>End Time</FormLabel>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input
-                          type="time"
-                          className="pl-9"
-                          placeholder="HH:MM"
-                          {...field}
-                        />
-                      </FormControl>
-                    </div>
+                    <FormControl>
+                      <Input
+                        type="time"
+                        placeholder="HH:MM"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
