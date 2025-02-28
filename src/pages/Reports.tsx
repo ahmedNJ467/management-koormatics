@@ -189,63 +189,129 @@ const Reports = () => {
   const exportToPDF = (data: any[], title: string, filename: string) => {
     if (!data || data.length === 0) return;
     
-    // Create a new PDF document
-    const doc = new jsPDF();
+    // Create a new PDF document with Letter size (8.5" x 11")
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'in',
+      format: 'letter' // 8.5 x 11 inches
+    });
     
     // Add title
     doc.setFontSize(18);
-    doc.text(title, 14, 22);
+    doc.text(title, 0.5, 0.8);
     doc.setFontSize(11);
-    doc.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, 14, 30);
+    doc.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, 0.5, 1.2);
+    
+    // Company header for the report
+    doc.setFontSize(14);
+    doc.setTextColor(0, 51, 102);
+    doc.text("FLEET MANAGEMENT DEPARTMENT", doc.internal.pageSize.width / 2, 0.4, { align: 'center' });
     
     // Prepare the data
     const flattenedData = flattenData(data);
     
-    // Get headers from first item
-    const firstItem = flattenedData[0];
-    const headers = Object.keys(firstItem);
-    
-    // Prepare rows data
-    const rows = flattenedData.map(item => 
-      headers.map(header => {
-        const val = item[header];
-        if (val === null || val === undefined) return '';
-        if (typeof val === 'object') return JSON.stringify(val);
-        return String(val);
-      })
-    );
-    
-    // Custom headers for specific report types
+    // Custom headers and data for specific report types
     let tableHeaders: string[] = [];
+    let tableData: string[][] = [];
     
-    switch(filename) {
-      case 'vehicles-report':
-        tableHeaders = ['Make', 'Model', 'Type', 'Registration', 'Status', 'Year'];
-        break;
-      case 'fuel-report':
-        tableHeaders = ['Date', 'Vehicle', 'Volume (L)', 'Type', 'Mileage (km)', 'Cost ($)'];
-        break;
-      case 'maintenance-report':
-        tableHeaders = ['Date', 'Vehicle', 'Description', 'Status', 'Provider', 'Cost ($)'];
-        break;
-      case 'trips-report':
-        tableHeaders = ['Date', 'Vehicle', 'Driver', 'Client', 'Status', 'Amount ($)'];
-        break;
-      case 'drivers-report':
-        tableHeaders = ['Name', 'Contact', 'License Type', 'License No.', 'Expiry', 'Status'];
-        break;
-      default:
-        tableHeaders = headers.map(h => h.charAt(0).toUpperCase() + h.slice(1).replace(/_/g, ' '));
+    if (filename === 'trips-report') {
+      // Headers follow the example in the image
+      tableHeaders = [
+        'Date', 
+        'Client/Passenger', 
+        'Description',
+        'Contact', 
+        'Service Type', 
+        'Pick-up Address', 
+        'Drop-off Address',
+        'Time', 
+        'Vehicle', 
+        'Assigned Vehicle',
+        'Assigned Driver'
+      ];
+      
+      // Prepare the trip data to match headers
+      tableData = data.map(trip => [
+        format(new Date(trip.date), 'MM/dd/yyyy'),
+        trip.clients?.name || 'N/A',
+        trip.notes || 'N/A',
+        trip.clients?.contact || 'N/A',
+        trip.type || 'N/A',
+        trip.pickup_location || 'N/A',
+        trip.dropoff_location || 'N/A',
+        trip.start_time ? `${trip.start_time} - ${trip.end_time || 'N/A'}` : 'N/A',
+        `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
+        trip.vehicles?.registration || 'N/A',
+        trip.drivers?.name || 'N/A'
+      ]);
+    } else if (filename === 'vehicles-report') {
+      tableHeaders = ['Make', 'Model', 'Year', 'Type', 'Registration', 'Status', 'Insurance Expiry', 'Maintenance Cost'];
+      tableData = data.map(vehicle => [
+        vehicle.make || 'N/A',
+        vehicle.model || 'N/A',
+        vehicle.year?.toString() || 'N/A',
+        vehicle.type || 'N/A',
+        vehicle.registration || 'N/A',
+        vehicle.status || 'N/A',
+        vehicle.insurance_expiry ? format(new Date(vehicle.insurance_expiry), 'MM/dd/yyyy') : 'N/A',
+        `$${getVehicleMaintenanceCosts(vehicle.id).toFixed(2)}`
+      ]);
+    } else if (filename === 'fuel-report') {
+      tableHeaders = ['Date', 'Vehicle', 'Volume (L)', 'Type', 'Mileage (km)', 'Cost ($)', 'Notes'];
+      tableData = data.map(log => [
+        format(new Date(log.date), 'MM/dd/yyyy'),
+        `${log.vehicles?.make || ''} ${log.vehicles?.model || ''}`.trim() || 'N/A',
+        log.volume?.toString() || 'N/A',
+        log.fuel_type || 'N/A',
+        log.mileage?.toString() || 'N/A',
+        `$${Number(log.cost).toFixed(2)}`,
+        log.notes || 'N/A'
+      ]);
+    } else if (filename === 'maintenance-report') {
+      tableHeaders = ['Date', 'Vehicle', 'Description', 'Status', 'Service Provider', 'Cost ($)', 'Next Scheduled'];
+      tableData = data.map(record => [
+        format(new Date(record.date), 'MM/dd/yyyy'),
+        `${record.vehicles?.make || ''} ${record.vehicles?.model || ''}`.trim() || 'N/A',
+        record.description || 'N/A',
+        record.status || 'N/A',
+        record.service_provider || 'N/A',
+        `$${Number(record.cost).toFixed(2)}`,
+        record.next_scheduled ? format(new Date(record.next_scheduled), 'MM/dd/yyyy') : 'N/A'
+      ]);
+    } else if (filename === 'drivers-report') {
+      tableHeaders = ['Name', 'Contact', 'License Type', 'License No.', 'Expiry', 'Status'];
+      tableData = data.map(driver => [
+        driver.name || 'N/A',
+        driver.contact || 'N/A',
+        driver.license_type || 'N/A',
+        driver.license_number || 'N/A',
+        driver.license_expiry ? format(new Date(driver.license_expiry), 'MM/dd/yyyy') : 'N/A',
+        driver.status || 'N/A'
+      ]);
+    } else {
+      // Default case - use flattened data
+      const firstItem = flattenedData[0];
+      const headers = Object.keys(firstItem);
+      tableHeaders = headers.map(h => h.charAt(0).toUpperCase() + h.slice(1).replace(/_/g, ' '));
+      
+      tableData = flattenedData.map(item => 
+        headers.map(header => {
+          const val = item[header];
+          if (val === null || val === undefined) return '';
+          if (typeof val === 'object') return JSON.stringify(val);
+          return String(val);
+        })
+      );
     }
 
     // Generate the table
     autoTable(doc, {
       head: [tableHeaders],
-      body: rows,
-      startY: 40,
+      body: tableData,
+      startY: 1.5,
       styles: {
         fontSize: 9,
-        cellPadding: 3,
+        cellPadding: 0.1,
       },
       headStyles: {
         fillColor: [66, 139, 202],
@@ -255,8 +321,31 @@ const Reports = () => {
       alternateRowStyles: {
         fillColor: [245, 245, 245],
       },
-      margin: { top: 40 },
+      margin: { top: 1.5, left: 0.5, right: 0.5 },
+      tableWidth: 'auto',
     });
+    
+    // Add page number at the bottom
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      const pageSize = doc.internal.pageSize;
+      const pageHeight = pageSize.height;
+      doc.text(
+        `Page ${i} of ${pageCount}`, 
+        pageSize.width / 2, 
+        pageHeight - 0.3, 
+        { align: 'center' }
+      );
+      doc.text(
+        `Generated: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`,
+        pageSize.width - 0.5,
+        pageHeight - 0.3,
+        { align: 'right' }
+      );
+    }
     
     // Save the PDF
     doc.save(`${filename}.pdf`);
@@ -631,9 +720,11 @@ const Reports = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Pick-up</TableHead>
+                      <TableHead>Drop-off</TableHead>
                       <TableHead>Vehicle</TableHead>
                       <TableHead>Driver</TableHead>
-                      <TableHead>Client</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
@@ -641,24 +732,26 @@ const Reports = () => {
                   <TableBody>
                     {isLoadingTrips ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                        <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                       </TableRow>
                     ) : tripsData && tripsData.length > 0 ? (
                       tripsData.map((trip) => (
                         <TableRow key={trip.id}>
                           <TableCell>{format(new Date(trip.date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell>{trip.clients?.name}</TableCell>
+                          <TableCell>{trip.pickup_location || 'N/A'}</TableCell>
+                          <TableCell>{trip.dropoff_location || 'N/A'}</TableCell>
                           <TableCell>
                             {trip.vehicles?.make} {trip.vehicles?.model}
                           </TableCell>
                           <TableCell>{trip.drivers?.name}</TableCell>
-                          <TableCell>{trip.clients?.name}</TableCell>
                           <TableCell>{trip.status}</TableCell>
                           <TableCell className="text-right">${Number(trip.amount).toFixed(2)}</TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center">No data available</TableCell>
+                        <TableCell colSpan={8} className="text-center">No data available</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
