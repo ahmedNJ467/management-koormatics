@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useClientForm } from "./client-form/use-client-form";
 import { ClientDocument } from "./client-form/types";
 import { DeleteClientDialog } from "./client-form/delete-client-dialog";
-import { ClientTabs } from "./client-form/client-tabs";
-import { ClientFormFooter } from "./client-form/client-form-footer";
+import { ClientForm } from "./client-form/client-form";
 import { useClientDialog } from "./client-form/use-client-dialog";
+import { useClientFormSubmit } from "./client-form/use-client-form-submit";
 
 interface Client {
   id: string;
@@ -42,6 +42,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const {
     form,
     isSubmitting,
+    setIsSubmitting,
     contacts,
     setContacts,
     members,
@@ -52,41 +53,26 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     profilePreview,
     handleProfileChange,
     handleDocumentUpload,
-    handleSubmit,
+    uploadProfile,
+    uploadClientDocument
   } = useClientForm(client);
 
-  const clientType = form.watch("type");
+  const { handleSubmit: submitForm } = useClientFormSubmit();
   
-  const onSubmit = async (values: any) => {
-    console.log("Form submitted with values:", values);
-    console.log("Current members:", members);
-    console.log("Current contacts:", contacts);
+  const handleFormSubmit = async (values: any) => {
+    const result = await submitForm({
+      client,
+      values,
+      profileUploadFn: uploadProfile,
+      documents,
+      documentFiles,
+      contacts,
+      members,
+      uploadDocumentFn: uploadClientDocument,
+      setIsSubmitting
+    });
     
-    const success = await handleSubmit(values);
-    if (success) {
-      onOpenChange(false);
-    }
-  };
-
-  const addContact = () => {
-    setContacts([
-      ...contacts,
-      { name: "", position: "", email: "", phone: "", is_primary: contacts.length === 0 },
-    ]);
-  };
-
-  const updateContact = (index: number, data: Partial<typeof contacts[0]>) => {
-    const newContacts = [...contacts];
-    newContacts[index] = { ...newContacts[index], ...data };
-    setContacts(newContacts);
-  };
-
-  const removeContact = (index: number) => {
-    setContacts(contacts.filter((_, i) => i !== index));
-  };
-
-  const removeDocument = (docId: string) => {
-    setDocuments(documents.filter((doc) => doc.id !== docId));
+    return result;
   };
 
   const dialogTitle = client ? `Edit Client: ${client.name}` : "Add New Client";
@@ -107,38 +93,31 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <ClientTabs 
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              form={form}
-              clientType={clientType}
-              contacts={contacts}
-              setContacts={setContacts}
-              members={members}
-              setMembers={setMembers}
-              documents={documents}
-              documentFiles={documentFiles}
-              profilePreview={profilePreview}
-              handleProfileChange={handleProfileChange}
-              handleDocumentUpload={handleDocumentUpload}
-              removeDocument={removeDocument}
-              isEditing={!!client}
-              addContact={addContact}
-              updateContact={updateContact}
-              removeContact={removeContact}
-            />
-            
-            <ClientFormFooter 
-              isSubmitting={isSubmitting}
-              onCancel={() => onOpenChange(false)}
-              onDelete={() => {
-                setDeletionError(null);
-                setShowDeleteConfirm(true);
-              }}
-              isEditing={!!client}
-            />
-          </form>
+          <ClientForm
+            client={client}
+            form={form}
+            isSubmitting={isSubmitting}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            contacts={contacts}
+            setContacts={setContacts}
+            members={members}
+            setMembers={setMembers}
+            documents={documents}
+            documentFiles={documentFiles}
+            profilePreview={profilePreview}
+            handleProfileChange={handleProfileChange}
+            handleDocumentUpload={handleDocumentUpload}
+            removeDocument={(docId: string) => {
+              setDocuments(documents.filter((doc) => doc.id !== docId));
+            }}
+            onCancel={() => onOpenChange(false)}
+            onDelete={() => {
+              setDeletionError(null);
+              setShowDeleteConfirm(true);
+            }}
+            handleSubmitForm={handleFormSubmit}
+          />
         </DialogContent>
       </Dialog>
       
