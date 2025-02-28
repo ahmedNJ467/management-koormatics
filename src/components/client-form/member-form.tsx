@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
 import { MemberFormValues } from "./types";
 import { MemberDocumentUpload } from "./member-document-upload";
+import { useCallback } from "react";
 
 interface MemberFormProps {
   isEditing: boolean;
@@ -28,8 +29,26 @@ export function MemberForm({
   onDocumentUploaded,
   onDocumentClear
 }: MemberFormProps) {
-  console.log("MemberForm render - clientId:", clientId, "memberId:", member.id);
-  console.log("Member document info:", { url: member.document_url, name: member.document_name });
+  // Memoize handlers to prevent recreating them on every render
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, name: e.target.value});
+  }, [member, onMemberChange]);
+
+  const handleRoleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, role: e.target.value});
+  }, [member, onMemberChange]);
+
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, email: e.target.value});
+  }, [member, onMemberChange]);
+
+  const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({...member, phone: e.target.value});
+  }, [member, onMemberChange]);
+
+  const handleNotesChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onMemberChange({...member, notes: e.target.value});
+  }, [member, onMemberChange]);
 
   return (
     <div className="space-y-4 border p-4 rounded-md">
@@ -47,14 +66,14 @@ export function MemberForm({
           <Label>Name *</Label>
           <Input
             value={member.name}
-            onChange={(e) => onMemberChange({...member, name: e.target.value})}
+            onChange={handleNameChange}
           />
         </div>
         <div className="space-y-2">
           <Label>Role</Label>
           <Input
             value={member.role || ""}
-            onChange={(e) => onMemberChange({...member, role: e.target.value})}
+            onChange={handleRoleChange}
           />
         </div>
         <div className="space-y-2">
@@ -62,14 +81,14 @@ export function MemberForm({
           <Input
             type="email"
             value={member.email || ""}
-            onChange={(e) => onMemberChange({...member, email: e.target.value})}
+            onChange={handleEmailChange}
           />
         </div>
         <div className="space-y-2">
           <Label>Phone</Label>
           <Input
             value={member.phone || ""}
-            onChange={(e) => onMemberChange({...member, phone: e.target.value})}
+            onChange={handlePhoneChange}
           />
         </div>
         
@@ -95,7 +114,7 @@ export function MemberForm({
           <Label>Notes</Label>
           <Textarea
             value={member.notes || ""}
-            onChange={(e) => onMemberChange({...member, notes: e.target.value})}
+            onChange={handleNotesChange}
             rows={3}
           />
         </div>
