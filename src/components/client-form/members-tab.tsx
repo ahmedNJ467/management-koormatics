@@ -38,7 +38,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
     setIsAddingMember(true);
     setMemberFormState({
       id: crypto.randomUUID(), // Generate a temporary ID for new members
-      name: "", // Ensuring name is explicitly set
+      name: "", // Ensuring name is explicitly set as a string
       role: "",
       email: "",
       phone: "",
@@ -63,7 +63,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
     setIsAddingMember(false);
     setEditingMemberIndex(null);
     setMemberFormState({
-      name: "", // Ensure name is explicitly set
+      name: "", // Ensuring name is explicitly set as a string
       role: "",
       email: "",
       phone: "",
