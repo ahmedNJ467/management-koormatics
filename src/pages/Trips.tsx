@@ -320,7 +320,7 @@ export default function Trips() {
       case "other":
         return "Other";
       default:
-        return type.replace(/_/g, " ");
+        return String(type).replace(/_/g, " ");
     }
   };
 
@@ -441,7 +441,7 @@ export default function Trips() {
                         variant="outline"
                         className={getStatusColor(trip.status)}
                       >
-                        {trip.status.replace(/_/g, " ")}
+                        {String(trip.status).replace(/_/g, " ")}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -580,7 +580,7 @@ export default function Trips() {
                   variant="outline"
                   className={getStatusColor(viewTrip.status)}
                 >
-                  {viewTrip.status.replace(/_/g, " ")}
+                  {String(viewTrip.status).replace(/_/g, " ")}
                 </Badge>
               </div>
 
