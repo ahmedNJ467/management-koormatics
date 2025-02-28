@@ -111,26 +111,17 @@ export function useClientForm(client?: Client | null) {
 
     const fetchMembers = async () => {
       try {
-        // Check if the client_members table exists
-        const { data: tableExists } = await supabase
-          .from('client_members')
-          .select('id')
-          .limit(1)
-          .maybeSingle();
-
-        // If the table doesn't exist yet, just return empty array
-        if (tableExists === null) {
-          console.info('client_members table does not exist yet');
-          setMembers([]);
-          return;
-        }
-
         const { data, error } = await supabase
           .from('client_members')
           .select('*')
           .eq('client_id', client.id);
 
-        if (error) throw error;
+        if (error) {
+          // If the table doesn't exist yet or other error
+          console.error('Error fetching members:', error);
+          setMembers([]);
+          return;
+        }
 
         if (data && data.length > 0) {
           setMembers(data.map(member => ({
@@ -192,27 +183,6 @@ export function useClientForm(client?: Client | null) {
     setIsSubmitting(true);
     try {
       let profileImageUrl = client?.profile_image_url;
-
-      // Check if the client_members table exists and create it if not
-      if (values.type === "organization" && members.length > 0) {
-        try {
-          const { data: tableCheck } = await supabase
-            .from('client_members')
-            .select('id')
-            .limit(1)
-            .maybeSingle();
-
-          if (tableCheck === null) {
-            // Create the client_members table if it doesn't exist
-            console.info('Creating client_members table...');
-            const createTableResult = await supabase.rpc('create_client_members_table');
-            console.log('Create table result:', createTableResult);
-          }
-        } catch (error) {
-          console.error('Error checking/creating client_members table:', error);
-          // Continue anyway, the form submission might still work if the table exists
-        }
-      }
 
       if (client) {
         // Update existing client
@@ -283,38 +253,35 @@ export function useClientForm(client?: Client | null) {
           }
 
           // Update members if any
-          try {
-            // First delete all existing members
-            await supabase
+          // First delete all existing members
+          await supabase
+            .from("client_members")
+            .delete()
+            .eq("client_id", client.id);
+
+          // Then insert the new members if any
+          if (members.length > 0) {
+            const formattedMembers = members.map((member) => ({
+              client_id: client.id,
+              name: member.name, // name is required
+              role: member.role || null,
+              email: member.email || null,
+              phone: member.phone || null,
+              notes: member.notes || null,
+            }));
+
+            const { error: membersError } = await supabase
               .from("client_members")
-              .delete()
-              .eq("client_id", client.id);
+              .insert(formattedMembers);
 
-            // Then insert the new members if any
-            if (members.length > 0) {
-              const formattedMembers = members.map((member) => ({
-                client_id: client.id,
-                name: member.name, // name is required
-                role: member.role || null,
-                email: member.email || null,
-                phone: member.phone || null,
-                notes: member.notes || null,
-              }));
-
-              const { error: membersError } = await supabase
-                .from("client_members")
-                .insert(formattedMembers);
-
-              if (membersError) throw membersError;
+            if (membersError) {
+              console.error('Error updating members:', membersError);
+              toast({
+                title: "Warning",
+                description: "Client updated but there was an issue with the member data",
+                variant: "destructive",
+              });
             }
-          } catch (error) {
-            console.error('Error updating members:', error);
-            // Continue anyway, we don't want to block the entire update if just the members fail
-            toast({
-              title: "Warning",
-              description: "Client updated but there was an issue with the member data",
-              variant: "destructive",
-            });
           }
         }
 
@@ -411,24 +378,21 @@ export function useClientForm(client?: Client | null) {
 
         // Add members if organization
         if (values.type === "organization" && members.length > 0) {
-          try {
-            const formattedMembers = members.map((member) => ({
-              client_id: insertedClient.id,
-              name: member.name, // name is required
-              role: member.role || null,
-              email: member.email || null,
-              phone: member.phone || null,
-              notes: member.notes || null,
-            }));
+          const formattedMembers = members.map((member) => ({
+            client_id: insertedClient.id,
+            name: member.name, // name is required
+            role: member.role || null,
+            email: member.email || null,
+            phone: member.phone || null,
+            notes: member.notes || null,
+          }));
 
-            const { error: membersError } = await supabase
-              .from("client_members")
-              .insert(formattedMembers);
+          const { error: membersError } = await supabase
+            .from("client_members")
+            .insert(formattedMembers);
 
-            if (membersError) throw membersError;
-          } catch (error) {
-            console.error('Error adding members:', error);
-            // Continue anyway, we don't want to block the entire creation if just the members fail
+          if (membersError) {
+            console.error('Error adding members:', membersError);
             toast({
               title: "Warning",
               description: "Client created but there was an issue with the member data",
