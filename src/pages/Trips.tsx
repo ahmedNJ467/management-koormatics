@@ -1,4 +1,3 @@
-
 import {
   Avatar,
   AvatarFallback,
@@ -383,6 +382,37 @@ export default function Trips() {
     },
   });
 
+  // Update trip status
+  const updateTripStatus = async (tripId: string, status: TripStatus) => {
+    try {
+      const { error } = await supabase
+        .from("trips")
+        .update({ status })
+        .eq("id", tripId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Trip updated",
+        description: `Trip status changed to ${formatStatus(status)}`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      
+      // Update local viewTrip state if it's the current trip
+      if (viewTrip && viewTrip.id === tripId) {
+        setViewTrip({...viewTrip, status});
+      }
+    } catch (error) {
+      console.error("Error updating trip status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update trip status",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle saving a trip (new or edit)
   const handleSaveTrip = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -466,37 +496,6 @@ export default function Trips() {
       toast({
         title: "Error",
         description: "Failed to save trip details",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Update trip status
-  const updateTripStatus = async (tripId: string, status: TripStatus) => {
-    try {
-      const { error } = await supabase
-        .from("trips")
-        .update({ status })
-        .eq("id", tripId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Trip updated",
-        description: `Trip status changed to ${formatStatus(status)}`,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
-      
-      // Update local viewTrip state if it's the current trip
-      if (viewTrip && viewTrip.id === tripId) {
-        setViewTrip({...viewTrip, status});
-      }
-    } catch (error) {
-      console.error("Error updating trip status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update trip status",
         variant: "destructive",
       });
     }
