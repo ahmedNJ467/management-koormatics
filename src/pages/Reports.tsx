@@ -33,7 +33,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Download, BarChart3, TrendingUp, Car, Fuel, Wrench, Users, FileDown, CalendarRange } from "lucide-react";
+import { Calendar, Download, BarChart3, TrendingUp, Car, Fuel, Wrench, Users, FileDown, CalendarRange, X } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
