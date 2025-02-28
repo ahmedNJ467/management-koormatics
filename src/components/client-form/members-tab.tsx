@@ -31,9 +31,13 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
     document_name: ""
   });
 
+  console.log("MembersTab render - clientId:", clientId);
+  console.log("Current members:", members);
+
   const addMember = () => {
     setIsAddingMember(true);
     setMemberFormState({
+      id: crypto.randomUUID(), // Generate a temporary ID for new members
       name: "",
       role: "",
       email: "",
@@ -131,6 +135,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   };
 
   const handleMemberDocumentUpload = (url: string, name: string) => {
+    console.log("Document uploaded successfully:", { url, name });
     setMemberFormState({
       ...memberFormState,
       document_url: url,
@@ -139,6 +144,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   };
 
   const clearMemberDocument = () => {
+    console.log("Clearing document");
     setMemberFormState({
       ...memberFormState,
       document_url: "",

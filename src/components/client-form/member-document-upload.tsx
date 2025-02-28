@@ -28,24 +28,46 @@ export function MemberDocumentUpload({
 
   const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !clientId || !memberId) {
-      if (!clientId) console.error("Missing clientId for document upload");
-      if (!memberId) console.error("Missing memberId for document upload");
+    if (!file) {
+      console.error("No file selected for upload");
       return;
     }
     
+    if (!clientId) {
+      console.error("Missing clientId for document upload");
+      toast({
+        title: "Upload Error",
+        description: "Client ID is missing. Please save the client first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!memberId) {
+      console.error("Missing memberId for document upload");
+      // Use a random UUID if the member hasn't been saved yet
+      const tempMemberId = crypto.randomUUID();
+      console.log("Generated temporary member ID:", tempMemberId);
+    }
+    
+    const actualMemberId = memberId || crypto.randomUUID();
+    
     try {
       setIsUploading(true);
-      console.log(`Uploading document for client ${clientId}, member ${memberId}`);
-      const result = await uploadMemberDocument(file, clientId, memberId);
+      console.log(`Uploading document for client ${clientId}, member ${actualMemberId}, file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+      
+      const result = await uploadMemberDocument(file, clientId, actualMemberId);
+      
       console.log("Upload result:", result);
       onDocumentUploaded(result.url, result.name);
+      
       toast({
         title: "Document uploaded",
         description: "Member document has been uploaded successfully."
       });
     } catch (error) {
       console.error("Failed to upload document:", error);
+      
       toast({
         title: "Upload failed",
         description: "Failed to upload member document. Please try again.",

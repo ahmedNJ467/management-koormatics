@@ -28,6 +28,9 @@ export function MemberForm({
   onDocumentUploaded,
   onDocumentClear
 }: MemberFormProps) {
+  console.log("MemberForm render - clientId:", clientId, "memberId:", member.id);
+  console.log("Member document info:", { url: member.document_url, name: member.document_name });
+
   return (
     <div className="space-y-4 border p-4 rounded-md">
       <div className="flex items-center justify-between">
