@@ -25,6 +25,7 @@ interface ClientTabsProps {
   addContact: () => void;
   updateContact: (index: number, data: Partial<any>) => void;
   removeContact: (index: number) => void;
+  isArchived?: boolean;
 }
 
 export function ClientTabs({
@@ -46,6 +47,7 @@ export function ClientTabs({
   addContact,
   updateContact,
   removeContact,
+  isArchived = false,
 }: ClientTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
