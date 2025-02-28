@@ -1,19 +1,11 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useClientForm } from "./client-form/use-client-form";
 import { ClientDocument } from "./client-form/types";
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-
-// Import our refactored components
-import { ClientDetails } from "./client-form/client-details";
-import { ContactsList } from "./client-form/contacts-list";
-import { MembersTab } from "./client-form/members-tab";
 import { DeleteClientDialog } from "./client-form/delete-client-dialog";
+import { ClientTabs } from "./client-form/client-tabs";
+import { ClientFormFooter } from "./client-form/client-form-footer";
+import { useClientDialog } from "./client-form/use-client-dialog";
 
 interface Client {
   id: string;
@@ -37,11 +29,15 @@ interface ClientFormDialogProps {
 }
 
 export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }: ClientFormDialogProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
-  const [deletionError, setDeletionError] = useState<string | null>(null);
+  const {
+    showDeleteConfirm,
+    setShowDeleteConfirm,
+    activeTab,
+    setActiveTab,
+    deletionError,
+    setDeletionError,
+    handleDelete
+  } = useClientDialog(client, onOpenChange, onClientDeleted);
   
   const {
     form,
@@ -61,65 +57,6 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
 
   const clientType = form.watch("type");
   
-  const handleDelete = async () => {
-    if (!client?.id) return;
-    
-    try {
-      // First check if the client has any associated trips
-      const { data: tripsData, error: tripsError } = await supabase
-        .from('trips')
-        .select('id')
-        .eq('client_id', client.id)
-        .limit(1);
-      
-      if (tripsError) throw tripsError;
-      
-      if (tripsData && tripsData.length > 0) {
-        setDeletionError("This client cannot be deleted because it has associated trips. Please delete all trips for this client first.");
-        return;
-      }
-      
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', client.id);
-
-      if (error) {
-        // Check if this is a foreign key constraint error
-        if (error.code === '23503') {
-          // Get the constraint details to display a more helpful error
-          const match = error.details.match(/table "([^"]+)"/);
-          const relatedTable = match ? match[1] : 'another table';
-          setDeletionError(`This client cannot be deleted because it is referenced in ${relatedTable}. Please delete all ${relatedTable} entries for this client first.`);
-          return;
-        }
-        throw error;
-      }
-      
-      setShowDeleteConfirm(false);
-      setDeletionError(null);
-      
-      if (onClientDeleted) {
-        onClientDeleted();
-      } else {
-        // If no onClientDeleted callback is provided, close the dialog
-        onOpenChange(false);
-      }
-      
-      toast({
-        title: "Client deleted",
-        description: "The client has been deleted successfully.",
-      });
-    } catch (error) {
-      console.error("Error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete client",
-        variant: "destructive",
-      });
-    }
-  };
-
   const onSubmit = async (values: any) => {
     console.log("Form submitted with values:", values);
     console.log("Current members:", members);
@@ -170,74 +107,38 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
             </DialogDescription>
           </DialogHeader>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              {clientType === "organization" && (
-                <>
-                  <TabsTrigger value="contacts">Contacts</TabsTrigger>
-                  <TabsTrigger value="members">Members</TabsTrigger>
-                </>
-              )}
-            </TabsList>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <ClientTabs 
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              form={form}
+              clientType={clientType}
+              contacts={contacts}
+              setContacts={setContacts}
+              members={members}
+              setMembers={setMembers}
+              documents={documents}
+              documentFiles={documentFiles}
+              profilePreview={profilePreview}
+              handleProfileChange={handleProfileChange}
+              handleDocumentUpload={handleDocumentUpload}
+              removeDocument={removeDocument}
+              isEditing={!!client}
+              addContact={addContact}
+              updateContact={updateContact}
+              removeContact={removeContact}
+            />
             
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <TabsContent value="details">
-                <ClientDetails 
-                  form={form}
-                  profilePreview={profilePreview}
-                  handleProfileChange={handleProfileChange}
-                  documents={documents}
-                  documentFiles={documentFiles}
-                  handleDocumentUpload={handleDocumentUpload}
-                  removeDocument={removeDocument}
-                  isEditing={!!client} // Pass whether we're editing or creating
-                />
-              </TabsContent>
-              
-              {clientType === "organization" && (
-                <>
-                  <TabsContent value="contacts">
-                    <ContactsList 
-                      contacts={contacts} 
-                      addContact={addContact}
-                      updateContact={updateContact}
-                      removeContact={removeContact}
-                    />
-                  </TabsContent>
-                
-                  <TabsContent value="members">
-                    <MembersTab 
-                      members={members}
-                      setMembers={setMembers}
-                      clientId={client?.id}
-                    />
-                  </TabsContent>
-                </>
-              )}
-              
-              <div className="flex justify-end space-x-2 pt-4 mt-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                {client && (
-                  <Button 
-                    type="button"
-                    variant="destructive"
-                    onClick={() => {
-                      setDeletionError(null);
-                      setShowDeleteConfirm(true);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                )}
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : client ? "Update Client" : "Add Client"}
-                </Button>
-              </div>
-            </form>
-          </Tabs>
+            <ClientFormFooter 
+              isSubmitting={isSubmitting}
+              onCancel={() => onOpenChange(false)}
+              onDelete={() => {
+                setDeletionError(null);
+                setShowDeleteConfirm(true);
+              }}
+              isEditing={!!client}
+            />
+          </form>
         </DialogContent>
       </Dialog>
       
