@@ -156,6 +156,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
                   documentFiles={documentFiles}
                   handleDocumentUpload={handleDocumentUpload}
                   removeDocument={removeDocument}
+                  isEditing={!!client} // Pass whether we're editing or creating
                 />
               </TabsContent>
               

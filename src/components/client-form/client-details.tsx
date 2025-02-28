@@ -6,6 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { User, Upload, Download, Trash2 } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { ClientDocument, ClientFormValues } from "./types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ClientDetailsProps {
   form: UseFormReturn<ClientFormValues>;
@@ -15,6 +22,7 @@ interface ClientDetailsProps {
   documentFiles: File[];
   handleDocumentUpload: (files: FileList) => void;
   removeDocument: (docId: string) => void;
+  isEditing: boolean; // Add this prop to determine if we're editing or creating
 }
 
 export function ClientDetails({
@@ -24,7 +32,8 @@ export function ClientDetails({
   documents,
   documentFiles,
   handleDocumentUpload,
-  removeDocument
+  removeDocument,
+  isEditing
 }: ClientDetailsProps) {
   const clientType = form.watch("type");
 
@@ -73,29 +82,26 @@ export function ClientDetails({
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="type">Type *</Label>
-          <div className="flex space-x-2">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                {...form.register("type")}
-                value="individual"
-                className="rounded-full"
-              />
-              <span>Individual</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                {...form.register("type")}
-                value="organization"
-                className="rounded-full"
-              />
-              <span>Organization</span>
-            </label>
+        {/* Only show type selection when creating a new client */}
+        {!isEditing && (
+          <div className="space-y-2">
+            <Label htmlFor="type">Type *</Label>
+            <Select
+              value={form.getValues("type")}
+              onValueChange={(value) => {
+                form.setValue("type", value as "organization" | "individual");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select client type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="organization">Organization</SelectItem>
+                <SelectItem value="individual">Individual</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="space-y-2">
