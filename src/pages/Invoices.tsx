@@ -722,7 +722,7 @@ export default function Invoices() {
 
   // Helper functions for formatting
   const formatInvoiceId = (id: string): string => {
-    return "INV-" + id.substring(0, 8).toUpperCase();
+    return id ? "INV-" + id.substring(0, 8).toUpperCase() : "INV-XXXXXXXX";
   };
 
   const formatCurrency = (amount: number): string => {
@@ -733,10 +733,17 @@ export default function Invoices() {
   };
   
   const formatDate = (dateStr: string): string => {
-    return format(parseISO(dateStr), "MMM d, yyyy");
+    if (!dateStr) return "Unknown Date";
+    try {
+      return format(parseISO(dateStr), "MMM d, yyyy");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid Date";
+    }
   };
   
   const formatStatus = (status: InvoiceStatus): string => {
+    if (!status) return "Unknown";
     return status.replace("_", " ")
       .split(" ")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -744,6 +751,8 @@ export default function Invoices() {
   };
   
   const getStatusColor = (status: InvoiceStatus): string => {
+    if (!status) return "bg-gray-100 text-gray-700";
+    
     switch (status) {
       case "draft":
         return "bg-gray-100 text-gray-700";
@@ -762,6 +771,8 @@ export default function Invoices() {
 
   // Format trip type for better display
   const formatTripType = (type: string): string => {
+    if (!type) return "Transfer";
+    
     switch (type) {
       case "airport_pickup":
         return "Airport Pickup";
@@ -776,10 +787,15 @@ export default function Invoices() {
       case "multi_day":
         return "Multi-Day Service";
       default:
-        return type.replace(/_/g, " ")
-          .split(" ")
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ");
+        try {
+          return type.replace(/_/g, " ")
+            .split(" ")
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+        } catch (error) {
+          console.error("Error formatting trip type:", error);
+          return "Unknown Type";
+        }
     }
   };
 
@@ -1262,7 +1278,9 @@ export default function Invoices() {
                             <TableCell>{trip.driver_name}</TableCell>
                             <TableCell>
                               <Badge variant="outline">
-                                {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+                                {trip.status && typeof trip.status === 'string' ? 
+                                  trip.status.charAt(0).toUpperCase() + trip.status.slice(1) : 
+                                  "Unknown"}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">{formatCurrency(trip.amount)}</TableCell>
