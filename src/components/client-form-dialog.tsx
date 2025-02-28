@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useClientForm } from "./client-form/use-client-form";
 import { ContactFormValues, ClientDocument, MemberFormValues } from "./client-form/types";
-import { X, Upload, Download, User, Trash2, UserPlus, FileText } from "lucide-react";
+import { X, Upload, Download, User, Trash2, UserPlus, FileText, Plus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MemberDocumentUpload } from "./client-form/member-document-upload";
+import { MembersList } from "./client-form/members-list";
+import { MemberDetail } from "./client-form/member-detail";
 import { uploadMemberDocument } from "./client-form/use-member-uploads";
 
 interface Client {
@@ -60,6 +62,19 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const [activeTab, setActiveTab] = useState("details");
   const [memberDocumentFiles, setMemberDocumentFiles] = useState<Record<number, File>>({});
   const [memberDocumentUploading, setMemberDocumentUploading] = useState<Record<number, boolean>>({});
+  const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
+  const [isViewingMember, setIsViewingMember] = useState<boolean>(false);
+  const [viewingMemberIndex, setViewingMemberIndex] = useState<number | null>(null);
+  const [isAddingMember, setIsAddingMember] = useState<boolean>(false);
+  const [memberFormState, setMemberFormState] = useState<MemberFormValues>({
+    name: "",
+    role: "",
+    email: "",
+    phone: "",
+    notes: "",
+    document_url: "",
+    document_name: ""
+  });
   
   const {
     form,
@@ -180,72 +195,125 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   };
 
   const addMember = () => {
-    setMembers([
-      ...members,
-      { 
-        name: "", 
-        role: "", 
-        email: "", 
-        phone: "", 
-        notes: "",
-        document_url: "",
-        document_name: "" 
-      },
-    ]);
+    setIsAddingMember(true);
+    setMemberFormState({
+      name: "",
+      role: "",
+      email: "",
+      phone: "",
+      notes: "",
+      document_url: "",
+      document_name: ""
+    });
   };
 
-  const updateMember = (index: number, data: Partial<MemberFormValues>) => {
+  const editMember = (index: number) => {
+    setEditingMemberIndex(index);
+    setMemberFormState({...members[index]});
+    setIsAddingMember(true);
+  };
+
+  const viewMember = (index: number) => {
+    setViewingMemberIndex(index);
+    setIsViewingMember(true);
+  };
+
+  const cancelMemberEdit = () => {
+    setIsAddingMember(false);
+    setEditingMemberIndex(null);
+    setMemberFormState({
+      name: "",
+      role: "",
+      email: "",
+      phone: "",
+      notes: "",
+      document_url: "",
+      document_name: ""
+    });
+  };
+
+  const saveMember = () => {
+    if (!memberFormState.name || memberFormState.name.length < 2) {
+      toast({
+        title: "Validation Error",
+        description: "Member name must be at least 2 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (memberFormState.email && !memberFormState.email.includes('@')) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const newMembers = [...members];
-    newMembers[index] = { ...newMembers[index], ...data };
+    
+    if (editingMemberIndex !== null) {
+      // Edit existing member
+      newMembers[editingMemberIndex] = memberFormState;
+    } else {
+      // Add new member
+      newMembers.push(memberFormState);
+    }
+    
     setMembers(newMembers);
+    setIsAddingMember(false);
+    setEditingMemberIndex(null);
+    setMemberFormState({
+      name: "",
+      role: "",
+      email: "",
+      phone: "",
+      notes: "",
+      document_url: "",
+      document_name: ""
+    });
+
+    toast({
+      title: editingMemberIndex !== null ? "Member Updated" : "Member Added",
+      description: editingMemberIndex !== null 
+        ? "The member has been updated successfully."
+        : "A new member has been added successfully.",
+    });
   };
 
-  const removeMember = (index: number) => {
+  const deleteMember = (index: number) => {
+    const newMembers = [...members];
+    newMembers.splice(index, 1);
+    setMembers(newMembers);
+    
     // Also remove any pending document uploads
     if (memberDocumentFiles[index]) {
       const newFiles = { ...memberDocumentFiles };
       delete newFiles[index];
       setMemberDocumentFiles(newFiles);
     }
-    
-    setMembers(members.filter((_, i) => i !== index));
+
+    toast({
+      title: "Member Removed",
+      description: "The member has been removed successfully.",
+    });
   };
 
-  const handleMemberDocumentChange = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    // Store the file for later upload on form submission
-    setMemberDocumentFiles(prev => ({
-      ...prev,
-      [index]: file
-    }));
-    
-    // Update the member with the pending document name
-    const updatedMembers = [...members];
-    updatedMembers[index] = {
-      ...updatedMembers[index],
-      document_name: file.name,
-    };
-    setMembers(updatedMembers);
+  const handleMemberDocumentUpload = async (url: string, name: string) => {
+    setMemberFormState({
+      ...memberFormState,
+      document_url: url,
+      document_name: name
+    });
   };
 
-  const clearMemberDocument = (index: number) => {
-    // Remove pending file if exists
-    if (memberDocumentFiles[index]) {
-      const newFiles = { ...memberDocumentFiles };
-      delete newFiles[index];
-      setMemberDocumentFiles(newFiles);
-    }
-    
-    // Clear document info from member
-    const updatedMembers = [...members];
-    updatedMembers[index] = {
-      ...updatedMembers[index],
+  const clearMemberDocument = () => {
+    setMemberFormState({
+      ...memberFormState,
       document_url: "",
       document_name: ""
-    };
-    setMembers(updatedMembers);
+    });
   };
 
   const removeDocument = (docId: string) => {
@@ -537,86 +605,101 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
                   </TabsContent>
                 
                   <TabsContent value="members" className="space-y-4 mt-4">
-                    <div className="flex items-center justify-between">
-                      <Label>Organization Members</Label>
-                      <Button type="button" variant="outline" onClick={addMember}>
-                        <UserPlus className="mr-2 h-4 w-4" /> Add Member
-                      </Button>
-                    </div>
-                    
-                    {members.length === 0 ? (
-                      <div className="text-center py-6 border rounded-md">
-                        <UserPlus className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-muted-foreground">No members added yet</p>
-                        <Button variant="outline" size="sm" className="mt-2" onClick={addMember}>
-                          <UserPlus className="mr-2 h-4 w-4" /> Add Member
-                        </Button>
-                      </div>
+                    {!isAddingMember ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <Label>Organization Members</Label>
+                          <Button type="button" variant="outline" onClick={addMember}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Add Member
+                          </Button>
+                        </div>
+                        
+                        <MembersList 
+                          members={members} 
+                          onEdit={editMember}
+                          onDelete={deleteMember}
+                          onView={viewMember}
+                        />
+                      </>
                     ) : (
-                      members.map((member, index) => (
-                        <div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded-md relative">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-2 top-2"
-                            onClick={() => removeMember(index)}
-                          >
+                      <div className="space-y-4 border p-4 rounded-md">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium">
+                            {editingMemberIndex !== null ? "Edit Member" : "Add New Member"}
+                          </h3>
+                          <Button type="button" variant="ghost" size="icon" onClick={cancelMemberEdit}>
                             <X className="h-4 w-4" />
                           </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Name *</Label>
                             <Input
-                              value={member.name}
-                              onChange={(e) => updateMember(index, { name: e.target.value })}
+                              value={memberFormState.name}
+                              onChange={(e) => setMemberFormState({...memberFormState, name: e.target.value})}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label>Role</Label>
                             <Input
-                              value={member.role}
-                              onChange={(e) => updateMember(index, { role: e.target.value })}
+                              value={memberFormState.role || ""}
+                              onChange={(e) => setMemberFormState({...memberFormState, role: e.target.value})}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label>Email</Label>
                             <Input
                               type="email"
-                              value={member.email}
-                              onChange={(e) => updateMember(index, { email: e.target.value })}
+                              value={memberFormState.email || ""}
+                              onChange={(e) => setMemberFormState({...memberFormState, email: e.target.value})}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label>Phone</Label>
                             <Input
-                              value={member.phone}
-                              onChange={(e) => updateMember(index, { phone: e.target.value })}
+                              value={memberFormState.phone || ""}
+                              onChange={(e) => setMemberFormState({...memberFormState, phone: e.target.value})}
                             />
                           </div>
                           
-                          {/* Document Upload Field */}
-                          <div className="col-span-2 space-y-2">
-                            <MemberDocumentUpload
-                              documentName={member.document_name || (memberDocumentFiles[index]?.name || null)}
-                              documentUrl={member.document_url || null}
-                              onDocumentChange={(e) => handleMemberDocumentChange(index, e)}
-                              onDocumentClear={() => clearMemberDocument(index)}
-                            />
-                            {memberDocumentUploading[index] && (
-                              <p className="text-xs text-muted-foreground">Uploading document...</p>
+                          {/* Document Upload */}
+                          <div className="col-span-2">
+                            {client && client.id ? (
+                              <MemberDocumentUpload
+                                documentName={memberFormState.document_name || null}
+                                documentUrl={memberFormState.document_url || null}
+                                clientId={client.id}
+                                memberId={memberFormState.id || crypto.randomUUID()}
+                                onDocumentUploaded={handleMemberDocumentUpload}
+                                onDocumentClear={clearMemberDocument}
+                              />
+                            ) : (
+                              <div className="text-sm text-muted-foreground">
+                                Document upload will be available after saving the client.
+                              </div>
                             )}
                           </div>
                           
                           <div className="col-span-2 space-y-2">
                             <Label>Notes</Label>
                             <Textarea
-                              value={member.notes}
-                              onChange={(e) => updateMember(index, { notes: e.target.value })}
+                              value={memberFormState.notes || ""}
+                              onChange={(e) => setMemberFormState({...memberFormState, notes: e.target.value})}
                               rows={3}
                             />
                           </div>
                         </div>
-                      ))
+                        
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button type="button" variant="outline" onClick={cancelMemberEdit}>
+                            Cancel
+                          </Button>
+                          <Button type="button" onClick={saveMember}>
+                            {editingMemberIndex !== null ? "Update Member" : "Add Member"}
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </TabsContent>
                 </>
@@ -643,6 +726,22 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
           </Tabs>
         </DialogContent>
       </Dialog>
+      
+      {/* Member Detail View Dialog */}
+      {viewingMemberIndex !== null && members[viewingMemberIndex] && (
+        <MemberDetail
+          member={members[viewingMemberIndex]}
+          isOpen={isViewingMember}
+          onClose={() => {
+            setIsViewingMember(false);
+            setViewingMemberIndex(null);
+          }}
+          onEdit={() => {
+            setIsViewingMember(false);
+            editMember(viewingMemberIndex);
+          }}
+        />
+      )}
       
       <AlertDialog 
         open={showDeleteConfirm} 
