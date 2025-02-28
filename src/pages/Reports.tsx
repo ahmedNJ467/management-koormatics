@@ -33,9 +33,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Download, BarChart3, TrendingUp, Car, Fuel, Wrench, Users, FileDown } from "lucide-react";
+import { Calendar, Download, BarChart3, TrendingUp, Car, Fuel, Wrench, Users, FileDown, CalendarRange } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DateRange } from "react-day-picker";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 interface TabProps {
   title: string;
@@ -74,6 +77,7 @@ const reportTabs: TabProps[] = [
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("vehicles");
   const [timeRange, setTimeRange] = useState("month");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const { data: vehiclesData, isLoading: isLoadingVehicles } = useQuery({
     queryKey: ["vehicles-report"],
@@ -88,66 +92,99 @@ const Reports = () => {
   });
 
   const { data: fuelData, isLoading: isLoadingFuel } = useQuery({
-    queryKey: ["fuel-report", timeRange],
+    queryKey: ["fuel-report", timeRange, dateRange],
     queryFn: async () => {
-      let timeFilter = new Date();
-      if (timeRange === "month") {
-        timeFilter.setMonth(timeFilter.getMonth() - 1);
-      } else if (timeRange === "quarter") {
-        timeFilter.setMonth(timeFilter.getMonth() - 3);
-      } else if (timeRange === "year") {
-        timeFilter.setFullYear(timeFilter.getFullYear() - 1);
+      let query = supabase
+        .from("fuel_logs")
+        .select("*, vehicles(make, model)");
+
+      if (dateRange && dateRange.from) {
+        const fromDate = format(dateRange.from, 'yyyy-MM-dd');
+        query = query.gte("date", fromDate);
+        
+        if (dateRange.to) {
+          const toDate = format(dateRange.to, 'yyyy-MM-dd');
+          query = query.lte("date", toDate);
+        }
+      } else if (timeRange !== "all") {
+        let timeFilter = new Date();
+        if (timeRange === "month") {
+          timeFilter.setMonth(timeFilter.getMonth() - 1);
+        } else if (timeRange === "quarter") {
+          timeFilter.setMonth(timeFilter.getMonth() - 3);
+        } else if (timeRange === "year") {
+          timeFilter.setFullYear(timeFilter.getFullYear() - 1);
+        }
+        query = query.gte("date", timeFilter.toISOString().split("T")[0]);
       }
 
-      const { data, error } = await supabase
-        .from("fuel_logs")
-        .select("*, vehicles(make, model)")
-        .gte("date", timeFilter.toISOString().split("T")[0]);
-
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const { data: maintenanceData, isLoading: isLoadingMaintenance } = useQuery({
-    queryKey: ["maintenance-report", timeRange],
+    queryKey: ["maintenance-report", timeRange, dateRange],
     queryFn: async () => {
-      let timeFilter = new Date();
-      if (timeRange === "month") {
-        timeFilter.setMonth(timeFilter.getMonth() - 1);
-      } else if (timeRange === "quarter") {
-        timeFilter.setMonth(timeFilter.getMonth() - 3);
-      } else if (timeRange === "year") {
-        timeFilter.setFullYear(timeFilter.getFullYear() - 1);
+      let query = supabase
+        .from("maintenance")
+        .select("*, vehicles(make, model)");
+
+      if (dateRange && dateRange.from) {
+        const fromDate = format(dateRange.from, 'yyyy-MM-dd');
+        query = query.gte("date", fromDate);
+        
+        if (dateRange.to) {
+          const toDate = format(dateRange.to, 'yyyy-MM-dd');
+          query = query.lte("date", toDate);
+        }
+      } else if (timeRange !== "all") {
+        let timeFilter = new Date();
+        if (timeRange === "month") {
+          timeFilter.setMonth(timeFilter.getMonth() - 1);
+        } else if (timeRange === "quarter") {
+          timeFilter.setMonth(timeFilter.getMonth() - 3);
+        } else if (timeRange === "year") {
+          timeFilter.setFullYear(timeFilter.getFullYear() - 1);
+        }
+        query = query.gte("date", timeFilter.toISOString().split("T")[0]);
       }
 
-      const { data, error } = await supabase
-        .from("maintenance")
-        .select("*, vehicles(make, model)")
-        .gte("date", timeFilter.toISOString().split("T")[0]);
-
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const { data: tripsData, isLoading: isLoadingTrips } = useQuery({
-    queryKey: ["trips-report", timeRange],
+    queryKey: ["trips-report", timeRange, dateRange],
     queryFn: async () => {
-      let timeFilter = new Date();
-      if (timeRange === "month") {
-        timeFilter.setMonth(timeFilter.getMonth() - 1);
-      } else if (timeRange === "quarter") {
-        timeFilter.setMonth(timeFilter.getMonth() - 3);
-      } else if (timeRange === "year") {
-        timeFilter.setFullYear(timeFilter.getFullYear() - 1);
+      let query = supabase
+        .from("trips")
+        .select("*, vehicles(make, model), drivers(name), clients(name)");
+
+      if (dateRange && dateRange.from) {
+        const fromDate = format(dateRange.from, 'yyyy-MM-dd');
+        query = query.gte("date", fromDate);
+        
+        if (dateRange.to) {
+          const toDate = format(dateRange.to, 'yyyy-MM-dd');
+          query = query.lte("date", toDate);
+        }
+      } else if (timeRange !== "all") {
+        let timeFilter = new Date();
+        if (timeRange === "month") {
+          timeFilter.setMonth(timeFilter.getMonth() - 1);
+        } else if (timeRange === "quarter") {
+          timeFilter.setMonth(timeFilter.getMonth() - 3);
+        } else if (timeRange === "year") {
+          timeFilter.setFullYear(timeFilter.getFullYear() - 1);
+        }
+        query = query.gte("date", timeFilter.toISOString().split("T")[0]);
       }
 
-      const { data, error } = await supabase
-        .from("trips")
-        .select("*, vehicles(make, model), drivers(name), clients(name)")
-        .gte("date", timeFilter.toISOString().split("T")[0]);
-
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -423,12 +460,32 @@ const Reports = () => {
     return tripsData.reduce((sum, trip) => sum + Number(trip.amount || 0), 0);
   };
 
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+    if (range && range.from) {
+      setTimeRange("custom");
+    }
+  };
+
+  const clearDateRange = () => {
+    setDateRange(undefined);
+    setTimeRange("month");
+  };
+
   return (
     <div className="container py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Reports</h1>
         <div className="flex items-center gap-4">
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select 
+            value={timeRange} 
+            onValueChange={(value) => {
+              setTimeRange(value);
+              if (value !== "custom") {
+                setDateRange(undefined);
+              }
+            }}
+          >
             <SelectTrigger className="w-[180px]">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Select time range" />
@@ -438,8 +495,21 @@ const Reports = () => {
               <SelectItem value="quarter">Last Quarter</SelectItem>
               <SelectItem value="year">Last Year</SelectItem>
               <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
+          
+          {timeRange === "custom" && (
+            <div className="flex items-center gap-2">
+              <DateRangePicker
+                value={dateRange}
+                onChange={handleDateRangeChange}
+              />
+              <Button variant="outline" size="icon" onClick={clearDateRange}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
