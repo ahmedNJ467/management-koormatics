@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useClientForm } from "./client-form/use-client-form";
 import { ContactFormValues, ClientDocument, MemberFormValues } from "./client-form/types";
-import { X, Upload, Download, User, Trash2, UserPlus } from "lucide-react";
+import { X, Upload, Download, User, Trash2, UserPlus, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { MemberDocumentUpload } from "./client-form/member-document-upload";
+import { uploadMemberDocument } from "./client-form/use-member-uploads";
 
 interface Client {
   id: string;
@@ -56,6 +58,8 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const queryClient = useQueryClient();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
+  const [memberDocumentFiles, setMemberDocumentFiles] = useState<Record<number, File>>({});
+  const [memberDocumentUploading, setMemberDocumentUploading] = useState<Record<number, boolean>>({});
   
   const {
     form,
@@ -105,6 +109,53 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   };
 
   const onSubmit = async (values: any) => {
+    // Before submitting, handle any pending member document uploads
+    if (Object.keys(memberDocumentFiles).length > 0 && client?.id) {
+      try {
+        // Process document uploads for each member that has a pending file
+        for (const indexStr in memberDocumentFiles) {
+          const index = parseInt(indexStr);
+          const file = memberDocumentFiles[index];
+          
+          if (!file) continue;
+          
+          setMemberDocumentUploading(prev => ({ ...prev, [index]: true }));
+          
+          // Create a temporary id for the member if it doesn't exist
+          if (!members[index].id) {
+            members[index].id = crypto.randomUUID();
+          }
+          
+          const { url, name } = await uploadMemberDocument(
+            file, 
+            client.id, 
+            members[index].id || `temp-${index}`
+          );
+          
+          // Update the member with the document URL
+          const updatedMembers = [...members];
+          updatedMembers[index] = {
+            ...updatedMembers[index],
+            document_url: url,
+            document_name: name
+          };
+          
+          setMembers(updatedMembers);
+          setMemberDocumentUploading(prev => ({ ...prev, [index]: false }));
+        }
+        
+        // Clear document files after upload
+        setMemberDocumentFiles({});
+      } catch (error) {
+        console.error("Error uploading member documents:", error);
+        toast({
+          title: "Document Upload Error",
+          description: "Failed to upload one or more member documents.",
+          variant: "destructive",
+        });
+      }
+    }
+    
     const success = await handleSubmit(values);
     if (success) {
       onOpenChange(false);
@@ -131,7 +182,15 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const addMember = () => {
     setMembers([
       ...members,
-      { name: "", role: "", email: "", phone: "", notes: "" },
+      { 
+        name: "", 
+        role: "", 
+        email: "", 
+        phone: "", 
+        notes: "",
+        document_url: "",
+        document_name: "" 
+      },
     ]);
   };
 
@@ -142,7 +201,51 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   };
 
   const removeMember = (index: number) => {
+    // Also remove any pending document uploads
+    if (memberDocumentFiles[index]) {
+      const newFiles = { ...memberDocumentFiles };
+      delete newFiles[index];
+      setMemberDocumentFiles(newFiles);
+    }
+    
     setMembers(members.filter((_, i) => i !== index));
+  };
+
+  const handleMemberDocumentChange = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Store the file for later upload on form submission
+    setMemberDocumentFiles(prev => ({
+      ...prev,
+      [index]: file
+    }));
+    
+    // Update the member with the pending document name
+    const updatedMembers = [...members];
+    updatedMembers[index] = {
+      ...updatedMembers[index],
+      document_name: file.name,
+    };
+    setMembers(updatedMembers);
+  };
+
+  const clearMemberDocument = (index: number) => {
+    // Remove pending file if exists
+    if (memberDocumentFiles[index]) {
+      const newFiles = { ...memberDocumentFiles };
+      delete newFiles[index];
+      setMemberDocumentFiles(newFiles);
+    }
+    
+    // Clear document info from member
+    const updatedMembers = [...members];
+    updatedMembers[index] = {
+      ...updatedMembers[index],
+      document_url: "",
+      document_name: ""
+    };
+    setMembers(updatedMembers);
   };
 
   const removeDocument = (docId: string) => {
@@ -490,6 +593,20 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
                               onChange={(e) => updateMember(index, { phone: e.target.value })}
                             />
                           </div>
+                          
+                          {/* Document Upload Field */}
+                          <div className="col-span-2 space-y-2">
+                            <MemberDocumentUpload
+                              documentName={member.document_name || (memberDocumentFiles[index]?.name || null)}
+                              documentUrl={member.document_url || null}
+                              onDocumentChange={(e) => handleMemberDocumentChange(index, e)}
+                              onDocumentClear={() => clearMemberDocument(index)}
+                            />
+                            {memberDocumentUploading[index] && (
+                              <p className="text-xs text-muted-foreground">Uploading document...</p>
+                            )}
+                          </div>
+                          
                           <div className="col-span-2 space-y-2">
                             <Label>Notes</Label>
                             <Textarea

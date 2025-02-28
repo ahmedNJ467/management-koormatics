@@ -130,7 +130,9 @@ export function useClientForm(client?: Client | null) {
             role: member.role || "",
             email: member.email || "",
             phone: member.phone || "",
-            notes: member.notes || ""
+            notes: member.notes || "",
+            document_url: member.document_url || "",
+            document_name: member.document_name || ""
           })));
         } else {
           setMembers([]);
@@ -268,6 +270,8 @@ export function useClientForm(client?: Client | null) {
               email: member.email || null,
               phone: member.phone || null,
               notes: member.notes || null,
+              document_url: member.document_url || null,
+              document_name: member.document_name || null
             }));
 
             const { error: membersError } = await supabase
@@ -385,6 +389,8 @@ export function useClientForm(client?: Client | null) {
             email: member.email || null,
             phone: member.phone || null,
             notes: member.notes || null,
+            document_url: member.document_url || null,
+            document_name: member.document_name || null
           }));
 
           const { error: membersError } = await supabase

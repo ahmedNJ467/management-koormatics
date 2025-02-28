@@ -17,6 +17,8 @@ export const memberSchema = z.object({
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
   notes: z.string().optional(),
+  document_url: z.string().optional(),
+  document_name: z.string().optional(),
 });
 
 export const clientSchema = z.object({
