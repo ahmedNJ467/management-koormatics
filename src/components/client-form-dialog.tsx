@@ -6,6 +6,7 @@ import { DeleteClientDialog } from "./client-form/delete-client-dialog";
 import { ClientForm } from "./client-form/client-form";
 import { useClientDialog } from "./client-form/use-client-dialog";
 import { useClientFormSubmit } from "./client-form/use-client-form-submit";
+import { useCallback } from "react";
 
 interface Client {
   id: string;
@@ -58,11 +59,12 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     uploadClientDocument
   } = useClientForm(client);
 
-  const { handleSubmit: submitForm } = useClientFormSubmit();
+  const { handleSubmit: submitFormFn } = useClientFormSubmit();
   
-  const handleFormSubmit = async (values: any) => {
+  // Memoize the handleFormSubmit function to prevent recreation on each render
+  const handleFormSubmit = useCallback(async (values: any) => {
     try {
-      const result = await submitForm({
+      const result = await submitFormFn({
         client,
         values,
         profileUploadFn: uploadProfile,
@@ -79,7 +81,17 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
       console.error("Error submitting form:", error);
       return false;
     }
-  };
+  }, [
+    client,
+    uploadProfile,
+    documents,
+    documentFiles,
+    contacts,
+    members,
+    uploadClientDocument,
+    setIsSubmitting,
+    submitFormFn
+  ]);
 
   const dialogTitle = client 
     ? client.is_archived

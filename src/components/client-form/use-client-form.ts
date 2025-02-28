@@ -47,7 +47,7 @@ export function useClientForm(client: any | null) {
     resetProfile
   } = useClientProfile(client?.profile_image_url);
 
-  // Handle document upload with client ID if available
+  // Handle document upload with client ID if available - memoize callback
   const handleDocumentUpload = useCallback((files: FileList) => {
     if (client?.id) {
       return handleDocUpload(files, client.id);
@@ -56,7 +56,7 @@ export function useClientForm(client: any | null) {
     }
   }, [client?.id, handleDocUpload]);
 
-  // Function to upload document with client ID
+  // Function to upload document with client ID - memoize callback
   const uploadClientDocument = useCallback(async (files: FileList, clientId: string) => {
     try {
       return await handleDocUpload(files, clientId);
@@ -66,7 +66,7 @@ export function useClientForm(client: any | null) {
     }
   }, [handleDocUpload]);
 
-  // Reset form when client changes
+  // Reset form when client changes, but with proper dependency array
   useEffect(() => {
     if (client) {
       form.reset({
@@ -95,7 +95,7 @@ export function useClientForm(client: any | null) {
       resetProfile();
       resetDocuments();
     }
-  }, [client, form, resetProfile, resetDocuments]);
+  }, [client, form.reset, resetProfile, resetDocuments]); // Fixed dependency array
 
   return {
     form,

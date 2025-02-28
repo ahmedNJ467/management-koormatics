@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
 import { MemberFormValues } from "./types";
 import { MemberDocumentUpload } from "./member-document-upload";
+import { useCallback } from "react";
 
 interface MemberFormProps {
   isEditing: boolean;
@@ -28,25 +29,26 @@ export function MemberForm({
   onDocumentUploaded,
   onDocumentClear
 }: MemberFormProps) {
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoize handlers to prevent recreating them on every render
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onMemberChange({...member, name: e.target.value});
-  };
+  }, [member, onMemberChange]);
 
-  const handleRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRoleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onMemberChange({...member, role: e.target.value});
-  };
+  }, [member, onMemberChange]);
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onMemberChange({...member, email: e.target.value});
-  };
+  }, [member, onMemberChange]);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onMemberChange({...member, phone: e.target.value});
-  };
+  }, [member, onMemberChange]);
 
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleNotesChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onMemberChange({...member, notes: e.target.value});
-  };
+  }, [member, onMemberChange]);
 
   return (
     <div className="space-y-4 border p-4 rounded-md">
