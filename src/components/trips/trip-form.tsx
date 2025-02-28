@@ -388,13 +388,17 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Time</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        placeholder="HH:MM"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input
+                          type="time"
+                          className="pl-9"
+                          placeholder="HH:MM"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -406,13 +410,17 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>End Time</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        placeholder="HH:MM"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input
+                          type="time"
+                          className="pl-9"
+                          placeholder="HH:MM"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -424,9 +432,16 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Pickup Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter pickup location" {...field} />
-                    </FormControl>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter pickup location" 
+                          className="pl-9" 
+                          {...field} 
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -438,9 +453,16 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Dropoff Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter dropoff location" {...field} />
-                    </FormControl>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter dropoff location" 
+                          className="pl-9" 
+                          {...field} 
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
