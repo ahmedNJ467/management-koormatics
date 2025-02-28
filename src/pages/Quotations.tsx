@@ -276,6 +276,8 @@ export default function Quotations() {
   };
 
   const getStatusColor = (status: QuotationStatus) => {
+    if (!status) return 'bg-gray-100 text-gray-700';
+    
     switch (status) {
       case 'draft':
         return 'bg-gray-100 text-gray-700';
@@ -294,15 +296,32 @@ export default function Quotations() {
 
   // Format the ID to show only the short version
   const formatId = (id: string) => {
+    if (!id) return "UNKNOWN";
     // Return just the first 8 characters of the UUID
-    return id.substring(0, 8).toUpperCase();
+    try {
+      return id.substring(0, 8).toUpperCase();
+    } catch (error) {
+      console.error("Error formatting ID:", error);
+      return "UNKNOWN";
+    }
+  };
+
+  // Safe format function for dates
+  const safeFormatDate = (dateStr: string | undefined | null) => {
+    if (!dateStr) return "Unknown date";
+    try {
+      return format(new Date(dateStr), 'MMM d, yyyy');
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 
   // Only filter quotations if we have data and a search term
   const filteredQuotations = searchTerm && quotations 
     ? quotations.filter(quote => 
-        quote.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        quote.id.toLowerCase().includes(searchTerm.toLowerCase())
+        (quote.client_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (quote.id?.toLowerCase() || "").includes(searchTerm.toLowerCase())
       )
     : quotations;
 
@@ -365,15 +384,15 @@ export default function Quotations() {
               filteredQuotations.map((quote) => (
                 <TableRow key={quote.id}>
                   <TableCell className="font-medium">{formatId(quote.id)}</TableCell>
-                  <TableCell>{format(new Date(quote.date), 'MMM d, yyyy')}</TableCell>
-                  <TableCell>{quote.client_name}</TableCell>
+                  <TableCell>{safeFormatDate(quote.date)}</TableCell>
+                  <TableCell>{quote.client_name || "Unknown Client"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={`${getStatusColor(quote.status)}`}>
-                      {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                      {quote.status ? quote.status.charAt(0).toUpperCase() + quote.status.slice(1) : "Unknown"}
                     </Badge>
                   </TableCell>
-                  <TableCell>${quote.total_amount.toFixed(2)}</TableCell>
-                  <TableCell>{format(new Date(quote.valid_until), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>${Number(quote.total_amount || 0).toFixed(2)}</TableCell>
+                  <TableCell>{safeFormatDate(quote.valid_until)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -435,22 +454,22 @@ export default function Quotations() {
                 <div>
                   <h3 className="text-xl font-semibold">#{formatId(viewQuotation.id)}</h3>
                   <p className="text-muted-foreground">
-                    Created: {format(new Date(viewQuotation.date), 'MMM d, yyyy')}
+                    Created: {safeFormatDate(viewQuotation.date)}
                   </p>
                 </div>
                 <Badge variant="outline" className={`${getStatusColor(viewQuotation.status)}`}>
-                  {viewQuotation.status.charAt(0).toUpperCase() + viewQuotation.status.slice(1)}
+                  {viewQuotation.status ? viewQuotation.status.charAt(0).toUpperCase() + viewQuotation.status.slice(1) : "Unknown"}
                 </Badge>
               </div>
               
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Client</h4>
-                  <p>{viewQuotation.client_name}</p>
+                  <p>{viewQuotation.client_name || "Unknown Client"}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Valid Until</h4>
-                  <p>{format(new Date(viewQuotation.valid_until), 'MMM d, yyyy')}</p>
+                  <p>{safeFormatDate(viewQuotation.valid_until)}</p>
                 </div>
               </div>
               
@@ -474,17 +493,23 @@ export default function Quotations() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {viewQuotation.items.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.description}</TableCell>
-                          <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">${item.unit_price.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">${item.amount.toFixed(2)}</TableCell>
+                      {viewQuotation.items && Array.isArray(viewQuotation.items) ? (
+                        viewQuotation.items.map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{item?.description || "Unknown item"}</TableCell>
+                            <TableCell className="text-right">{item?.quantity || 0}</TableCell>
+                            <TableCell className="text-right">${Number(item?.unit_price || 0).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">${Number(item?.amount || 0).toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center">No items found</TableCell>
                         </TableRow>
-                      ))}
+                      )}
                       <TableRow>
                         <TableCell colSpan={3} className="text-right font-medium">Total:</TableCell>
-                        <TableCell className="text-right font-bold">${viewQuotation.total_amount.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-bold">${Number(viewQuotation.total_amount || 0).toFixed(2)}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
