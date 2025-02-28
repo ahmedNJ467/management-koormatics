@@ -11,30 +11,8 @@ export async function uploadMemberDocument(file: File, clientId: string, memberI
   try {
     console.log("Starting upload to bucket:", bucket, "with fileName:", fileName);
     
-    // First, check if the bucket exists
-    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-    
-    if (bucketError) {
-      console.error("Error listing buckets:", bucketError);
-      throw bucketError;
-    }
-    
-    const bucketExists = buckets?.some(b => b.name === bucket);
-    console.log("Bucket exists:", bucketExists);
-    
-    if (!bucketExists) {
-      console.log("Creating bucket:", bucket);
-      const { error: createBucketError } = await supabase.storage.createBucket(bucket, {
-        public: true
-      });
-      
-      if (createBucketError) {
-        console.error("Error creating bucket:", createBucketError);
-        throw createBucketError;
-      }
-    }
-
-    // Try to remove any existing file first (ignore errors)
+    // No need to check if bucket exists or create it since we've done that with SQL
+    // Just attempt to remove any existing file first (ignore errors)
     try {
       console.log("Attempting to remove existing file if any");
       await supabase.storage.from(bucket).remove([fileName]);
