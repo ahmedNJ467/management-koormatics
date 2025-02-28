@@ -1,12 +1,12 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { useClientForm } from "./client-form/use-client-form";
 import { ClientDocument } from "./client-form/types";
 import { DeleteClientDialog } from "./client-form/delete-client-dialog";
-import { ClientForm } from "./client-form/client-form";
 import { useClientDialog } from "./client-form/use-client-dialog";
 import { useClientFormSubmit } from "./client-form/use-client-form-submit";
-import { useCallback, useEffect } from "react";
+import { useCallback, useMemo } from "react";
+import { ClientDialogContent } from "./client-form/client-dialog-content";
 
 interface Client {
   id: string;
@@ -61,6 +61,14 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
 
   const { handleSubmit: submitFormFn } = useClientFormSubmit();
   
+  // Generate dialog title based on client state
+  const dialogTitle = useMemo(() => {
+    if (!client) return "Add New Client";
+    return client.is_archived 
+      ? `Archived Client: ${client.name}`
+      : `Edit Client: ${client.name}`;
+  }, [client]);
+  
   // Memoize the handleFormSubmit function to prevent recreation on each render
   const handleFormSubmit = useCallback(async (values: any) => {
     try {
@@ -95,12 +103,9 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     submitFormFn
   ]);
 
-  // Use effect to handle the title generation only when needed
-  const dialogTitle = client 
-    ? client.is_archived
-      ? `Archived Client: ${client.name}`
-      : `Edit Client: ${client.name}`
-    : "Add New Client";
+  const removeDocument = useCallback((docId: string) => {
+    setDocuments(documents.filter((doc) => doc.id !== docId));
+  }, [documents, setDocuments]);
 
   return (
     <>
@@ -110,43 +115,31 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
           onOpenChange(newOpen);
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>
-              {client?.is_archived 
-                ? "This client is archived. You can view its details or restore it."
-                : "Enter the client's information below. Required fields are marked with an asterisk."}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ClientForm
-            client={client}
-            form={form}
-            isSubmitting={isSubmitting}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            contacts={contacts}
-            setContacts={setContacts}
-            members={members}
-            setMembers={setMembers}
-            documents={documents}
-            documentFiles={documentFiles}
-            profilePreview={profilePreview}
-            handleProfileChange={handleProfileChange}
-            handleDocumentUpload={handleDocumentUpload}
-            removeDocument={(docId: string) => {
-              setDocuments(documents.filter((doc) => doc.id !== docId));
-            }}
-            onCancel={() => onOpenChange(false)}
-            onDelete={() => {
-              setShowDeleteConfirm(true);
-            }}
-            onRestore={client?.is_archived ? handleRestore : undefined}
-            handleSubmitForm={handleFormSubmit}
-            isArchived={!!client?.is_archived}
-          />
-        </DialogContent>
+        <ClientDialogContent
+          client={client}
+          dialogTitle={dialogTitle}
+          form={form}
+          isSubmitting={isSubmitting}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          contacts={contacts}
+          setContacts={setContacts}
+          members={members}
+          setMembers={setMembers}
+          documents={documents}
+          documentFiles={documentFiles}
+          profilePreview={profilePreview}
+          handleProfileChange={handleProfileChange}
+          handleDocumentUpload={handleDocumentUpload}
+          removeDocument={removeDocument}
+          onOpenChange={onOpenChange}
+          onDelete={() => {
+            setShowDeleteConfirm(true);
+          }}
+          onRestore={handleRestore}
+          handleFormSubmit={handleFormSubmit}
+          isArchived={!!client?.is_archived}
+        />
       </Dialog>
       
       <DeleteClientDialog 
