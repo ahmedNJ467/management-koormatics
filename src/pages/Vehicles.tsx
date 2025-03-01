@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Car, Trash2, Edit, X } from "lucide-react";
+import { Plus, Car, Trash2, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Vehicle } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { formatVehicleId } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Vehicles() {
   const { toast } = useToast();
@@ -31,6 +32,7 @@ export default function Vehicles() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [viewMode, setViewMode] = useState<"view" | "edit">("view");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { data: vehicles, isLoading, error } = useQuery({
     queryKey: ['vehicles'],
@@ -84,17 +86,34 @@ export default function Vehicles() {
   const closeVehicleDetails = () => {
     setSelectedVehicle(null);
     setViewMode("view");
+    setCurrentImageIndex(0);
+  };
+
+  const handleNextImage = () => {
+    if (!selectedVehicle?.vehicle_images) return;
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === selectedVehicle.vehicle_images.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  const handlePrevImage = () => {
+    if (!selectedVehicle?.vehicle_images) return;
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === 0 ? selectedVehicle.vehicle_images.length - 1 : prevIndex - 1
+    );
   };
 
   const VehicleDetailsDialog = () => {
     if (!selectedVehicle) return null;
+    
+    const hasMultipleImages = selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 1;
 
     return (
       <>
         <Dialog open={!!selectedVehicle} onOpenChange={closeVehicleDetails}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex justify-between items-center">
+              <DialogTitle className="flex justify-between items-center pr-10">
                 <span>Vehicle Details - {formatVehicleId(selectedVehicle.id)}</span>
                 <div className="flex gap-2">
                   {viewMode === "view" ? (
@@ -132,22 +151,70 @@ export default function Vehicles() {
 
             {viewMode === "view" ? (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 0 ? (
-                    selectedVehicle.vehicle_images.map((image, index) => (
+                {selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 0 ? (
+                  <div className="relative">
+                    <div className="w-full aspect-video bg-muted rounded-lg overflow-hidden relative">
                       <img
-                        key={index}
-                        src={image.image_url}
-                        alt={`Vehicle ${index + 1}`}
-                        className="w-full h-48 object-cover rounded-lg"
+                        src={selectedVehicle.vehicle_images[currentImageIndex].image_url}
+                        alt={`Vehicle ${currentImageIndex + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
                       />
-                    ))
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-48 bg-muted rounded-lg">
-                      <Car className="h-16 w-16 text-muted-foreground" />
+                      
+                      {hasMultipleImages && (
+                        <>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrevImage();
+                            }}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNextImage();
+                            }}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
-                  )}
-                </div>
+                    
+                    {selectedVehicle.vehicle_images.length > 3 && (
+                      <ScrollArea className="w-full h-24 mt-2">
+                        <div className="flex gap-2 p-1">
+                          {selectedVehicle.vehicle_images.map((image, index) => (
+                            <div 
+                              key={index} 
+                              className={`w-24 h-20 flex-shrink-0 cursor-pointer rounded-md overflow-hidden border-2 ${
+                                currentImageIndex === index ? 'border-primary' : 'border-transparent'
+                              }`}
+                              onClick={() => setCurrentImageIndex(index)}
+                            >
+                              <img
+                                src={image.image_url}
+                                alt={`Vehicle thumbnail ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center w-full h-48 bg-muted rounded-lg">
+                    <Car className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
