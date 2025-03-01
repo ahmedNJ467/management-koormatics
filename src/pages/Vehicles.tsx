@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -113,39 +112,8 @@ export default function Vehicles() {
         <Dialog open={!!selectedVehicle} onOpenChange={closeVehicleDetails}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex justify-between items-center pr-10">
-                <span>Vehicle Details - {formatVehicleId(selectedVehicle.id)}</span>
-                <div className="flex gap-2">
-                  {viewMode === "view" ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setViewMode("edit")}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setShowDeleteConfirm(true)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setViewMode("view")}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel Edit
-                    </Button>
-                  )}
-                </div>
+              <DialogTitle className="pr-10">
+                Vehicle Details - {formatVehicleId(selectedVehicle.id)}
               </DialogTitle>
             </DialogHeader>
 
@@ -158,6 +126,7 @@ export default function Vehicles() {
                         src={selectedVehicle.vehicle_images[currentImageIndex].image_url}
                         alt={`Vehicle ${currentImageIndex + 1}`}
                         className="w-full h-full object-cover rounded-lg"
+                        key={`main-image-${currentImageIndex}`}
                       />
                       
                       {hasMultipleImages && (
@@ -243,15 +212,43 @@ export default function Vehicles() {
                     <p className="text-muted-foreground">{selectedVehicle.notes}</p>
                   </div>
                 )}
+
+                <div className="flex justify-end gap-4 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setViewMode("edit")}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
               </div>
             ) : (
-              <VehicleFormDialog
-                open={true}
-                onOpenChange={() => {
-                  setViewMode("view");
-                }}
-                vehicle={selectedVehicle}
-              />
+              <div className="space-y-6">
+                <VehicleFormDialog
+                  open={true}
+                  onOpenChange={() => {
+                    setViewMode("view");
+                  }}
+                  vehicle={selectedVehicle}
+                />
+                <div className="flex justify-end pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setViewMode("view")}
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel Edit
+                  </Button>
+                </div>
+              </div>
             )}
           </DialogContent>
         </Dialog>
