@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,30 +83,37 @@ export default function Vehicles() {
     deleteMutation.mutate(id);
   };
 
-  const closeVehicleDetails = () => {
+  const closeVehicleDetails = useCallback(() => {
     setSelectedVehicle(null);
     setViewMode("view");
     setCurrentImageIndex(0);
-  };
+  }, []);
 
-  const handleNextImage = () => {
+  const handleNextImage = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!selectedVehicle?.vehicle_images) return;
     setCurrentImageIndex((prevIndex) => 
       prevIndex === selectedVehicle.vehicle_images.length - 1 ? 0 : prevIndex + 1
     );
-  };
+  }, [selectedVehicle]);
 
-  const handlePrevImage = () => {
+  const handlePrevImage = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!selectedVehicle?.vehicle_images) return;
     setCurrentImageIndex((prevIndex) => 
       prevIndex === 0 ? selectedVehicle.vehicle_images.length - 1 : prevIndex - 1
     );
-  };
+  }, [selectedVehicle]);
+
+  const selectThumbnail = useCallback((index: number) => {
+    setCurrentImageIndex(index);
+  }, []);
 
   const VehicleDetailsDialog = () => {
     if (!selectedVehicle) return null;
     
     const hasMultipleImages = selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 1;
+    const currentImage = selectedVehicle.vehicle_images?.[currentImageIndex]?.image_url;
 
     return (
       <>
@@ -122,12 +130,13 @@ export default function Vehicles() {
                 {selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 0 ? (
                   <div className="relative">
                     <div className="w-full aspect-video bg-muted rounded-lg overflow-hidden relative">
-                      <img
-                        src={selectedVehicle.vehicle_images[currentImageIndex].image_url}
-                        alt={`Vehicle ${currentImageIndex + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                        key={`main-image-${currentImageIndex}`}
-                      />
+                      {currentImage && (
+                        <img
+                          src={currentImage}
+                          alt={`Vehicle ${currentImageIndex + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      )}
                       
                       {hasMultipleImages && (
                         <>
@@ -135,10 +144,7 @@ export default function Vehicles() {
                             variant="outline" 
                             size="icon" 
                             className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePrevImage();
-                            }}
+                            onClick={handlePrevImage}
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </Button>
@@ -146,10 +152,7 @@ export default function Vehicles() {
                             variant="outline" 
                             size="icon" 
                             className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNextImage();
-                            }}
+                            onClick={handleNextImage}
                           >
                             <ChevronRight className="h-4 w-4" />
                           </Button>
@@ -162,11 +165,11 @@ export default function Vehicles() {
                         <div className="flex gap-2 p-1">
                           {selectedVehicle.vehicle_images.map((image, index) => (
                             <div 
-                              key={index} 
+                              key={`thumb-${index}`}
                               className={`w-24 h-20 flex-shrink-0 cursor-pointer rounded-md overflow-hidden border-2 ${
                                 currentImageIndex === index ? 'border-primary' : 'border-transparent'
                               }`}
-                              onClick={() => setCurrentImageIndex(index)}
+                              onClick={() => selectThumbnail(index)}
                             >
                               <img
                                 src={image.image_url}
