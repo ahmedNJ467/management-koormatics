@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ export default function Vehicles() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('vehicles').delete().eq('id', id);
       if (error) throw error;
+      return id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
@@ -64,6 +66,7 @@ export default function Vehicles() {
         description: "Vehicle has been successfully deleted",
       });
       setSelectedVehicle(null);
+      setShowDeleteConfirm(false);
     },
     onError: (error) => {
       toast({
@@ -75,9 +78,12 @@ export default function Vehicles() {
   });
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this vehicle?")) {
-      deleteMutation.mutate(id);
-    }
+    deleteMutation.mutate(id);
+  };
+
+  const closeVehicleDetails = () => {
+    setSelectedVehicle(null);
+    setViewMode("view");
   };
 
   const VehicleDetailsDialog = () => {
@@ -85,10 +91,7 @@ export default function Vehicles() {
 
     return (
       <>
-        <Dialog open={!!selectedVehicle} onOpenChange={() => {
-          setSelectedVehicle(null);
-          setViewMode("view");
-        }}>
+        <Dialog open={!!selectedVehicle} onOpenChange={closeVehicleDetails}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex justify-between items-center">
@@ -130,23 +133,29 @@ export default function Vehicles() {
             {viewMode === "view" ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {selectedVehicle.vehicle_images?.map((image, index) => (
-                    <img
-                      key={index}
-                      src={image.image_url}
-                      alt={`Vehicle ${index + 1}`}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  ))}
+                  {selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 0 ? (
+                    selectedVehicle.vehicle_images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image.image_url}
+                        alt={`Vehicle ${index + 1}`}
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-48 bg-muted rounded-lg">
+                      <Car className="h-16 w-16 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h3 className="font-semibold mb-2">Basic Information</h3>
                     <div className="space-y-2">
                       <p><span className="text-muted-foreground">Make:</span> {selectedVehicle.make}</p>
                       <p><span className="text-muted-foreground">Model:</span> {selectedVehicle.model}</p>
-                      <p><span className="text-muted-foreground">Type:</span> {selectedVehicle.type}</p>
+                      <p><span className="text-muted-foreground">Type:</span> {selectedVehicle.type.replace('_', ' ')}</p>
                       <p><span className="text-muted-foreground">Registration:</span> {selectedVehicle.registration}</p>
                     </div>
                   </div>
@@ -173,7 +182,6 @@ export default function Vehicles() {
                 open={true}
                 onOpenChange={() => {
                   setViewMode("view");
-                  setSelectedVehicle(null);
                 }}
                 vehicle={selectedVehicle}
               />
@@ -195,12 +203,10 @@ export default function Vehicles() {
               </Button>
               <Button 
                 variant="destructive" 
-                onClick={() => {
-                  handleDelete(selectedVehicle.id);
-                  setShowDeleteConfirm(false);
-                }}
+                onClick={() => handleDelete(selectedVehicle.id)}
+                disabled={deleteMutation.isPending}
               >
-                Delete
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </Button>
             </div>
           </DialogContent>
@@ -230,7 +236,7 @@ export default function Vehicles() {
           <div className="flex items-center justify-center p-8 text-destructive">
             Failed to load vehicles
           </div>
-        ) : (
+        ) : vehicles && vehicles.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -244,7 +250,7 @@ export default function Vehicles() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vehicles?.map((vehicle) => (
+              {vehicles.map((vehicle) => (
                 <TableRow 
                   key={vehicle.id} 
                   className="cursor-pointer hover:bg-muted/50"
@@ -252,7 +258,7 @@ export default function Vehicles() {
                 >
                   <TableCell>{formatVehicleId(vehicle.id)}</TableCell>
                   <TableCell>
-                    {vehicle.vehicle_images?.[0] ? (
+                    {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
                       <img
                         src={vehicle.vehicle_images[0].image_url}
                         alt={`${vehicle.make} ${vehicle.model}`}
@@ -275,6 +281,15 @@ export default function Vehicles() {
               ))}
             </TableBody>
           </Table>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <Car className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium">No vehicles found</h3>
+            <p className="text-muted-foreground mb-4">Add your first vehicle to get started.</p>
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+            </Button>
+          </div>
         )}
       </div>
 
