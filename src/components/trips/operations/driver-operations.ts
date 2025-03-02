@@ -10,7 +10,7 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
     trip_id: tripId,
     driver_id: driverId,
     assigned_at: new Date().toISOString(),
-    status: "pending",
+    status: "pending", // Using the valid "pending" status value
   });
   
   if (assignmentError) throw assignmentError;
@@ -45,12 +45,12 @@ export const handleAssignDriver = async (
   if (!tripToAssign || !assignDriver) return;
   
   try {
-    // Skip the RPC and use direct insertion
+    // Use the correct status value
     const { error } = await supabase.from('trip_assignments').insert({
       trip_id: tripToAssign.id,
       driver_id: assignDriver,
       assigned_at: new Date().toISOString(),
-      status: "pending",
+      status: "pending", // Using the valid "pending" status value
       notes: assignNote || null
     });
     

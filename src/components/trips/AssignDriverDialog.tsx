@@ -53,30 +53,28 @@ export function AssignDriverDialog({
     setIsLoading(true);
     
     try {
-      // Create assignment record
+      // Create assignment record with valid status value
       const { error: assignmentError } = await supabase
         .from("trip_assignments")
         .insert({
           trip_id: tripToAssign.id,
           driver_id: selectedDriver,
           notes: assignmentNote,
-          status: "assigned"
+          status: "pending" // Using "pending" instead of "assigned"
         });
 
       if (assignmentError) throw assignmentError;
 
-      // Update trip status if needed
-      if (tripToAssign.status === "scheduled") {
-        const { error: updateError } = await supabase
-          .from("trips")
-          .update({ 
-            // Store status in notes with a prefix instead of special_instructions
-            notes: `STATUS:assigned\n\n${tripToAssign.notes ? tripToAssign.notes.replace(/^STATUS:[a-z_]+\n\n/i, '') : ''}`
-          })
-          .eq("id", tripToAssign.id);
+      // Update trip with new driver ID
+      const { error: updateError } = await supabase
+        .from("trips")
+        .update({ 
+          driver_id: selectedDriver,
+          status: tripToAssign.status // Keep the current status
+        })
+        .eq("id", tripToAssign.id);
 
-        if (updateError) throw updateError;
-      }
+      if (updateError) throw updateError;
       
       toast({
         title: "Driver assigned",
@@ -105,24 +103,24 @@ export function AssignDriverDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-slate-900/90 dark:bg-slate-900 border border-slate-800">
         <DialogHeader>
-          <DialogTitle>Assign Driver</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-white">Assign Driver</DialogTitle>
+          <DialogDescription className="text-slate-400">
             Assign a driver to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="driver">Select Driver</Label>
+            <Label htmlFor="driver" className="text-slate-300">Select Driver</Label>
             <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-300">
                 <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-800 border-slate-700 text-slate-300">
                 {drivers.map((driver) => (
-                  <SelectItem key={driver.id} value={driver.id}>
+                  <SelectItem key={driver.id} value={driver.id} className="text-slate-300 hover:bg-slate-700 focus:bg-slate-700">
                     {driver.name}
                   </SelectItem>
                 ))}
@@ -131,23 +129,25 @@ export function AssignDriverDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Assignment Notes</Label>
+            <Label htmlFor="notes" className="text-slate-300">Assignment Notes</Label>
             <Textarea
               id="notes"
               placeholder="Add any notes about this assignment..."
               value={assignmentNote}
               onChange={(e) => setAssignmentNote(e.target.value)}
+              className="bg-slate-800 border-slate-700 text-slate-300 placeholder:text-slate-500"
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700">
             Cancel
           </Button>
           <Button 
             onClick={handleAssign} 
             disabled={!selectedDriver || isLoading}
+            className="bg-indigo-700 hover:bg-indigo-600 text-white"
           >
             {isLoading ? "Assigning..." : "Assign Driver"}
           </Button>
