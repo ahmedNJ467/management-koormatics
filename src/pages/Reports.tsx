@@ -1,3 +1,4 @@
+<lov-code>
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -245,6 +246,25 @@ const Reports = () => {
     });
   };
 
+  const formatClientWithPassengers = (trip: any) => {
+    let clientDisplay = trip.clients?.name || 'N/A';
+    
+    // Add organization type if available
+    if (trip.client_type === 'organization') {
+      clientDisplay += '\nOrganization';
+      
+      // Add passenger count and list if available
+      if (trip.passengers && trip.passengers.length > 0) {
+        clientDisplay += `\n${trip.passengers.length} passengers`;
+        trip.passengers.forEach((passenger: string) => {
+          clientDisplay += `\n- ${passenger}`;
+        });
+      }
+    }
+    
+    return clientDisplay;
+  };
+
   const exportToPDF = (data: any[], title: string, filename: string) => {
     if (!data || data.length === 0) return;
     
@@ -271,7 +291,7 @@ const Reports = () => {
     if (filename === 'trips-report') {
       tableHeaders = [
         'Date', 
-        'Client/Passenger',
+        'Client',
         'Service Type', 
         'Pick-up Address', 
         'Drop-off Address',
@@ -283,7 +303,7 @@ const Reports = () => {
       
       tableData = data.map(trip => [
         format(new Date(trip.date), 'MM/dd/yyyy'),
-        trip.clients?.name || 'N/A',
+        formatClientWithPassengers(trip),
         trip.display_type || 'N/A',
         trip.pickup_location || 'N/A',
         trip.dropoff_location || 'N/A',
@@ -358,6 +378,8 @@ const Reports = () => {
       styles: {
         fontSize: 9,
         cellPadding: 0.1,
+        lineWidth: 0.1,
+        lineColor: [200, 200, 200]
       },
       headStyles: {
         fillColor: [66, 139, 202],
@@ -369,6 +391,19 @@ const Reports = () => {
       },
       margin: { top: 1.5, left: 0.5, right: 0.5, bottom: 0.5 },
       tableWidth: 'auto',
+      didDrawCell: (data) => {
+        // Customize cell rendering as needed
+        if (data.section === 'body' && data.column.index === 1) {
+          // Apply special formatting to client column (index 1)
+          const cell = data.cell;
+          const text = cell.text;
+          
+          if (text.includes('\n')) {
+            // For multiline content, adjust cell padding
+            doc.setFontSize(8);
+          }
+        }
+      },
       didDrawPage: (data) => {
         const pageSize = doc.internal.pageSize;
         const pageHeight = pageSize.height;
@@ -830,104 +865,4 @@ const Reports = () => {
                       </TableRow>
                     ) : tripsData && tripsData.length > 0 ? (
                       tripsData.map((trip) => (
-                        <TableRow key={trip.id}>
-                          <TableCell>{format(new Date(trip.date), 'MMM dd, yyyy')}</TableCell>
-                          <TableCell>{trip.clients?.name}</TableCell>
-                          <TableCell>{trip.pickup_location || 'N/A'}</TableCell>
-                          <TableCell>{trip.dropoff_location || 'N/A'}</TableCell>
-                          <TableCell>
-                            {trip.vehicles?.make} {trip.vehicles?.model}
-                          </TableCell>
-                          <TableCell>{trip.drivers?.name}</TableCell>
-                          <TableCell>{trip.status}</TableCell>
-                          <TableCell className="text-right">${Number(trip.amount).toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center">No data available</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="drivers" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <CardTitle>Drivers Report</CardTitle>
-                <CardDescription>Overview of all drivers</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => exportToPDF(driversData || [], 'Drivers Report', 'drivers-report')}
-                >
-                  <FileDown className="mr-2 h-4 w-4" />
-                  PDF
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => exportToCSV(driversData || [], 'drivers-report')}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  CSV
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>License Type</TableHead>
-                      <TableHead>License No.</TableHead>
-                      <TableHead>Expiry</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingDrivers ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center">Loading...</TableCell>
-                      </TableRow>
-                    ) : driversData && driversData.length > 0 ? (
-                      driversData.map((driver) => (
-                        <TableRow key={driver.id}>
-                          <TableCell>{driver.name}</TableCell>
-                          <TableCell>{driver.contact || 'N/A'}</TableCell>
-                          <TableCell>{driver.license_type || 'N/A'}</TableCell>
-                          <TableCell>{driver.license_number}</TableCell>
-                          <TableCell>
-                            {driver.license_expiry 
-                              ? format(new Date(driver.license_expiry), 'MMM dd, yyyy')
-                              : 'N/A'}
-                          </TableCell>
-                          <TableCell>{driver.status}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center">No data available</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
-
-export default Reports;
+                        <TableRow key={trip.
