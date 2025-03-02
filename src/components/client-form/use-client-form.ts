@@ -41,6 +41,7 @@ export function useClientForm(client: any | null) {
     resetDocuments
   } = useClientDocuments(client?.documents || []);
   const {
+    profileFile,
     profilePreview,
     handleProfileChange,
     uploadProfile,
@@ -113,6 +114,7 @@ export function useClientForm(client: any | null) {
     setDocuments,
     documentFiles,
     setDocumentFiles,
+    profileFile,
     profilePreview,
     handleProfileChange,
     handleDocumentUpload,

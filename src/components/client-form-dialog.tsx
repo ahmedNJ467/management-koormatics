@@ -42,7 +42,8 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     handleProfileChange,
     handleDocumentUpload,
     uploadProfile,
-    uploadClientDocument
+    uploadClientDocument,
+    profileFile
   } = useClientForm(client);
   
   // Close form after successful submission
@@ -59,7 +60,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   // Generate dialog title based on client state
   const dialogTitle = useMemo(() => {
     if (!client) return "Add New Client";
-    return (client.archived || client.is_archived) 
+    return (client.is_archived || client.archived) 
       ? `Archived Client: ${client.name}`
       : `Edit Client: ${client.name}`;
   }, [client]);
@@ -72,8 +73,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
       // Create adapter functions to match the expected types
       const profileUploadAdapter = async (file: File): Promise<string> => {
         if (!file) return '';
-        // uploadProfile function expects a File, but the original code was passing clientId
-        // We need to call uploadProfile correctly with the file itself
+        // Use the uploadProfile function with the file itself
         const result = await uploadProfile(file);
         return result || '';
       };
@@ -98,6 +98,11 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         documentFiles.forEach((file, index) => {
           documentFilesRecord[`file_${index}`] = file;
         });
+      }
+      
+      // Pass profileFile directly to form values if it exists
+      if (profileFile) {
+        values.profile_image_file = profileFile;
       }
       
       const result = await submitFormFn({
@@ -130,7 +135,8 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     members,
     uploadClientDocument,
     setIsSubmitting,
-    submitFormFn
+    submitFormFn,
+    profileFile
   ]);
 
   const removeDocument = useCallback((docId: string) => {
