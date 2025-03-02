@@ -136,22 +136,22 @@ export const getStatusColor = (status: TripStatus): string => {
   }
 };
 
-// Get appropriate icon based on service type
-export const getTripTypeIcon = (type: TripType) => {
+// Get appropriate icon name based on service type
+export const getTripTypeIcon = (type: TripType): { icon: string, size: string } => {
   switch (type) {
     case "airport_pickup":
     case "airport_dropoff":
-      return <Plane className="h-4 w-4" />;
+      return { icon: "plane", size: "h-4 w-4" };
     case "other":
-      return <ArrowRight className="h-4 w-4" />;
+      return { icon: "arrow-right", size: "h-4 w-4" };
     case "hourly":
-      return <Clock className="h-4 w-4" />;
+      return { icon: "clock", size: "h-4 w-4" };
     case "full_day":
-      return <Calendar className="h-4 w-4" />;
+      return { icon: "calendar", size: "h-4 w-4" };
     case "multi_day":
-      return <Calendar className="h-4 w-4" />;
+      return { icon: "calendar", size: "h-4 w-4" };
     default:
-      return <ArrowRight className="h-4 w-4" />;
+      return { icon: "arrow-right", size: "h-4 w-4" };
   }
 };
 
