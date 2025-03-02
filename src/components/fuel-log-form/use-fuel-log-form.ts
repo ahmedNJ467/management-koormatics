@@ -97,6 +97,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     if (volume && pricePerLiter) {
       const calculatedCost = volume * pricePerLiter;
       form.setValue("cost", Number(calculatedCost.toFixed(2)));
+    } else {
+      form.setValue("cost", 0);
     }
   }, [volume, pricePerLiter, form]);
 
@@ -105,6 +107,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     if (currentMileage >= 0 && previousMileage >= 0) {
       const distance = Math.max(0, currentMileage - previousMileage);
       form.setValue("mileage", distance);
+    } else {
+      form.setValue("mileage", 0);
     }
   }, [currentMileage, previousMileage, form]);
 

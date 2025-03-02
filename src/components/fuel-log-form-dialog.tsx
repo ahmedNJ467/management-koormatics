@@ -132,9 +132,9 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
                 id="cost"
                 type="number"
                 step="0.01"
-                {...form.register("cost", { valueAsNumber: true })}
+                value={form.watch("cost")}
                 readOnly
-                className="bg-gray-100"
+                className="bg-background border border-input"
               />
               <p className="text-xs text-muted-foreground">
                 Calculated: Volume × Price per Liter
@@ -187,9 +187,9 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
               <Input
                 id="mileage"
                 type="number"
-                {...form.register("mileage", { valueAsNumber: true })}
+                value={form.watch("mileage")}
                 readOnly
-                className="bg-gray-100"
+                className="bg-background border border-input"
               />
               <p className="text-xs text-muted-foreground">
                 Calculated: Current Mileage − Previous Mileage
