@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,9 +56,9 @@ const CostAnalytics = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('maintenance')
-        .select('cost, category, service_date, vehicle_id, vehicles(make, model, registration)')
-        .gte('service_date', `${selectedYear}-01-01`)
-        .lte('service_date', `${selectedYear}-12-31`);
+        .select('cost, description, date, vehicle_id, vehicles(make, model, registration)')
+        .gte('date', `${selectedYear}-01-01`)
+        .lte('date', `${selectedYear}-12-31`);
       
       if (error) {
         toast({
@@ -117,7 +116,7 @@ const CostAnalytics = () => {
     
     if (maintenanceData) {
       maintenanceData.forEach(item => {
-        const month = new Date(item.service_date).getMonth();
+        const month = new Date(item.date).getMonth();
         monthlyData[month].maintenance += Number(item.cost);
       });
     }
@@ -196,7 +195,7 @@ const CostAnalytics = () => {
     
     if (maintenanceData) {
       maintenanceData.forEach(item => {
-        const category = item.category || 'Uncategorized';
+        const category = item.description.split(' ')[0] || 'Uncategorized';
         if (!categories[category]) {
           categories[category] = 0;
         }
