@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -35,7 +35,6 @@ import {
 import {
   Plus,
   Search,
-  Calendar as CalendarIcon,
   Car,
   User,
   MapPin,
@@ -58,7 +57,6 @@ import {
   TripType,
   Trip,
   DisplayTrip,
-  TripAssignment,
   tripTypeDisplayMap
 } from "@/lib/types/trip";
 import { TripMessageData, TripAssignmentData } from "@/components/trips/types";
@@ -109,6 +107,412 @@ const formatTime = (timeString?: string) => {
   } catch (error) {
     return timeString;
   }
+};
+
+// Create Trip Form Component
+const CreateTripForm = ({ clients, vehicles, drivers, onCreate, onClose }: { 
+  clients: any[], 
+  vehicles: any[], 
+  drivers: any[], 
+  onCreate: (data: any) => void, 
+  onClose: () => void 
+}) => {
+  const [formData, setFormData] = useState<Partial<Trip>>({
+    client_id: '',
+    vehicle_id: '',
+    driver_id: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    type: 'other' as TripType,
+    status: 'scheduled' as TripStatus,
+    amount: 0,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'amount' ? parseFloat(value) : value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onCreate(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="client_id">Client</Label>
+          <Select name="client_id" value={formData.client_id} onValueChange={(value) => setFormData({ ...formData, client_id: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select client" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="vehicle_id">Vehicle</Label>
+          <Select name="vehicle_id" value={formData.vehicle_id} onValueChange={(value) => setFormData({ ...formData, vehicle_id: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select vehicle" />
+            </SelectTrigger>
+            <SelectContent>
+              {vehicles.map((vehicle) => (
+                <SelectItem key={vehicle.id} value={vehicle.id}>
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="driver_id">Driver</Label>
+          <Select name="driver_id" value={formData.driver_id} onValueChange={(value) => setFormData({ ...formData, driver_id: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select driver" />
+            </SelectTrigger>
+            <SelectContent>
+              {drivers.map((driver) => (
+                <SelectItem key={driver.id} value={driver.id}>
+                  {driver.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="date">Date</Label>
+          <Input
+            type="date"
+            id="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="start_time">Start Time</Label>
+          <Input
+            type="time"
+            id="start_time"
+            name="start_time"
+            value={formData.start_time || ''}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="end_time">End Time</Label>
+          <Input
+            type="time"
+            id="end_time"
+            name="end_time"
+            value={formData.end_time || ''}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="type">Trip Type</Label>
+          <Select name="type" value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as TripType })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(tripTypeDisplayMap).map(([key, value]) => (
+                <SelectItem key={key} value={key}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select name="status" value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as TripStatus })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="amount">Amount</Label>
+          <Input
+            type="number"
+            id="amount"
+            name="amount"
+            min="0"
+            step="0.01"
+            value={formData.amount}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="pickup_location">Pickup Location</Label>
+        <Input
+          id="pickup_location"
+          name="pickup_location"
+          value={formData.pickup_location || ''}
+          onChange={handleChange}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="dropoff_location">Dropoff Location</Label>
+        <Input
+          id="dropoff_location"
+          name="dropoff_location"
+          value={formData.dropoff_location || ''}
+          onChange={handleChange}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          value={formData.notes || ''}
+          onChange={handleChange}
+        />
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit">Create Trip</Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
+// Edit Trip Form Component
+const EditTripForm = ({ trip, clients, vehicles, drivers, onEdit, onClose }: { 
+  trip: DisplayTrip, 
+  clients: any[], 
+  vehicles: any[], 
+  drivers: any[], 
+  onEdit: (data: any) => void, 
+  onClose: () => void 
+}) => {
+  const [formData, setFormData] = useState<Partial<Trip>>({
+    client_id: trip.client_id,
+    vehicle_id: trip.vehicle_id,
+    driver_id: trip.driver_id,
+    date: trip.date,
+    start_time: trip.start_time,
+    end_time: trip.end_time,
+    type: trip.type,
+    status: trip.status,
+    amount: trip.amount,
+    pickup_location: trip.pickup_location,
+    dropoff_location: trip.dropoff_location,
+    notes: trip.notes,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'amount' ? parseFloat(value) : value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onEdit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="client_id">Client</Label>
+          <Select name="client_id" value={formData.client_id} onValueChange={(value) => setFormData({ ...formData, client_id: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select client" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="vehicle_id">Vehicle</Label>
+          <Select name="vehicle_id" value={formData.vehicle_id} onValueChange={(value) => setFormData({ ...formData, vehicle_id: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select vehicle" />
+            </SelectTrigger>
+            <SelectContent>
+              {vehicles.map((vehicle) => (
+                <SelectItem key={vehicle.id} value={vehicle.id}>
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="driver_id">Driver</Label>
+          <Select name="driver_id" value={formData.driver_id} onValueChange={(value) => setFormData({ ...formData, driver_id: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select driver" />
+            </SelectTrigger>
+            <SelectContent>
+              {drivers.map((driver) => (
+                <SelectItem key={driver.id} value={driver.id}>
+                  {driver.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="date">Date</Label>
+          <Input
+            type="date"
+            id="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="start_time">Start Time</Label>
+          <Input
+            type="time"
+            id="start_time"
+            name="start_time"
+            value={formData.start_time || ''}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="end_time">End Time</Label>
+          <Input
+            type="time"
+            id="end_time"
+            name="end_time"
+            value={formData.end_time || ''}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="type">Trip Type</Label>
+          <Select name="type" value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as TripType })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(tripTypeDisplayMap).map(([key, value]) => (
+                <SelectItem key={key} value={key}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select name="status" value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as TripStatus })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="amount">Amount</Label>
+          <Input
+            type="number"
+            id="amount"
+            name="amount"
+            min="0"
+            step="0.01"
+            value={formData.amount}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="pickup_location">Pickup Location</Label>
+        <Input
+          id="pickup_location"
+          name="pickup_location"
+          value={formData.pickup_location || ''}
+          onChange={handleChange}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="dropoff_location">Dropoff Location</Label>
+        <Input
+          id="dropoff_location"
+          name="dropoff_location"
+          value={formData.dropoff_location || ''}
+          onChange={handleChange}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          value={formData.notes || ''}
+          onChange={handleChange}
+        />
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit">Update Trip</Button>
+      </DialogFooter>
+    </form>
+  );
 };
 
 const Trips = () => {
@@ -248,7 +652,7 @@ const Trips = () => {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('status', 'active');
+        .eq('is_archived', false);
       
       if (error) {
         toast({
@@ -548,10 +952,21 @@ const Trips = () => {
   };
 
   // Create a new trip
-  const handleCreateTrip = async (tripData: Partial<Trip>) => {
+  const handleCreateTrip = async (tripData: Trip) => {
+    // Ensure all required fields are present
+    const requiredFields = {
+      client_id: tripData.client_id,
+      vehicle_id: tripData.vehicle_id,
+      driver_id: tripData.driver_id,
+      date: tripData.date,
+      type: tripData.type,
+      status: tripData.status,
+      amount: tripData.amount
+    };
+    
     const { error } = await supabase
       .from('trips')
-      .insert(tripData);
+      .insert(requiredFields);
     
     if (error) {
       toast({
@@ -577,7 +992,20 @@ const Trips = () => {
     
     const { error } = await supabase
       .from('trips')
-      .update(tripData)
+      .update({
+        client_id: tripData.client_id,
+        vehicle_id: tripData.vehicle_id,
+        driver_id: tripData.driver_id,
+        date: tripData.date,
+        start_time: tripData.start_time,
+        end_time: tripData.end_time,
+        type: tripData.type,
+        status: tripData.status,
+        amount: tripData.amount,
+        pickup_location: tripData.pickup_location,
+        dropoff_location: tripData.dropoff_location,
+        notes: tripData.notes
+      })
       .eq('id', selectedTrip.id);
     
     if (error) {
@@ -1188,22 +1616,6 @@ const Trips = () => {
       </Dialog>
     </div>
   );
-};
-
-// Create placeholder components for referenced but undefined components
-const CreateTripForm = ({ clients, vehicles, drivers, onCreate, onClose }) => {
-  // Placeholder component
-  return <div>Trip form placeholder</div>;
-};
-
-const EditTripForm = ({ trip, clients, vehicles, drivers, onEdit, onClose }) => {
-  // Placeholder component
-  return <div>Edit form placeholder</div>;
-};
-
-const TripMessages = ({ trip, messages, onSendMessage, onClose }) => {
-  // Placeholder component
-  return <div>Messages placeholder</div>;
 };
 
 export default Trips;
