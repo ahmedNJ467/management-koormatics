@@ -1,4 +1,3 @@
-
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
 
@@ -162,7 +161,7 @@ export const mapTripTypeToDbServiceType = (type: TripType): DbServiceType => {
     case 'other':
     default:
       // Default to a service type the database accepts
-      return 'other' as DbServiceType;
+      return 'one_way_transfer' as DbServiceType;
   }
 };
 
