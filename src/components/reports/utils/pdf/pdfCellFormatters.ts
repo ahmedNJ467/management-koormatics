@@ -1,3 +1,4 @@
+
 import jsPDF from "jspdf";
 import { TextOptionsLight } from "jspdf";
 import { pdfColors } from "./pdfStyles";
@@ -48,7 +49,8 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       
       // Draw passenger names with normal font and bullet points
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(200, 200, 200); // Light gray for passenger names
+      doc.setTextColor(255, 255, 255); // White for passenger names instead of light gray
+      doc.setFontSize(8); // Slightly smaller font size for passengers
       
       // Find the index where passengers start
       const passengerStartIndex = textLines.findIndex(line => line.startsWith('Passengers:')) + 1;
