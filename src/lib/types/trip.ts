@@ -77,16 +77,17 @@ export function convertToDisplayTrip(trip: any, clientMap?: Map<string, any>, ve
     ...trip,
     type,
     status,
-    client_name: clientMap?.get(trip.client_id)?.name || trip.client_name || 'Unknown Client',
-    client_type: clientMap?.get(trip.client_id)?.type || trip.client_type,
+    client_name: clientMap?.get(trip.client_id)?.name || trip.client_name || trip.clients?.name || 'Unknown Client',
+    client_type: clientMap?.get(trip.client_id)?.type || trip.client_type || trip.clients?.type,
     vehicle_details: vehicleMap?.get(trip.vehicle_id)?.make 
       ? `${vehicleMap.get(trip.vehicle_id).make} ${vehicleMap.get(trip.vehicle_id).model}` 
-      : trip.vehicle_details || 'Unknown Vehicle',
-    driver_name: driverMap?.get(trip.driver_id)?.name || trip.driver_name || 'Unknown Driver',
-    driver_avatar: driverMap?.get(trip.driver_id)?.avatar_url || trip.driver_avatar,
-    driver_contact: driverMap?.get(trip.driver_id)?.contact || trip.driver_contact,
+      : trip.vehicle_details || 
+        (trip.vehicles ? `${trip.vehicles.make || ''} ${trip.vehicles.model || ''} ${trip.vehicles.registration ? `(${trip.vehicles.registration})` : ''}`.trim() : 'Unknown Vehicle'),
+    driver_name: driverMap?.get(trip.driver_id)?.name || trip.driver_name || trip.drivers?.name || 'Unknown Driver',
+    driver_avatar: driverMap?.get(trip.driver_id)?.avatar_url || trip.driver_avatar || trip.drivers?.avatar_url,
+    driver_contact: driverMap?.get(trip.driver_id)?.contact || trip.driver_contact || trip.drivers?.contact,
     special_notes: trip.special_notes || trip.special_instructions || trip.notes || '',
-    ui_service_type: tripTypeDisplayMap[trip.type as TripType] || 'Other Service',
+    ui_service_type: trip.ui_service_type || tripTypeDisplayMap[trip.type as TripType] || 'Other Service',
     // Ensure all required fields from Trip interface are present with defaults
     start_time: trip.start_time || trip.time,
     end_time: trip.end_time || trip.return_time,
