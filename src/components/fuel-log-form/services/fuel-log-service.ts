@@ -23,7 +23,8 @@ export async function getLatestMileage(vehicleId: string) {
     .order('date', { ascending: false })
     .limit(1);
   
-  if (error || !data || data.length === 0) return 0;
+  if (error) throw error;
+  if (!data || data.length === 0) return 0;
   return data[0]?.current_mileage || 0;
 }
 

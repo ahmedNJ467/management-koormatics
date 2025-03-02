@@ -68,11 +68,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
         const lastMileage = await getLatestMileage(vehicleId);
         form.setValue("previous_mileage", lastMileage);
         
-        // If current mileage is not set or less than previous, default it to the previous
-        const currentMileage = form.getValues("current_mileage");
-        if (currentMileage === 0 || currentMileage < lastMileage) {
-          form.setValue("current_mileage", lastMileage);
-        }
+        // Clear current mileage so user can fill it
+        form.setValue("current_mileage", 0);
       } catch (error) {
         console.error("Error fetching latest mileage:", error);
       }

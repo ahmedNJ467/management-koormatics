@@ -24,6 +24,8 @@ export function MileageFields({ form }: MileageFieldsProps) {
                 form.setValue("previous_mileage", isNaN(value) ? 0 : value);
               }
             })}
+            readOnly
+            className="bg-gray-100"
           />
           {form.formState.errors.previous_mileage && (
             <p className="text-sm text-destructive">{form.formState.errors.previous_mileage.message}</p>
@@ -38,6 +40,7 @@ export function MileageFields({ form }: MileageFieldsProps) {
           <Input
             id="current_mileage"
             type="number"
+            placeholder="Enter current odometer reading"
             {...form.register("current_mileage", { 
               valueAsNumber: true,
               onChange: (e) => {
@@ -59,7 +62,7 @@ export function MileageFields({ form }: MileageFieldsProps) {
           type="number"
           value={form.watch("mileage")}
           readOnly
-          className="bg-background border border-input"
+          className="bg-gray-100 border border-input"
         />
         <p className="text-xs text-muted-foreground">
           Calculated: Current Mileage − Previous Mileage
