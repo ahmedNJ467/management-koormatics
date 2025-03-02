@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CostSummaryCards } from "@/components/cost-analytics/CostSummaryCards";
 import { OverviewTab } from "@/components/cost-analytics/OverviewTab";
@@ -11,6 +11,8 @@ import { DetailsTab } from "@/components/cost-analytics/DetailsTab";
 import { ComparisonTab } from "@/components/cost-analytics/ComparisonTab";
 import { useCostAnalyticsData } from "@/hooks/use-cost-analytics-data";
 import { useCostDataCalculations } from "@/hooks/use-cost-data-calculations";
+import { AlertCircle, Loader } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const CostAnalytics = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
@@ -43,6 +45,18 @@ const CostAnalytics = () => {
     comparisonYear
   );
 
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
+  // If comparison tab is active but comparison year is removed, switch to overview
+  if (activeTab === "comparison" && !comparisonYear) {
+    setActiveTab("overview");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -51,8 +65,8 @@ const CostAnalytics = () => {
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Compare with:</span>
             <Select 
-              value={comparisonYear || ''} 
-              onValueChange={(value) => setComparisonYear(value || null)}
+              value={comparisonYear || ""} 
+              onValueChange={(value) => setComparisonYear(value === "" ? null : value)}
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Select year" />
@@ -85,25 +99,48 @@ const CostAnalytics = () => {
         </div>
       </div>
 
+      {/* Loading state */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-lg">Loading cost data...</span>
+        </div>
+      )}
+
+      {/* Error state if no data available */}
+      {!isLoading && vehicleCosts.length === 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No data available</AlertTitle>
+          <AlertDescription>
+            There is no cost data available for the selected year. Please try selecting a different year or add some cost data.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Cost Summary Cards */}
-      <CostSummaryCards summaryCosts={summaryCosts} selectedYear={selectedYear} />
+      {!isLoading && vehicleCosts.length > 0 && (
+        <>
+          <CostSummaryCards summaryCosts={summaryCosts} selectedYear={selectedYear} />
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="vehicles">By Vehicle</TabsTrigger>
-          <TabsTrigger value="details">Detailed Records</TabsTrigger>
-          {comparisonYear && <TabsTrigger value="comparison">Comparison</TabsTrigger>}
-        </TabsList>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="categories">Categories</TabsTrigger>
+              <TabsTrigger value="vehicles">By Vehicle</TabsTrigger>
+              <TabsTrigger value="details">Detailed Records</TabsTrigger>
+              {comparisonYear && <TabsTrigger value="comparison">Comparison</TabsTrigger>}
+            </TabsList>
 
-        {/* Tab Contents */}
-        <OverviewTab monthlyData={monthlyData} />
-        <CategoriesTab maintenanceCategories={maintenanceCategories} fuelTypes={fuelTypes} />
-        <VehiclesTab vehicleCosts={vehicleCosts} />
-        <DetailsTab vehicleCosts={vehicleCosts} />
-        <ComparisonTab comparisonData={yearComparison} />
-      </Tabs>
+            {/* Tab Contents */}
+            <OverviewTab monthlyData={monthlyData} />
+            <CategoriesTab maintenanceCategories={maintenanceCategories} fuelTypes={fuelTypes} />
+            <VehiclesTab vehicleCosts={vehicleCosts} />
+            <DetailsTab vehicleCosts={vehicleCosts} />
+            {comparisonYear && <ComparisonTab comparisonData={yearComparison} />}
+          </Tabs>
+        </>
+      )}
     </div>
   );
 };
