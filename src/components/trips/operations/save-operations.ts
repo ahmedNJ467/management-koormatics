@@ -58,7 +58,7 @@ export const handleSaveTrip = async (
           service_type: dbServiceType,
           pickup_location: formData.get("pickup_location") as string || null,
           dropoff_location: formData.get("dropoff_location") as string || null,
-          special_instructions: notes || null,
+          notes: notes || null,
         })
         .eq("id", editTrip.id);
       
@@ -106,7 +106,7 @@ export const handleSaveTrip = async (
           amount: 0, // Default amount
           pickup_location: formData.get("pickup_location") as string || null,
           dropoff_location: formData.get("dropoff_location") as string || null,
-          special_instructions: notes || null,
+          notes: notes || null,
         });
       
       if (error) {

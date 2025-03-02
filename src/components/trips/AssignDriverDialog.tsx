@@ -69,7 +69,10 @@ export function AssignDriverDialog({
       if (tripToAssign.status === "scheduled") {
         const { error: updateError } = await supabase
           .from("trips")
-          .update({ status: "assigned" })
+          .update({ 
+            // Store status in notes with a prefix instead of special_instructions
+            notes: `STATUS:assigned\n\n${tripToAssign.notes ? tripToAssign.notes.replace(/^STATUS:[a-z_]+\n\n/i, '') : ''}`
+          })
           .eq("id", tripToAssign.id);
 
         if (updateError) throw updateError;
@@ -120,7 +123,7 @@ export function AssignDriverDialog({
               <SelectContent>
                 {drivers.map((driver) => (
                   <SelectItem key={driver.id} value={driver.id}>
-                    {driver.first_name} {driver.last_name}
+                    {driver.name}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -21,10 +21,10 @@ export const updateTripStatus = async (
     const { error } = await supabase
       .from("trips")
       .update({ 
-        // Store status in special_instructions with a prefix
-        special_instructions: `STATUS:${status}${
-          viewTrip?.special_instructions ? 
-            `\n\n${viewTrip.special_instructions.replace(/^STATUS:[a-z_]+\n\n/i, '')}` : 
+        // Store status in notes with a prefix instead of special_instructions
+        notes: `STATUS:${status}${
+          viewTrip?.notes ? 
+            `\n\n${viewTrip.notes.replace(/^STATUS:[a-z_]+\n\n/i, '')}` : 
             ''
         }`
       })

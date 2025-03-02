@@ -8,8 +8,8 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   // Ensure all required properties are present with defaults
   const dbServiceType = dbTrip.service_type || "other";
   
-  // Extract status from special_instructions
-  const status = dbTrip.status || extractTripStatus(dbTrip.special_instructions) || "scheduled";
+  // Extract status from notes
+  const status = dbTrip.status || extractTripStatus(dbTrip.notes) || "scheduled";
   
   // Map to TripType, handling unknown types
   let type: TripType = dbServiceType as TripType;
@@ -18,8 +18,8 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
     type = "other";
   }
   
-  // Extract passengers from special_instructions
-  const passengers = parsePassengers(dbTrip.special_instructions);
+  // Extract passengers from notes
+  const passengers = parsePassengers(dbTrip.notes);
   
   return {
     ...dbTrip,
@@ -28,9 +28,9 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
     status,
     start_time: dbTrip.time || dbTrip.start_time,
     end_time: dbTrip.return_time || dbTrip.end_time,
-    notes: dbTrip.special_instructions,
+    notes: dbTrip.notes,
     // Remove status prefix from display notes
-    special_notes: dbTrip.special_instructions?.replace(/^STATUS:[a-z_]+\n\n/i, ''),
+    special_notes: dbTrip.notes?.replace(/^STATUS:[a-z_]+\n\n/i, ''),
     // Additional display fields
     client_name: dbTrip.clients?.name || "Unknown Client",
     client_type: dbTrip.clients?.type,
@@ -74,7 +74,7 @@ export const mapTripToDatabaseFields = (trip: Partial<Trip>): Partial<DbTrip> =>
     service_type: trip.type ? mapTripTypeToDbServiceType(trip.type) : undefined,
     time: trip.start_time,
     return_time: trip.end_time,
-    special_instructions: trip.notes,
+    special_instructions: undefined, // Remove this field as it doesn't exist in the database
   };
   
   return dbTrip;
