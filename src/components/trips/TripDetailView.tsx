@@ -54,22 +54,22 @@ export function TripDetailView({
 }: TripDetailViewProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
-      case 'in_progress': return 'bg-amber-100 text-amber-800 hover:bg-amber-100';
-      case 'completed': return 'bg-green-100 text-green-800 hover:bg-green-100';
-      case 'cancelled': return 'bg-red-100 text-red-800 hover:bg-red-100';
-      default: return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+      case 'scheduled': return 'bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'in_progress': return 'bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300';
+      case 'completed': return 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300';
+      case 'cancelled': return 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300';
+      default: return 'bg-gray-100 text-gray-800 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300';
     }
   };
 
   return (
     <div className="w-full">
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-lg mb-6">
-        <DialogTitle className="text-xl font-semibold mb-3 text-gray-800 flex items-center">
-          <Calendar className="h-5 w-5 mr-2 text-purple-500" />
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 p-6 rounded-lg mb-6">
+        <DialogTitle className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100 flex items-center">
+          <Calendar className="h-5 w-5 mr-2 text-indigo-500" />
           {formatDate(viewTrip.date)}
           <span className="mx-2">•</span>
-          <MapPin className="h-5 w-5 mr-2 text-purple-500" />
+          <MapPin className="h-5 w-5 mr-2 text-indigo-500" />
           {viewTrip.pickup_location.split(',')[0]}
         </DialogTitle>
         
@@ -77,12 +77,12 @@ export function TripDetailView({
           <Badge variant="outline" className={`font-medium ${getStatusColor(viewTrip.status)}`}>
             {viewTrip.status.replace('_', ' ').toUpperCase()}
           </Badge>
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 hover:bg-purple-100">
+          <Badge variant="outline" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300">
             {tripTypeDisplayMap[viewTrip.type]}
           </Badge>
         </div>
         
-        <DialogDescription className="text-sm text-gray-600 mb-2">
+        <DialogDescription className="text-sm text-gray-600 dark:text-gray-400 mb-2">
           Trip ID: {viewTrip.id.substring(0, 8).toUpperCase()}
         </DialogDescription>
       </div>
@@ -90,16 +90,16 @@ export function TripDetailView({
       <TripDetailHeader viewTrip={viewTrip} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="w-full bg-slate-100 p-1">
-          <TabsTrigger value="details" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-purple-700">
+        <TabsList className="w-full bg-slate-100 dark:bg-slate-800/50 p-1">
+          <TabsTrigger value="details" className="flex-1 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400">
             <FileText className="h-4 w-4 mr-2" />
             Details
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-purple-700">
+          <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400">
             <MessageCircle className="h-4 w-4 mr-2" />
             Messages
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-purple-700">
+          <TabsTrigger value="assignments" className="flex-1 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400">
             <UserCircle className="h-4 w-4 mr-2" />
             Assignments
           </TabsTrigger>
