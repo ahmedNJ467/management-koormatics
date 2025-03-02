@@ -17,17 +17,10 @@ export const updateTripStatus = async (
   queryClient: QueryClient
 ) => {
   try {
-    // Note: We only update a custom status field in our app, not in DB schema
+    // Now we update the status field directly instead of storing in notes
     const { error } = await supabase
       .from("trips")
-      .update({ 
-        // Store status in notes with a prefix instead of special_instructions
-        notes: `STATUS:${status}${
-          viewTrip?.notes ? 
-            `\n\n${viewTrip.notes.replace(/^STATUS:[a-z_]+\n\n/i, '')}` : 
-            ''
-        }`
-      })
+      .update({ status })
       .eq("id", tripId);
 
     if (error) throw error;

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,6 @@ export function TripForm({
   const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [passengers, setPassengers] = useState<string[]>([""]);
 
-  // When editing a trip, initialize form values
   useEffect(() => {
     if (editTrip) {
       setServiceType(editTrip.ui_service_type as UIServiceType || formatUIServiceType(editTrip));
@@ -47,7 +45,6 @@ export function TripForm({
       
       if (editTrip.client_type === "organization") {
         setSelectedClientType("organization");
-        // Extract passengers from notes
         const extractedPassengers = parsePassengers(editTrip.notes);
         setPassengers(extractedPassengers.length > 0 ? extractedPassengers : [""]);
       } else {
@@ -55,7 +52,6 @@ export function TripForm({
         setPassengers([""]);
       }
     } else {
-      // Reset form values when not editing
       setServiceType("airport_pickup");
       setSelectedClientId("");
       setSelectedClientType("");
@@ -63,41 +59,32 @@ export function TripForm({
     }
   }, [editTrip]);
 
-  // Format trip type for UI
   const formatUIServiceType = (trip: DisplayTrip): UIServiceType => {
-    // For known direct mappings
     if (trip.type === "airport_pickup") return "airport_pickup";
     if (trip.type === "airport_dropoff") return "airport_dropoff";
     if (trip.type === "full_day") return "full_day_hire";
     
-    // For "other" type, try to determine the specific service type
     if (trip.type === "other") {
-      // If pickup/dropoff has "airport" in it, it might be related to airport service
       if (trip.pickup_location?.toLowerCase().includes("airport") || 
           trip.dropoff_location?.toLowerCase().includes("airport")) {
         return "round_trip";
       }
       
-      // Check for keywords in notes
       if (trip.notes?.toLowerCase().includes("security") || 
           trip.notes?.toLowerCase().includes("escort")) {
         return "security_escort";
       }
       
-      // Check if there's both start and end time, suggesting round trip
       if (trip.start_time && trip.end_time) {
         return "round_trip";
       }
       
-      // Default to one-way if we can't determine
       return "one_way";
     }
     
-    // Default fallback
     return "one_way";
   };
 
-  // Handle client selection to show passenger fields if organization
   const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId);
     
@@ -107,30 +94,25 @@ export function TripForm({
       return;
     }
     
-    // Find the selected client and check its type
     const selectedClient = clients?.find(client => client.id === clientId);
     if (selectedClient) {
       setSelectedClientType(selectedClient.type || "individual");
-      // Reset passengers when client changes
       setPassengers([""]);
     }
   };
 
-  // Add new passenger field
   const addPassengerField = () => {
     setPassengers([...passengers, ""]);
   };
 
-  // Update passenger at specific index
   const updatePassenger = (index: number, value: string) => {
     const updatedPassengers = [...passengers];
     updatedPassengers[index] = value;
     setPassengers(updatedPassengers);
   };
 
-  // Remove passenger field
   const removePassengerField = (index: number) => {
-    if (passengers.length <= 1) return; // Keep at least one field
+    if (passengers.length <= 1) return;
     const updatedPassengers = passengers.filter((_, i) => i !== index);
     setPassengers(updatedPassengers);
   };
@@ -183,7 +165,6 @@ export function TripForm({
           </div>
         </div>
 
-        {/* Passengers Section - Only show for organization clients */}
         {selectedClientType === "organization" && (
           <div className="border p-4 rounded-md space-y-4">
             <div className="flex justify-between items-center">
@@ -225,7 +206,6 @@ export function TripForm({
           </div>
         )}
 
-        {/* Flight Details Section - Only show for airport trips */}
         {(serviceType === "airport_pickup" || serviceType === "airport_dropoff") && (
           <div className="border p-4 rounded-md space-y-4">
             <h3 className="text-sm font-medium">Flight Details</h3>
@@ -237,7 +217,7 @@ export function TripForm({
                   id="flight_number"
                   name="flight_number"
                   placeholder="e.g. BA123"
-                  defaultValue={parseFlightDetails(editTrip?.notes).flight || ""}
+                  defaultValue={editTrip?.flight_number || ""}
                 />
               </div>
               
@@ -247,7 +227,7 @@ export function TripForm({
                   id="airline"
                   name="airline"
                   placeholder="e.g. British Airways"
-                  defaultValue={parseFlightDetails(editTrip?.notes).airline || ""}
+                  defaultValue={editTrip?.airline || ""}
                 />
               </div>
               
@@ -257,7 +237,7 @@ export function TripForm({
                   id="terminal"
                   name="terminal"
                   placeholder="e.g. Terminal 5"
-                  defaultValue={parseFlightDetails(editTrip?.notes).terminal || ""}
+                  defaultValue={editTrip?.terminal || ""}
                 />
               </div>
             </div>
@@ -288,7 +268,6 @@ export function TripForm({
           </div>
         </div>
 
-        {/* Show return time for round trips, security escorts, and full day hires */}
         {["round_trip", "security_escort", "full_day_hire"].includes(serviceType) && (
           <div className="space-y-2">
             <Label htmlFor="return_time">Return Time</Label>
@@ -363,11 +342,7 @@ export function TripForm({
             id="special_notes"
             name="special_notes"
             placeholder="Add any special instructions or notes"
-            defaultValue={editTrip?.special_notes || editTrip?.notes?.replace(/Flight: .*\n?/g, '')
-                                  .replace(/Airline: .*\n?/g, '')
-                                  .replace(/Terminal: .*\n?/g, '')
-                                  .replace(/\n\nPassengers:\n.*$/s, '') // Remove existing passengers list
-                                  .trim() || ""}
+            defaultValue={editTrip?.notes || ""}
             className="min-h-[80px]"
           />
         </div>

@@ -527,6 +527,7 @@ export type Database = {
           pickup_location: string | null
           return_time: string | null
           service_type: Database["public"]["Enums"]["service_type"] | null
+          status: string | null
           terminal: string | null
           time: string | null
           updated_at: string | null
@@ -548,6 +549,7 @@ export type Database = {
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null
+          status?: string | null
           terminal?: string | null
           time?: string | null
           updated_at?: string | null
@@ -569,6 +571,7 @@ export type Database = {
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null
+          status?: string | null
           terminal?: string | null
           time?: string | null
           updated_at?: string | null

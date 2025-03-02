@@ -6,7 +6,7 @@ import { MapPin, ArrowRight, Users } from "lucide-react";
 import { format } from "date-fns";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { TripTypeIcon } from "@/components/trips/TripTypeIcon";
-import { extractFlightInfo, parsePassengers } from "@/components/trips/utils";
+import { parsePassengers } from "@/components/trips/utils";
 
 interface DetailsTabProps {
   viewTrip: DisplayTrip;
@@ -49,6 +49,27 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
       .split(" ")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
+  };
+
+  // Create a formatted flight info string from individual fields
+  const getFlightInfo = (): string => {
+    if (!viewTrip.flight_number && !viewTrip.airline && !viewTrip.terminal) return '';
+    
+    let flightInfo = '';
+    
+    if (viewTrip.flight_number) {
+      flightInfo += viewTrip.flight_number;
+    }
+    
+    if (viewTrip.airline) {
+      flightInfo += flightInfo ? `, ${viewTrip.airline}` : viewTrip.airline;
+    }
+    
+    if (viewTrip.terminal) {
+      flightInfo += flightInfo ? `, ${viewTrip.terminal}` : viewTrip.terminal;
+    }
+    
+    return flightInfo;
   };
 
   const renderPassengers = () => {
@@ -135,10 +156,10 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
             </div>
             
             {(viewTrip.type === "airport_pickup" || viewTrip.type === "airport_dropoff") && 
-              extractFlightInfo(viewTrip.notes) && (
+              getFlightInfo() && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Flight Details</p>
-                <p>{extractFlightInfo(viewTrip.notes)}</p>
+                <p>{getFlightInfo()}</p>
               </div>
             )}
           </CardContent>
@@ -207,7 +228,7 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
             <CardTitle className="text-lg">Notes</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap">{viewTrip.special_notes || viewTrip.notes}</p>
+            <p className="whitespace-pre-wrap">{viewTrip.notes}</p>
           </CardContent>
         </Card>
       )}

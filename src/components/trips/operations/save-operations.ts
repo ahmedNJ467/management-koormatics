@@ -27,21 +27,24 @@ export const handleSaveTrip = async (
   const dbServiceType: DbServiceType = mapTripTypeToDbServiceType(tripType);
   const isRecurringChecked = formData.get("is_recurring") === "on";
   
-  // Add flight details to notes if it's an airport trip
-  let notes = formData.get("special_notes") as string || "";
-  if (uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff") {
-    const flight = formData.get("flight_number") as string;
-    const airline = formData.get("airline") as string;
-    const terminal = formData.get("terminal") as string;
+  // Extract flight details separately - they now go into their own columns
+  const flightNumber = (uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff") 
+    ? formData.get("flight_number") as string 
+    : null;
     
-    if (flight) notes += `\nFlight: ${flight}`;
-    if (airline) notes += `\nAirline: ${airline}`;
-    if (terminal) notes += `\nTerminal: ${terminal}`;
-  }
+  const airline = (uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff") 
+    ? formData.get("airline") as string 
+    : null;
+    
+  const terminal = (uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff") 
+    ? formData.get("terminal") as string 
+    : null;
   
-  // Add status prefix to notes
+  // Get notes without adding flight details
+  const notes = formData.get("special_notes") as string || "";
+  
+  // Get status value directly from form for edit mode
   const statusValue = formData.get("status") as TripStatus || "scheduled";
-  notes = `STATUS:${statusValue}\n\n${notes}`;
   
   try {
     if (editTrip) {
@@ -59,6 +62,10 @@ export const handleSaveTrip = async (
           pickup_location: formData.get("pickup_location") as string || null,
           dropoff_location: formData.get("dropoff_location") as string || null,
           notes: notes || null,
+          status: statusValue, // Use the status field directly
+          flight_number: flightNumber,
+          airline: airline,
+          terminal: terminal
         })
         .eq("id", editTrip.id);
       
@@ -76,6 +83,14 @@ export const handleSaveTrip = async (
       const frequencyValue = formData.get("frequency") as "daily" | "weekly" | "monthly";
       
       const trips = await createRecurringTrips(formData, occurrences, frequencyValue);
+      
+      // Update the recurring trips with flight details and status
+      trips.forEach(trip => {
+        trip.flight_number = flightNumber;
+        trip.airline = airline; 
+        trip.terminal = terminal;
+        trip.status = "scheduled";
+      });
       
       const { error } = await supabase
         .from("trips")
@@ -107,6 +122,10 @@ export const handleSaveTrip = async (
           pickup_location: formData.get("pickup_location") as string || null,
           dropoff_location: formData.get("dropoff_location") as string || null,
           notes: notes || null,
+          status: "scheduled", // Default status
+          flight_number: flightNumber,
+          airline: airline,
+          terminal: terminal
         });
       
       if (error) {

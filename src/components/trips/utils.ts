@@ -24,6 +24,7 @@ export const formatTime = (timeStr: string): string => {
 };
 
 // Extract trip status from notes field
+// This is kept for backward compatibility with existing data
 export const extractTripStatus = (notes?: string): string | null => {
   if (!notes) return null;
   
@@ -33,35 +34,6 @@ export const extractTripStatus = (notes?: string): string | null => {
   }
   
   return null;
-};
-
-// Parse flight details from notes
-export const parseFlightDetails = (notes?: string): { 
-  flight?: string; 
-  airline?: string; 
-  terminal?: string; 
-} => {
-  if (!notes) return {};
-  
-  const result: { flight?: string; airline?: string; terminal?: string; } = {};
-  
-  // Extract flight details
-  const flightMatch = notes.match(/Flight:\s*([^\n]+)/);
-  if (flightMatch && flightMatch[1]) {
-    result.flight = flightMatch[1].trim();
-  }
-  
-  const airlineMatch = notes.match(/Airline:\s*([^\n]+)/);
-  if (airlineMatch && airlineMatch[1]) {
-    result.airline = airlineMatch[1].trim();
-  }
-  
-  const terminalMatch = notes.match(/Terminal:\s*([^\n]+)/);
-  if (terminalMatch && terminalMatch[1]) {
-    result.terminal = terminalMatch[1].trim();
-  }
-  
-  return result;
 };
 
 // Parse passenger information from notes
@@ -76,6 +48,9 @@ export const parsePassengers = (notes?: string): string[] => {
     .map(line => line.replace(/^- /, '').trim())
     .filter(Boolean);
 };
+
+// The following functions are no longer needed since we store flight info in dedicated columns
+// but are kept for backward compatibility with old data
 
 // Extract flight information for display
 export const extractFlightInfo = (notes?: string): string => {
