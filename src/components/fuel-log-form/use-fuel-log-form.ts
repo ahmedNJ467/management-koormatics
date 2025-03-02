@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { FuelLog } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
-const fuelLogSchema = z.object({
+export const fuelLogSchema = z.object({
   vehicle_id: z.string().min(1, "Vehicle is required"),
   date: z.string().min(1, "Date is required"),
   fuel_type: z.enum(["petrol", "diesel", "cng"]),
@@ -24,13 +23,12 @@ const fuelLogSchema = z.object({
   path: ["current_mileage"],
 });
 
-type FuelLogFormValues = z.infer<typeof fuelLogSchema>;
+export type FuelLogFormValues = z.infer<typeof fuelLogSchema>;
 
 export function useFuelLogForm(fuelLog?: FuelLog) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Callback function for dialog closure after submission
   const [shouldCloseDialog, setShouldCloseDialog] = useState(false);
 
   const { data: vehicles } = useQuery({
@@ -46,7 +44,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     },
   });
 
-  // Get latest mileage for a vehicle
   const getLatestMileage = async (vehicleId: string) => {
     if (!vehicleId) return 0;
     
@@ -68,7 +65,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       date: fuelLog.date,
       fuel_type: fuelLog.fuel_type,
       volume: fuelLog.volume,
-      price_per_liter: fuelLog.cost / fuelLog.volume, // Calculate price per liter from existing data
+      price_per_liter: fuelLog.cost / fuelLog.volume,
       cost: fuelLog.cost,
       previous_mileage: fuelLog.previous_mileage || 0,
       current_mileage: fuelLog.current_mileage || 0,
@@ -88,14 +85,12 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     },
   });
 
-  // Watch volume and price_per_liter to calculate cost
   const volume = form.watch("volume");
   const pricePerLiter = form.watch("price_per_liter");
   const previousMileage = form.watch("previous_mileage");
   const currentMileage = form.watch("current_mileage");
   const vehicleId = form.watch("vehicle_id");
 
-  // Calculate cost when volume or price changes
   useEffect(() => {
     if (volume && pricePerLiter) {
       const calculatedCost = volume * pricePerLiter;
@@ -105,7 +100,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     }
   }, [volume, pricePerLiter, form]);
 
-  // Calculate mileage difference
   useEffect(() => {
     if (currentMileage >= 0 && previousMileage >= 0) {
       const distance = Math.max(0, currentMileage - previousMileage);
@@ -115,7 +109,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     }
   }, [currentMileage, previousMileage, form]);
 
-  // Fetch previous mileage when vehicle changes
   useEffect(() => {
     if (vehicleId && !fuelLog) {
       const fetchMileage = async () => {
@@ -129,7 +122,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   const handleSubmit = async (values: FuelLogFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
-      // Need to type cast fuel_type to handle "cng" type
       const formattedValues = {
         vehicle_id: values.vehicle_id,
         date: values.date,
@@ -145,7 +137,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       if (fuelLog) {
         const { error: updateError } = await supabase
           .from("fuel_logs")
-          .update(formattedValues as any) // Type assertion to bypass TypeScript check
+          .update(formattedValues as any)
           .eq("id", fuelLog.id);
 
         if (updateError) throw updateError;
@@ -157,7 +149,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       } else {
         const { error: insertError } = await supabase
           .from("fuel_logs")
-          .insert(formattedValues as any); // Type assertion to bypass TypeScript check
+          .insert(formattedValues as any);
 
         if (insertError) throw insertError;
 
@@ -168,7 +160,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       }
 
       form.reset();
-      setShouldCloseDialog(true); // Set flag to close dialog
+      setShouldCloseDialog(true);
     } catch (error) {
       console.error("Error:", error);
       toast({
