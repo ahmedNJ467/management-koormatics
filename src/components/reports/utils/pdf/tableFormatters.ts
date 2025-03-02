@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 
 // Generate table data for different report types
@@ -25,11 +24,9 @@ export function generateTableData(data: any[], reportType: string) {
         
         // Special formatting for organizations with passengers
         if (trip.clients?.type === 'organization') {
-          clientDisplay = `${clientDisplay}\n(Organization)`;
-          
-          // Add passengers if they exist
+          // We're removing the organization label and passenger count
+          // Just add the passenger names directly if they exist
           if (trip.passengers && trip.passengers.length > 0) {
-            clientDisplay += `\nPassengers: ${trip.passengers.length}`;
             // Add each passenger name on a new line
             trip.passengers.forEach((passenger: string) => {
               clientDisplay += `\n${passenger}`;

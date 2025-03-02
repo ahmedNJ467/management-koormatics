@@ -1,4 +1,3 @@
-
 import jsPDF from "jspdf";
 import { TextOptionsLight } from "jspdf";
 import { pdfColors } from "./pdfStyles";
@@ -26,34 +25,17 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255); // White text for organization name
       doc.text(textLines[0].toUpperCase(), x, y);
-      y += 0.25;
-      
-      // Draw organization label
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(180, 180, 255); // Light blue for the organization label
-      doc.text("(Organization)", x, y);
       y += 0.35;
       
-      // Extract passenger count and display it
-      let passengerCount = 0;
-      const passengerLine = textLines.find(line => line.startsWith('Passengers:'));
-      if (passengerLine) {
-        passengerCount = parseInt(passengerLine.split(':')[1].trim());
-      }
+      // Skip the "(Organization)" and "Passengers: count" lines
       
-      // Draw passengers icon and count
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100, 255, 150); // Bright green for passenger count
-      doc.text(`Passengers: ${passengerCount}`, x, y);
-      y += 0.3;
+      // Find the index where actual passenger names start (after the count line)
+      const passengerStartIndex = textLines.findIndex(line => line.startsWith('Passengers:')) + 1;
       
       // Draw passenger names with normal font and bullet points
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(255, 255, 255); // White for passenger names
       doc.setFontSize(8); // Smaller font size for passengers
-      
-      // Find the index where passengers start
-      const passengerStartIndex = textLines.findIndex(line => line.startsWith('Passengers:')) + 1;
       
       // Draw each passenger name with bullet point
       for (let i = passengerStartIndex; i < textLines.length; i++) {
