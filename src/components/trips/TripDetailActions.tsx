@@ -22,7 +22,7 @@ export function TripDetailActions({
       <div className="flex gap-2">
         <Button
           variant="outline"
-          className="border-purple-800 bg-purple-900/20 text-purple-300 hover:bg-purple-800/30 hover:text-purple-200"
+          className="border-purple-700 bg-purple-900/20 text-purple-300 hover:bg-purple-800/30 hover:text-purple-200 rounded-full px-4"
           onClick={() => setEditTrip(viewTrip)}
         >
           <EditIcon className="h-4 w-4 mr-2" />
@@ -30,7 +30,7 @@ export function TripDetailActions({
         </Button>
         <Button
           variant="outline" 
-          className="border-red-800 bg-red-900/20 text-red-300 hover:bg-red-800/30 hover:text-red-200"
+          className="border-red-700 bg-red-900/20 text-red-300 hover:bg-red-800/30 hover:text-red-200 rounded-full px-4"
           onClick={() => {
             setTripToDelete(viewTrip.id);
             setDeleteDialogOpen(true);
@@ -41,7 +41,10 @@ export function TripDetailActions({
         </Button>
       </div>
       <DialogClose asChild>
-        <Button variant="secondary" className="bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 border border-slate-700">
+        <Button 
+          variant="secondary" 
+          className="bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 border border-slate-700 rounded-full px-4"
+        >
           <XCircle className="h-4 w-4 mr-2" />
           Close
         </Button>

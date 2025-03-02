@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
+import { UserCheck } from "lucide-react";
 
 interface AssignDriverDialogProps {
   open: boolean;
@@ -103,22 +104,25 @@ export function AssignDriverDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-slate-900/90 dark:bg-slate-900 border border-slate-800">
-        <DialogHeader>
-          <DialogTitle className="text-white">Assign Driver</DialogTitle>
+      <DialogContent className="sm:max-w-md bg-slate-900 border border-slate-800 shadow-lg">
+        <DialogHeader className="border-b border-slate-800 pb-4">
+          <DialogTitle className="text-white flex items-center">
+            <UserCheck className="h-5 w-5 mr-2 text-purple-400" />
+            Assign Driver
+          </DialogTitle>
           <DialogDescription className="text-slate-400">
             Assign a driver to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-5 py-4">
           <div className="space-y-2">
             <Label htmlFor="driver" className="text-slate-300">Select Driver</Label>
             <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-300">
+              <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-300 focus:ring-purple-500">
                 <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700 text-slate-300">
+              <SelectContent className="bg-slate-800 border-slate-700">
                 {drivers.map((driver) => (
                   <SelectItem key={driver.id} value={driver.id} className="text-slate-300 hover:bg-slate-700 focus:bg-slate-700">
                     {driver.name}
@@ -135,19 +139,23 @@ export function AssignDriverDialog({
               placeholder="Add any notes about this assignment..."
               value={assignmentNote}
               onChange={(e) => setAssignmentNote(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-slate-300 placeholder:text-slate-500"
+              className="bg-slate-800 border-slate-700 text-slate-300 placeholder:text-slate-500 focus:ring-purple-500 min-h-[100px]"
             />
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700">
+        <DialogFooter className="border-t border-slate-800 pt-4">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-slate-200"
+          >
             Cancel
           </Button>
           <Button 
             onClick={handleAssign} 
             disabled={!selectedDriver || isLoading}
-            className="bg-indigo-700 hover:bg-indigo-600 text-white"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             {isLoading ? "Assigning..." : "Assign Driver"}
           </Button>
