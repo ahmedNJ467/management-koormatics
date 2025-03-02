@@ -98,8 +98,7 @@ import {
   DisplayTrip,
   DisplayQuotation,
   Trip,
-  Quotation,
-  convertToDisplayTrips
+  Quotation
 } from "@/lib/types";
 
 export default function Invoices() {
@@ -169,9 +168,15 @@ export default function Invoices() {
             drivers:driver_id(name)
           `)
           .eq("invoice_id", invoice.id);
-        
-        // Use the convertToDisplayTrips helper function to ensure all needed fields are present
-        const trips = tripData ? convertToDisplayTrips(tripData) : [];
+          
+        const trips = tripData ? tripData.map((trip) => ({
+          ...trip,
+          client_name: trip.clients?.name || "Unknown Client",
+          vehicle_details: trip.vehicles ? 
+            `${trip.vehicles.make} ${trip.vehicles.model} (${trip.vehicles.registration})` : 
+            "Unknown Vehicle",
+          driver_name: trip.drivers?.name || "Unknown Driver",
+        })) : [];
 
         // Get quotation number if there's a quotation
         let quotation_number = null;
@@ -295,7 +300,14 @@ export default function Invoices() {
       
       if (error) throw error;
       
-      return convertToDisplayTrips(data);
+      return data.map((trip) => ({
+        ...trip,
+        client_name: trip.clients?.name || "Unknown Client",
+        vehicle_details: trip.vehicles ? 
+          `${trip.vehicles.make} ${trip.vehicles.model} (${trip.vehicles.registration})` : 
+          "Unknown Vehicle",
+        driver_name: trip.drivers?.name || "Unknown Driver",
+      })) as DisplayTrip[];
     },
     enabled: !!selectedClient,
   });
@@ -944,174 +956,199 @@ export default function Invoices() {
         </Select>
       </div>
 
-      {/* Invoices Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Invoice</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Paid</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredInvoices && filteredInvoices.length > 0 ? (
-              filteredInvoices.map((invoice) => (
+      {/* Invoices List */}
+      {!filteredInvoices || filteredInvoices.length === 0 ? (
+        <div className="rounded-lg border p-8 text-center">
+          <FileText className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Invoices Found</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            {searchTerm || statusFilter !== "all"
+              ? "No invoices match your search criteria"
+              : "Create your first invoice to get started"}
+          </p>
+          <Button onClick={() => setCreateInvoiceOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Create Invoice
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredInvoices.map((invoice) => (
                 <TableRow key={invoice.id}>
-                  <TableCell>
-                    <div className="font-medium">{formatInvoiceId(invoice.id)}</div>
-                    {invoice.quotation_number && (
-                      <div className="text-xs text-muted-foreground">
-                        Ref: {invoice.quotation_number}
-                      </div>
-                    )}
+                  <TableCell className="font-medium">
+                    {formatInvoiceId(invoice.id)}
                   </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{invoice.client_name}</div>
-                    {invoice.client_email && (
-                      <div className="text-xs text-muted-foreground">{invoice.client_email}</div>
-                    )}
-                  </TableCell>
+                  <TableCell>{invoice.client_name}</TableCell>
                   <TableCell>{formatDate(invoice.date)}</TableCell>
                   <TableCell>{formatDate(invoice.due_date)}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(invoice.status)}>
+                    <div>
+                      {formatCurrency(invoice.total_amount)}
+                      {invoice.paid_amount > 0 && invoice.paid_amount < invoice.total_amount && (
+                        <div className="text-xs text-muted-foreground">
+                          Paid: {formatCurrency(invoice.paid_amount)}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getStatusColor(invoice.status)}>
                       {formatStatus(invoice.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">{formatCurrency(invoice.total_amount)}</TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(invoice.paid_amount)}
-                    {invoice.paid_amount > 0 && invoice.paid_amount < invoice.total_amount && (
-                      <div className="text-xs text-muted-foreground">
-                        {Math.round((invoice.paid_amount / invoice.total_amount) * 100)}%
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setViewInvoice(invoice)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Options</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setViewInvoice(invoice)}>
-                            <Eye className="h-4 w-4 mr-2" /> View Invoice
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => setViewInvoice(invoice)}>
+                          <Eye className="mr-2 h-4 w-4" /> View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditInvoice(invoice)} disabled={invoice.status === "paid"}>
+                          <Edit className="mr-2 h-4 w-4" /> Edit Invoice
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        
+                        {invoice.status === "draft" && (
+                          <DropdownMenuItem onClick={() => sendInvoice(invoice.id)}>
+                            <Send className="mr-2 h-4 w-4" /> Send to Client
                           </DropdownMenuItem>
-                          {invoice.status === "draft" && (
-                            <DropdownMenuItem onClick={() => sendInvoice(invoice.id)}>
-                              <Send className="h-4 w-4 mr-2" /> Send to Client
-                            </DropdownMenuItem>
-                          )}
-                          {invoice.status !== "paid" && invoice.status !== "cancelled" && (
-                            <>
-                              <DropdownMenuItem onClick={() => setEditInvoice(invoice)}>
-                                <Edit className="h-4 w-4 mr-2" /> Edit Invoice
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                setViewInvoice(invoice);
-                                setRecordPaymentOpen(true);
-                              }}>
-                                <CreditCard className="h-4 w-4 mr-2" /> Record Payment
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              setInvoiceToDelete(invoice.id);
-                              setDeleteDialogOpen(true);
-                            }}
-                            className="text-red-600"
-                          >
-                            <Trash className="h-4 w-4 mr-2" /> Delete
+                        )}
+                        
+                        {(invoice.status === "sent" || invoice.status === "overdue") && invoice.paid_amount < invoice.total_amount && (
+                          <DropdownMenuItem onClick={() => {
+                            setViewInvoice(invoice);
+                            setRecordPaymentOpen(true);
+                          }}>
+                            <DollarSign className="mr-2 h-4 w-4" /> Record Payment
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                        )}
+                        
+                        <DropdownMenuItem onClick={() => {
+                          // Print preview would go here
+                          toast({
+                            title: "Print preview",
+                            description: `Printing invoice ${formatInvoiceId(invoice.id)}`,
+                          });
+                        }}>
+                          <Printer className="mr-2 h-4 w-4" /> Print
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem onClick={() => {
+                          // Download functionality would go here
+                          toast({
+                            title: "Download",
+                            description: `Downloading invoice ${formatInvoiceId(invoice.id)}`,
+                          });
+                        }}>
+                          <Download className="mr-2 h-4 w-4" /> Download PDF
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        {invoice.status !== "cancelled" && (
+                          <DropdownMenuItem onClick={() => updateInvoiceStatus(invoice.id, "cancelled")}>
+                            <X className="mr-2 h-4 w-4" /> Mark Cancelled
+                          </DropdownMenuItem>
+                        )}
+                        
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setInvoiceToDelete(invoice.id);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="text-red-500"
+                        >
+                          <Trash className="mr-2 h-4 w-4" /> Delete Invoice
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
-                  {invoices && invoices.length > 0 ? (
-                    <div className="text-muted-foreground">
-                      No invoices match your search or filter. Try adjusting your criteria.
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-4">
-                      <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium mb-1">No Invoices Yet</h3>
-                      <p className="text-muted-foreground text-center max-w-md mb-4">
-                        Create your first invoice to start billing clients.
-                      </p>
-                      <Button onClick={() => setCreateInvoiceOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" /> Create Invoice
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* View Invoice Dialog */}
-      <Dialog open={viewInvoice !== null} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}</DialogTitle>
+            <DialogTitle>
+              Invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}
+            </DialogTitle>
+            <DialogDescription>
+              {viewInvoice && (
+                <Badge variant="outline" className={getStatusColor(viewInvoice.status)}>
+                  {formatStatus(viewInvoice.status)}
+                </Badge>
+              )}
+            </DialogDescription>
           </DialogHeader>
-          
+
           {viewInvoice && (
-            <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex-1 overflow-hidden flex flex-col">
-              <TabsList className="mb-4">
-                <TabsTrigger value="details">Details</TabsTrigger>
-                {viewInvoice.trips && viewInvoice.trips.length > 0 && (
-                  <TabsTrigger value="trips">Associated Trips</TabsTrigger>
-                )}
+            <Tabs value={currentTab} onValueChange={setCurrentTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Invoice Details</TabsTrigger>
+                <TabsTrigger value="trips">Related Trips ({viewInvoice.trips?.length || 0})</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="details" className="flex-1 overflow-auto">
-                <div className="grid grid-cols-2 gap-4 mb-6">
+              <TabsContent value="details" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-semibold mb-1">Client</h3>
-                    <p>{viewInvoice.client_name}</p>
-                    {viewInvoice.client_email && <p className="text-sm">{viewInvoice.client_email}</p>}
-                    {viewInvoice.client_address && <p className="text-sm">{viewInvoice.client_address}</p>}
+                    <h3 className="text-sm font-medium">Client Information</h3>
+                    <div className="mt-1 text-sm">
+                      <p className="font-semibold">{viewInvoice.client_name}</p>
+                      {viewInvoice.client_address && <p>{viewInvoice.client_address}</p>}
+                      {viewInvoice.client_email && <p>{viewInvoice.client_email}</p>}
+                      {viewInvoice.client_phone && <p>{viewInvoice.client_phone}</p>}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <h3 className="text-sm font-semibold mb-1">Invoice Information</h3>
-                    <p><span className="text-muted-foreground">Status:</span> <Badge className={getStatusColor(viewInvoice.status)}>{formatStatus(viewInvoice.status)}</Badge></p>
-                    <p><span className="text-muted-foreground">Date:</span> {formatDate(viewInvoice.date)}</p>
-                    <p><span className="text-muted-foreground">Due Date:</span> {formatDate(viewInvoice.due_date)}</p>
+                  <div>
+                    <h3 className="text-sm font-medium">Invoice Information</h3>
+                    <div className="mt-1 text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>Invoice Date:</span>
+                        <span>{formatDate(viewInvoice.date)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Due Date:</span>
+                        <span>{formatDate(viewInvoice.due_date)}</span>
+                      </div>
+                      {viewInvoice.quotation_number && (
+                        <div className="flex justify-between">
+                          <span>Quotation:</span>
+                          <span>{viewInvoice.quotation_number}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                
-                <h3 className="text-sm font-semibold mb-2">Invoice Items</h3>
-                <div className="rounded-md border mb-4">
+
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2">Items</h3>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-full">Description</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
                         <TableHead className="text-right">Unit Price</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
@@ -1126,51 +1163,109 @@ export default function Invoices() {
                         </TableRow>
                       ))}
                     </TableBody>
-                    <tfoot>
-                      <tr className="border-t">
-                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right font-semibold">Total:</td>
-                        <td className="pl-4 pr-4 py-2 text-right font-semibold">{formatCurrency(viewInvoice.total_amount)}</td>
-                      </tr>
-                      <tr>
-                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right">Paid Amount:</td>
-                        <td className="pl-4 pr-4 py-2 text-right">{formatCurrency(viewInvoice.paid_amount)}</td>
-                      </tr>
-                      <tr>
-                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right font-semibold">Balance Due:</td>
-                        <td className="pl-4 pr-4 py-2 text-right font-semibold">{formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}</td>
-                      </tr>
-                    </tfoot>
                   </Table>
                 </div>
-                
+
+                <div className="flex justify-end">
+                  <div className="w-1/3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(viewInvoice.total_amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>Total:</span>
+                      <span>{formatCurrency(viewInvoice.total_amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Paid:</span>
+                      <span>{formatCurrency(viewInvoice.paid_amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>Balance Due:</span>
+                      <span>{formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}</span>
+                    </div>
+                  </div>
+                </div>
+
                 {viewInvoice.notes && (
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold mb-2">Notes</h3>
-                    <p className="text-sm whitespace-pre-line">{viewInvoice.notes}</p>
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium mb-1">Notes</h3>
+                    <p className="text-sm p-3 bg-muted rounded-md">{viewInvoice.notes}</p>
                   </div>
                 )}
-                
-                {viewInvoice.payment_method && (
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold mb-2">Payment Information</h3>
-                    <p><span className="text-muted-foreground">Method:</span> {viewInvoice.payment_method.replace(/_/g, ' ')}</p>
-                    {viewInvoice.payment_date && (
-                      <p><span className="text-muted-foreground">Date:</span> {formatDate(viewInvoice.payment_date)}</p>
+
+                {viewInvoice.payment_date && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium mb-1">Payment Information</h3>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between max-w-xs">
+                        <span>Payment Date:</span>
+                        <span>{formatDate(viewInvoice.payment_date)}</span>
+                      </div>
+                      {viewInvoice.payment_method && (
+                        <div className="flex justify-between max-w-xs">
+                          <span>Payment Method:</span>
+                          <span>{viewInvoice.payment_method.replace(/_/g, ' ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2 sm:justify-between">
+                  <div className="flex gap-2">
+                    {viewInvoice.status === "draft" && (
+                      <Button size="sm" onClick={() => sendInvoice(viewInvoice.id)}>
+                        <Send className="mr-2 h-4 w-4" /> Send to Client
+                      </Button>
+                    )}
+                    
+                    {(viewInvoice.status === "sent" || viewInvoice.status === "overdue") && viewInvoice.paid_amount < viewInvoice.total_amount && (
+                      <Button size="sm" onClick={() => setRecordPaymentOpen(true)}>
+                        <DollarSign className="mr-2 h-4 w-4" /> Record Payment
+                      </Button>
                     )}
                   </div>
-                )}
+
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      // Print preview would go here
+                      toast({
+                        title: "Print preview",
+                        description: `Printing invoice ${formatInvoiceId(viewInvoice.id)}`,
+                      });
+                    }}>
+                      <Printer className="mr-2 h-4 w-4" /> Print
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      // Download functionality would go here
+                      toast({
+                        title: "Download",
+                        description: `Downloading invoice ${formatInvoiceId(viewInvoice.id)}`,
+                      });
+                    }}>
+                      <Download className="mr-2 h-4 w-4" /> Download PDF
+                    </Button>
+                  </div>
+                </DialogFooter>
               </TabsContent>
               
-              {viewInvoice.trips && viewInvoice.trips.length > 0 && (
-                <TabsContent value="trips" className="flex-1 overflow-auto">
-                  <div className="rounded-md border mb-4">
+              <TabsContent value="trips" className="space-y-4">
+                {!viewInvoice.trips || viewInvoice.trips.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Car className="mx-auto h-8 w-8 text-muted-foreground opacity-50 mb-2" />
+                    <p className="text-muted-foreground">No trips associated with this invoice</p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Date</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead>Driver</TableHead>
                           <TableHead>Vehicle</TableHead>
+                          <TableHead>Driver</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1179,91 +1274,353 @@ export default function Invoices() {
                           <TableRow key={trip.id}>
                             <TableCell>{formatDate(trip.date)}</TableCell>
                             <TableCell>{formatTripType(trip.type)}</TableCell>
-                            <TableCell>{trip.driver_name}</TableCell>
                             <TableCell>{trip.vehicle_details}</TableCell>
+                            <TableCell>{trip.driver_name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {trip.status && typeof trip.status === 'string' ? 
+                                  trip.status.charAt(0).toUpperCase() + trip.status.slice(1) : 
+                                  "Unknown"}
+                              </Badge>
+                            </TableCell>
                             <TableCell className="text-right">{formatCurrency(trip.amount)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                </TabsContent>
-              )}
+                )}
+              </TabsContent>
             </Tabs>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit Invoice Dialog */}
+      <Dialog 
+        open={createInvoiceOpen || !!editInvoice} 
+        onOpenChange={(open) => !open && (setCreateInvoiceOpen(false), setEditInvoice(null))}
+      >
+        <DialogContent className="sm:max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{editInvoice ? "Edit Invoice" : "Create New Invoice"}</DialogTitle>
+            <DialogDescription>
+              {editInvoice 
+                ? `Modify invoice details for ${editInvoice.client_name}`
+                : "Fill in the details to create a new invoice"}
+            </DialogDescription>
+          </DialogHeader>
           
-          <DialogFooter className="mt-6 flex gap-2">
-            {viewInvoice && viewInvoice.status === "draft" && (
-              <Button 
-                variant="outline" 
-                className="mr-auto"
-                onClick={() => sendInvoice(viewInvoice.id)}
-              >
-                <Send className="mr-2 h-4 w-4" /> Send to Client
-              </Button>
+          <ScrollArea className="max-h-[calc(90vh-10rem)]">
+            {isFormDataLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading client data...</p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveInvoice} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="client_id">Client</Label>
+                    <Select 
+                      name="client_id" 
+                      value={selectedClient} 
+                      onValueChange={handleClientChange}
+                      disabled={!!editInvoice}
+                      required
+                    >
+                      <SelectTrigger id="client_id">
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients?.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {selectedClient && !editInvoice && (
+                    <div className="space-y-2">
+                      <Label htmlFor="quotation_id">Based on Quotation (Optional)</Label>
+                      <Select 
+                        name="quotation_id" 
+                        value={selectedQuotation || "_none"} 
+                        onValueChange={handleQuotationChange}
+                      >
+                        <SelectTrigger id="quotation_id">
+                          <SelectValue placeholder="Select quotation (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_none">None</SelectItem>
+                          {quotations?.map((quotation) => (
+                            <SelectItem key={quotation.id} value={quotation.id}>
+                              {quotation.id.substring(0, 8).toUpperCase()} ({formatDate(quotation.date)})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {selectedClient && !selectedQuotation && !editInvoice && availableTrips && availableTrips.length > 0 && (
+                  <div className="space-y-2 border p-4 rounded-md">
+                    <Label className="block mb-2">Include Completed Trips (Optional)</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {availableTrips.map(trip => (
+                        <div key={trip.id} className="flex items-center space-x-2">
+                          <input 
+                            type="checkbox"
+                            id={`trip-${trip.id}`}
+                            value={trip.id}
+                            checked={selectedTrips.includes(trip.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTrips([...selectedTrips, trip.id]);
+                              } else {
+                                setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <Label htmlFor={`trip-${trip.id}`} className="cursor-pointer text-sm">
+                            {formatDate(trip.date)} - {formatTripType(trip.type)} - {formatCurrency(trip.amount)}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Invoice Date</Label>
+                    <Input 
+                      id="date"
+                      name="date"
+                      type="date"
+                      defaultValue={editInvoice?.date || format(new Date(), "yyyy-MM-dd")}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="due_date">Due Date</Label>
+                    <Input 
+                      id="due_date"
+                      name="due_date"
+                      type="date"
+                      defaultValue={editInvoice?.due_date || format(addDays(new Date(), 30), "yyyy-MM-dd")}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label>Invoice Items</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addItem}
+                      disabled={!!selectedQuotation}
+                    >
+                      <Plus className="mr-2 h-4 w-4" /> Add Item
+                    </Button>
+                  </div>
+
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoiceItems.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Input 
+                              value={item.description}
+                              onChange={(e) => {
+                                const updatedItems = [...invoiceItems];
+                                updatedItems[index].description = e.target.value;
+                                setInvoiceItems(updatedItems);
+                              }}
+                              placeholder="Description"
+                              disabled={!!selectedQuotation}
+                              required
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const quantity = parseInt(e.target.value) || 0;
+                                updateItemAmount(index, quantity, item.unit_price);
+                              }}
+                              min="1"
+                              className="w-20 text-right"
+                              disabled={!!selectedQuotation}
+                              required
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number"
+                              value={item.unit_price}
+                              onChange={(e) => {
+                                const unitPrice = parseFloat(e.target.value) || 0;
+                                updateItemAmount(index, item.quantity, unitPrice);
+                              }}
+                              min="0"
+                              step="0.01"
+                              className="w-24 text-right"
+                              disabled={!!selectedQuotation}
+                              required
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(item.amount)}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => removeItem(index)}
+                              disabled={invoiceItems.length === 1 || !!selectedQuotation}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  <div className="flex justify-end pt-4">
+                    <div className="w-1/3 space-y-1">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Total:</span>
+                        <span>{formatCurrency(calculateTotal())}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Textarea 
+                    id="notes"
+                    name="notes"
+                    placeholder="Add any notes or payment instructions"
+                    defaultValue={editInvoice?.notes || ""}
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+                {editInvoice && (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select name="status" defaultValue={editInvoice.status}>
+                      <SelectTrigger id="status">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="sent">Sent</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="overdue">Overdue</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => {
+                    setCreateInvoiceOpen(false);
+                    setEditInvoice(null);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    {editInvoice ? "Save Changes" : "Create Invoice"}
+                  </Button>
+                </DialogFooter>
+              </form>
             )}
-            
-            {viewInvoice && (viewInvoice.status === "sent" || viewInvoice.status === "overdue") && (
-              <Button 
-                variant="outline" 
-                className="mr-auto"
-                onClick={() => setRecordPaymentOpen(true)}
-              >
-                <CreditCard className="mr-2 h-4 w-4" /> Record Payment
-              </Button>
-            )}
-            
-            <Button variant="secondary" onClick={() => setViewInvoice(null)}>
-              Close
-            </Button>
-          </DialogFooter>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
       {/* Record Payment Dialog */}
       <Dialog open={recordPaymentOpen} onOpenChange={setRecordPaymentOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
-              Record a payment for invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}
+              {viewInvoice && (
+                <span>Record payment for invoice {formatInvoiceId(viewInvoice.id)}</span>
+              )}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="payment-amount">Payment Amount</Label>
-              <Input
-                id="payment-amount"
-                type="number"
-                step="0.01"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-              />
+              <Label htmlFor="payment_amount">Payment Amount</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="payment_amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="pl-9"
+                  required
+                />
+              </div>
               {viewInvoice && (
-                <p className="text-xs text-muted-foreground">
-                  Remaining balance: {formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}
-                </p>
+                <div className="text-xs text-muted-foreground">
+                  Balance due: {formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}
+                </div>
               )}
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="payment-date">Payment Date</Label>
+              <Label htmlFor="payment_date">Payment Date</Label>
               <Input
-                id="payment-date"
+                id="payment_date"
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
+                required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="payment-method">Payment Method</Label>
+              <Label htmlFor="payment_method">Payment Method</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a payment method" />
+                <SelectTrigger id="payment_method">
+                  <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                   <SelectItem value="credit_card">Credit Card</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
                   <SelectItem value="mobile_money">Mobile Money</SelectItem>
                   <SelectItem value="cheque">Cheque</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
@@ -1271,326 +1628,35 @@ export default function Invoices() {
               </Select>
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setRecordPaymentOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleRecordPayment}>Record Payment</Button>
+            <Button onClick={handleRecordPayment}>
+              <CreditCard className="mr-2 h-4 w-4" /> Record Payment
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit Invoice Dialog */}
-      <Dialog 
-        open={createInvoiceOpen || editInvoice !== null} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateInvoiceOpen(false);
-            setEditInvoice(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>
-              {editInvoice ? `Edit Invoice ${formatInvoiceId(editInvoice.id)}` : "Create New Invoice"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <ScrollArea className="flex-1 pr-4">
-            <form onSubmit={handleSaveInvoice} className="space-y-6 py-4">
-              {/* Client Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="client_id">Client</Label>
-                <Select 
-                  name="client_id" 
-                  value={selectedClient} 
-                  onValueChange={handleClientChange}
-                  required
-                  disabled={!!editInvoice}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients?.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Invoice Date</Label>
-                  <Input 
-                    id="date" 
-                    name="date" 
-                    type="date" 
-                    defaultValue={editInvoice ? editInvoice.date : format(new Date(), "yyyy-MM-dd")}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="due_date">Due Date</Label>
-                  <Input 
-                    id="due_date" 
-                    name="due_date" 
-                    type="date" 
-                    defaultValue={editInvoice ? editInvoice.due_date : format(addDays(new Date(), 30), "yyyy-MM-dd")}
-                    required
-                  />
-                </div>
-              </div>
-              
-              {/* Status */}
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select 
-                  name="status" 
-                  defaultValue={editInvoice ? editInvoice.status : "draft"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="overdue">Overdue</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Associated Quotation or Trips */}
-              {!editInvoice && selectedClient && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="quotation_id">Associated Quotation (Optional)</Label>
-                    <Select 
-                      value={selectedQuotation || "_none"} 
-                      onValueChange={handleQuotationChange}
-                      disabled={quotationsLoading || selectedTrips.length > 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a quotation" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">None</SelectItem>
-                        {quotations?.map((quotation) => (
-                          <SelectItem key={quotation.id} value={quotation.id}>
-                            QUO-{quotation.id.substring(0, 8).toUpperCase()} ({formatDate(quotation.date)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {quotationsLoading && <p className="text-xs text-muted-foreground">Loading quotations...</p>}
-                    {quotationsError && <p className="text-xs text-red-500">Error loading quotations</p>}
-                  </div>
-                  
-                  {!selectedQuotation && (
-                    <div className="space-y-2">
-                      <Label>Associated Trips (Optional)</Label>
-                      <div className="rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="w-12"></TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Type</TableHead>
-                              <TableHead>Driver</TableHead>
-                              <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {tripsLoading ? (
-                              <TableRow>
-                                <TableCell colSpan={5} className="text-center py-4">
-                                  Loading trips...
-                                </TableCell>
-                              </TableRow>
-                            ) : availableTrips && availableTrips.length > 0 ? (
-                              availableTrips.map((trip) => (
-                                <TableRow key={trip.id}>
-                                  <TableCell>
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedTrips.includes(trip.id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedTrips([...selectedTrips, trip.id]);
-                                        } else {
-                                          setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
-                                        }
-                                      }}
-                                      disabled={!!selectedQuotation}
-                                    />
-                                  </TableCell>
-                                  <TableCell>{formatDate(trip.date)}</TableCell>
-                                  <TableCell>{formatTripType(trip.type)}</TableCell>
-                                  <TableCell>{trip.driver_name}</TableCell>
-                                  <TableCell className="text-right">{formatCurrency(trip.amount)}</TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell colSpan={5} className="text-center py-4">
-                                  No uninvoiced trips available for this client
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      {tripsError && <p className="text-xs text-red-500">Error loading trips</p>}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Invoice Items */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Invoice Items</Label>
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={addItem}
-                    disabled={!!selectedQuotation || selectedTrips.length > 0}
-                  >
-                    <Plus className="h-4 w-4 mr-1" /> Add Item
-                  </Button>
-                </div>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-full">Description</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="text-right">Unit Price</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {invoiceItems.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Input
-                              value={item.description}
-                              onChange={(e) => {
-                                const updatedItems = [...invoiceItems];
-                                updatedItems[index].description = e.target.value;
-                                setInvoiceItems(updatedItems);
-                              }}
-                              disabled={!!selectedQuotation || selectedTrips.length > 0}
-                              placeholder="Item description"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="1"
-                              step="1"
-                              className="text-right w-20"
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const quantity = parseInt(e.target.value) || 0;
-                                updateItemAmount(index, quantity, item.unit_price);
-                              }}
-                              disabled={!!selectedQuotation || selectedTrips.length > 0}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              className="text-right w-28"
-                              value={item.unit_price}
-                              onChange={(e) => {
-                                const unitPrice = parseFloat(e.target.value) || 0;
-                                updateItemAmount(index, item.quantity, unitPrice);
-                              }}
-                              disabled={!!selectedQuotation || selectedTrips.length > 0}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(item.amount)}
-                          </TableCell>
-                          <TableCell>
-                            {invoiceItems.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeItem(index)}
-                                disabled={!!selectedQuotation || selectedTrips.length > 0}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                    <tfoot>
-                      <tr className="border-t">
-                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right font-semibold">Total:</td>
-                        <td className="pl-4 pr-4 py-2 text-right font-semibold">{formatCurrency(calculateTotal())}</td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </Table>
-                </div>
-              </div>
-              
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea 
-                  id="notes" 
-                  name="notes" 
-                  placeholder="Additional notes or payment instructions"
-                  defaultValue={editInvoice?.notes || ""}
-                  rows={3}
-                />
-              </div>
-              
-              <DialogFooter className="pt-4">
-                <Button variant="outline" type="button" onClick={() => {
-                  setCreateInvoiceOpen(false);
-                  setEditInvoice(null);
-                }}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isFormDataLoading}>
-                  {editInvoice ? "Update Invoice" : "Create Invoice"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Invoice Confirmation */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the invoice and remove its association with any trips.
-              This action cannot be undone.
+              This will permanently delete the invoice. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteInvoice} className="bg-red-600 text-white hover:bg-red-700">
+            <AlertDialogCancel onClick={() => {
+              setDeleteDialogOpen(false);
+              setInvoiceToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteInvoice}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

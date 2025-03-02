@@ -1,5 +1,5 @@
 
-import { DisplayTrip, Trip, convertToDisplayTrips } from './trip';
+import { DisplayTrip } from './trip';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'credit_card' | 'mobile_money' | 'cheque' | 'other';

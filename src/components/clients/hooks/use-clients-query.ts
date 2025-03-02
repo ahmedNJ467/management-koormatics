@@ -40,29 +40,23 @@ export function useClientsQuery() {
       const { data: activeContractData, error: contractError } = await supabase
         .from('trips')
         .select('client_id')
-        .eq('status', 'in_progress')
-        .is('invoice_id', null);
+        .eq('status', 'in_progress') // Using in_progress instead of ongoing
+        .is('invoice_id', null); // Not invoiced yet
       
       if (contractError) {
         console.error("Error fetching active contracts:", contractError);
       }
       
       // Get unique client IDs with active contracts
-      const clientsWithActiveContracts = new Set<string>();
+      const clientsWithActiveContracts = new Set(
+        activeContractData?.map(trip => trip.client_id) || []
+      );
       
-      if (activeContractData) {
-        activeContractData.forEach(trip => {
-          if (trip.client_id) {
-            clientsWithActiveContracts.add(trip.client_id);
-          }
-        });
-      }
-      
-      // Add has_active_contract flag to clients without using type instantiation
-      const clientsWithFlag = data ? data.map(client => ({
+      // Add has_active_contract flag to clients
+      const clientsWithFlag = (data || []).map(client => ({
         ...client,
         has_active_contract: clientsWithActiveContracts.has(client.id)
-      })) : [];
+      }));
       
       return clientsWithFlag as Client[];
     },
