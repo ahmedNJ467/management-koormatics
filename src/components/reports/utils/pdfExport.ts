@@ -14,7 +14,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'in',
-    format: 'letter'
+    format: [11, 8.5] // Wider PDF (11 inches width, 8.5 inches height)
   });
   
   // Modern color scheme with proper tuple types
@@ -36,11 +36,15 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
   doc.setFillColor(...colors.headerBg);
   doc.rect(0, 0, doc.internal.pageSize.width, 1.2, 'F');
   
-  // Add company logo/name styled
-  doc.setFontSize(24);
+  // Add logo
+  const logoPath = 'lovable-uploads/3900a10d-0eb8-4894-a90e-73841e2422de.png';
+  doc.addImage(logoPath, 'PNG', pageMargin, 0.3, 0.8, 0.8);
+  
+  // Add company name styled
+  doc.setFontSize(22);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text("FLEET MANAGEMENT", doc.internal.pageSize.width / 2, 0.6, { align: 'center' });
+  doc.text("PBG MOVEMENT & SAFETY DEPT.", doc.internal.pageSize.width / 2, 0.6, { align: 'center' });
   
   // Add report title
   doc.setFontSize(18);
@@ -62,16 +66,15 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
   
   const { tableHeaders, tableData } = generateTableData(data, filename);
 
-  // Create a modern styled table
+  // Create a modern styled table with no grid
   autoTable(doc, {
     head: [tableHeaders],
     body: tableData,
     startY: 2.0,
     styles: {
       fontSize: 10,
-      cellPadding: { top: 0.15, right: 0.1, bottom: 0.15, left: 0.1 },
-      lineWidth: 0.1, 
-      lineColor: [220, 220, 220],
+      cellPadding: { top: 0.18, right: 0.15, bottom: 0.18, left: 0.15 },
+      lineWidth: 0, // Remove grid lines
       textColor: colors.text,
       minCellHeight: 0.4,
       font: 'helvetica'
@@ -81,7 +84,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       textColor: 255,
       fontStyle: 'bold',
       halign: 'center',
-      cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
+      cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
     },
     alternateRowStyles: {
       fillColor: colors.rowAlt,
@@ -91,7 +94,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
     columnStyles: {
       1: { // Client column (index 1)
         cellWidth: 2.5, // Make Client column wider
-        cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
+        cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
       },
       // Add color coding for status column based on report type
       ...(filename === 'vehicles-report' ? {
@@ -122,7 +125,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
             
             // Get cell dimensions
             const cell = data.cell;
-            const x = cell.x + 0.1;
+            const x = cell.x + 0.15; // Increased padding
             let y = cell.y + 0.3;
             
             // Clear the cell and redraw text with custom formatting
@@ -192,7 +195,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       const pageSize = doc.internal.pageSize;
       const pageHeight = pageSize.height;
       
-      // Add footer with gradient
+      // Add footer with subtle background
       doc.setFillColor(...colors.light);
       doc.rect(0, pageHeight - 0.6, pageSize.width, 0.6, 'F');
       
@@ -219,7 +222,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       // Add company info
       doc.setTextColor(...colors.primary);
       doc.text(
-        'Fleet Management System',
+        'PBG MOVEMENT & SAFETY DEPT.',
         pageMargin,
         pageHeight - 0.3,
         { align: 'left' }
