@@ -1,6 +1,6 @@
 
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day';
+export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
 
 export interface TripMessage {
   id: string;
@@ -10,6 +10,7 @@ export interface TripMessage {
   message: string;
   timestamp: string;
   is_read: boolean;
+  attachment_url?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -22,6 +23,7 @@ export interface TripAssignment {
   driver_avatar?: string;
   assigned_at: string;
   status: 'pending' | 'accepted' | 'rejected';
+  driver_rating?: number;
   notes?: string;
   created_at?: string;
   updated_at?: string;
@@ -40,6 +42,11 @@ export interface Trip {
   amount: number;
   pickup_location?: string;
   dropoff_location?: string;
+  flight_number?: string;
+  airline?: string;
+  terminal?: string;
+  special_instructions?: string;
+  is_recurring?: boolean;
   notes?: string;
   invoice_id?: string;
   created_at?: string;
@@ -56,11 +63,7 @@ export interface DisplayTrip extends Trip {
   // These fields are for UI display only and not stored directly in the database
   time?: string; // For displaying formatted start_time
   return_time?: string; // For displaying formatted end_time
-  flight_number?: string;
-  airline?: string;
-  terminal?: string;
   special_notes?: string;
-  is_recurring?: boolean; // Added for UI display purposes
   ui_service_type?: string; // Added to store the UI service type corresponding to database type
 }
 
@@ -71,5 +74,8 @@ export const tripTypeDisplayMap: Record<TripType, string> = {
   'other': 'Other Service',
   'hourly': 'Hourly Service',
   'full_day': 'Full Day',
-  'multi_day': 'Multi Day'
+  'multi_day': 'Multi Day',
+  'one_way_transfer': 'One Way Transfer',
+  'round_trip': 'Round Trip',
+  'security_escort': 'Security Escort'
 };
