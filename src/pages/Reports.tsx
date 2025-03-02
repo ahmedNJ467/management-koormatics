@@ -265,11 +265,11 @@ const Reports = () => {
       tableHeaders = [
         'Date', 
         'Client/Passenger',
-        'Flight Information',
         'Service Type', 
         'Pick-up Address', 
         'Drop-off Address',
-        'Time', 
+        'Time',
+        'Flight',
         'Vehicle', 
         'Assigned Driver'
       ];
@@ -277,11 +277,11 @@ const Reports = () => {
       tableData = data.map(trip => [
         format(new Date(trip.date), 'MM/dd/yyyy'),
         trip.clients?.name || 'N/A',
-        trip.flight_info || 'N/A',
-        trip.display_type || trip.type || 'N/A',
+        trip.display_type || tripTypeDisplayMap[trip.type] || trip.type || 'N/A',
         trip.pickup_location || 'N/A',
         trip.dropoff_location || 'N/A',
         trip.start_time ? `${trip.start_time} - ${trip.end_time || 'N/A'}` : 'N/A',
+        trip.flight_info || 'N/A',
         `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
         trip.drivers?.name || 'N/A'
       ]);
@@ -471,15 +471,15 @@ const Reports = () => {
     const terminalMatch = notes.match(/Terminal:?\s*([^,\n]+)/i);
     
     if (flightNumberMatch) {
-      flightInfo += `Flight: ${flightNumberMatch[1].trim()}`;
+      flightInfo += `${flightNumberMatch[1].trim()}`;
     }
     
     if (airlineMatch) {
-      flightInfo += flightInfo ? `, Airline: ${airlineMatch[1].trim()}` : `Airline: ${airlineMatch[1].trim()}`;
+      flightInfo += flightInfo ? `, ${airlineMatch[1].trim()}` : `${airlineMatch[1].trim()}`;
     }
     
     if (terminalMatch) {
-      flightInfo += flightInfo ? `, Terminal: ${terminalMatch[1].trim()}` : `Terminal: ${terminalMatch[1].trim()}`;
+      flightInfo += flightInfo ? `, ${terminalMatch[1].trim()}` : `${terminalMatch[1].trim()}`;
     }
     
     return flightInfo;
