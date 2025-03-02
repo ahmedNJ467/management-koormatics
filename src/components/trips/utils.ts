@@ -40,5 +40,5 @@ export const extractTripStatus = (notes?: string): string => {
   if (!notes) return 'scheduled';
   
   const statusMatch = notes.match(/^STATUS:([a-z_]+)/i);
-  return statusMatch ? statusMatch[1] : 'scheduled';
+  return statusMatch ? statusMatch[1].toLowerCase() : 'scheduled';
 };

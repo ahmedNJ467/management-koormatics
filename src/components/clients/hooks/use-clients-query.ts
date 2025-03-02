@@ -37,10 +37,11 @@ export function useClientsQuery() {
       if (error) throw error;
       
       // Get clients with active contracts (from trips table)
+      // Using special_instructions to filter for in_progress trips since status is stored there
       const { data: activeContractData, error: contractError } = await supabase
         .from('trips')
         .select('client_id')
-        .eq('status', 'in_progress') // Using in_progress instead of ongoing
+        .ilike('special_instructions', 'STATUS:in_progress%') // Filter by status in special_instructions
         .is('invoice_id', null); // Not invoiced yet
       
       if (contractError) {

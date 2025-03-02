@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -40,13 +41,17 @@ import { DbTripData, TripMessageData, TripAssignmentData } from "@/components/tr
 import { Driver, Vehicle, Client } from "@/lib/types";
 
 // Map UI service types to database service_type values
+// Making sure all TripType values are included
 const serviceTypeMap: Record<string, TripType> = {
   "airport_pickup": "airport_pickup",
   "airport_dropoff": "airport_dropoff",
   "round_trip": "round_trip",
   "security_escort": "security_escort",
   "one_way": "one_way_transfer",
-  "full_day_hire": "full_day"
+  "full_day_hire": "full_day",
+  "hourly": "hourly",
+  "multi_day": "multi_day",
+  "other": "other"
 };
 
 export default function Trips() {
@@ -86,11 +91,7 @@ export default function Trips() {
       if (error) throw error;
 
       return data.map((trip: DbTripData) => {
-        return mapDatabaseFieldsToTrip({
-          ...trip,
-          // Add status field if it doesn't exist in DB response
-          status: trip.status || "scheduled"
-        });
+        return mapDatabaseFieldsToTrip(trip);
       });
     },
   });
@@ -345,7 +346,7 @@ export default function Trips() {
     const formData = new FormData(form);
     
     const uiServiceType = formData.get("service_type") as string;
-    const dbServiceType = serviceTypeMap[uiServiceType] || "other";
+    const dbServiceType: TripType = (serviceTypeMap[uiServiceType] || "other") as TripType;
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
     // Add flight details to notes if it's an airport trip
