@@ -22,6 +22,7 @@ export interface DbTrip {
   flight_number?: string;   // Now stored directly in the database
   terminal?: string;        // Now stored directly in the database
   is_recurring?: boolean;
+  passengers?: string[];    // Array of passenger names for organization clients
 }
 
 export interface Trip {
@@ -49,6 +50,7 @@ export interface Trip {
   flight_number?: string;     // Direct from database
   terminal?: string;          // Direct from database
   is_recurring?: boolean;
+  passengers?: string[];      // Array of passenger names for organization clients
 }
 
 export interface DisplayTrip extends Trip {

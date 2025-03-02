@@ -10,6 +10,7 @@ import { AssignmentsTab } from "@/components/trips/tabs/AssignmentsTab";
 import { DetailsTab } from "@/components/trips/tabs/DetailsTab";
 import { TripDetailHeader } from "@/components/trips/TripDetailHeader";
 import { TripDetailActions } from "@/components/trips/TripDetailActions";
+import { Driver } from "@/lib/types";
 
 interface TripDetailViewProps {
   viewTrip: DisplayTrip;
@@ -17,6 +18,7 @@ interface TripDetailViewProps {
   setActiveTab: (tab: string) => void;
   messages: TripMessage[];
   assignments: TripAssignment[];
+  drivers: Driver[];
   newMessage: string;
   setNewMessage: (message: string) => void;
   handleSendMessage: () => Promise<void>;
@@ -35,6 +37,7 @@ export function TripDetailView({
   setActiveTab,
   messages,
   assignments,
+  drivers,
   newMessage,
   setNewMessage,
   handleSendMessage,
@@ -85,7 +88,9 @@ export function TripDetailView({
         </TabsContent>
         <TabsContent value="assignments" className="space-y-4">
           <AssignmentsTab 
+            viewTrip={viewTrip}
             assignments={assignments}
+            drivers={drivers}
             setTripToAssign={setTripToAssign}
             setAssignOpen={setAssignOpen}
           />

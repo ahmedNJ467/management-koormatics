@@ -46,6 +46,13 @@ export const handleSaveTrip = async (
   // Get status value directly from form for edit mode
   const statusValue = formData.get("status") as TripStatus || "scheduled";
   
+  // Extract passenger data for organization clients
+  const clientType = formData.get("client_type") as string;
+  const passengersText = formData.get("passengers") as string || "";
+  const passengers = passengersText
+    ? passengersText.split('\n').map(p => p.trim()).filter(Boolean)
+    : [];
+  
   try {
     if (editTrip) {
       // Update existing trip
@@ -65,7 +72,8 @@ export const handleSaveTrip = async (
           status: statusValue, // Use the status field directly
           flight_number: flightNumber,
           airline: airline,
-          terminal: terminal
+          terminal: terminal,
+          passengers: clientType === "organization" ? passengers : null
         })
         .eq("id", editTrip.id);
       
@@ -84,12 +92,13 @@ export const handleSaveTrip = async (
       
       const trips = await createRecurringTrips(formData, occurrences, frequencyValue);
       
-      // Update the recurring trips with flight details and status
+      // Update the recurring trips with flight details, status, and passengers
       trips.forEach(trip => {
         trip.flight_number = flightNumber;
         trip.airline = airline; 
         trip.terminal = terminal;
         trip.status = "scheduled";
+        trip.passengers = clientType === "organization" ? passengers : null;
       });
       
       const { error } = await supabase
@@ -125,7 +134,8 @@ export const handleSaveTrip = async (
           status: "scheduled", // Default status
           flight_number: flightNumber,
           airline: airline,
-          terminal: terminal
+          terminal: terminal,
+          passengers: clientType === "organization" ? passengers : null
         });
       
       if (error) {

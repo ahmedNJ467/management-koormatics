@@ -85,6 +85,12 @@ export function TripDialogs({
   handleMessageSend,
   queryClient
 }: TripDialogsProps) {
+  const onViewTripOpenChange = (open: boolean) => {
+    if (!open) {
+      setViewTrip(null);
+    }
+  };
+
   return (
     <>
       {/* Trip Form Dialog (Edit & Create) */}
@@ -113,16 +119,17 @@ export function TripDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* Trip Detail View Dialog */}
-      <Dialog open={!!viewTrip} onOpenChange={(open) => !open && setViewTrip(null)}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh]">
+      {/* View Trip Dialog */}
+      <Dialog open={!!viewTrip} onOpenChange={onViewTripOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {viewTrip && (
             <TripDetailView
               viewTrip={viewTrip}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
-              messages={messages}
-              assignments={assignments}
+              messages={messages || []}
+              assignments={assignments || []}
+              drivers={drivers || []}
               newMessage={newMessage}
               setNewMessage={setNewMessage}
               handleSendMessage={handleMessageSend}

@@ -6,7 +6,6 @@ import { MapPin, ArrowRight, Users } from "lucide-react";
 import { format } from "date-fns";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { TripTypeIcon } from "@/components/trips/TripTypeIcon";
-import { parsePassengers } from "@/components/trips/utils";
 
 interface DetailsTabProps {
   viewTrip: DisplayTrip;
@@ -75,7 +74,7 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
   const renderPassengers = () => {
     if (viewTrip.client_type !== "organization") return null;
     
-    const passengers = parsePassengers(viewTrip.notes);
+    const passengers = viewTrip.passengers?.length ? viewTrip.passengers : [];
     if (passengers.length === 0) return null;
     
     return (

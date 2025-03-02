@@ -52,6 +52,7 @@ export interface DbTripData {
   terminal?: string;
   is_recurring?: boolean;
   notes?: string; // Keep notes for backward compatibility
+  passengers?: string[]; // Add passengers array
   // Joined data
   clients?: {
     name: string;

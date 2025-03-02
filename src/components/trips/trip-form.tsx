@@ -1,504 +1,289 @@
-
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
-import { format, isAfter, isBefore } from "date-fns";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { supabase } from "@/integrations/supabase/client";
-
-import { TripType, TripStatus, DisplayTrip } from "@/lib/types";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { 
-  CalendarDays, 
-  Clock, 
-  Car, 
-  User, 
-  Users, 
-  Calendar as CalendarIcon, 
-  MapPin, 
-  DollarSign 
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { DisplayTrip, TripStatus } from "@/lib/types/trip";
+import { Client, Driver, Vehicle } from "@/lib/types";
+import { serviceTypeOptions } from "@/lib/types/trip/base-types";
+import { RecurringTripFields } from "@/components/trips/RecurringTripFields";
+import { FlightDetailsFields } from "@/components/trips/FlightDetailsFields";
+import { TripStatusSelect } from "@/components/trips/TripStatusSelect";
 
-// Form schema definition with Zod
-const formSchema = z.object({
-  client_id: z.string().uuid({ message: "Please select a client" }),
-  vehicle_id: z.string().uuid({ message: "Please select a vehicle" }),
-  driver_id: z.string().uuid({ message: "Please select a driver" }),
-  date: z.date({ required_error: "Please select a date" }),
-  start_time: z.string().optional(),
-  end_time: z.string().optional(),
-  type: z.string(),
-  status: z.string(),
-  pickup_location: z.string().optional(),
-  dropoff_location: z.string().optional(),
-  notes: z.string().optional(),
-  amount: z.number().min(0, "Amount must be a positive number").optional(),
-});
+interface TripFormProps {
+  tripData?: DisplayTrip;
+  clients?: Client[];
+  vehicles?: Vehicle[];
+  drivers?: Driver[];
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  updateStatus?: (tripId: string, status: TripStatus) => void;
+}
 
-type FormValues = z.infer<typeof formSchema>;
-
-type TripFormProps = {
-  initialData?: DisplayTrip;
-  onSubmit: (data: FormValues) => void;
-  onCancel: () => void;
-};
-
-const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
-  const { toast } = useToast();
-  const [formTab, setFormTab] = useState("basic");
+export function TripForm({
+  tripData,
+  clients,
+  vehicles,
+  drivers,
+  onSubmit,
+  updateStatus,
+}: TripFormProps) {
+  const [selectedServiceType, setSelectedServiceType] = useState<string>(
+    tripData?.service_type || tripData?.type || "point_to_point"
+  );
   
-  // Create form with react-hook-form and zodResolver
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-      ...initialData,
-      date: initialData.date ? new Date(initialData.date) : undefined,
-      start_time: initialData.start_time,
-      end_time: initialData.end_time,
-      type: initialData.type || "other",
-      status: initialData.status || "scheduled",
-      amount: initialData.amount,
-    } : {
-      type: "other",
-      status: "scheduled",
-    },
-  });
+  const [selectedClientId, setSelectedClientId] = useState<string>(
+    tripData?.client_id || ""
+  );
+  
+  const [isRecurring, setIsRecurring] = useState<boolean>(
+    tripData?.is_recurring || false
+  );
 
-  // Fetch clients for dropdown
-  const { data: clients } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, name, type")
-        .order("name");
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Additional state for selected client type
+  const [selectedClientType, setSelectedClientType] = useState<"organization" | "individual" | undefined>(
+    clients?.find(c => c.id === selectedClientId)?.type
+  );
 
-  // Fetch vehicles for dropdown
-  const { data: vehicles } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("id, make, model, registration, status, type")
-        .eq("status", "active")
-        .order("make");
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Fetch drivers for dropdown
-  const { data: drivers } = useQuery({
-    queryKey: ["drivers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("drivers")
-        .select("id, name, status")
-        .eq("status", "active")
-        .order("name");
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Handle form submission
-  const handleSubmit = (values: FormValues) => {
+  // Update client type when client selection changes
+  useEffect(() => {
+    if (selectedClientId) {
+      const selectedClient = clients?.find(c => c.id === selectedClientId);
+      setSelectedClientType(selectedClient?.type);
+    } else {
+      setSelectedClientType(undefined);
+    }
+  }, [selectedClientId, clients]);
+  
+  // Determine if we need to show return time field
+  const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(selectedServiceType);
+  
+  // Determine if we need to show flight details
+  const needsFlightDetails = ["airport_pickup", "airport_dropoff"].includes(selectedServiceType);
+  
+  // Format date for input field
+  const formatDateForInput = (dateString?: string) => {
+    if (!dateString) return "";
     try {
-      console.log("Form values:", values);
-      onSubmit(values);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit form",
-        variant: "destructive",
-      });
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    } catch (e) {
+      return "";
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <Tabs defaultValue="basic" value={formTab} onValueChange={setFormTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="basic">Basic Information</TabsTrigger>
-            <TabsTrigger value="details">Trip Details</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="basic" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="client_id"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Client</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select client" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients?.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name} ({client.type})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <form onSubmit={onSubmit} className="space-y-4">
+      {/* Trip Type */}
+      <div className="space-y-2">
+        <Label htmlFor="service_type">Service Type</Label>
+        <Select
+          name="service_type"
+          value={selectedServiceType}
+          onValueChange={(value) => setSelectedServiceType(value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select service type" />
+          </SelectTrigger>
+          <SelectContent>
+            {serviceTypeOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Trip Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => date && field.onChange(date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      {/* Client Selection */}
+      <div className="space-y-2">
+        <Label htmlFor="client_id">Client</Label>
+        <Select
+          name="client_id"
+          value={selectedClientId}
+          onValueChange={(value) => setSelectedClientId(value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients?.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name} {client.type === "organization" && "(Organization)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <input type="hidden" name="client_type" value={selectedClientType || ""} />
+      </div>
 
-            {/* Amount field added to its own row for prominence */}
-            <div className="mt-4">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount</FormLabel>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input
-                          type="number" 
-                          step="0.01"
-                          min="0"
-                          className="pl-9"
-                          placeholder="0.00"
-                          value={field.value === undefined ? "" : field.value}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === "" ? undefined : parseFloat(value));
-                          }}
-                        />
-                      </FormControl>
-                    </div>
-                    <FormDescription>
-                      The trip amount for billing purposes
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      {/* Passengers Field for Organization Clients */}
+      {selectedClientType === "organization" && (
+        <div className="space-y-2">
+          <Label htmlFor="passengers">Passengers</Label>
+          <Textarea
+            name="passengers"
+            placeholder="Enter passenger names (one per line)"
+            className="h-24"
+            defaultValue={tripData?.passengers?.join('\n') || ''}
+          />
+          <p className="text-xs text-muted-foreground">
+            Enter each passenger name on a new line
+          </p>
+        </div>
+      )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Trip Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select trip type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="airport_pickup">Airport Pickup</SelectItem>
-                        <SelectItem value="airport_dropoff">Airport Dropoff</SelectItem>
-                        <SelectItem value="hourly">Hourly Service</SelectItem>
-                        <SelectItem value="full_day">Full Day Service</SelectItem>
-                        <SelectItem value="multi_day">Multi-Day Service</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      The type of trip determines scheduling and billing
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {/* Vehicle Selection */}
+      <div className="space-y-2">
+        <Label htmlFor="vehicle_id">Vehicle</Label>
+        <Select
+          name="vehicle_id"
+          defaultValue={tripData?.vehicle_id}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select vehicle" />
+          </SelectTrigger>
+          <SelectContent>
+            {vehicles?.map((vehicle) => (
+              <SelectItem key={vehicle.id} value={vehicle.id}>
+                {vehicle.make} {vehicle.model} ({vehicle.registration})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      {/* Driver Selection */}
+      <div className="space-y-2">
+        <Label htmlFor="driver_id">Driver</Label>
+        <Select
+          name="driver_id"
+          defaultValue={tripData?.driver_id}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select driver" />
+          </SelectTrigger>
+          <SelectContent>
+            {drivers?.map((driver) => (
+              <SelectItem key={driver.id} value={driver.id}>
+                {driver.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Cancel
-              </Button>
-              <Button type="button" onClick={() => setFormTab("details")}>
-                Next
-              </Button>
-            </div>
-          </TabsContent>
+      {/* Date and Time */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="date">Date</Label>
+          <Input
+            type="date"
+            name="date"
+            defaultValue={formatDateForInput(tripData?.date)}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="time">Time</Label>
+          <Input
+            type="time"
+            name="time"
+            defaultValue={tripData?.time || tripData?.start_time || ""}
+            required
+          />
+        </div>
+      </div>
 
-          <TabsContent value="details" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="vehicle_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vehicle</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select vehicle" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {vehicles?.map((vehicle) => (
-                          <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.make} {vehicle.model} ({vehicle.registration})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {/* Return Time (for round trips) */}
+      {needsReturnTime && (
+        <div className="space-y-2">
+          <Label htmlFor="return_time">Return Time</Label>
+          <Input
+            type="time"
+            name="return_time"
+            defaultValue={tripData?.return_time || tripData?.end_time || ""}
+          />
+        </div>
+      )}
 
-              <FormField
-                control={form.control}
-                name="driver_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Driver</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select driver" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {drivers?.map((driver) => (
-                          <SelectItem key={driver.id} value={driver.id}>
-                            {driver.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {/* Pickup and Dropoff Locations */}
+      <div className="space-y-2">
+        <Label htmlFor="pickup_location">Pickup Location</Label>
+        <Input
+          name="pickup_location"
+          placeholder="Enter pickup address"
+          defaultValue={tripData?.pickup_location || ""}
+        />
+      </div>
 
-              <FormField
-                control={form.control}
-                name="start_time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Time</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        placeholder="HH:MM"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <div className="space-y-2">
+        <Label htmlFor="dropoff_location">Dropoff Location</Label>
+        <Input
+          name="dropoff_location"
+          placeholder="Enter dropoff address"
+          defaultValue={tripData?.dropoff_location || ""}
+        />
+      </div>
 
-              <FormField
-                control={form.control}
-                name="end_time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Time</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        placeholder="HH:MM"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {/* Flight Details for Airport Trips */}
+      {needsFlightDetails && (
+        <FlightDetailsFields
+          flightNumber={tripData?.flight_number || ""}
+          airline={tripData?.airline || ""}
+          terminal={tripData?.terminal || ""}
+        />
+      )}
 
-              <FormField
-                control={form.control}
-                name="pickup_location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pickup Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter pickup location" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {/* Special Notes */}
+      <div className="space-y-2">
+        <Label htmlFor="special_notes">Notes</Label>
+        <Textarea
+          name="special_notes"
+          placeholder="Add any special instructions or notes"
+          className="h-24"
+          defaultValue={tripData?.notes || tripData?.special_notes || ""}
+        />
+      </div>
 
-              <FormField
-                control={form.control}
-                name="dropoff_location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dropoff Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter dropoff location" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      {/* Status Field (only for editing) */}
+      {tripData && (
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <TripStatusSelect
+            name="status"
+            defaultValue={tripData.status}
+            tripId={tripData.id}
+            updateStatus={updateStatus}
+          />
+        </div>
+      )}
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Additional trip details, instructions or requirements"
-                      className="min-h-[120px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      {/* Recurring Trip Option (only for new trips) */}
+      {!tripData && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_recurring"
+            name="is_recurring"
+            checked={isRecurring}
+            onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+          />
+          <Label htmlFor="is_recurring" className="cursor-pointer">
+            This is a recurring trip
+          </Label>
+        </div>
+      )}
 
-            <div className="flex justify-between">
-              <Button type="button" variant="outline" onClick={() => setFormTab("basic")}>
-                Back
-              </Button>
-              <div className="space-x-2">
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {initialData ? "Update Trip" : "Create Trip"}
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </form>
-    </Form>
+      {/* Recurring Trip Fields */}
+      {!tripData && isRecurring && (
+        <RecurringTripFields />
+      )}
+
+      {/* Submit Button */}
+      <Button type="submit" className="w-full">
+        {tripData ? "Update Trip" : "Book Trip"}
+      </Button>
+    </form>
   );
-};
-
-export default TripForm;
+}

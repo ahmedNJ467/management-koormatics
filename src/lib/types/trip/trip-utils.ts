@@ -49,6 +49,7 @@ export function mapDatabaseFieldsToTrip(dbTrip: any): DisplayTrip {
     display_type: displayType,
     type: tripData.service_type || "other", // Legacy field
     special_notes: tripData.notes, // Ensure notes is available as special_notes for backward compatibility
+    passengers: tripData.passengers || []
   };
   
   return trip;
