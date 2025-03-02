@@ -47,13 +47,15 @@ export function useClientsQuery() {
         console.error("Error fetching active contracts:", contractError);
       }
       
-      // Get unique client IDs with active contracts
+      // Get unique client IDs with active contracts - handle null safely
+      const activeContracts = activeContractData || [];
       const clientsWithActiveContracts = new Set(
-        (activeContractData || []).map(trip => trip.client_id)
+        activeContracts.map(trip => trip.client_id)
       );
       
       // Add has_active_contract flag to clients
-      const clientsWithFlag = (data || []).map(client => ({
+      const clientData = data || [];
+      const clientsWithFlag = clientData.map(client => ({
         ...client,
         has_active_contract: clientsWithActiveContracts.has(client.id)
       }));
