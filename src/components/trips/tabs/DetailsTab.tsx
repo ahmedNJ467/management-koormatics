@@ -14,7 +14,8 @@ import {
   Plane, 
   Banknote, 
   Info,
-  Users
+  Users,
+  Navigation
 } from "lucide-react";
 
 interface DetailsTabProps {
@@ -27,143 +28,180 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
   const hasPassengers = viewTrip.client_type === "organization" && viewTrip.passengers && viewTrip.passengers.length > 0;
   
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-md">Trip Information</CardTitle>
+    <div className="space-y-6">
+      <Card className="border-slate-100 overflow-hidden">
+        <CardHeader className="pb-2 bg-slate-50">
+          <CardTitle className="text-md flex items-center text-slate-700">
+            <Info className="h-4 w-4 mr-2 text-purple-500" />
+            Trip Information
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-start gap-2">
-            <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Date</div>
-              <div className="text-sm text-muted-foreground">
-                {formatDate(viewTrip.date)}
+        <CardContent className="pt-4 divide-y divide-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 pb-4">
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 mt-0.5 text-purple-500" />
+              <div>
+                <div className="text-sm font-medium text-slate-600">Date</div>
+                <div className="text-slate-900">
+                  {formatDate(viewTrip.date)}
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="flex items-start gap-2">
-            <Clock className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Time</div>
-              <div className="text-sm text-muted-foreground">
-                {viewTrip.time && formatTime(viewTrip.time)}
-                {viewTrip.return_time && ` - ${formatTime(viewTrip.return_time)}`}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Locations</div>
-              <div className="text-sm text-muted-foreground">
-                {viewTrip.pickup_location && (
-                  <div>From: {viewTrip.pickup_location}</div>
-                )}
-                {viewTrip.dropoff_location && (
-                  <div>To: {viewTrip.dropoff_location}</div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-2">
-            <Info className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Service Type</div>
-              <div className="text-sm text-muted-foreground">
-                {tripTypeDisplayMap[viewTrip.type] || viewTrip.type}
+            
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 mt-0.5 text-purple-500" />
+              <div>
+                <div className="text-sm font-medium text-slate-600">Time</div>
+                <div className="text-slate-900">
+                  {viewTrip.time && formatTime(viewTrip.time)}
+                  {viewTrip.return_time && ` - ${formatTime(viewTrip.return_time)}`}
+                </div>
               </div>
             </div>
           </div>
 
-          {isAirportTrip && hasFlightDetails && (
-            <div className="flex items-start gap-2">
-              <Plane className="h-4 w-4 mt-0.5 text-muted-foreground" />
+          <div className="py-4">
+            <div className="flex items-start gap-3 mb-3">
+              <Navigation className="h-5 w-5 mt-0.5 text-purple-500" />
               <div className="flex-1">
-                <div className="text-sm font-medium">Flight Details</div>
-                <div className="text-sm text-muted-foreground">
-                  {parseFlightDetails(viewTrip.flight_number, viewTrip.airline, viewTrip.terminal)}
+                <div className="text-sm font-medium text-slate-600">Route</div>
+              </div>
+            </div>
+            
+            <div className="pl-8 space-y-3">
+              {viewTrip.pickup_location && (
+                <div className="flex items-start">
+                  <MapPin className="h-4 w-4 mt-0.5 text-emerald-500 mr-2" />
+                  <div>
+                    <div className="text-xs text-slate-500">Pickup Location</div>
+                    <div className="text-slate-900">{viewTrip.pickup_location}</div>
+                  </div>
+                </div>
+              )}
+              
+              {viewTrip.dropoff_location && (
+                <div className="flex items-start">
+                  <MapPin className="h-4 w-4 mt-0.5 text-red-500 mr-2" />
+                  <div>
+                    <div className="text-xs text-slate-500">Dropoff Location</div>
+                    <div className="text-slate-900">{viewTrip.dropoff_location}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 py-4">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 mt-0.5 text-purple-500" />
+              <div>
+                <div className="text-sm font-medium text-slate-600">Service Type</div>
+                <div className="text-slate-900">
+                  {tripTypeDisplayMap[viewTrip.type] || viewTrip.type}
                 </div>
               </div>
             </div>
-          )}
-          
-          <div className="flex items-start gap-2">
-            <Banknote className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Amount</div>
-              <div className="text-sm text-muted-foreground">
-                ${viewTrip.amount.toFixed(2)}
+
+            {isAirportTrip && hasFlightDetails && (
+              <div className="flex items-start gap-3">
+                <Plane className="h-5 w-5 mt-0.5 text-purple-500" />
+                <div>
+                  <div className="text-sm font-medium text-slate-600">Flight Details</div>
+                  <div className="text-slate-900">
+                    {parseFlightDetails(viewTrip.flight_number, viewTrip.airline, viewTrip.terminal)}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex items-start gap-3">
+              <Banknote className="h-5 w-5 mt-0.5 text-purple-500" />
+              <div>
+                <div className="text-sm font-medium text-slate-600">Amount</div>
+                <div className="text-slate-900 font-semibold">
+                  ${viewTrip.amount.toFixed(2)}
+                </div>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-md">Participants</CardTitle>
+      <Card className="border-slate-100 overflow-hidden">
+        <CardHeader className="pb-2 bg-slate-50">
+          <CardTitle className="text-md flex items-center text-slate-700">
+            <Users className="h-4 w-4 mr-2 text-purple-500" />
+            Participants
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-start gap-2">
-            <Building className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Client</div>
-              <div className="text-sm text-muted-foreground">
-                {viewTrip.client_name}
-                {viewTrip.client_type && (
-                  <span className="text-xs ml-2 text-muted-foreground">
-                    ({viewTrip.client_type})
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-2">
-            <Car className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Vehicle</div>
-              <div className="text-sm text-muted-foreground">
-                {viewTrip.vehicle_details}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-2">
-            <User className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-sm font-medium">Driver</div>
-              <div className="text-sm text-muted-foreground">
-                {viewTrip.driver_name}
-              </div>
-            </div>
-          </div>
-
-          {hasPassengers && (
-            <div className="flex items-start gap-2">
-              <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
-              <div className="flex-1">
-                <div className="text-sm font-medium">Passengers</div>
-                <div className="text-sm text-muted-foreground">
-                  {viewTrip.passengers.length} passenger{viewTrip.passengers.length !== 1 ? 's' : ''}
+        <CardContent className="pt-4 divide-y divide-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 pb-4">
+            <div className="flex items-start gap-3">
+              <Building className="h-5 w-5 mt-0.5 text-purple-500" />
+              <div>
+                <div className="text-sm font-medium text-slate-600">Client</div>
+                <div className="text-slate-900">
+                  {viewTrip.client_name}
+                  {viewTrip.client_type && (
+                    <span className="text-xs ml-2 text-slate-500">
+                      ({viewTrip.client_type})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-          )}
+            
+            <div className="flex items-start gap-3">
+              <Car className="h-5 w-5 mt-0.5 text-purple-500" />
+              <div>
+                <div className="text-sm font-medium text-slate-600">Vehicle</div>
+                <div className="text-slate-900">
+                  {viewTrip.vehicle_details || "Not specified"}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 py-4">
+            <div className="flex items-start gap-3">
+              <User className="h-5 w-5 mt-0.5 text-purple-500" />
+              <div>
+                <div className="text-sm font-medium text-slate-600">Driver</div>
+                <div className="text-slate-900">
+                  {viewTrip.driver_name || "Not assigned"}
+                </div>
+              </div>
+            </div>
+
+            {hasPassengers && (
+              <div className="flex items-start gap-3">
+                <Users className="h-5 w-5 mt-0.5 text-purple-500" />
+                <div>
+                  <div className="text-sm font-medium text-slate-600">Passengers</div>
+                  <div className="text-slate-900">
+                    {viewTrip.passengers.length} passenger{viewTrip.passengers.length !== 1 ? 's' : ''}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {viewTrip.passengers.slice(0, 2).join(', ')}
+                    {viewTrip.passengers.length > 2 && ` +${viewTrip.passengers.length - 2} more`}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
       
       {viewTrip.notes && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-md">Notes</CardTitle>
+        <Card className="border-slate-100">
+          <CardHeader className="pb-2 bg-slate-50">
+            <CardTitle className="text-md flex items-center text-slate-700">
+              <Info className="h-4 w-4 mr-2 text-purple-500" />
+              Notes
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-sm whitespace-pre-wrap">{viewTrip.notes}</div>
+          <CardContent className="pt-4">
+            <div className="text-sm whitespace-pre-wrap text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-100">{viewTrip.notes}</div>
           </CardContent>
         </Card>
       )}
