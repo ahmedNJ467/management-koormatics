@@ -38,6 +38,33 @@ const driverStatusData = [
   { name: "Inactive", value: 2, color: "#EF4444" },
 ];
 
+// Add new data structures for maintenance and fuel costs
+const maintenanceCostData = [
+  { month: "Jan", preventive: 1200, repairs: 800, total: 2000 },
+  { month: "Feb", preventive: 800, repairs: 1400, total: 2200 },
+  { month: "Mar", preventive: 1000, repairs: 600, total: 1600 },
+  { month: "Apr", preventive: 900, repairs: 1100, total: 2000 },
+  { month: "May", preventive: 1200, repairs: 700, total: 1900 },
+  { month: "Jun", preventive: 1100, repairs: 800, total: 1900 },
+];
+
+const fuelCostData = [
+  { month: "Jan", diesel: 1500, petrol: 1000, total: 2500 },
+  { month: "Feb", diesel: 1400, petrol: 900, total: 2300 },
+  { month: "Mar", diesel: 1600, petrol: 800, total: 2400 },
+  { month: "Apr", diesel: 1300, petrol: 900, total: 2200 },
+  { month: "May", diesel: 1200, petrol: 900, total: 2100 },
+  { month: "Jun", diesel: 1100, petrol: 900, total: 2000 },
+];
+
+// Cost breakdown by vehicle type
+const costsByVehicleType = [
+  { name: "Sedans", maintenance: 4500, fuel: 6000, color: "#10B981" },
+  { name: "SUVs", maintenance: 5200, fuel: 8200, color: "#3B82F6" },
+  { name: "Trucks", maintenance: 7800, fuel: 9500, color: "#8B5CF6" },
+  { name: "Vans", maintenance: 3800, fuel: 5200, color: "#F97316" },
+];
+
 export default function Dashboard() {
   const [stats, setStats] = useState([
     {
@@ -105,6 +132,19 @@ export default function Dashboard() {
     { id: 2, client: "XYZ Industries", destination: "Mombasa Road", date: "Tomorrow, 9:00 AM", driver: "Jane Smith" },
     { id: 3, client: "Global Enterprises", destination: "Karen", date: "Jun 15, 10:30 AM", driver: "David Johnson" },
   ]);
+  
+  const [costsBreakdown, setCostsBreakdown] = useState({
+    maintenance: {
+      preventive: 5200,
+      repairs: 4400,
+      total: 9600
+    },
+    fuel: {
+      diesel: 7600,
+      petrol: 5400,
+      total: 13000
+    }
+  });
 
   useEffect(() => {
     const vehiclesChannel = supabase
@@ -130,12 +170,39 @@ export default function Dashboard() {
         fetchDashboardData();
       })
       .subscribe();
+      
+    // Add listeners for maintenance and fuel logs tables
+    const maintenanceChannel = supabase
+      .channel('maintenance-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'maintenance' 
+      }, (payload) => {
+        console.log('Maintenance change received:', payload);
+        fetchDashboardData();
+      })
+      .subscribe();
+      
+    const fuelLogsChannel = supabase
+      .channel('fuel-logs-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'fuel_logs' 
+      }, (payload) => {
+        console.log('Fuel log change received:', payload);
+        fetchDashboardData();
+      })
+      .subscribe();
 
     fetchDashboardData();
 
     return () => {
       supabase.removeChannel(vehiclesChannel);
       supabase.removeChannel(driversChannel);
+      supabase.removeChannel(maintenanceChannel);
+      supabase.removeChannel(fuelLogsChannel);
     };
   }, []);
 
@@ -166,6 +233,31 @@ export default function Dashboard() {
         : (newFinancialStats[randomFinancialIndex].change.startsWith('+') ? 'positive' : 'negative');
       
       setFinancialStats(newFinancialStats);
+      
+      // Update costs breakdown with random changes for demo purposes
+      // In a real app, this would fetch actual data from Supabase
+      const updatedCostsBreakdown = { ...costsBreakdown };
+      
+      // Randomly update maintenance costs
+      if (Math.random() > 0.5) {
+        const changeAmount = Math.floor(Math.random() * 200);
+        updatedCostsBreakdown.maintenance.preventive += Math.random() > 0.5 ? changeAmount : -changeAmount;
+        updatedCostsBreakdown.maintenance.repairs += Math.random() > 0.5 ? changeAmount : -changeAmount;
+        updatedCostsBreakdown.maintenance.total = 
+          updatedCostsBreakdown.maintenance.preventive + updatedCostsBreakdown.maintenance.repairs;
+      }
+      
+      // Randomly update fuel costs
+      if (Math.random() > 0.5) {
+        const changeAmount = Math.floor(Math.random() * 200);
+        updatedCostsBreakdown.fuel.diesel += Math.random() > 0.5 ? changeAmount : -changeAmount;
+        updatedCostsBreakdown.fuel.petrol += Math.random() > 0.5 ? changeAmount : -changeAmount;
+        updatedCostsBreakdown.fuel.total = 
+          updatedCostsBreakdown.fuel.diesel + updatedCostsBreakdown.fuel.petrol;
+      }
+      
+      setCostsBreakdown(updatedCostsBreakdown);
+      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -184,6 +276,7 @@ export default function Dashboard() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="costs">Cost Breakdown</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
         
@@ -530,37 +623,106 @@ export default function Dashboard() {
           </div>
         </TabsContent>
         
-        <TabsContent value="alerts" className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium flex items-center">
-              <Bell className="h-4 w-4 mr-2" />
-              Recent Alerts
-            </h3>
-            
-            {recentAlerts.map((alert) => (
-              <Alert key={alert.id} className="relative">
-                <div className="absolute top-3 right-3">
-                  <Badge 
-                    className={
-                      alert.priority === "high" 
-                        ? "bg-red-500" 
-                        : alert.priority === "medium" 
-                        ? "bg-amber-500" 
-                        : "bg-blue-500"
-                    }
-                  >
-                    {alert.priority}
-                  </Badge>
+        {/* Add new tab for cost breakdown */}
+        <TabsContent value="costs" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Maintenance Costs Summary */}
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-lg">
+                  <Wrench className="h-5 w-5 mr-2" />
+                  Maintenance Costs (USD)
+                </CardTitle>
+                <CardDescription>
+                  Breakdown of vehicle maintenance expenses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Preventive</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${costsBreakdown.maintenance.preventive.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-red-50 dark:bg-red-950/30 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Repairs</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">${costsBreakdown.maintenance.repairs.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">${costsBreakdown.maintenance.total.toLocaleString()}</p>
+                  </div>
                 </div>
-                <AlertDescription className="flex justify-between items-start flex-col sm:flex-row">
-                  <div>{alert.title}</div>
-                  <div className="text-sm text-muted-foreground mt-1 sm:mt-0">{alert.date}</div>
-                </AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+                
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={maintenanceCostData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="month" className="text-muted-foreground text-xs" />
+                      <YAxis className="text-muted-foreground text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem'
+                        }}
+                        formatter={(value) => [`$${value}`, '']}
+                      />
+                      <Legend />
+                      <Bar dataKey="preventive" name="Preventive" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="repairs" name="Repairs" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Fuel Costs Summary */}
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-lg">
+                  <Fuel className="h-5 w-5 mr-2" />
+                  Fuel Costs (USD)
+                </CardTitle>
+                <CardDescription>
+                  Monthly breakdown by fuel type
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Diesel</p>
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">${costsBreakdown.fuel.diesel.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Petrol</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${costsBreakdown.fuel.petrol.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-indigo-50 dark:bg-indigo-950/30 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total</p>
+                    <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${costsBreakdown.fuel.total.toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={fuelCostData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="month" className="text-muted-foreground text-xs" />
+                      <YAxis className="text-muted-foreground text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem'
+                        }}
+                        formatter={(value) => [`$${value}`, '']}
+                      />
+                      <Legend />
+                      <Bar dataKey="diesel" name="Diesel" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="petrol" name="Petrol" fill="#10B981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
