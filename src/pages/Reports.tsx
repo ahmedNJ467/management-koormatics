@@ -38,7 +38,7 @@ import autoTable from "jspdf-autotable";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { tripTypeDisplayMap } from "@/lib/types/trip";
+import { tripTypeDisplayMap, mapDatabaseFieldsToTrip, extractFlightInfo, TripType } from "@/lib/types/trip";
 
 interface TabProps {
   title: string;
@@ -192,15 +192,22 @@ const Reports = () => {
       const { data, error } = await query;
       if (error) throw error;
       
-      return data.map(trip => {
-        const flightInfo = extractFlightInfo(trip.notes || '');
+      return data.map((trip: any) => {
+        const flightInfo = extractFlightInfo(trip.special_instructions || '');
         
-        const displayType = tripTypeDisplayMap[trip.type] || trip.type;
+        const displayType = trip.service_type ? 
+          tripTypeDisplayMap[trip.service_type as TripType] || trip.service_type : 
+          'Other';
         
         return {
           ...trip,
           flight_info: flightInfo,
-          display_type: displayType
+          display_type: displayType,
+          status: trip.status || 'scheduled',
+          type: trip.service_type || 'other',
+          notes: trip.special_instructions || '',
+          start_time: trip.time || '',
+          end_time: trip.return_time || ''
         };
       });
     },
@@ -277,10 +284,10 @@ const Reports = () => {
       tableData = data.map(trip => [
         format(new Date(trip.date), 'MM/dd/yyyy'),
         trip.clients?.name || 'N/A',
-        trip.display_type || tripTypeDisplayMap[trip.type] || trip.type || 'N/A',
+        trip.display_type || 'N/A',
         trip.pickup_location || 'N/A',
         trip.dropoff_location || 'N/A',
-        trip.start_time ? `${trip.start_time} - ${trip.end_time || 'N/A'}` : 'N/A',
+        trip.time ? `${trip.time} - ${trip.return_time || 'N/A'}` : 'N/A',
         trip.flight_info || 'N/A',
         `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
         trip.drivers?.name || 'N/A'
@@ -882,8 +889,8 @@ const Reports = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>License Type</TableHead>
-                      <TableHead>License Number</TableHead>
-                      <TableHead>License Expiry</TableHead>
+                      <TableHead>License No.</TableHead>
+                      <TableHead>Expiry</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
