@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -113,7 +112,7 @@ export default function Trips() {
     try {
       const { error } = await supabase
         .from("trips")
-        .update({ status })
+        .update({ status: status })
         .eq("id", tripId);
 
       if (error) throw error;
@@ -122,8 +121,6 @@ export default function Trips() {
         title: "Trip updated",
         description: `Trip status changed to ${formatStatus(status)}`,
       });
-
-      // No need to explicitly invalidate queries here due to real-time subscription
       
       // Update local viewTrip state if it's the current trip
       if (viewTrip && viewTrip.id === tripId) {

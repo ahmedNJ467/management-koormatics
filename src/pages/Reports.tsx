@@ -112,9 +112,9 @@ export default function Reports() {
         // Add missing fields with default values
         return {
           ...trip,
-          notes: trip.notes || trip.special_instructions || "",
-          type: trip.type || trip.service_type || "other",
-          status: trip.status || "scheduled"
+          notes: trip.special_instructions || '',
+          type: trip.service_type || 'other',
+          status: 'scheduled'
         };
       });
 

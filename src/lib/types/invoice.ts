@@ -1,5 +1,6 @@
 
 import { DisplayTrip } from './trip';
+import { Json } from '@supabase/supabase-js';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'credit_card' | 'mobile_money' | 'cheque' | 'other';
@@ -39,9 +40,40 @@ export interface DisplayInvoice extends Invoice {
 
 // Add this additional interface for handling Supabase JSON field
 export interface SupabaseInvoice extends Omit<Invoice, 'items'> {
-  items: any; // This allows for the JSON type from Supabase
+  items: Json; // This allows for the JSON type from Supabase
 }
 
 export interface SupabaseDisplayInvoice extends Omit<DisplayInvoice, 'items'> {
-  items: any; // This allows for the JSON type from Supabase
+  items: Json; // This allows for the JSON type from Supabase
 }
+
+// Helper function to convert SupabaseInvoice to Invoice
+export const convertToInvoice = (supabaseInvoice: SupabaseInvoice): Invoice => {
+  let parsedItems: InvoiceItem[] = [];
+  
+  try {
+    if (typeof supabaseInvoice.items === 'string') {
+      parsedItems = JSON.parse(supabaseInvoice.items);
+    } else if (Array.isArray(supabaseInvoice.items)) {
+      parsedItems = supabaseInvoice.items as unknown as InvoiceItem[];
+    } else {
+      parsedItems = [];
+    }
+  } catch (e) {
+    console.error("Error parsing invoice items:", e);
+    parsedItems = [];
+  }
+  
+  return {
+    ...supabaseInvoice,
+    items: parsedItems
+  };
+};
+
+// Helper function to prepare Invoice for Supabase
+export const prepareForSupabase = (invoice: Invoice): SupabaseInvoice => {
+  return {
+    ...invoice,
+    items: invoice.items as unknown as Json
+  };
+};
