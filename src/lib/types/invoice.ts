@@ -36,3 +36,12 @@ export interface DisplayInvoice extends Invoice {
   trips?: DisplayTrip[];
   quotation_number?: string;
 }
+
+// Add this additional interface for handling Supabase JSON field
+export interface SupabaseInvoice extends Omit<Invoice, 'items'> {
+  items: any; // This allows for the JSON type from Supabase
+}
+
+export interface SupabaseDisplayInvoice extends Omit<DisplayInvoice, 'items'> {
+  items: any; // This allows for the JSON type from Supabase
+}

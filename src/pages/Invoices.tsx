@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +59,8 @@ import {
   Invoice,
   DisplayInvoice,
   InvoiceItem,
+  SupabaseInvoice,
+  SupabaseDisplayInvoice,
 } from "@/lib/types/invoice";
 import { DisplayTrip, Trip, convertToDisplayTrip } from "@/lib/types";
 import { Client } from "@/components/clients/hooks/use-clients-query";
@@ -98,22 +102,39 @@ export default function Invoices() {
 
       if (error) throw error;
 
-      return data.map((invoice) => {
+      return data.map((invoice: any) => {
         // Convert trip data to proper DisplayTrip objects
         let tripsForInvoice: DisplayTrip[] = [];
         if (invoice.trips && Array.isArray(invoice.trips)) {
-          tripsForInvoice = invoice.trips.map(trip => {
-            return {
-              ...trip,
-              // Make sure required fields are set
-              type: trip.type || trip.service_type || 'other',
-              status: trip.status || 'scheduled',
-            } as DisplayTrip;
-          });
+          tripsForInvoice = invoice.trips.map((trip: any) => ({
+            ...trip,
+            // Make sure required fields are set
+            type: trip.type || trip.service_type || 'other',
+            status: trip.status || 'scheduled',
+            client_name: invoice.clients?.name || "Unknown Client",
+            vehicle_details: "Vehicle details not available",
+            driver_name: "Driver not assigned",
+          } as DisplayTrip));
+        }
+        
+        // Parse items from JSON to ensure correct typing
+        let parsedItems: InvoiceItem[] = [];
+        if (invoice.items) {
+          try {
+            if (typeof invoice.items === 'string') {
+              parsedItems = JSON.parse(invoice.items);
+            } else {
+              parsedItems = invoice.items as InvoiceItem[];
+            }
+          } catch (e) {
+            console.error("Error parsing invoice items:", e);
+            parsedItems = [];
+          }
         }
         
         return {
           ...invoice,
+          items: parsedItems,
           // Add properly typed trips array
           trips: tripsForInvoice,
           // Other fields
@@ -160,22 +181,14 @@ export default function Invoices() {
 
       if (error) throw error;
 
-      // Convert trip data to proper DisplayTrip objects
-      const tripsForInvoice = availableTrips.map(trip => {
-        return {
-          ...trip,
-          // Make sure required fields are set
-          type: trip.type || trip.service_type || 'other',
-          status: trip.status || 'scheduled',
-        } as DisplayTrip;
-      });
-
-      return data.map((trip) => ({
+      return data.map((trip: any) => ({
         ...trip,
+        type: trip.type || trip.service_type || 'other',
+        status: trip.status || 'scheduled',
         client_name: trip.clients?.name || "Unknown Client",
         vehicle_details: `${trip.vehicles?.make || ""} ${trip.vehicles?.model || ""} (${trip.vehicles?.registration || ""})`,
         driver_name: trip.drivers?.name || "Unknown Driver",
-      }));
+      } as DisplayTrip));
     },
     enabled: !!selectedClientId,
   });

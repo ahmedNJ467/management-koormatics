@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { Trip, TripStatus, TripType, DisplayTrip } from "@/lib/types/trip";
 

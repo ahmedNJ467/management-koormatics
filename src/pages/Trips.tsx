@@ -216,21 +216,23 @@ export default function Trips() {
     try {
       if (editTrip) {
         // Update existing trip
+        const tripUpdateData = {
+          client_id: formData.get("client_id") as string,
+          vehicle_id: formData.get("vehicle_id") as string,
+          driver_id: formData.get("driver_id") as string,
+          date: formData.get("date") as string,
+          start_time: formData.get("time") as string,
+          end_time: formData.get("return_time") as string || null,
+          type: dbServiceType,
+          status: formData.get("status") as TripStatus,
+          pickup_location: formData.get("pickup_location") as string || null,
+          dropoff_location: formData.get("dropoff_location") as string || null,
+          notes: notes || null,
+        };
+        
         const { error } = await supabase
           .from("trips")
-          .update({
-            client_id: formData.get("client_id") as string,
-            vehicle_id: formData.get("vehicle_id") as string,
-            driver_id: formData.get("driver_id") as string,
-            date: formData.get("date") as string,
-            start_time: formData.get("time") as string,
-            end_time: formData.get("return_time") as string || null,
-            type: dbServiceType,
-            status: formData.get("status") as TripStatus,
-            pickup_location: formData.get("pickup_location") as string || null,
-            dropoff_location: formData.get("dropoff_location") as string || null,
-            notes: notes || null,
-          })
+          .update(tripUpdateData)
           .eq("id", editTrip.id);
         
         if (error) throw error;
