@@ -54,7 +54,12 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   const viewMember = (index: number) => {
     setViewingMemberIndex(index);
     setIsViewingMember(true);
-    // Don't show a toast when just viewing a member
+  };
+
+  const handleCloseViewDialog = () => {
+    setIsViewingMember(false);
+    // Don't reset the viewingMemberIndex until the dialog is fully closed
+    // This prevents the component from trying to access a non-existent member
   };
 
   const cancelMemberEdit = () => {
@@ -180,14 +185,11 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
       )}
 
       {/* Member Detail View Dialog */}
-      {viewingMemberIndex !== null && members[viewingMemberIndex] && (
+      {isViewingMember && viewingMemberIndex !== null && members[viewingMemberIndex] && (
         <MemberDetail
           member={members[viewingMemberIndex]}
           isOpen={isViewingMember}
-          onClose={() => {
-            setIsViewingMember(false);
-            setViewingMemberIndex(null);
-          }}
+          onClose={handleCloseViewDialog}
           onEdit={() => {
             setIsViewingMember(false);
             editMember(viewingMemberIndex);

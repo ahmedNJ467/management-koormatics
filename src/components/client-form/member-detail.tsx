@@ -12,8 +12,15 @@ interface MemberDetailProps {
 }
 
 export function MemberDetail({ member, isOpen, onClose, onEdit }: MemberDetailProps) {
+  // Handler to prevent event propagation and ensure dialog remains open
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Member Details</DialogTitle>
