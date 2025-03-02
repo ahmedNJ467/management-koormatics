@@ -1,8 +1,12 @@
 
 import React from "react";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { DisplayTrip } from "@/lib/types/trip";
+import { 
+  formatTime, 
+  getStatusColor 
+} from "@/components/trips/utils/trip-helpers";
 
 // Helper function to get the first day of the month (0 = Sunday, 1 = Monday, etc.)
 const getFirstDayOfMonth = (date: Date): number => {
@@ -14,8 +18,6 @@ interface TripCalendarViewProps {
   setCurrentMonth: React.Dispatch<React.SetStateAction<Date>>;
   filteredTrips: DisplayTrip[] | undefined;
   setViewTrip: React.Dispatch<React.SetStateAction<DisplayTrip | null>>;
-  getStatusColor: (status: string) => string;
-  formatTime: (timeStr?: string) => string;
 }
 
 const TripCalendarView: React.FC<TripCalendarViewProps> = ({
@@ -23,8 +25,6 @@ const TripCalendarView: React.FC<TripCalendarViewProps> = ({
   setCurrentMonth,
   filteredTrips,
   setViewTrip,
-  getStatusColor,
-  formatTime,
 }) => {
   // Calculate calendar days
   const daysInMonth = eachDayOfInterval({

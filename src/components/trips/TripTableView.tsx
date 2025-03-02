@@ -7,16 +7,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { Plane, ArrowRight, Clock } from "lucide-react";
+import { 
+  formatTripId, 
+  formatStatus, 
+  formatTripType, 
+  formatDate, 
+  formatTime, 
+  getStatusColor, 
+  getTripTypeIcon
+} from "@/components/trips/utils/trip-helpers";
 
 interface TripTableViewProps {
   filteredTrips: DisplayTrip[];
-  formatTripId: (id: string) => string;
-  formatDate: (dateStr: string) => string;
-  formatTime: (timeStr?: string) => string;
-  formatStatus: (status: TripStatus) => string;
-  formatTripType: (type: any, trip?: DisplayTrip) => string;
-  getStatusColor: (status: TripStatus) => string;
-  getTripTypeIcon: (type: any) => { icon: string, size: string };
   setViewTrip: (trip: DisplayTrip) => void;
   setEditTrip: (trip: DisplayTrip) => void;
   setTripToMessage: (trip: DisplayTrip) => void;
@@ -33,13 +35,6 @@ interface TripTableViewProps {
 
 const TripTableView: React.FC<TripTableViewProps> = ({
   filteredTrips,
-  formatTripId,
-  formatDate,
-  formatTime,
-  formatStatus,
-  formatTripType,
-  getStatusColor,
-  getTripTypeIcon,
   setViewTrip,
   setEditTrip,
   setTripToMessage,
