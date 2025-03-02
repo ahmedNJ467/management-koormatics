@@ -44,15 +44,6 @@ export interface Trip {
   invoice_id?: string;
   created_at?: string;
   updated_at?: string;
-  // These might come from the database
-  flight_number?: string;
-  airline?: string;
-  terminal?: string;
-  special_instructions?: string;
-  is_recurring?: boolean;
-  service_type?: string;
-  time?: string;
-  return_time?: string;
 }
 
 export interface DisplayTrip extends Trip {
@@ -63,42 +54,14 @@ export interface DisplayTrip extends Trip {
   driver_avatar?: string;
   driver_contact?: string;
   // These fields are for UI display only and not stored directly in the database
+  time?: string; // For displaying formatted start_time
+  return_time?: string; // For displaying formatted end_time
+  flight_number?: string;
+  airline?: string;
+  terminal?: string;
   special_notes?: string;
+  is_recurring?: boolean; // Added for UI display purposes
   ui_service_type?: string; // Added to store the UI service type corresponding to database type
-}
-
-// Helper function to convert trip data to DisplayTrip
-export function convertToDisplayTrip(trip: any, clientMap?: Map<string, any>, vehicleMap?: Map<string, any>, driverMap?: Map<string, any>): DisplayTrip {
-  // Ensure type and status have default values
-  const type = trip.type || trip.service_type || 'other';
-  const status = trip.status || 'scheduled';
-  
-  return {
-    ...trip,
-    type,
-    status,
-    client_name: clientMap?.get(trip.client_id)?.name || trip.client_name || trip.clients?.name || 'Unknown Client',
-    client_type: clientMap?.get(trip.client_id)?.type || trip.client_type || trip.clients?.type,
-    vehicle_details: vehicleMap?.get(trip.vehicle_id)?.make 
-      ? `${vehicleMap.get(trip.vehicle_id).make} ${vehicleMap.get(trip.vehicle_id).model}` 
-      : trip.vehicle_details || 
-        (trip.vehicles ? `${trip.vehicles.make || ''} ${trip.vehicles.model || ''} ${trip.vehicles.registration ? `(${trip.vehicles.registration})` : ''}`.trim() : 'Unknown Vehicle'),
-    driver_name: driverMap?.get(trip.driver_id)?.name || trip.driver_name || trip.drivers?.name || 'Unknown Driver',
-    driver_avatar: driverMap?.get(trip.driver_id)?.avatar_url || trip.driver_avatar || trip.drivers?.avatar_url,
-    driver_contact: driverMap?.get(trip.driver_id)?.contact || trip.driver_contact || trip.drivers?.contact,
-    special_notes: trip.special_notes || trip.special_instructions || trip.notes || '',
-    ui_service_type: trip.ui_service_type || tripTypeDisplayMap[trip.type as TripType] || 'Other Service',
-    // Ensure all required fields from Trip interface are present with defaults
-    start_time: trip.start_time || trip.time,
-    end_time: trip.end_time || trip.return_time,
-    notes: trip.notes || trip.special_instructions || trip.special_notes || ''
-  };
-}
-
-// Convert array of trips to DisplayTrip objects
-export function convertToDisplayTrips(trips: any[], clientMap?: Map<string, any>, vehicleMap?: Map<string, any>, driverMap?: Map<string, any>): DisplayTrip[] {
-  if (!trips || !Array.isArray(trips)) return [];
-  return trips.map(trip => convertToDisplayTrip(trip, clientMap, vehicleMap, driverMap));
 }
 
 // Mapping of trip types to UI-friendly display names

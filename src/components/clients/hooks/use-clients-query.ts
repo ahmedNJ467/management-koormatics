@@ -1,75 +1,64 @@
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Client {
   id: string;
   name: string;
-  type: "individual" | "organization";
-  email?: string;
-  phone?: string;
-  address?: string;
-  contact?: string;
+  type: "organization" | "individual";
   description?: string;
   website?: string;
-  is_archived?: boolean;
+  address?: string;
+  contact?: string;
+  email?: string;
+  phone?: string;
   profile_image_url?: string;
+  is_archived?: boolean;
+  documents?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    uploadedAt: string;
+  }>;
   created_at?: string;
   updated_at?: string;
   has_active_contract?: boolean;
 }
 
-export const useClientsQuery = () => {
+export function useClientsQuery() {
   return useQuery({
-    queryKey: ["clients"],
+    queryKey: ['clients'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .order("name");
+        .from('clients')
+        .select('*')
+        .order('name');
       
       if (error) throw error;
       
-      return data as Client[];
+      // Get clients with active contracts (from trips table)
+      const { data: activeContractData, error: contractError } = await supabase
+        .from('trips')
+        .select('client_id')
+        .eq('status', 'in_progress') // Using in_progress instead of ongoing
+        .is('invoice_id', null); // Not invoiced yet
+      
+      if (contractError) {
+        console.error("Error fetching active contracts:", contractError);
+      }
+      
+      // Get unique client IDs with active contracts
+      const clientsWithActiveContracts = new Set(
+        activeContractData?.map(trip => trip.client_id) || []
+      );
+      
+      // Add has_active_contract flag to clients
+      const clientsWithFlag = (data || []).map(client => ({
+        ...client,
+        has_active_contract: clientsWithActiveContracts.has(client.id)
+      }));
+      
+      return clientsWithFlag as Client[];
     },
   });
-};
-
-export const useClientByIdQuery = (clientId: string | null) => {
-  return useQuery({
-    queryKey: ["clients", clientId],
-    queryFn: async () => {
-      if (!clientId) return null;
-      
-      const { data, error } = await supabase
-        .from("clients")
-        .select(`
-          *,
-          client_contacts(*)
-        `)
-        .eq("id", clientId)
-        .single();
-      
-      if (error) throw error;
-      
-      // Use a type assertion to avoid deep instantiation
-      return data as {
-        id: string;
-        name: string;
-        type: "individual" | "organization";
-        email?: string;
-        phone?: string;
-        address?: string;
-        contact?: string;
-        description?: string;
-        website?: string;
-        is_archived?: boolean;
-        profile_image_url?: string;
-        created_at?: string;
-        updated_at?: string;
-        client_contacts?: any[];
-      };
-    },
-    enabled: !!clientId,
-  });
-};
+}
