@@ -140,6 +140,7 @@ export function TripDialogs({
               setEditTrip={setEditTrip}
               setTripToDelete={setTripToDelete}
               setDeleteDialogOpen={setDeleteDialogOpen}
+              setViewTrip={setViewTrip}
             />
           )}
         </DialogContent>

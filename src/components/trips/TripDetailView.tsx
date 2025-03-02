@@ -33,6 +33,7 @@ interface TripDetailViewProps {
   setEditTrip: (trip: DisplayTrip) => void;
   setTripToDelete: (id: string) => void;
   setDeleteDialogOpen: (open: boolean) => void;
+  setViewTrip?: (trip: DisplayTrip) => void;  // Add this prop to allow updating the trip
 }
 
 export function TripDetailView({ 
@@ -51,7 +52,8 @@ export function TripDetailView({
   setMessageOpen,
   setEditTrip,
   setTripToDelete,
-  setDeleteDialogOpen
+  setDeleteDialogOpen,
+  setViewTrip  // Include this in the props
 }: TripDetailViewProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -135,7 +137,7 @@ export function TripDetailView({
         </TabsContent>
         {isOrganizationTrip && (
           <TabsContent value="passengers" className="space-y-4 mt-4">
-            <PassengersTab viewTrip={viewTrip} />
+            <PassengersTab viewTrip={viewTrip} setViewTrip={setViewTrip} />
           </TabsContent>
         )}
         <TabsContent value="messages" className="space-y-4 mt-4">
