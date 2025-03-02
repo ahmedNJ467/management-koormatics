@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FuelLog } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { fuelLogSchema, FuelLogFormValues } from "./schemas/fuel-log-schema";
@@ -13,6 +13,7 @@ export { fuelLogSchema, type FuelLogFormValues };
 
 export function useFuelLogForm(fuelLog?: FuelLog) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldCloseDialog, setShouldCloseDialog] = useState(false);
 
@@ -71,6 +72,21 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     setIsSubmitting(true);
     try {
       const result = await saveFuelLog(values, fuelLog?.id);
+      
+      // Update the query cache with the new data
+      queryClient.setQueryData<FuelLog[]>(['fuel-logs'], (oldData) => {
+        if (!oldData) return [result.data as FuelLog];
+        
+        // If editing, replace the edited item
+        if (fuelLog?.id) {
+          return oldData.map(item => 
+            item.id === fuelLog.id ? (result.data as FuelLog) : item
+          );
+        }
+        
+        // If adding new, prepend to the list
+        return [(result.data as FuelLog), ...oldData];
+      });
       
       toast({
         title: result.isNewRecord ? "Fuel log created" : "Fuel log updated",

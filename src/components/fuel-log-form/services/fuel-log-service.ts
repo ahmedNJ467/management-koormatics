@@ -41,19 +41,37 @@ export async function saveFuelLog(values: FuelLogFormValues, fuelLogId?: string)
   };
 
   if (fuelLogId) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("fuel_logs")
       .update(formattedValues as any)
-      .eq("id", fuelLogId);
+      .eq("id", fuelLogId)
+      .select(`
+        *,
+        vehicle:vehicles (
+          make,
+          model,
+          registration
+        )
+      `)
+      .single();
 
     if (error) throw error;
-    return { isNewRecord: false };
+    return { isNewRecord: false, data };
   } else {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("fuel_logs")
-      .insert(formattedValues as any);
+      .insert(formattedValues as any)
+      .select(`
+        *,
+        vehicle:vehicles (
+          make,
+          model,
+          registration
+        )
+      `)
+      .single();
 
     if (error) throw error;
-    return { isNewRecord: true };
+    return { isNewRecord: true, data };
   }
 }
