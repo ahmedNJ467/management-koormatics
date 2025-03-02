@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,9 +13,15 @@ const fuelLogSchema = z.object({
   date: z.string().min(1, "Date is required"),
   fuel_type: z.enum(["petrol", "diesel", "cng"]),
   volume: z.number().min(0.01, "Volume must be greater than 0"),
+  price_per_liter: z.number().min(0.01, "Price per liter must be greater than 0"),
   cost: z.number().min(0.01, "Cost must be greater than 0"),
+  previous_mileage: z.number().min(0, "Previous mileage must be a positive number"),
+  current_mileage: z.number().min(0, "Current mileage must be a positive number"),
   mileage: z.number().min(0, "Mileage must be a positive number"),
   notes: z.string().optional(),
+}).refine(data => data.current_mileage >= data.previous_mileage, {
+  message: "Current mileage must be greater than or equal to previous mileage",
+  path: ["current_mileage"],
 });
 
 type FuelLogFormValues = z.infer<typeof fuelLogSchema>;
@@ -37,6 +43,21 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     },
   });
 
+  // Get latest mileage for a vehicle
+  const getLatestMileage = async (vehicleId: string) => {
+    if (!vehicleId) return 0;
+    
+    const { data, error } = await supabase
+      .from('fuel_logs')
+      .select('current_mileage')
+      .eq('vehicle_id', vehicleId)
+      .order('date', { ascending: false })
+      .limit(1);
+    
+    if (error || !data || data.length === 0) return 0;
+    return data[0].current_mileage || 0;
+  };
+
   const form = useForm<FuelLogFormValues>({
     resolver: zodResolver(fuelLogSchema),
     defaultValues: fuelLog ? {
@@ -44,7 +65,10 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       date: fuelLog.date,
       fuel_type: fuelLog.fuel_type,
       volume: fuelLog.volume,
+      price_per_liter: fuelLog.cost / fuelLog.volume, // Calculate price per liter from existing data
       cost: fuelLog.cost,
+      previous_mileage: fuelLog.previous_mileage || 0,
+      current_mileage: fuelLog.current_mileage || fuelLog.mileage,
       mileage: fuelLog.mileage,
       notes: fuelLog.notes || "",
     } : {
@@ -52,11 +76,48 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       date: new Date().toISOString().split('T')[0],
       fuel_type: "diesel",
       volume: 0,
+      price_per_liter: 0,
       cost: 0,
+      previous_mileage: 0,
+      current_mileage: 0,
       mileage: 0,
       notes: "",
     },
   });
+
+  // Watch volume and price_per_liter to calculate cost
+  const volume = form.watch("volume");
+  const pricePerLiter = form.watch("price_per_liter");
+  const previousMileage = form.watch("previous_mileage");
+  const currentMileage = form.watch("current_mileage");
+  const vehicleId = form.watch("vehicle_id");
+
+  // Calculate cost when volume or price changes
+  useEffect(() => {
+    if (volume && pricePerLiter) {
+      const calculatedCost = volume * pricePerLiter;
+      form.setValue("cost", Number(calculatedCost.toFixed(2)));
+    }
+  }, [volume, pricePerLiter, form]);
+
+  // Calculate mileage difference
+  useEffect(() => {
+    if (currentMileage && previousMileage) {
+      const distance = currentMileage - previousMileage;
+      form.setValue("mileage", distance >= 0 ? distance : 0);
+    }
+  }, [currentMileage, previousMileage, form]);
+
+  // Fetch previous mileage when vehicle changes
+  useEffect(() => {
+    if (vehicleId && !fuelLog) {
+      const fetchMileage = async () => {
+        const lastMileage = await getLatestMileage(vehicleId);
+        form.setValue("previous_mileage", lastMileage);
+      };
+      fetchMileage();
+    }
+  }, [vehicleId, form, fuelLog]);
 
   const handleSubmit = async (values: FuelLogFormValues): Promise<void> => {
     setIsSubmitting(true);
@@ -68,6 +129,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
         fuel_type: values.fuel_type as "petrol" | "diesel" | "cng",
         volume: Number(values.volume),
         cost: Number(values.cost),
+        previous_mileage: Number(values.previous_mileage),
+        current_mileage: Number(values.current_mileage),
         mileage: Number(values.mileage),
         notes: values.notes || null
       };

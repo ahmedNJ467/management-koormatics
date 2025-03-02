@@ -13,6 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useFuelLogForm } from "./fuel-log-form/use-fuel-log-form";
 import type { FuelLog } from "@/lib/types";
+import { FormHelperText } from "@/components/ui/form";
 
 interface FuelLogFormDialogProps {
   open: boolean;
@@ -25,7 +26,7 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{fuelLog ? "Edit Fuel Log" : "Add New Fuel Log"}</DialogTitle>
         </DialogHeader>
@@ -68,7 +69,7 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
             <Label htmlFor="fuel_type">Fuel Type</Label>
             <Select
               defaultValue={form.getValues("fuel_type")}
-              onValueChange={(value) => form.setValue("fuel_type", value as "petrol" | "diesel")}
+              onValueChange={(value) => form.setValue("fuel_type", value as "petrol" | "diesel" | "cng")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select fuel type" />
@@ -76,6 +77,7 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
               <SelectContent>
                 <SelectItem value="petrol">Petrol</SelectItem>
                 <SelectItem value="diesel">Diesel</SelectItem>
+                <SelectItem value="cng">CNG</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.fuel_type && (
@@ -98,26 +100,75 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cost">Cost (USD)</Label>
+              <Label htmlFor="price_per_liter">Price per Liter</Label>
               <Input
-                id="cost"
+                id="price_per_liter"
                 type="number"
                 step="0.01"
-                {...form.register("cost", { valueAsNumber: true })}
+                {...form.register("price_per_liter", { valueAsNumber: true })}
               />
-              {form.formState.errors.cost && (
-                <p className="text-sm text-destructive">{form.formState.errors.cost.message}</p>
+              {form.formState.errors.price_per_liter && (
+                <p className="text-sm text-destructive">{form.formState.errors.price_per_liter.message}</p>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="mileage">Mileage (km)</Label>
+            <Label htmlFor="cost">Total Cost (USD)</Label>
+            <Input
+              id="cost"
+              type="number"
+              step="0.01"
+              {...form.register("cost", { valueAsNumber: true })}
+              readOnly
+              className="bg-gray-100"
+            />
+            <p className="text-xs text-muted-foreground">
+              Calculated: Volume × Price per Liter
+            </p>
+            {form.formState.errors.cost && (
+              <p className="text-sm text-destructive">{form.formState.errors.cost.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="previous_mileage">Previous Mileage (km)</Label>
+              <Input
+                id="previous_mileage"
+                type="number"
+                {...form.register("previous_mileage", { valueAsNumber: true })}
+              />
+              {form.formState.errors.previous_mileage && (
+                <p className="text-sm text-destructive">{form.formState.errors.previous_mileage.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="current_mileage">Current Mileage (km)</Label>
+              <Input
+                id="current_mileage"
+                type="number"
+                {...form.register("current_mileage", { valueAsNumber: true })}
+              />
+              {form.formState.errors.current_mileage && (
+                <p className="text-sm text-destructive">{form.formState.errors.current_mileage.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mileage">Distance (km)</Label>
             <Input
               id="mileage"
               type="number"
               {...form.register("mileage", { valueAsNumber: true })}
+              readOnly
+              className="bg-gray-100"
             />
+            <p className="text-xs text-muted-foreground">
+              Calculated: Current Mileage − Previous Mileage
+            </p>
             {form.formState.errors.mileage && (
               <p className="text-sm text-destructive">{form.formState.errors.mileage.message}</p>
             )}
