@@ -63,28 +63,28 @@ export const initialStats = [
     value: "24",
     icon: "Car",
     change: "+2.5%",
-    changeType: "positive",
+    changeType: "positive" as const,
   },
   {
     name: "Active Drivers",
     value: "18",
     icon: "Users",
     change: "0%",
-    changeType: "neutral",
+    changeType: "neutral" as const,
   },
   {
     name: "Maintenance Due",
     value: "3",
     icon: "Wrench",
     change: "-1",
-    changeType: "negative",
+    changeType: "negative" as const,
   },
   {
     name: "Fuel Efficiency",
     value: "92%",
     icon: "Fuel",
     change: "+4.3%",
-    changeType: "positive",
+    changeType: "positive" as const,
   },
 ];
 
@@ -94,28 +94,28 @@ export const initialFinancialStats = [
     value: "$18,500",
     icon: "DollarSign",
     change: "+2.8%",
-    changeType: "positive",
+    changeType: "positive" as const,
   },
   {
     name: "Costs (USD)",
     value: "$11,200",
     icon: "CreditCard",
     change: "+1.8%",
-    changeType: "negative",
+    changeType: "negative" as const,
   },
   {
     name: "Profit (USD)",
     value: "$7,300",
     icon: "Wallet",
     change: "+4.3%",
-    changeType: "positive",
+    changeType: "positive" as const,
   },
 ];
 
 export const initialAlerts = [
-  { id: 1, title: "Vehicle KSB 123G due for service", priority: "high", date: "Today" },
-  { id: 2, title: "Driver license expiring", priority: "medium", date: "Tomorrow" },
-  { id: 3, title: "Fuel consumption above average", priority: "low", date: "2 days ago" },
+  { id: 1, title: "Vehicle KSB 123G due for service", priority: "high" as const, date: "Today" },
+  { id: 2, title: "Driver license expiring", priority: "medium" as const, date: "Tomorrow" },
+  { id: 3, title: "Fuel consumption above average", priority: "low" as const, date: "2 days ago" },
 ];
 
 export const initialTrips = [

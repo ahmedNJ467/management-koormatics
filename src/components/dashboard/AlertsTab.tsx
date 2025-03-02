@@ -11,7 +11,7 @@ export const AlertsTab = ({ recentAlerts }: AlertsTabProps) => {
   return (
     <div className="space-y-4">
       {recentAlerts.map((alert) => (
-        <Alert key={alert.id} variant="outline" className="flex items-center justify-between">
+        <Alert key={alert.id} className="flex items-center justify-between">
           <AlertDescription className="flex-1">
             {alert.title}
           </AlertDescription>
