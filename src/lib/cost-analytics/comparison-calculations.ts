@@ -14,20 +14,26 @@ export function calculateYearComparison(
   selectedYear: string,
   comparisonYear: string | null
 ): YearComparisonData | null {
-  if (!comparisonYear) {
+  if (!comparisonYear || !selectedYear) {
     return null;
   }
 
+  // Ensure we have valid arrays, even if empty
+  const currentMaintenanceData = Array.isArray(maintenanceData) ? maintenanceData : [];
+  const currentFuelData = Array.isArray(fuelData) ? fuelData : [];
+  const prevMaintenanceData = Array.isArray(comparisonMaintenanceData) ? comparisonMaintenanceData : [];
+  const prevFuelData = Array.isArray(comparisonFuelData) ? comparisonFuelData : [];
+
   const currentCosts = {
-    maintenance: maintenanceData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
-    fuel: fuelData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
+    maintenance: currentMaintenanceData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
+    fuel: currentFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
     total: 0
   };
   currentCosts.total = currentCosts.maintenance + currentCosts.fuel;
 
   const previousCosts = {
-    maintenance: comparisonMaintenanceData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
-    fuel: comparisonFuelData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
+    maintenance: prevMaintenanceData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
+    fuel: prevFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
     total: 0
   };
   previousCosts.total = previousCosts.maintenance + previousCosts.fuel;

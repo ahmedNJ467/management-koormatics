@@ -92,7 +92,7 @@ const CostAnalytics = () => {
             <span className="text-sm font-medium">Year:</span>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
               <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder={selectedYear} />
+                <SelectValue placeholder="Select year" />
               </SelectTrigger>
               <SelectContent>
                 {yearOptions.map((year) => (
