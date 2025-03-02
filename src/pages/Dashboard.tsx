@@ -1,21 +1,19 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Car, Users, Wrench, Fuel, TrendingUp, TrendingDown, Bell, Calendar, BarChart2, PieChart, Activity } from "lucide-react";
+import { Car, Users, Wrench, Fuel, TrendingUp, TrendingDown, Bell, Calendar, BarChart2, PieChart, Activity, DollarSign, CreditCard, Wallet } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartPieChart, Pie, Cell, Legend } from 'recharts';
 import { supabase } from "@/integrations/supabase/client";
 
-// Sample data - would be replaced by real data from Supabase
 const monthlyData = [
-  { month: "Jan", vehicles: 20, maintenance: 2, revenue: 15000 },
-  { month: "Feb", vehicles: 22, maintenance: 3, revenue: 16500 },
-  { month: "Mar", vehicles: 21, maintenance: 2, revenue: 15800 },
-  { month: "Apr", vehicles: 23, maintenance: 4, revenue: 17200 },
-  { month: "May", vehicles: 24, maintenance: 3, revenue: 18000 },
-  { month: "Jun", vehicles: 24, maintenance: 3, revenue: 18500 },
+  { month: "Jan", vehicles: 20, maintenance: 2, revenue: 15000, costs: 9000, profit: 6000 },
+  { month: "Feb", vehicles: 22, maintenance: 3, revenue: 16500, costs: 10200, profit: 6300 },
+  { month: "Mar", vehicles: 21, maintenance: 2, revenue: 15800, costs: 9500, profit: 6300 },
+  { month: "Apr", vehicles: 23, maintenance: 4, revenue: 17200, costs: 10800, profit: 6400 },
+  { month: "May", vehicles: 24, maintenance: 3, revenue: 18000, costs: 11000, profit: 7000 },
+  { month: "Jun", vehicles: 24, maintenance: 3, revenue: 18500, costs: 11200, profit: 7300 },
 ];
 
 const fuelConsumptionData = [
@@ -72,6 +70,30 @@ export default function Dashboard() {
     },
   ]);
   
+  const [financialStats, setFinancialStats] = useState([
+    {
+      name: "Revenue (USD)",
+      value: "$18,500",
+      icon: DollarSign,
+      change: "+2.8%",
+      changeType: "positive",
+    },
+    {
+      name: "Costs (USD)",
+      value: "$11,200",
+      icon: CreditCard,
+      change: "+1.8%",
+      changeType: "negative",
+    },
+    {
+      name: "Profit (USD)",
+      value: "$7,300",
+      icon: Wallet,
+      change: "+4.3%",
+      changeType: "positive",
+    },
+  ]);
+  
   const [recentAlerts, setRecentAlerts] = useState([
     { id: 1, title: "Vehicle KSB 123G due for service", priority: "high", date: "Today" },
     { id: 2, title: "Driver license expiring", priority: "medium", date: "Tomorrow" },
@@ -84,9 +106,7 @@ export default function Dashboard() {
     { id: 3, client: "Global Enterprises", destination: "Karen", date: "Jun 15, 10:30 AM", driver: "David Johnson" },
   ]);
 
-  // Setup realtime subscription
   useEffect(() => {
-    // Subscribe to changes in the vehicles table
     const vehiclesChannel = supabase
       .channel('vehicles-changes')
       .on('postgres_changes', { 
@@ -95,12 +115,10 @@ export default function Dashboard() {
         table: 'vehicles' 
       }, (payload) => {
         console.log('Vehicles change received:', payload);
-        // Update dashboard data
         fetchDashboardData();
       })
       .subscribe();
 
-    // Subscribe to changes in the drivers table
     const driversChannel = supabase
       .channel('drivers-changes')
       .on('postgres_changes', { 
@@ -109,33 +127,26 @@ export default function Dashboard() {
         table: 'drivers' 
       }, (payload) => {
         console.log('Drivers change received:', payload);
-        // Update dashboard data
         fetchDashboardData();
       })
       .subscribe();
 
-    // Initially fetch data
     fetchDashboardData();
 
-    // Cleanup subscriptions on unmount
     return () => {
       supabase.removeChannel(vehiclesChannel);
       supabase.removeChannel(driversChannel);
     };
   }, []);
 
-  // Fetch dashboard data from Supabase
   const fetchDashboardData = async () => {
     try {
-      // These would be replaced with actual Supabase queries
-      // For now, we'll simulate data updates
       console.log('Fetching dashboard data...');
       
-      // For demonstration purposes, randomly update a stat value
       const newStats = [...stats];
       const randomStatIndex = Math.floor(Math.random() * newStats.length);
       
-      if (randomStatIndex === 0) { // Total Vehicles
+      if (randomStatIndex === 0) {
         const newValue = parseInt(newStats[randomStatIndex].value) + (Math.random() > 0.5 ? 1 : -1);
         newStats[randomStatIndex].value = newValue.toString();
         newStats[randomStatIndex].change = `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 2).toFixed(1)}%`;
@@ -143,6 +154,18 @@ export default function Dashboard() {
       }
       
       setStats(newStats);
+      
+      const newFinancialStats = [...financialStats];
+      const randomFinancialIndex = Math.floor(Math.random() * newFinancialStats.length);
+      const currentValue = parseFloat(newFinancialStats[randomFinancialIndex].value.replace('$', '').replace(',', ''));
+      const newValue = currentValue + (Math.random() > 0.5 ? 100 : -100);
+      newFinancialStats[randomFinancialIndex].value = `$${newValue.toLocaleString()}`;
+      newFinancialStats[randomFinancialIndex].change = `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 2).toFixed(1)}%`;
+      newFinancialStats[randomFinancialIndex].changeType = newFinancialStats[randomFinancialIndex].name === "Costs (USD)" 
+        ? (newFinancialStats[randomFinancialIndex].change.startsWith('+') ? 'negative' : 'positive')
+        : (newFinancialStats[randomFinancialIndex].change.startsWith('+') ? 'positive' : 'negative');
+      
+      setFinancialStats(newFinancialStats);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -165,7 +188,6 @@ export default function Dashboard() {
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
-          {/* Key Statistics */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
               <Card key={stat.name} className="overflow-hidden">
@@ -205,8 +227,47 @@ export default function Dashboard() {
               </Card>
             ))}
           </div>
+          
+          <div className="grid gap-4 md:grid-cols-3">
+            {financialStats.map((stat) => (
+              <Card key={stat.name} className="overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    {stat.name}
+                  </CardTitle>
+                  <div
+                    className={`rounded-full p-2.5 ${
+                      stat.changeType === "positive"
+                        ? "bg-green-100 text-green-600 dark:bg-green-900/30"
+                        : stat.changeType === "negative"
+                        ? "bg-red-100 text-red-600 dark:bg-red-900/30"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800"
+                    }`}
+                  >
+                    <stat.icon className="h-4 w-4" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className={`text-xs ${
+                      stat.changeType === "positive"
+                        ? "text-green-600"
+                        : stat.changeType === "negative"
+                        ? "text-red-600"
+                        : "text-gray-600"
+                    } flex items-center mt-1`}>
+                    {stat.changeType === "positive" ? (
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                    ) : stat.changeType === "negative" ? (
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                    ) : null}
+                    {stat.change} from last month
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-          {/* Primary Charts */}
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="overflow-hidden">
               <CardHeader>
@@ -246,10 +307,10 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Activity className="h-4 w-4 mr-2" />
-                  Revenue Trend
+                  Financial Overview
                 </CardTitle>
                 <CardDescription>
-                  Monthly revenue in USD
+                  Monthly revenue, costs, and profit in USD
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
@@ -267,12 +328,31 @@ export default function Dashboard() {
                           fontSize: '0.875rem'
                         }}
                         labelStyle={{ fontWeight: 'bold' }}
-                        formatter={(value) => [`$${value}`, 'Revenue']}
+                        formatter={(value) => [`$${value}`, '']}
                       />
                       <Line 
                         type="monotone" 
                         dataKey="revenue" 
-                        stroke="hsl(var(--secondary))" 
+                        stroke="#10B981" 
+                        name="Revenue"
+                        strokeWidth={2}
+                        dot={{ r: 4, strokeWidth: 2 }}
+                        activeDot={{ r: 6, strokeWidth: 2 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="costs" 
+                        stroke="#EF4444" 
+                        name="Costs"
+                        strokeWidth={2}
+                        dot={{ r: 4, strokeWidth: 2 }}
+                        activeDot={{ r: 6, strokeWidth: 2 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="profit" 
+                        stroke="#3B82F6" 
+                        name="Profit"
                         strokeWidth={2}
                         dot={{ r: 4, strokeWidth: 2 }}
                         activeDot={{ r: 6, strokeWidth: 2 }}
@@ -284,7 +364,6 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Upcoming Trips */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -317,7 +396,6 @@ export default function Dashboard() {
         </TabsContent>
         
         <TabsContent value="analytics" className="space-y-6">
-          {/* Fuel Consumption Trend */}
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -359,7 +437,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
           
-          {/* Pie Charts */}
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
