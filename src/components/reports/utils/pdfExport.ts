@@ -4,6 +4,9 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { flattenData, formatClientWithPassengers, getVehicleMaintenanceCosts } from "./dataUtils";
 
+// Define Color as tuple type [number, number, number] for RGB values
+type Color = [number, number, number];
+
 // Export to PDF with modern UI and color scheme
 export const exportToPDF = (data: any[], title: string, filename: string) => {
   if (!data || data.length === 0) return;
@@ -14,16 +17,16 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
     format: 'letter'
   });
   
-  // Modern color scheme
+  // Modern color scheme with proper tuple types
   const colors = {
-    primary: [41, 128, 185],     // #2980b9 - Bright blue
-    secondary: [142, 68, 173],   // #8e44ad - Purple
-    accent: [39, 174, 96],       // #27ae60 - Green
-    light: [236, 240, 241],      // #ecf0f1 - Light gray
-    dark: [52, 73, 94],          // #34495e - Dark blue-gray
-    text: [44, 62, 80],          // #2c3e50 - Almost black
-    headerBg: [52, 152, 219],    // #3498db - Light blue
-    rowAlt: [245, 246, 250]      // #f5f6fa - Very light blue-gray
+    primary: [41, 128, 185] as Color,     // #2980b9 - Bright blue
+    secondary: [142, 68, 173] as Color,   // #8e44ad - Purple
+    accent: [39, 174, 96] as Color,       // #27ae60 - Green
+    light: [236, 240, 241] as Color,      // #ecf0f1 - Light gray
+    dark: [52, 73, 94] as Color,          // #34495e - Dark blue-gray
+    text: [44, 62, 80] as Color,          // #2c3e50 - Almost black
+    headerBg: [52, 152, 219] as Color,    // #3498db - Light blue
+    rowAlt: [245, 246, 250] as Color      // #f5f6fa - Very light blue-gray
   };
   
   // Set up document margins and spacing
@@ -69,19 +72,19 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       cellPadding: { top: 0.15, right: 0.1, bottom: 0.15, left: 0.1 },
       lineWidth: 0.1, 
       lineColor: [220, 220, 220],
-      textColor: [...colors.text],
+      textColor: colors.text,
       minCellHeight: 0.4,
       font: 'helvetica'
     },
     headStyles: {
-      fillColor: [...colors.primary],
+      fillColor: colors.primary,
       textColor: 255,
       fontStyle: 'bold',
       halign: 'center',
       cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
     },
     alternateRowStyles: {
-      fillColor: [...colors.rowAlt],
+      fillColor: colors.rowAlt,
     },
     margin: { top: 2.0, left: pageMargin, right: pageMargin, bottom: 0.8 },
     tableWidth: 'auto',
@@ -103,7 +106,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       } : {}),
       ...(filename === 'trips-report' ? {
         2: { // Service type column styling
-          fillColor: [...colors.light]
+          fillColor: colors.light
         }
       } : {})
     },
@@ -318,4 +321,3 @@ function generateTableData(data: any[], filename: string) {
   
   return { tableHeaders, tableData };
 }
-
