@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   FileText, MoreHorizontal, MessageCircle, User, Calendar,
-  Clock, Check, X, Trash, MapPin, ArrowRight
+  Clock, Check, X, Trash, MapPin, ArrowRight, Users
 } from "lucide-react";
 import { TripTypeIcon } from "./TripTypeIcon";
 
@@ -150,18 +150,39 @@ export function TripListView({
                   <TableCell>
                     <div className="font-medium">{trip.client_name}</div>
                     {trip.client_type === "organization" && (
-                      <>
+                      <div className="flex flex-col gap-1">
                         <Badge variant="outline" className="text-xs">Organization</Badge>
                         {tripPassengers.length > 0 && (
                           <div className="mt-1 text-xs text-muted-foreground">
-                            {tripPassengers.length === 1 ? (
-                              <span>Passenger: {tripPassengers[0]}</span>
-                            ) : (
-                              <span>Passengers: {tripPassengers.length}</span>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {tripPassengers.length === 1 ? (
+                                <span title={tripPassengers[0]}>
+                                  {tripPassengers[0].length > 15 
+                                    ? `${tripPassengers[0].substring(0, 15)}...` 
+                                    : tripPassengers[0]}
+                                </span>
+                              ) : (
+                                <span title={tripPassengers.join(', ')}>
+                                  {tripPassengers.length} passengers
+                                </span>
+                              )}
+                            </div>
+                            {tripPassengers.length > 1 && (
+                              <div className="mt-1 text-xs text-muted-foreground ml-4">
+                                {tripPassengers.slice(0, 2).map((passenger, i) => (
+                                  <div key={i} className="truncate max-w-[120px]" title={passenger}>
+                                    - {passenger.length > 15 ? `${passenger.substring(0, 15)}...` : passenger}
+                                  </div>
+                                ))}
+                                {tripPassengers.length > 2 && (
+                                  <div className="text-xs italic">+ {tripPassengers.length - 2} more</div>
+                                )}
+                              </div>
                             )}
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
                   </TableCell>
                   <TableCell>

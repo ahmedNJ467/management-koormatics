@@ -1,4 +1,3 @@
-
 // Helper function to parse flight details from notes
 export const parseFlightDetails = (notes?: string) => {
   if (!notes) return { flight: null, airline: null, terminal: null };
@@ -18,12 +17,26 @@ export const parseFlightDetails = (notes?: string) => {
 export const parsePassengers = (notes?: string): string[] => {
   if (!notes) return [];
   
-  const passengersMatch = notes.match(/Passengers:\s*\n(.*?)(\n\n|\n$|$)/s);
-  if (passengersMatch && passengersMatch[1]) {
-    return passengersMatch[1].split('\n').filter(p => p.trim());
+  // Check if there's a passengers section
+  const passengersMatch = notes.match(/Passengers:\s*\n((?:- [^\n]+\n?)+)/i);
+  
+  if (!passengersMatch || !passengersMatch[1]) {
+    // Try alternative format (without bullet points)
+    const altFormatMatch = notes.match(/Passengers:\s*\n((?:[^\n-][^\n]*\n?)+)/i);
+    if (altFormatMatch && altFormatMatch[1]) {
+      return altFormatMatch[1]
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+    }
+    return [];
   }
   
-  return [];
+  // Extract passenger names from bullet points
+  return passengersMatch[1]
+    .split('\n')
+    .map(line => line.replace(/^- /, '').trim())
+    .filter(line => line.length > 0);
 };
 
 // Format service type for UI display

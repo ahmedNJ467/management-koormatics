@@ -64,4 +64,5 @@ export interface DisplayTrip extends Trip {
   ui_service_type?: string;   // UI-friendly display of type
   flight_info?: string;       // Formatted flight information
   display_type?: string;      // Formatted display of trip type
+  passengers?: string[];      // Array of passenger names for organization clients
 }

@@ -1,6 +1,8 @@
+
 import { extractTripStatus } from "@/components/trips/utils";
 import { TripType, DbServiceType, tripTypeDisplayMap } from "./base-types";
 import { DisplayTrip, DbTrip, Trip } from "./trip-data";
+import { parsePassengers } from "@/components/trips/utils";
 
 export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   // Ensure all required properties are present with defaults
@@ -15,6 +17,9 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
     // If not a valid TripType, default to "other"
     type = "other";
   }
+  
+  // Extract passengers from special_instructions
+  const passengers = parsePassengers(dbTrip.special_instructions);
   
   return {
     ...dbTrip,
@@ -37,6 +42,8 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
     driver_contact: dbTrip.drivers?.contact,
     // Include additional fields for displaying in UI
     display_type: dbTrip.display_type || tripTypeDisplayMap[dbServiceType] || 'Other',
+    // Add passengers array for easy access
+    passengers
   };
 };
 
