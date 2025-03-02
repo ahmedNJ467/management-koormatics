@@ -112,7 +112,7 @@ export default function Trips() {
     try {
       const { error } = await supabase
         .from("trips")
-        .update({ status })
+        .update({ status: status } as { status: TripStatus })
         .eq("id", tripId);
 
       if (error) throw error;

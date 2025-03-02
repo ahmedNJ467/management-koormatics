@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -90,7 +89,7 @@ export default function Invoices() {
   const [paymentDate, setPaymentDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [paymentNotes, setPaymentNotes] = useState<string>("");
 
-  // Fetch invoices data
+  // Fetch invoices data with simplified type handling
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
@@ -106,37 +105,33 @@ export default function Invoices() {
       if (error) throw error;
 
       return data.map((invoice: any) => {
-        // Convert trip data to proper DisplayTrip objects
-        let tripsForInvoice: DisplayTrip[] = [];
-        if (invoice.trips && Array.isArray(invoice.trips)) {
-          tripsForInvoice = invoice.trips.map((trip: any) => ({
-            ...trip,
-            // Make sure required fields are set
-            type: trip.service_type || 'other',
-            status: 'scheduled',
-            client_name: invoice.clients?.name || "Unknown Client",
-            vehicle_details: "Vehicle details not available",
-            driver_name: "Driver not assigned",
-          } as DisplayTrip));
-        }
+        // Convert trip data with simpler approach
+        const tripsForInvoice = Array.isArray(invoice.trips) 
+          ? invoice.trips.map((trip: any) => ({
+              ...trip,
+              type: trip.service_type || 'other',
+              status: 'scheduled',
+              client_name: invoice.clients?.name || "Unknown Client",
+              vehicle_details: "Vehicle details not available",
+              driver_name: "Driver not assigned",
+            }))
+          : [];
         
-        // Parse items from JSON to ensure correct typing
-        let parsedItems: InvoiceItem[] = [];
-        if (invoice.items) {
-          try {
-            if (typeof invoice.items === 'string') {
-              parsedItems = JSON.parse(invoice.items);
-            } else {
-              parsedItems = invoice.items as InvoiceItem[];
-            }
-          } catch (e) {
-            console.error("Error parsing invoice items:", e);
-            parsedItems = [];
+        // Parse items with safer approach
+        let parsedItems = [];
+        try {
+          if (typeof invoice.items === 'string') {
+            parsedItems = JSON.parse(invoice.items);
+          } else if (Array.isArray(invoice.items)) {
+            parsedItems = invoice.items;
           }
+        } catch (e) {
+          console.error("Error parsing invoice items:", e);
+          parsedItems = [];
         }
 
-        // Use a simpler approach to avoid deep type instantiation
-        const result = {
+        // Return simplified object
+        return {
           ...invoice,
           items: parsedItems,
           trips: tripsForInvoice,
@@ -145,8 +140,6 @@ export default function Invoices() {
           client_address: invoice.clients?.address || "",
           client_phone: invoice.clients?.phone || "",
         };
-        
-        return result as DisplayInvoice;
       });
     },
   });
