@@ -2,11 +2,10 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { z } from "zod";
-import { fuelLogSchema } from "./use-fuel-log-form";
+import { FuelLogFormValues } from "./schemas/fuel-log-schema";
 
 type VolumePriceProps = {
-  form: UseFormReturn<z.infer<typeof fuelLogSchema>>;
+  form: UseFormReturn<FuelLogFormValues>;
 };
 
 export function VolumePrice({ form }: VolumePriceProps) {

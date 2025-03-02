@@ -9,11 +9,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
-import { z } from "zod";
-import { fuelLogSchema } from "./use-fuel-log-form";
+import { FuelLogFormValues } from "./schemas/fuel-log-schema";
 
 type FuelDetailsProps = {
-  form: UseFormReturn<z.infer<typeof fuelLogSchema>>;
+  form: UseFormReturn<FuelLogFormValues>;
 };
 
 export function FuelDetails({ form }: FuelDetailsProps) {
