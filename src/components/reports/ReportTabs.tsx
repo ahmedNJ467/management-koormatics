@@ -37,7 +37,7 @@ const reportTabs: TabProps[] = [
   },
 ];
 
-export const ReportTabs = ({ timeRange, dateRange }: ReportProps) => {
+export const ReportTabs = ({ timeRange, dateRange, setTimeRange, setDateRange }: ReportProps) => {
   const [activeTab, setActiveTab] = useState("vehicles");
 
   return (
@@ -56,15 +56,15 @@ export const ReportTabs = ({ timeRange, dateRange }: ReportProps) => {
       </TabsContent>
 
       <TabsContent value="fuel">
-        <FuelReport timeRange={timeRange} dateRange={dateRange} />
+        <FuelReport timeRange={timeRange} dateRange={dateRange} setTimeRange={setTimeRange} setDateRange={setDateRange} />
       </TabsContent>
 
       <TabsContent value="maintenance">
-        <MaintenanceReport timeRange={timeRange} dateRange={dateRange} />
+        <MaintenanceReport timeRange={timeRange} dateRange={dateRange} setTimeRange={setTimeRange} setDateRange={setDateRange} />
       </TabsContent>
 
       <TabsContent value="trips">
-        <TripsReport timeRange={timeRange} dateRange={dateRange} />
+        <TripsReport timeRange={timeRange} dateRange={dateRange} setTimeRange={setTimeRange} setDateRange={setDateRange} />
       </TabsContent>
 
       <TabsContent value="drivers">

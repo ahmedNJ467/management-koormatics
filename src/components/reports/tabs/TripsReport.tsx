@@ -9,7 +9,7 @@ import { useTripsData } from "../hooks/useReportData";
 import { exportToPDF, exportToCSV } from "../utils/export-utils";
 import { ReportProps } from "../types";
 
-export const TripsReport = ({ timeRange, dateRange }: ReportProps) => {
+export const TripsReport = ({ timeRange, dateRange, setTimeRange, setDateRange }: ReportProps) => {
   const { data: tripsData, isLoading: isLoadingTrips } = useTripsData(timeRange, dateRange);
 
   return (
