@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { FileText, MessageCircle, UserCircle, MapPin, Calendar, Users } from "lucide-react";
@@ -68,11 +67,9 @@ export function TripDetailView({
     }
   };
 
-  // Check if this is an organization client trip
   const isOrganizationTrip = viewTrip.client_type === "organization";
   const hasPassengers = isOrganizationTrip && Array.isArray(viewTrip.passengers) && viewTrip.passengers.length > 0;
 
-  // For debugging
   console.log("Trip in TripDetailView:", viewTrip);
   console.log("Is organization trip:", isOrganizationTrip);
   console.log("Passengers:", viewTrip.passengers);
@@ -140,7 +137,11 @@ export function TripDetailView({
         </TabsContent>
         {isOrganizationTrip && (
           <TabsContent value="passengers" className="space-y-4 mt-4">
-            <PassengersTab viewTrip={viewTrip} setViewTrip={setViewTrip} queryClient={queryClient} />
+            <PassengersTab 
+              viewTrip={viewTrip} 
+              setViewTrip={setViewTrip} 
+              queryClient={queryClient} 
+            />
           </TabsContent>
         )}
         <TabsContent value="messages" className="space-y-4 mt-4">
