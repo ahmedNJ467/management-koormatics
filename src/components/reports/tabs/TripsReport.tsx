@@ -70,7 +70,7 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                   <TableRow key={trip.id}>
                     <TableCell>{format(new Date(trip.date), 'MMM dd, yyyy')}</TableCell>
                     <TableCell>
-                      {trip.client_type === 'organization' ? (
+                      {trip.clients?.type === 'organization' ? (
                         <div>
                           {trip.clients?.name || 'N/A'}
                           <span className="block text-xs text-muted-foreground">Organization</span>

@@ -52,7 +52,7 @@ export function useReportsData() {
           *,
           vehicles(make, model),
           drivers(name),
-          clients(name)
+          clients(name, type)
         `);
 
       if (error) throw error;

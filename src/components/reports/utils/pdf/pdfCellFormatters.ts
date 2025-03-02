@@ -5,6 +5,9 @@ import { pdfColors } from "./pdfStyles";
 
 // Format client cell with passengers
 export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
+  // Only process if we have cell data
+  if (!data.cell.text || !data.cell.text.length) return;
+  
   const content = data.cell.text.join('\n');
   if (content.includes('(Organization)')) {
     // If it's an organization with passengers, adjust formatting
