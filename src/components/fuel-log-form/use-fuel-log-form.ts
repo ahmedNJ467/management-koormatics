@@ -30,6 +30,9 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Callback function for dialog closure after submission
+  const [shouldCloseDialog, setShouldCloseDialog] = useState(false);
+
   const { data: vehicles } = useQuery({
     queryKey: ['vehicles'],
     queryFn: async () => {
@@ -165,6 +168,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       }
 
       form.reset();
+      setShouldCloseDialog(true); // Set flag to close dialog
     } catch (error) {
       console.error("Error:", error);
       toast({
@@ -182,5 +186,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     vehicles,
     isSubmitting,
     handleSubmit,
+    shouldCloseDialog,
+    resetCloseDialog: () => setShouldCloseDialog(false)
   };
 }

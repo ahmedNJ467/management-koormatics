@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,15 @@ interface FuelLogFormDialogProps {
 }
 
 export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDialogProps) {
-  const { form, vehicles, isSubmitting, handleSubmit } = useFuelLogForm(fuelLog);
+  const { form, vehicles, isSubmitting, handleSubmit, shouldCloseDialog, resetCloseDialog } = useFuelLogForm(fuelLog);
+
+  // Effect to close dialog when shouldCloseDialog is true
+  useEffect(() => {
+    if (shouldCloseDialog) {
+      onOpenChange(false);
+      resetCloseDialog();
+    }
+  }, [shouldCloseDialog, onOpenChange, resetCloseDialog]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

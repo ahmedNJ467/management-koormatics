@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,7 @@ export default function FuelLogs() {
               <TableHead>Fuel Type</TableHead>
               <TableHead>Volume (L)</TableHead>
               <TableHead>Cost (USD)</TableHead>
-              <TableHead>Mileage (km)</TableHead>
+              <TableHead>Current Mileage (km)</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -124,7 +125,7 @@ export default function FuelLogs() {
                   <TableCell className="capitalize">{log.fuel_type}</TableCell>
                   <TableCell>{log.volume.toFixed(1)}</TableCell>
                   <TableCell>${log.cost.toFixed(2)}</TableCell>
-                  <TableCell>{log.mileage.toLocaleString()}</TableCell>
+                  <TableCell>{log.current_mileage?.toLocaleString() || "—"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button
