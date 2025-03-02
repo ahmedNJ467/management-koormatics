@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { useTripsData } from "../hooks/useReportData";
 import { exportToPDF, exportToCSV } from "../utils/export-utils";
 import { ReportProps } from "../types";
+import { tripTypeDisplayMap } from "@/lib/types";
 
 export const TripsReport = ({ timeRange, dateRange, setTimeRange, setDateRange }: ReportProps) => {
   const { data: tripsData, isLoading: isLoadingTrips } = useTripsData(timeRange, dateRange);
@@ -47,6 +48,7 @@ export const TripsReport = ({ timeRange, dateRange, setTimeRange, setDateRange }
                 <TableHead>Client</TableHead>
                 <TableHead>Pick-up</TableHead>
                 <TableHead>Drop-off</TableHead>
+                <TableHead>Service Type</TableHead>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Driver</TableHead>
                 <TableHead>Status</TableHead>
@@ -56,7 +58,7 @@ export const TripsReport = ({ timeRange, dateRange, setTimeRange, setDateRange }
             <TableBody>
               {isLoadingTrips ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={9} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : tripsData && tripsData.length > 0 ? (
                 tripsData.map((trip) => (
@@ -65,6 +67,7 @@ export const TripsReport = ({ timeRange, dateRange, setTimeRange, setDateRange }
                     <TableCell>{trip.clients?.name}</TableCell>
                     <TableCell>{trip.pickup_location || 'N/A'}</TableCell>
                     <TableCell>{trip.dropoff_location || 'N/A'}</TableCell>
+                    <TableCell>{trip.type ? tripTypeDisplayMap[trip.type] || 'Other Service' : 'N/A'}</TableCell>
                     <TableCell>
                       {trip.vehicles?.make} {trip.vehicles?.model}
                     </TableCell>
@@ -75,7 +78,7 @@ export const TripsReport = ({ timeRange, dateRange, setTimeRange, setDateRange }
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center">No data available</TableCell>
+                  <TableCell colSpan={9} className="text-center">No data available</TableCell>
                 </TableRow>
               )}
             </TableBody>

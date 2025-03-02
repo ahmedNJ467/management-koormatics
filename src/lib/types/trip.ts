@@ -1,5 +1,5 @@
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer';
+export type TripType = 'airport_pickup' | 'airport_dropoff' | 'one_way_transfer' | 'round_trip' | 'full_day' | 'security_escort' | 'hourly' | 'multi_day' | 'other';
 
 export interface TripMessage {
   id: string;
@@ -67,9 +67,11 @@ export interface DisplayTrip extends Trip {
 export const tripTypeDisplayMap: Record<TripType, string> = {
   'airport_pickup': 'Airport Pickup',
   'airport_dropoff': 'Airport Dropoff',
-  'other': 'Other Service',
+  'one_way_transfer': 'One Way Transfer',
+  'round_trip': 'Round Trip',
+  'full_day': 'Full Day Hire',
+  'security_escort': 'Security Escort',
   'hourly': 'Hourly Service',
-  'full_day': 'Full Day',
   'multi_day': 'Multi Day',
-  'one_way_transfer': 'One Way Transfer'
+  'other': 'Other Service'
 };
