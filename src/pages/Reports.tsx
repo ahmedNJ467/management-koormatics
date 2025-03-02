@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -39,6 +38,7 @@ import autoTable from "jspdf-autotable";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { tripTypeDisplayMap } from "@/lib/types/trip";
 
 interface TabProps {
   title: string;
@@ -162,7 +162,12 @@ const Reports = () => {
     queryFn: async () => {
       let query = supabase
         .from("trips")
-        .select("*, vehicles(make, model), drivers(name), clients(name)");
+        .select(`
+          *,
+          vehicles(make, model),
+          drivers(name),
+          clients(name)
+        `);
 
       if (dateRange && dateRange.from) {
         const fromDate = format(dateRange.from, 'yyyy-MM-dd');
@@ -186,7 +191,18 @@ const Reports = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      
+      return data.map(trip => {
+        const flightInfo = extractFlightInfo(trip.notes || '');
+        
+        const displayType = tripTypeDisplayMap[trip.type] || trip.type;
+        
+        return {
+          ...trip,
+          flight_info: flightInfo,
+          display_type: displayType
+        };
+      });
     },
   });
 
@@ -202,7 +218,6 @@ const Reports = () => {
     },
   });
 
-  // Helper function to flatten nested objects for export
   const flattenData = (data: any[]) => {
     if (!data || data.length === 0) return [];
     
@@ -226,59 +241,48 @@ const Reports = () => {
   const exportToPDF = (data: any[], title: string, filename: string) => {
     if (!data || data.length === 0) return;
     
-    // Create a new PDF document with Letter size (8.5" x 11")
     const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'in',
-      format: 'letter' // 8.5 x 11 inches
+      format: 'letter'
     });
     
-    // Add title
     doc.setFontSize(18);
     doc.text(title, 0.5, 0.8);
     doc.setFontSize(11);
     doc.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, 0.5, 1.2);
     
-    // Company header for the report
     doc.setFontSize(14);
     doc.setTextColor(0, 51, 102);
     doc.text("FLEET MANAGEMENT DEPARTMENT", doc.internal.pageSize.width / 2, 0.4, { align: 'center' });
     
-    // Prepare the data
     const flattenedData = flattenData(data);
     
-    // Custom headers and data for specific report types
     let tableHeaders: string[] = [];
     let tableData: string[][] = [];
     
     if (filename === 'trips-report') {
-      // Headers follow the example in the image
       tableHeaders = [
         'Date', 
-        'Client/Passenger', 
-        'Description',
-        'Contact', 
+        'Client/Passenger',
+        'Flight Information',
         'Service Type', 
         'Pick-up Address', 
         'Drop-off Address',
         'Time', 
         'Vehicle', 
-        'Assigned Vehicle',
         'Assigned Driver'
       ];
       
-      // Prepare the trip data to match headers
       tableData = data.map(trip => [
         format(new Date(trip.date), 'MM/dd/yyyy'),
         trip.clients?.name || 'N/A',
-        trip.notes || 'N/A',
-        trip.clients?.contact || 'N/A',
-        trip.type || 'N/A',
+        trip.flight_info || 'N/A',
+        trip.display_type || trip.type || 'N/A',
         trip.pickup_location || 'N/A',
         trip.dropoff_location || 'N/A',
         trip.start_time ? `${trip.start_time} - ${trip.end_time || 'N/A'}` : 'N/A',
         `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
-        trip.vehicles?.registration || 'N/A',
         trip.drivers?.name || 'N/A'
       ]);
     } else if (filename === 'vehicles-report') {
@@ -326,7 +330,6 @@ const Reports = () => {
         driver.status || 'N/A'
       ]);
     } else {
-      // Default case - use flattened data
       const firstItem = flattenedData[0];
       const headers = Object.keys(firstItem);
       tableHeaders = headers.map(h => h.charAt(0).toUpperCase() + h.slice(1).replace(/_/g, ' '));
@@ -341,7 +344,6 @@ const Reports = () => {
       );
     }
 
-    // Create table with options including footer
     autoTable(doc, {
       head: [tableHeaders],
       body: tableData,
@@ -361,16 +363,13 @@ const Reports = () => {
       margin: { top: 1.5, left: 0.5, right: 0.5, bottom: 0.5 },
       tableWidth: 'auto',
       didDrawPage: (data) => {
-        // Add footer on each page
         const pageSize = doc.internal.pageSize;
         const pageHeight = pageSize.height;
         
-        // Simple page number without total pages
         doc.setFontSize(8);
         doc.setTextColor(100);
         
-        // Add page number
-        const pageNumber = doc.getNumberOfPages(); // This is safer than getCurrentPageInfo
+        const pageNumber = doc.getNumberOfPages();
         doc.text(
           `Page ${pageNumber}`, 
           pageSize.width / 2, 
@@ -378,7 +377,6 @@ const Reports = () => {
           { align: 'center' }
         );
         
-        // Add timestamp
         doc.text(
           `Generated: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`,
           pageSize.width - 0.5,
@@ -388,31 +386,25 @@ const Reports = () => {
       }
     });
     
-    // Save the PDF
     doc.save(`${filename}.pdf`);
   };
 
-  // Original CSV export function
   const exportToCSV = (data: any[], filename: string) => {
     if (!data || data.length === 0) return;
     
-    // Flatten nested objects
     const flattenedData = flattenData(data);
     
-    // Get all headers
     const headers: string[] = Array.from(
       new Set(
         flattenedData.flatMap(obj => Object.keys(obj))
       )
     );
     
-    // Create CSV content
     const csvContent = [
       headers.join(','),
       ...flattenedData.map(row => 
         headers.map(header => {
           const val = row[header] !== undefined ? row[header] : '';
-          // Escape values that contain commas, quotes, or newlines
           const escaped = typeof val === 'string' && 
             (val.includes(',') || val.includes('"') || val.includes('\n')) 
               ? `"${val.replace(/"/g, '""')}"` 
@@ -422,7 +414,6 @@ const Reports = () => {
       )
     ].join('\n');
     
-    // Create a blob and download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -470,6 +461,28 @@ const Reports = () => {
   const clearDateRange = () => {
     setDateRange(undefined);
     setTimeRange("month");
+  };
+
+  const extractFlightInfo = (notes: string) => {
+    let flightInfo = '';
+    
+    const flightNumberMatch = notes.match(/Flight:?\s*([A-Z0-9]{2,}\s*[0-9]{1,4}[A-Z]?)/i);
+    const airlineMatch = notes.match(/Airline:?\s*([^,\n]+)/i);
+    const terminalMatch = notes.match(/Terminal:?\s*([^,\n]+)/i);
+    
+    if (flightNumberMatch) {
+      flightInfo += `Flight: ${flightNumberMatch[1].trim()}`;
+    }
+    
+    if (airlineMatch) {
+      flightInfo += flightInfo ? `, Airline: ${airlineMatch[1].trim()}` : `Airline: ${airlineMatch[1].trim()}`;
+    }
+    
+    if (terminalMatch) {
+      flightInfo += flightInfo ? `, Terminal: ${terminalMatch[1].trim()}` : `Terminal: ${terminalMatch[1].trim()}`;
+    }
+    
+    return flightInfo;
   };
 
   return (

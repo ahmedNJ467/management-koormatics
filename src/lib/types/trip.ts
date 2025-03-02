@@ -63,3 +63,13 @@ export interface DisplayTrip extends Trip {
   is_recurring?: boolean; // Added for UI display purposes
   ui_service_type?: string; // Added to store the UI service type corresponding to database type
 }
+
+// Mapping of trip types to UI-friendly display names
+export const tripTypeDisplayMap: Record<TripType, string> = {
+  'airport_pickup': 'Airport Pickup',
+  'airport_dropoff': 'Airport Dropoff',
+  'other': 'Other Service',
+  'hourly': 'Hourly Service',
+  'full_day': 'Full Day',
+  'multi_day': 'Multi Day'
+};
