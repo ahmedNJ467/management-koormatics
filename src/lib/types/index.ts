@@ -1,4 +1,3 @@
-
 // Export all types from the individual files
 export * from './driver';
 export * from './vehicle';
@@ -9,3 +8,5 @@ export * from './client';
 export * from './trip';
 export * from './invoice';
 export * from './cost-analytics';
+
+export { ServiceType } from './trip';
