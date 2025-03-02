@@ -36,12 +36,12 @@ export interface DbTrip {
   date: string;
   time?: string;             // start_time in application
   return_time?: string;      // end_time in application
-  service_type?: TripType;   // type in application
-  status?: TripStatus;       // Not always in database, defaults to 'scheduled'
+  service_type?: string;   // type in application
+  status?: TripStatus;       // Not in database, derived from special_instructions
   amount: number;
   pickup_location?: string;
   dropoff_location?: string;
-  special_instructions?: string; // notes in application
+  special_instructions?: string; // notes in application, also contains status information
   invoice_id?: string;
   created_at?: string;
   updated_at?: string;
@@ -61,7 +61,7 @@ export interface Trip {
   start_time?: string;        // time in database
   end_time?: string;          // return_time in database
   type: TripType;             // service_type in database
-  status: TripStatus;         // May need to be derived from database 
+  status: TripStatus;         // Derived from special_instructions
   amount: number;
   pickup_location?: string;
   dropoff_location?: string;
@@ -96,7 +96,7 @@ export interface DisplayTrip extends Trip {
 }
 
 // Mapping of trip types to UI-friendly display names
-export const tripTypeDisplayMap: Record<TripType, string> = {
+export const tripTypeDisplayMap: Record<string, string> = {
   'airport_pickup': 'Airport Pickup',
   'airport_dropoff': 'Airport Dropoff',
   'other': 'Other Service',
@@ -109,10 +109,21 @@ export const tripTypeDisplayMap: Record<TripType, string> = {
 };
 
 // Utility function to convert database fields to Trip interface
+import { extractTripStatus } from "@/components/trips/utils";
+
 export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   // Ensure all required properties are present with defaults
-  const type = dbTrip.service_type || dbTrip.type || 'other';
-  const status = dbTrip.status || 'scheduled';
+  const dbServiceType = dbTrip.service_type || "other";
+  
+  // Extract status from special_instructions
+  const status = dbTrip.status || extractTripStatus(dbTrip.special_instructions) || "scheduled";
+  
+  // Map to TripType, handling unknown types
+  let type: TripType = dbServiceType as TripType;
+  if (!Object.values(TripType).includes(type)) {
+    // If not a valid TripType, default to "other"
+    type = "other";
+  }
   
   return {
     ...dbTrip,
@@ -121,7 +132,9 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
     status,
     start_time: dbTrip.time || dbTrip.start_time,
     end_time: dbTrip.return_time || dbTrip.end_time,
-    notes: dbTrip.special_instructions || dbTrip.notes,
+    notes: dbTrip.special_instructions,
+    // Remove status prefix from display notes
+    special_notes: dbTrip.special_instructions?.replace(/^STATUS:[a-z_]+\n\n/i, ''),
     // Additional display fields
     client_name: dbTrip.clients?.name || "Unknown Client",
     client_type: dbTrip.clients?.type,
@@ -132,7 +145,7 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
     driver_avatar: dbTrip.drivers?.avatar_url,
     driver_contact: dbTrip.drivers?.contact,
     // Include additional fields for displaying in UI
-    display_type: dbTrip.display_type || (type && tripTypeDisplayMap[type as TripType]) || 'Other',
+    display_type: dbTrip.display_type || tripTypeDisplayMap[dbServiceType] || 'Other',
   };
 };
 

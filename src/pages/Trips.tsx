@@ -40,13 +40,13 @@ import { DeleteTripDialog } from "@/components/trips/DeleteTripDialog";
 import { DbTripData, TripMessageData, TripAssignmentData } from "@/components/trips/types";
 import { Driver, Vehicle, Client } from "@/lib/types";
 
-// Map UI service types to database TripType values
-const serviceTypeMap: Record<string, TripType> = {
+// Map UI service types to database service_type values
+const serviceTypeMap: Record<string, string> = {
   "airport_pickup": "airport_pickup",
   "airport_dropoff": "airport_dropoff",
-  "round_trip": "other",
-  "security_escort": "other",
-  "one_way": "other",
+  "round_trip": "round_trip",
+  "security_escort": "security_escort",
+  "one_way": "one_way_transfer",
   "full_day_hire": "full_day"
 };
 
@@ -87,7 +87,11 @@ export default function Trips() {
       if (error) throw error;
 
       return data.map((trip: DbTripData) => {
-        return mapDatabaseFieldsToTrip(trip);
+        return mapDatabaseFieldsToTrip({
+          ...trip,
+          // Add status field if it doesn't exist in DB response
+          status: trip.status || "scheduled"
+        });
       });
     },
   });
@@ -216,9 +220,17 @@ export default function Trips() {
   // Update trip status
   const updateTripStatus = async (tripId: string, status: TripStatus) => {
     try {
+      // Note: We only update a custom status field in our app, not in DB schema
       const { error } = await supabase
         .from("trips")
-        .update({ status })
+        .update({ 
+          // Store status in special_instructions with a prefix
+          special_instructions: `STATUS:${status}${
+            viewTrip?.special_instructions ? 
+              `\n\n${viewTrip.special_instructions.replace(/^STATUS:[a-z_]+\n\n/i, '')}` : 
+              ''
+          }`
+        })
         .eq("id", tripId);
 
       if (error) throw error;
@@ -306,19 +318,19 @@ export default function Trips() {
       const formTime = formData.get("time") as string;
       const formReturnTime = formData.get("return_time") as string;
       
+      // Prepare trip data for insertion into the DB
       const tripData = {
         client_id: formData.get("client_id") as string,
         vehicle_id: formData.get("vehicle_id") as string,
         driver_id: formData.get("driver_id") as string,
         date: format(tripDate, "yyyy-MM-dd"),
-        start_time: formTime,
-        end_time: formReturnTime || null,
-        type: dbServiceType,
-        status: "scheduled" as TripStatus,
+        time: formTime,
+        return_time: formReturnTime || null,
+        service_type: dbServiceType,
         amount: 0, // Default amount
         pickup_location: formData.get("pickup_location") as string || null,
         dropoff_location: formData.get("dropoff_location") as string || null,
-        notes: formData.get("special_notes") as string || null,
+        special_instructions: `STATUS:scheduled\n\n${formData.get("special_notes") as string || ""}`,
       };
       
       trips.push(tripData);
@@ -349,6 +361,10 @@ export default function Trips() {
       if (terminal) notes += `\nTerminal: ${terminal}`;
     }
     
+    // Add status prefix to notes
+    const statusValue = formData.get("status") as TripStatus || "scheduled";
+    notes = `STATUS:${statusValue}\n\n${notes}`;
+    
     try {
       if (editTrip) {
         // Update existing trip
@@ -359,10 +375,9 @@ export default function Trips() {
             vehicle_id: formData.get("vehicle_id") as string,
             driver_id: formData.get("driver_id") as string,
             date: formData.get("date") as string,
-            start_time: formData.get("time") as string,
-            end_time: formData.get("return_time") as string || null,
+            time: formData.get("time") as string,
+            return_time: formData.get("return_time") as string || null,
             service_type: dbServiceType,
-            status: formData.get("status") as TripStatus,
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,
             special_instructions: notes || null,
@@ -410,7 +425,6 @@ export default function Trips() {
             time: formData.get("time") as string,
             return_time: needsReturnTime ? (formData.get("return_time") as string) : null,
             service_type: dbServiceType,
-            status: formData.get("status") as TripStatus || "scheduled",
             amount: 0, // Default amount
             pickup_location: formData.get("pickup_location") as string || null,
             dropoff_location: formData.get("dropoff_location") as string || null,

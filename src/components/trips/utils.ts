@@ -34,3 +34,11 @@ export const formatServiceType = (type: string): string => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
+
+// Extract trip status from notes
+export const extractTripStatus = (notes?: string): string => {
+  if (!notes) return 'scheduled';
+  
+  const statusMatch = notes.match(/^STATUS:([a-z_]+)/i);
+  return statusMatch ? statusMatch[1] : 'scheduled';
+};
