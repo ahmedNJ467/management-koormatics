@@ -2,6 +2,7 @@
 import { Vehicle } from './vehicle';
 
 export type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type MaintenanceType = 'service' | 'repair' | 'inspection' | 'other';
 
 export interface Maintenance {
   id: string;
@@ -9,6 +10,7 @@ export interface Maintenance {
   date: string;
   description: string;
   cost: number;
+  maintenance_type?: MaintenanceType;
   next_scheduled?: string;
   status: MaintenanceStatus;
   notes?: string;
