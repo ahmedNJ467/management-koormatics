@@ -64,12 +64,12 @@ export function TripDetailView({
 
   return (
     <div className="w-full">
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 p-6 rounded-lg mb-6">
-        <DialogTitle className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100 flex items-center">
-          <Calendar className="h-5 w-5 mr-2 text-indigo-500" />
+      <div className="bg-gradient-to-r from-slate-900/50 to-indigo-950/50 dark:from-indigo-950/70 dark:to-purple-950/70 p-6 rounded-lg mb-6 border border-slate-800/50">
+        <DialogTitle className="text-xl font-semibold mb-3 text-white flex items-center">
+          <Calendar className="h-5 w-5 mr-2 text-purple-400" />
           {formatDate(viewTrip.date)}
-          <span className="mx-2">•</span>
-          <MapPin className="h-5 w-5 mr-2 text-indigo-500" />
+          <span className="mx-2 text-slate-400">•</span>
+          <MapPin className="h-5 w-5 mr-2 text-purple-400" />
           {viewTrip.pickup_location.split(',')[0]}
         </DialogTitle>
         
@@ -77,12 +77,12 @@ export function TripDetailView({
           <Badge variant="outline" className={`font-medium ${getStatusColor(viewTrip.status)}`}>
             {viewTrip.status.replace('_', ' ').toUpperCase()}
           </Badge>
-          <Badge variant="outline" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300">
+          <Badge variant="outline" className="bg-indigo-900/40 text-indigo-300 hover:bg-indigo-900/40 border-indigo-700">
             {tripTypeDisplayMap[viewTrip.type]}
           </Badge>
         </div>
         
-        <DialogDescription className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        <DialogDescription className="text-sm text-slate-400 mb-2">
           Trip ID: {viewTrip.id.substring(0, 8).toUpperCase()}
         </DialogDescription>
       </div>
@@ -90,16 +90,16 @@ export function TripDetailView({
       <TripDetailHeader viewTrip={viewTrip} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="w-full bg-slate-100 dark:bg-slate-800/50 p-1">
-          <TabsTrigger value="details" className="flex-1 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400">
+        <TabsList className="w-full bg-slate-900/50 dark:bg-slate-800/30 p-1 border border-slate-800/50 rounded-md">
+          <TabsTrigger value="details" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
             <FileText className="h-4 w-4 mr-2" />
             Details
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400">
+          <TabsTrigger value="messages" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
             <MessageCircle className="h-4 w-4 mr-2" />
             Messages
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex-1 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400">
+          <TabsTrigger value="assignments" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
             <UserCircle className="h-4 w-4 mr-2" />
             Assignments
           </TabsTrigger>
