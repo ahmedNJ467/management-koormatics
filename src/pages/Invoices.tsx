@@ -1,4 +1,4 @@
-<lov-code>
+
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -170,8 +170,8 @@ export default function Invoices() {
           `)
           .eq("invoice_id", invoice.id);
         
-      // Use the convertToDisplayTrips helper function to ensure all needed fields are present
-      const trips = tripData ? convertToDisplayTrips(tripData) : [];
+        // Use the convertToDisplayTrips helper function to ensure all needed fields are present
+        const trips = tripData ? convertToDisplayTrips(tripData) : [];
 
         // Get quotation number if there's a quotation
         let quotation_number = null;
@@ -295,14 +295,7 @@ export default function Invoices() {
       
       if (error) throw error;
       
-      return data.map((trip) => ({
-        ...trip,
-        client_name: trip.clients?.name || "Unknown Client",
-        vehicle_details: trip.vehicles ? 
-          `${trip.vehicles.make} ${trip.vehicles.model} (${trip.vehicles.registration})` : 
-          "Unknown Vehicle",
-        driver_name: trip.drivers?.name || "Unknown Driver",
-      })) as DisplayTrip[];
+      return convertToDisplayTrips(data);
     },
     enabled: !!selectedClient,
   });
@@ -945,4 +938,664 @@ export default function Invoices() {
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="sent">Sent</SelectItem>
             <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="over
+            <SelectItem value="overdue">Overdue</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Invoices Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Invoice</TableHead>
+              <TableHead>Client</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Paid</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredInvoices && filteredInvoices.length > 0 ? (
+              filteredInvoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell>
+                    <div className="font-medium">{formatInvoiceId(invoice.id)}</div>
+                    {invoice.quotation_number && (
+                      <div className="text-xs text-muted-foreground">
+                        Ref: {invoice.quotation_number}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{invoice.client_name}</div>
+                    {invoice.client_email && (
+                      <div className="text-xs text-muted-foreground">{invoice.client_email}</div>
+                    )}
+                  </TableCell>
+                  <TableCell>{formatDate(invoice.date)}</TableCell>
+                  <TableCell>{formatDate(invoice.due_date)}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(invoice.status)}>
+                      {formatStatus(invoice.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{formatCurrency(invoice.total_amount)}</TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(invoice.paid_amount)}
+                    {invoice.paid_amount > 0 && invoice.paid_amount < invoice.total_amount && (
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((invoice.paid_amount / invoice.total_amount) * 100)}%
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setViewInvoice(invoice)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Options</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setViewInvoice(invoice)}>
+                            <Eye className="h-4 w-4 mr-2" /> View Invoice
+                          </DropdownMenuItem>
+                          {invoice.status === "draft" && (
+                            <DropdownMenuItem onClick={() => sendInvoice(invoice.id)}>
+                              <Send className="h-4 w-4 mr-2" /> Send to Client
+                            </DropdownMenuItem>
+                          )}
+                          {invoice.status !== "paid" && invoice.status !== "cancelled" && (
+                            <>
+                              <DropdownMenuItem onClick={() => setEditInvoice(invoice)}>
+                                <Edit className="h-4 w-4 mr-2" /> Edit Invoice
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setViewInvoice(invoice);
+                                setRecordPaymentOpen(true);
+                              }}>
+                                <CreditCard className="h-4 w-4 mr-2" /> Record Payment
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setInvoiceToDelete(invoice.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-600"
+                          >
+                            <Trash className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8">
+                  {invoices && invoices.length > 0 ? (
+                    <div className="text-muted-foreground">
+                      No invoices match your search or filter. Try adjusting your criteria.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-1">No Invoices Yet</h3>
+                      <p className="text-muted-foreground text-center max-w-md mb-4">
+                        Create your first invoice to start billing clients.
+                      </p>
+                      <Button onClick={() => setCreateInvoiceOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" /> Create Invoice
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* View Invoice Dialog */}
+      <Dialog open={viewInvoice !== null} onOpenChange={(open) => !open && setViewInvoice(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}</DialogTitle>
+          </DialogHeader>
+          
+          {viewInvoice && (
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex-1 overflow-hidden flex flex-col">
+              <TabsList className="mb-4">
+                <TabsTrigger value="details">Details</TabsTrigger>
+                {viewInvoice.trips && viewInvoice.trips.length > 0 && (
+                  <TabsTrigger value="trips">Associated Trips</TabsTrigger>
+                )}
+              </TabsList>
+              
+              <TabsContent value="details" className="flex-1 overflow-auto">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1">Client</h3>
+                    <p>{viewInvoice.client_name}</p>
+                    {viewInvoice.client_email && <p className="text-sm">{viewInvoice.client_email}</p>}
+                    {viewInvoice.client_address && <p className="text-sm">{viewInvoice.client_address}</p>}
+                  </div>
+                  <div className="text-right">
+                    <h3 className="text-sm font-semibold mb-1">Invoice Information</h3>
+                    <p><span className="text-muted-foreground">Status:</span> <Badge className={getStatusColor(viewInvoice.status)}>{formatStatus(viewInvoice.status)}</Badge></p>
+                    <p><span className="text-muted-foreground">Date:</span> {formatDate(viewInvoice.date)}</p>
+                    <p><span className="text-muted-foreground">Due Date:</span> {formatDate(viewInvoice.due_date)}</p>
+                  </div>
+                </div>
+                
+                <h3 className="text-sm font-semibold mb-2">Invoice Items</h3>
+                <div className="rounded-md border mb-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-full">Description</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {viewInvoice.items.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                    <tfoot>
+                      <tr className="border-t">
+                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right font-semibold">Total:</td>
+                        <td className="pl-4 pr-4 py-2 text-right font-semibold">{formatCurrency(viewInvoice.total_amount)}</td>
+                      </tr>
+                      <tr>
+                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right">Paid Amount:</td>
+                        <td className="pl-4 pr-4 py-2 text-right">{formatCurrency(viewInvoice.paid_amount)}</td>
+                      </tr>
+                      <tr>
+                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right font-semibold">Balance Due:</td>
+                        <td className="pl-4 pr-4 py-2 text-right font-semibold">{formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}</td>
+                      </tr>
+                    </tfoot>
+                  </Table>
+                </div>
+                
+                {viewInvoice.notes && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold mb-2">Notes</h3>
+                    <p className="text-sm whitespace-pre-line">{viewInvoice.notes}</p>
+                  </div>
+                )}
+                
+                {viewInvoice.payment_method && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold mb-2">Payment Information</h3>
+                    <p><span className="text-muted-foreground">Method:</span> {viewInvoice.payment_method.replace(/_/g, ' ')}</p>
+                    {viewInvoice.payment_date && (
+                      <p><span className="text-muted-foreground">Date:</span> {formatDate(viewInvoice.payment_date)}</p>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              {viewInvoice.trips && viewInvoice.trips.length > 0 && (
+                <TabsContent value="trips" className="flex-1 overflow-auto">
+                  <div className="rounded-md border mb-4">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Driver</TableHead>
+                          <TableHead>Vehicle</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewInvoice.trips.map((trip) => (
+                          <TableRow key={trip.id}>
+                            <TableCell>{formatDate(trip.date)}</TableCell>
+                            <TableCell>{formatTripType(trip.type)}</TableCell>
+                            <TableCell>{trip.driver_name}</TableCell>
+                            <TableCell>{trip.vehicle_details}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(trip.amount)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              )}
+            </Tabs>
+          )}
+          
+          <DialogFooter className="mt-6 flex gap-2">
+            {viewInvoice && viewInvoice.status === "draft" && (
+              <Button 
+                variant="outline" 
+                className="mr-auto"
+                onClick={() => sendInvoice(viewInvoice.id)}
+              >
+                <Send className="mr-2 h-4 w-4" /> Send to Client
+              </Button>
+            )}
+            
+            {viewInvoice && (viewInvoice.status === "sent" || viewInvoice.status === "overdue") && (
+              <Button 
+                variant="outline" 
+                className="mr-auto"
+                onClick={() => setRecordPaymentOpen(true)}
+              >
+                <CreditCard className="mr-2 h-4 w-4" /> Record Payment
+              </Button>
+            )}
+            
+            <Button variant="secondary" onClick={() => setViewInvoice(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Record Payment Dialog */}
+      <Dialog open={recordPaymentOpen} onOpenChange={setRecordPaymentOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              Record a payment for invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="payment-amount">Payment Amount</Label>
+              <Input
+                id="payment-amount"
+                type="number"
+                step="0.01"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+              {viewInvoice && (
+                <p className="text-xs text-muted-foreground">
+                  Remaining balance: {formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment-date">Payment Date</Label>
+              <Input
+                id="payment-date"
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="credit_card">Credit Card</SelectItem>
+                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRecordPaymentOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRecordPayment}>Record Payment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit Invoice Dialog */}
+      <Dialog 
+        open={createInvoiceOpen || editInvoice !== null} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateInvoiceOpen(false);
+            setEditInvoice(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {editInvoice ? `Edit Invoice ${formatInvoiceId(editInvoice.id)}` : "Create New Invoice"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 pr-4">
+            <form onSubmit={handleSaveInvoice} className="space-y-6 py-4">
+              {/* Client Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="client_id">Client</Label>
+                <Select 
+                  name="client_id" 
+                  value={selectedClient} 
+                  onValueChange={handleClientChange}
+                  required
+                  disabled={!!editInvoice}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients?.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Invoice Date</Label>
+                  <Input 
+                    id="date" 
+                    name="date" 
+                    type="date" 
+                    defaultValue={editInvoice ? editInvoice.date : format(new Date(), "yyyy-MM-dd")}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="due_date">Due Date</Label>
+                  <Input 
+                    id="due_date" 
+                    name="due_date" 
+                    type="date" 
+                    defaultValue={editInvoice ? editInvoice.due_date : format(addDays(new Date(), 30), "yyyy-MM-dd")}
+                    required
+                  />
+                </div>
+              </div>
+              
+              {/* Status */}
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  name="status" 
+                  defaultValue={editInvoice ? editInvoice.status : "draft"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="overdue">Overdue</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Associated Quotation or Trips */}
+              {!editInvoice && selectedClient && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quotation_id">Associated Quotation (Optional)</Label>
+                    <Select 
+                      value={selectedQuotation || "_none"} 
+                      onValueChange={handleQuotationChange}
+                      disabled={quotationsLoading || selectedTrips.length > 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a quotation" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">None</SelectItem>
+                        {quotations?.map((quotation) => (
+                          <SelectItem key={quotation.id} value={quotation.id}>
+                            QUO-{quotation.id.substring(0, 8).toUpperCase()} ({formatDate(quotation.date)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {quotationsLoading && <p className="text-xs text-muted-foreground">Loading quotations...</p>}
+                    {quotationsError && <p className="text-xs text-red-500">Error loading quotations</p>}
+                  </div>
+                  
+                  {!selectedQuotation && (
+                    <div className="space-y-2">
+                      <Label>Associated Trips (Optional)</Label>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12"></TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Driver</TableHead>
+                              <TableHead className="text-right">Amount</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tripsLoading ? (
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center py-4">
+                                  Loading trips...
+                                </TableCell>
+                              </TableRow>
+                            ) : availableTrips && availableTrips.length > 0 ? (
+                              availableTrips.map((trip) => (
+                                <TableRow key={trip.id}>
+                                  <TableCell>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTrips.includes(trip.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedTrips([...selectedTrips, trip.id]);
+                                        } else {
+                                          setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
+                                        }
+                                      }}
+                                      disabled={!!selectedQuotation}
+                                    />
+                                  </TableCell>
+                                  <TableCell>{formatDate(trip.date)}</TableCell>
+                                  <TableCell>{formatTripType(trip.type)}</TableCell>
+                                  <TableCell>{trip.driver_name}</TableCell>
+                                  <TableCell className="text-right">{formatCurrency(trip.amount)}</TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center py-4">
+                                  No uninvoiced trips available for this client
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {tripsError && <p className="text-xs text-red-500">Error loading trips</p>}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Invoice Items */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Invoice Items</Label>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={addItem}
+                    disabled={!!selectedQuotation || selectedTrips.length > 0}
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Item
+                  </Button>
+                </div>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-full">Description</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoiceItems.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Input
+                              value={item.description}
+                              onChange={(e) => {
+                                const updatedItems = [...invoiceItems];
+                                updatedItems[index].description = e.target.value;
+                                setInvoiceItems(updatedItems);
+                              }}
+                              disabled={!!selectedQuotation || selectedTrips.length > 0}
+                              placeholder="Item description"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              className="text-right w-20"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const quantity = parseInt(e.target.value) || 0;
+                                updateItemAmount(index, quantity, item.unit_price);
+                              }}
+                              disabled={!!selectedQuotation || selectedTrips.length > 0}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="text-right w-28"
+                              value={item.unit_price}
+                              onChange={(e) => {
+                                const unitPrice = parseFloat(e.target.value) || 0;
+                                updateItemAmount(index, item.quantity, unitPrice);
+                              }}
+                              disabled={!!selectedQuotation || selectedTrips.length > 0}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(item.amount)}
+                          </TableCell>
+                          <TableCell>
+                            {invoiceItems.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem(index)}
+                                disabled={!!selectedQuotation || selectedTrips.length > 0}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                    <tfoot>
+                      <tr className="border-t">
+                        <td colSpan={3} className="pl-4 pr-4 py-2 text-right font-semibold">Total:</td>
+                        <td className="pl-4 pr-4 py-2 text-right font-semibold">{formatCurrency(calculateTotal())}</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </Table>
+                </div>
+              </div>
+              
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea 
+                  id="notes" 
+                  name="notes" 
+                  placeholder="Additional notes or payment instructions"
+                  defaultValue={editInvoice?.notes || ""}
+                  rows={3}
+                />
+              </div>
+              
+              <DialogFooter className="pt-4">
+                <Button variant="outline" type="button" onClick={() => {
+                  setCreateInvoiceOpen(false);
+                  setEditInvoice(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isFormDataLoading}>
+                  {editInvoice ? "Update Invoice" : "Create Invoice"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Invoice Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the invoice and remove its association with any trips.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteInvoice} className="bg-red-600 text-white hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

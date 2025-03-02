@@ -48,7 +48,7 @@ export function useClientsQuery() {
       }
       
       // Get unique client IDs with active contracts
-      const clientsWithActiveContracts = new Set();
+      const clientsWithActiveContracts = new Set<string>();
       
       if (activeContractData) {
         activeContractData.forEach(trip => {

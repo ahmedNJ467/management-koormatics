@@ -95,14 +95,21 @@ export const mapTripTypeToServiceType = (tripType: TripType): ServiceType => {
 
 // Helper function to convert trips from database to DisplayTrip format
 export function convertToDisplayTrips(trips: any[]): DisplayTrip[] {
-  return trips.map(trip => ({
-    ...trip,
-    // Ensure required DisplayTrip fields are present
-    type: trip.service_type || trip.type || 'other',
-    status: trip.status || 'scheduled',
-    client_name: trip.client_name || '',
-    vehicle_details: trip.vehicle_details || '',
-    driver_name: trip.driver_name || '',
-    notes: trip.notes || trip.special_instructions || ''
-  }));
+  return trips.map(trip => {
+    // Handle the case where service_type or type might be missing
+    const tripType = trip.service_type || trip.type || 'other';
+    const tripStatus = trip.status || 'scheduled';
+    
+    return {
+      ...trip,
+      // Ensure required DisplayTrip fields are present
+      type: tripType,
+      status: tripStatus,
+      client_name: trip.client_name || trip.clients?.name || 'Unknown Client',
+      vehicle_details: trip.vehicle_details || 
+        (trip.vehicles ? `${trip.vehicles.make} ${trip.vehicles.model} (${trip.vehicles.registration})` : 'Unknown Vehicle'),
+      driver_name: trip.driver_name || trip.drivers?.name || 'Unknown Driver',
+      notes: trip.notes || trip.special_instructions || ''
+    } as DisplayTrip;
+  });
 }
