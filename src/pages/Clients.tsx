@@ -124,12 +124,14 @@ export default function Clients() {
         onClientClick={handleClientClick}
       />
 
-      <ClientFormDialog
-        open={formOpen}
-        onOpenChange={handleFormClose}
-        client={selectedClient}
-        onClientDeleted={handleClientDeleted}
-      />
+      {formOpen && (
+        <ClientFormDialog
+          open={formOpen}
+          onOpenChange={handleFormClose}
+          client={selectedClient}
+          onClientDeleted={handleClientDeleted}
+        />
+      )}
     </div>
   );
 }

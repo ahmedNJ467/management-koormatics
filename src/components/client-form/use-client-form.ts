@@ -80,7 +80,7 @@ export function useClientForm(client: any | null) {
         phone: client.phone || "",
       });
       
-      // Reset profile and documents
+      // Reset profile and documents only if client changes
       resetProfile(client.profile_image_url);
       resetDocuments(client.documents || []);
     } else {
@@ -99,7 +99,7 @@ export function useClientForm(client: any | null) {
       resetProfile();
       resetDocuments();
     }
-  }, [client, form, resetProfile, resetDocuments]);
+  }, [client?.id]); // Only run this effect when client ID changes, not on every client prop change
 
   return {
     form,

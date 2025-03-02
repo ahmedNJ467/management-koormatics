@@ -1,106 +1,98 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-export function useClientDialog(client: any | null, onOpenChange: (open: boolean) => void, onClientDeleted?: () => void) {
+export function useClientDialog(
+  client: any | null, 
+  onOpenChange: (open: boolean) => void,
+  onClientDeleted?: () => void
+) {
   const { toast } = useToast();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("details");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletionError, setDeletionError] = useState<string | null>(null);
   
-  const handleDelete = async () => {
-    if (!client?.id) return;
+  // Function to archive a client
+  const handleDelete = useCallback(async () => {
+    if (!client) return;
     
     try {
-      // First check if the client has any associated trips
-      const { data: tripsData, error: tripsError } = await supabase
-        .from('trips')
-        .select('id')
-        .eq('client_id', client.id)
-        .limit(1);
+      setDeletionError(null);
       
-      if (tripsError) throw tripsError;
-      
-      if (tripsData && tripsData.length > 0) {
-        setDeletionError("This client cannot be archived because it has associated trips. Please delete all trips for this client first.");
-        return;
-      }
-      
-      // Instead of deleting, we're archiving the client by setting is_archived to true
+      // We're not actually deleting the client, just marking it as archived
       const { error } = await supabase
-        .from('clients')
+        .from("clients")
         .update({ is_archived: true })
-        .eq('id', client.id);
-
-      if (error) {
-        throw error;
-      }
+        .eq("id", client.id);
       
+      if (error) throw error;
+      
+      // Close both dialogs
       setShowDeleteConfirm(false);
+      onOpenChange(false);
       
-      if (onClientDeleted) {
-        onClientDeleted();
-      } else {
-        // If no onClientDeleted callback is provided, close the dialog
-        onOpenChange(false);
-      }
-      
+      // Show success message
       toast({
         title: "Client archived",
-        description: "The client has been moved to archive successfully.",
+        description: "The client has been moved to the archive.",
       });
-    } catch (error) {
-      console.error("Error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to archive client",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRestore = async () => {
-    if (!client?.id) return;
-    
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ is_archived: false })
-        .eq('id', client.id);
-
-      if (error) {
-        throw error;
-      }
       
+      // Refresh the client list
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      
+      // Call the deletion callback if provided
       if (onClientDeleted) {
         onClientDeleted();
-      } else {
-        // If no callback is provided, close the dialog
-        onOpenChange(false);
       }
+    } catch (error) {
+      console.error("Error archiving client:", error);
+      setDeletionError("There was an error archiving this client. Please try again.");
+    }
+  }, [client, onOpenChange, toast, queryClient, onClientDeleted]);
+  
+  // Function to restore an archived client
+  const handleRestore = useCallback(async () => {
+    if (!client) return;
+    
+    try {
+      // Mark the client as not archived
+      const { error } = await supabase
+        .from("clients")
+        .update({ is_archived: false })
+        .eq("id", client.id);
       
+      if (error) throw error;
+      
+      // Close the dialog
+      onOpenChange(false);
+      
+      // Show success message
       toast({
         title: "Client restored",
-        description: "The client has been restored successfully.",
+        description: "The client has been restored from the archive.",
       });
+      
+      // Refresh the client list
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error restoring client:", error);
       toast({
         title: "Error",
-        description: "Failed to restore client",
+        description: "There was an error restoring this client. Please try again.",
         variant: "destructive",
       });
     }
-  };
+  }, [client, onOpenChange, toast, queryClient]);
   
   return {
-    showDeleteConfirm,
-    setShowDeleteConfirm,
     activeTab,
     setActiveTab,
+    showDeleteConfirm,
+    setShowDeleteConfirm,
     deletionError,
-    setDeletionError: (error: string | null) => setDeletionError(error),
     handleDelete,
     handleRestore
   };
