@@ -40,8 +40,8 @@ export function useClientsQuery() {
       const { data: activeContractData, error: contractError } = await supabase
         .from('trips')
         .select('client_id')
-        .eq('status', 'in_progress') // Using in_progress instead of ongoing
-        .is('invoice_id', null); // Not invoiced yet
+        .eq('status', 'in_progress')
+        .is('invoice_id', null);
       
       if (contractError) {
         console.error("Error fetching active contracts:", contractError);
@@ -49,7 +49,7 @@ export function useClientsQuery() {
       
       // Get unique client IDs with active contracts
       const clientsWithActiveContracts = new Set(
-        activeContractData?.map(trip => trip.client_id) || []
+        (activeContractData || []).map(trip => trip.client_id)
       );
       
       // Add has_active_contract flag to clients
