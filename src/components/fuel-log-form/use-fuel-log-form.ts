@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FuelLog } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { fuelLogSchema, FuelLogFormValues } from "./schemas/fuel-log-schema";
-import { getVehicles, getLatestMileage, saveFuelLog } from "./services/fuel-log-service";
+import { getVehicles, getLatestMileage, saveFuelLog, getFuelLogById } from "./services/fuel-log-service";
 import { useFuelCalculations } from "./hooks/use-fuel-calculations";
 
 export { fuelLogSchema, type FuelLogFormValues };
@@ -31,11 +31,11 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       date: fuelLog.date,
       fuel_type: fuelLog.fuel_type,
       volume: fuelLog.volume,
-      price_per_liter: fuelLog.cost / fuelLog.volume,
+      price_per_liter: fuelLog.volume > 0 ? fuelLog.cost / fuelLog.volume : 0,
       cost: fuelLog.cost,
       previous_mileage: fuelLog.previous_mileage || 0,
       current_mileage: fuelLog.current_mileage || 0,
-      mileage: fuelLog.mileage,
+      mileage: fuelLog.mileage || 0,
       notes: fuelLog.notes || "",
     } : {
       vehicle_id: "",
@@ -62,7 +62,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     
     const fetchMileage = async () => {
       try {
-        // For existing fuel logs being edited, don't override the previous mileage
+        // If editing existing fuel log, don't override the previous mileage
         if (fuelLog && fuelLog.vehicle_id === vehicleId) return;
         
         const lastMileage = await getLatestMileage(vehicleId);

@@ -28,6 +28,24 @@ export async function getLatestMileage(vehicleId: string) {
   return data[0]?.current_mileage || 0;
 }
 
+export async function getFuelLogById(fuelLogId: string) {
+  const { data, error } = await supabase
+    .from("fuel_logs")
+    .select(`
+      *,
+      vehicle:vehicles (
+        make,
+        model,
+        registration
+      )
+    `)
+    .eq("id", fuelLogId)
+    .single();
+
+  if (error) throw error;
+  return data as FuelLog;
+}
+
 export async function saveFuelLog(values: FuelLogFormValues, fuelLogId?: string) {
   const formattedValues = {
     vehicle_id: values.vehicle_id,

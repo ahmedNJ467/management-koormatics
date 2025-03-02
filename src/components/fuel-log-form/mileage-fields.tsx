@@ -46,6 +46,11 @@ export function MileageFields({ form }: MileageFieldsProps) {
               onChange: (e) => {
                 const value = parseInt(e.target.value);
                 form.setValue("current_mileage", isNaN(value) ? 0 : value);
+                
+                // Calculate mileage
+                const previousMileage = form.getValues("previous_mileage");
+                const mileage = Math.max(0, value - previousMileage);
+                form.setValue("mileage", mileage);
               }
             })}
           />
