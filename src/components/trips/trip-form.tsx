@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -51,8 +52,7 @@ import {
   DollarSign 
 } from "lucide-react";
 
-import { ServiceType } from "@/lib/types";
-
+// Form schema definition with Zod
 const formSchema = z.object({
   client_id: z.string().uuid({ message: "Please select a client" }),
   vehicle_id: z.string().uuid({ message: "Please select a vehicle" }),
@@ -80,6 +80,7 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
   const { toast } = useToast();
   const [formTab, setFormTab] = useState("basic");
   
+  // Create form with react-hook-form and zodResolver
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -96,6 +97,7 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
     },
   });
 
+  // Fetch clients for dropdown
   const { data: clients } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
@@ -109,6 +111,7 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
     },
   });
 
+  // Fetch vehicles for dropdown
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
@@ -123,6 +126,7 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
     },
   });
 
+  // Fetch drivers for dropdown
   const { data: drivers } = useQuery({
     queryKey: ["drivers"],
     queryFn: async () => {
@@ -137,6 +141,7 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
     },
   });
 
+  // Handle form submission
   const handleSubmit = (values: FormValues) => {
     try {
       console.log("Form values:", values);
@@ -230,6 +235,7 @@ const TripForm = ({ initialData, onSubmit, onCancel }: TripFormProps) => {
               />
             </div>
 
+            {/* Amount field added to its own row for prominence */}
             <div className="mt-4">
               <FormField
                 control={form.control}

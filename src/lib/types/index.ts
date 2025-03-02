@@ -9,5 +9,3 @@ export * from './client';
 export * from './trip';
 export * from './invoice';
 export * from './cost-analytics';
-
-export { ServiceType } from './trip';

@@ -417,7 +417,6 @@ export type Database = {
           assigned_at: string
           created_at: string | null
           driver_id: string
-          driver_rating: number | null
           id: string
           notes: string | null
           status: string
@@ -428,7 +427,6 @@ export type Database = {
           assigned_at?: string
           created_at?: string | null
           driver_id: string
-          driver_rating?: number | null
           id?: string
           notes?: string | null
           status: string
@@ -439,7 +437,6 @@ export type Database = {
           assigned_at?: string
           created_at?: string | null
           driver_id?: string
-          driver_rating?: number | null
           id?: string
           notes?: string | null
           status?: string
@@ -465,7 +462,6 @@ export type Database = {
       }
       trip_messages: {
         Row: {
-          attachment_url: string | null
           created_at: string | null
           id: string
           is_read: boolean
@@ -477,7 +473,6 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          attachment_url?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean
@@ -489,7 +484,6 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          attachment_url?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean
@@ -512,7 +506,6 @@ export type Database = {
       }
       trips: {
         Row: {
-          airline: string | null
           amount: number
           client_id: string
           created_at: string | null
@@ -520,21 +513,17 @@ export type Database = {
           driver_id: string
           dropoff_location: string | null
           end_time: string | null
-          flight_number: string | null
           id: string
           invoice_id: string | null
-          is_recurring: boolean | null
           notes: string | null
           pickup_location: string | null
-          service_type: Database["public"]["Enums"]["service_type"] | null
-          special_instructions: string | null
           start_time: string | null
-          terminal: string | null
+          status: Database["public"]["Enums"]["trip_status"]
+          type: Database["public"]["Enums"]["trip_type"]
           updated_at: string | null
           vehicle_id: string
         }
         Insert: {
-          airline?: string | null
           amount?: number
           client_id: string
           created_at?: string | null
@@ -542,21 +531,17 @@ export type Database = {
           driver_id: string
           dropoff_location?: string | null
           end_time?: string | null
-          flight_number?: string | null
           id?: string
           invoice_id?: string | null
-          is_recurring?: boolean | null
           notes?: string | null
           pickup_location?: string | null
-          service_type?: Database["public"]["Enums"]["service_type"] | null
-          special_instructions?: string | null
           start_time?: string | null
-          terminal?: string | null
+          status?: Database["public"]["Enums"]["trip_status"]
+          type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string | null
           vehicle_id: string
         }
         Update: {
-          airline?: string | null
           amount?: number
           client_id?: string
           created_at?: string | null
@@ -564,16 +549,13 @@ export type Database = {
           driver_id?: string
           dropoff_location?: string | null
           end_time?: string | null
-          flight_number?: string | null
           id?: string
           invoice_id?: string | null
-          is_recurring?: boolean | null
           notes?: string | null
           pickup_location?: string | null
-          service_type?: Database["public"]["Enums"]["service_type"] | null
-          special_instructions?: string | null
           start_time?: string | null
-          terminal?: string | null
+          status?: Database["public"]["Enums"]["trip_status"]
+          type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string | null
           vehicle_id?: string
         }
@@ -709,13 +691,6 @@ export type Database = {
         | "completed"
         | "cancelled"
       quotation_status: "draft" | "sent" | "approved" | "rejected" | "expired"
-      service_type:
-        | "airport_pickup"
-        | "airport_dropoff"
-        | "full_day"
-        | "one_way_transfer"
-        | "round_trip"
-        | "security_escort"
       trip_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       trip_type:
         | "airport_pickup"
@@ -724,9 +699,6 @@ export type Database = {
         | "full_day"
         | "multi_day"
         | "other"
-        | "one_way_transfer"
-        | "round_trip"
-        | "security_escort"
       vehicle_status: "active" | "in_service" | "inactive"
       vehicle_type: "armoured" | "soft_skin"
     }
