@@ -1,573 +1,523 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { supabase } from "@/integrations/supabase/client";
-import { Maintenance, FuelLog } from "@/lib/types";
-import { CircleDollarSign, Wrench, Fuel } from "lucide-react";
+import { BarChart, Bar, PieChart, Pie, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { DollarSign, TrendingDown, TrendingUp, Truck } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#6BCB77', '#4D96FF'];
+// Define colors for charts
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-export default function CostAnalytics() {
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [activeTab, setActiveTab] = useState("overview");
+// Type definitions
+type CostData = {
+  maintenance: number;
+  fuel: number;
+  total: number;
+};
+
+type MonthlyData = {
+  month: string;
+  maintenance: number;
+  fuel: number;
+  total: number;
+};
+
+type VehicleCostData = {
+  vehicle_id: string;
+  vehicle_name: string;
+  maintenance: number;
+  fuel: number;
+  total: number;
+};
+
+type CategoryData = {
+  name: string;
+  value: number;
+};
+
+const CostAnalytics = () => {
+  const { toast } = useToast();
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const currentYear = new Date().getFullYear();
   
-  const { data: maintenanceData, isLoading: isLoadingMaintenance } = useQuery({
-    queryKey: ["maintenance", year],
+  // Generate year options (last 5 years)
+  const yearOptions = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
+
+  // Fetch maintenance costs
+  const { data: maintenanceData, isLoading: maintenanceLoading } = useQuery({
+    queryKey: ['maintenanceCosts', selectedYear],
     queryFn: async () => {
-      const startDate = `${year}-01-01`;
-      const endDate = `${year}-12-31`;
-      
       const { data, error } = await supabase
-        .from("maintenance")
-        .select(`
-          id, 
-          date, 
-          description, 
-          cost, 
-          status,
-          service_provider,
-          vehicle:vehicles (id, make, model, registration)
-        `)
-        .gte("date", startDate)
-        .lte("date", endDate);
+        .from('maintenance')
+        .select('cost, category, service_date, vehicle_id, vehicles(make, model, registration)')
+        .gte('service_date', `${selectedYear}-01-01`)
+        .lte('service_date', `${selectedYear}-12-31`);
       
-      if (error) throw error;
-      return data as Maintenance[];
+      if (error) {
+        toast({
+          title: "Error fetching maintenance data",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      return data || [];
     },
   });
-  
-  const { data: fuelData, isLoading: isLoadingFuel } = useQuery({
-    queryKey: ["fuel_logs", year],
+
+  // Fetch fuel costs
+  const { data: fuelData, isLoading: fuelLoading } = useQuery({
+    queryKey: ['fuelCosts', selectedYear],
     queryFn: async () => {
-      const startDate = `${year}-01-01`;
-      const endDate = `${year}-12-31`;
-      
       const { data, error } = await supabase
-        .from("fuel_logs")
-        .select(`
-          id, 
-          date, 
-          fuel_type, 
-          volume, 
-          cost, 
-          mileage,
-          vehicle:vehicles (id, make, model, registration)
-        `)
-        .gte("date", startDate)
-        .lte("date", endDate);
+        .from('fuel_logs')
+        .select('cost, fuel_type, date, vehicle_id, vehicles(make, model, registration)')
+        .gte('date', `${selectedYear}-01-01`)
+        .lte('date', `${selectedYear}-12-31`);
       
-      if (error) throw error;
-      return data as FuelLog[];
+      if (error) {
+        toast({
+          title: "Error fetching fuel data",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      return data || [];
     },
   });
+
+  // Calculate summary data
+  const summaryCosts: CostData = {
+    maintenance: maintenanceData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+    fuel: fuelData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+    total: 0
+  };
+  summaryCosts.total = summaryCosts.maintenance + summaryCosts.fuel;
   
-  const isLoading = isLoadingMaintenance || isLoadingFuel;
-  
-  // Calculate total costs
-  const totalMaintenanceCost = maintenanceData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0;
-  const totalFuelCost = fuelData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0;
-  const totalCost = totalMaintenanceCost + totalFuelCost;
-  
-  // Group maintenance data by description type (service, repair, etc.)
-  const maintenanceByType = maintenanceData?.reduce((acc, item) => {
-    const type = item.description.toLowerCase().includes('repair') 
-      ? 'Repairs' 
-      : item.description.toLowerCase().includes('service') 
-        ? 'Service' 
-        : 'Other';
-    
-    if (!acc[type]) acc[type] = 0;
-    acc[type] += Number(item.cost);
-    return acc;
-  }, {} as Record<string, number>) || {};
-  
-  // Group fuel data by fuel type
-  const fuelByType = fuelData?.reduce((acc, item) => {
-    const type = item.fuel_type.charAt(0).toUpperCase() + item.fuel_type.slice(1);
-    if (!acc[type]) acc[type] = 0;
-    acc[type] += Number(item.cost);
-    return acc;
-  }, {} as Record<string, number>) || {};
-  
-  // Generate monthly cost data
-  const generateMonthlyData = () => {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    
-    const monthlyData = months.map(month => ({
-      name: month,
+  // Calculate monthly data
+  const calculateMonthlyData = (): MonthlyData[] => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData = months.map((month, index) => ({
+      month,
       maintenance: 0,
-      fuel: 0
+      fuel: 0,
+      total: 0
     }));
     
-    maintenanceData?.forEach(item => {
-      const monthIndex = new Date(item.date).getMonth();
-      monthlyData[monthIndex].maintenance += Number(item.cost);
-    });
+    if (maintenanceData) {
+      maintenanceData.forEach(item => {
+        const month = new Date(item.service_date).getMonth();
+        monthlyData[month].maintenance += Number(item.cost);
+      });
+    }
     
-    fuelData?.forEach(item => {
-      const monthIndex = new Date(item.date).getMonth();
-      monthlyData[monthIndex].fuel += Number(item.cost);
+    if (fuelData) {
+      fuelData.forEach(item => {
+        const month = new Date(item.date).getMonth();
+        monthlyData[month].fuel += Number(item.cost);
+      });
+    }
+    
+    // Calculate totals
+    monthlyData.forEach(item => {
+      item.total = item.maintenance + item.fuel;
     });
     
     return monthlyData;
   };
-  
-  // Format data for pie charts
-  const formatPieData = (data: Record<string, number>) => {
-    return Object.entries(data).map(([name, value]) => ({
-      name,
-      value: Number(value.toFixed(2))
-    }));
+
+  // Calculate per-vehicle costs
+  const calculateVehicleCosts = (): VehicleCostData[] => {
+    const vehicleCosts: Record<string, VehicleCostData> = {};
+    
+    if (maintenanceData) {
+      maintenanceData.forEach(item => {
+        const vehicleId = item.vehicle_id;
+        const vehicleName = item.vehicles ? 
+          `${item.vehicles.make} ${item.vehicles.model} (${item.vehicles.registration})` : 
+          'Unknown Vehicle';
+        
+        if (!vehicleCosts[vehicleId]) {
+          vehicleCosts[vehicleId] = {
+            vehicle_id: vehicleId,
+            vehicle_name: vehicleName,
+            maintenance: 0,
+            fuel: 0,
+            total: 0
+          };
+        }
+        
+        vehicleCosts[vehicleId].maintenance += Number(item.cost);
+      });
+    }
+    
+    if (fuelData) {
+      fuelData.forEach(item => {
+        const vehicleId = item.vehicle_id;
+        const vehicleName = item.vehicles ? 
+          `${item.vehicles.make} ${item.vehicles.model} (${item.vehicles.registration})` : 
+          'Unknown Vehicle';
+        
+        if (!vehicleCosts[vehicleId]) {
+          vehicleCosts[vehicleId] = {
+            vehicle_id: vehicleId,
+            vehicle_name: vehicleName,
+            maintenance: 0,
+            fuel: 0,
+            total: 0
+          };
+        }
+        
+        vehicleCosts[vehicleId].fuel += Number(item.cost);
+      });
+    }
+    
+    // Calculate totals and convert to array
+    return Object.values(vehicleCosts).map(vehicle => {
+      vehicle.total = vehicle.maintenance + vehicle.fuel;
+      return vehicle;
+    }).sort((a, b) => b.total - a.total); // Sort by total cost
   };
-  
-  // Group by vehicle
-  const costsByVehicle = () => {
-    const vehicles: Record<string, { id: string, name: string, maintenance: number, fuel: number }> = {};
+
+  // Calculate maintenance categories
+  const calculateMaintenanceCategories = (): CategoryData[] => {
+    const categories: Record<string, number> = {};
     
-    maintenanceData?.forEach(item => {
-      if (!item.vehicle) return;
-      
-      const vehicleId = item.vehicle.id;
-      const vehicleName = `${item.vehicle.make} ${item.vehicle.model} (${item.vehicle.registration})`;
-      
-      if (!vehicles[vehicleId]) {
-        vehicles[vehicleId] = {
-          id: vehicleId,
-          name: vehicleName,
-          maintenance: 0,
-          fuel: 0
-        };
-      }
-      
-      vehicles[vehicleId].maintenance += Number(item.cost);
-    });
+    if (maintenanceData) {
+      maintenanceData.forEach(item => {
+        const category = item.category || 'Uncategorized';
+        if (!categories[category]) {
+          categories[category] = 0;
+        }
+        categories[category] += Number(item.cost);
+      });
+    }
     
-    fuelData?.forEach(item => {
-      if (!item.vehicle) return;
-      
-      const vehicleId = item.vehicle.id;
-      const vehicleName = `${item.vehicle.make} ${item.vehicle.model} (${item.vehicle.registration})`;
-      
-      if (!vehicles[vehicleId]) {
-        vehicles[vehicleId] = {
-          id: vehicleId,
-          name: vehicleName,
-          maintenance: 0,
-          fuel: 0
-        };
-      }
-      
-      vehicles[vehicleId].fuel += Number(item.cost);
-    });
-    
-    return Object.values(vehicles).sort((a, b) => 
-      (b.maintenance + b.fuel) - (a.maintenance + a.fuel)
-    );
+    return Object.entries(categories)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   };
-  
-  const monthlyData = generateMonthlyData();
-  const maintenancePieData = formatPieData(maintenanceByType);
-  const fuelPieData = formatPieData(fuelByType);
-  const vehicleCosts = costsByVehicle();
-  
-  // Available years for selection
-  const years = [];
-  const currentYear = new Date().getFullYear();
-  for (let i = currentYear - 5; i <= currentYear; i++) {
-    years.push(i.toString());
-  }
-  
-  // Render pie chart component
-  const renderPieChart = (data: { name: string, value: number }[], title: string) => (
-    <div className="h-[300px] w-full flex flex-col items-center">
-      <h3 className="text-center mb-2 font-medium">{title}</h3>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine={true}
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-            outerRadius={80}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip 
-            formatter={(value) => {
-              if (typeof value === 'number') {
-                return `$${value.toFixed(2)}`;
-              }
-              return `$${value}`;
-            }}
-            contentStyle={{ 
-              backgroundColor: 'hsl(var(--background))',
-              borderColor: 'hsl(var(--border))',
-              borderRadius: '6px',
-              fontSize: '0.875rem'
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-  
+
+  // Calculate fuel types
+  const calculateFuelTypes = (): CategoryData[] => {
+    const fuelTypes: Record<string, number> = {};
+    
+    if (fuelData) {
+      fuelData.forEach(item => {
+        const fuelType = item.fuel_type || 'Other';
+        if (!fuelTypes[fuelType]) {
+          fuelTypes[fuelType] = 0;
+        }
+        fuelTypes[fuelType] += Number(item.cost);
+      });
+    }
+    
+    return Object.entries(fuelTypes)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  };
+
+  const isLoading = maintenanceLoading || fuelLoading;
+  const monthlyData = calculateMonthlyData();
+  const vehicleCosts = calculateVehicleCosts();
+  const maintenanceCategories = calculateMaintenanceCategories();
+  const fuelTypes = calculateFuelTypes();
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Cost Analytics</h2>
-          <p className="text-muted-foreground">Analyze and track your fleet expenses</p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Cost Analytics</h1>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">Year:</span>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder={selectedYear} />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((year) => (
+                <SelectItem key={year} value={year}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={year} onValueChange={setYear}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select Year" />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map((y) => (
-              <SelectItem key={y} value={y}>
-                {y}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
-      
-      {isLoading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading cost data...</p>
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-4 md:grid-cols-3">
+
+      {/* Cost Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Costs</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${summaryCosts.total.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">For year {selectedYear}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Maintenance Costs</CardTitle>
+            <Truck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${summaryCosts.maintenance.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              {summaryCosts.total > 0 
+                ? `${Math.round((summaryCosts.maintenance / summaryCosts.total) * 100)}% of total costs`
+                : '0% of total costs'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Fuel Costs</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${summaryCosts.fuel.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              {summaryCosts.total > 0 
+                ? `${Math.round((summaryCosts.fuel / summaryCosts.total) * 100)}% of total costs`
+                : '0% of total costs'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="vehicles">By Vehicle</TabsTrigger>
+          <TabsTrigger value="details">Detailed Records</TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Cost Breakdown</CardTitle>
+              <CardDescription>
+                View maintenance and fuel costs by month for {selectedYear}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      borderColor: 'hsl(var(--border))', 
+                      borderRadius: '6px' 
+                    }}
+                  />
+                  <Legend />
+                  <Bar name="Maintenance" dataKey="maintenance" fill="#0088FE" />
+                  <Bar name="Fuel" dataKey="fuel" fill="#00C49F" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Cost Trend</CardTitle>
+              <CardDescription>Monthly total cost trend for {selectedYear}</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      borderColor: 'hsl(var(--border))', 
+                      borderRadius: '6px' 
+                    }}
+                  />
+                  <Legend />
+                  <Line type="monotone" name="Total Cost" dataKey="total" stroke="#8884d8" activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Categories Tab */}
+        <TabsContent value="categories" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
-                  <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-                  <CardDescription>All expenses ({year})</CardDescription>
-                </div>
-                <CircleDollarSign className="h-5 w-5 text-muted-foreground" />
+              <CardHeader>
+                <CardTitle>Maintenance Categories</CardTitle>
+                <CardDescription>
+                  Cost breakdown by maintenance type for {selectedYear}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${totalCost.toFixed(2)}</div>
+              <CardContent className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={maintenanceCategories}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {maintenanceCategories.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        borderColor: 'hsl(var(--border))', 
+                        borderRadius: '6px',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
+
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
-                  <CardTitle className="text-sm font-medium">Maintenance Cost</CardTitle>
-                  <CardDescription>Services & repairs ({year})</CardDescription>
-                </div>
-                <Wrench className="h-5 w-5 text-muted-foreground" />
+              <CardHeader>
+                <CardTitle>Fuel Type Distribution</CardTitle>
+                <CardDescription>
+                  Cost breakdown by fuel type for {selectedYear}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${totalMaintenanceCost.toFixed(2)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
-                  <CardTitle className="text-sm font-medium">Fuel Cost</CardTitle>
-                  <CardDescription>All fuel types ({year})</CardDescription>
-                </div>
-                <Fuel className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${totalFuelCost.toFixed(2)}</div>
+              <CardContent className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={fuelTypes}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {fuelTypes.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        borderColor: 'hsl(var(--border))', 
+                        borderRadius: '6px',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full md:w-auto grid-cols-3 md:grid-cols-4 mb-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="byCategory">By Category</TabsTrigger>
-              <TabsTrigger value="byVehicle">By Vehicle</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="overview" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Monthly Cost Distribution ({year})</CardTitle>
-                  <CardDescription>
-                    Breakdown of maintenance and fuel costs throughout the year
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                        <XAxis dataKey="name" className="text-muted-foreground text-xs" />
-                        <YAxis className="text-muted-foreground text-xs" />
-                        <Tooltip 
-                          formatter={(value) => `$${Number(value).toFixed(2)}`}
-                          contentStyle={{ 
-                            backgroundColor: 'hsl(var(--background))',
-                            borderColor: 'hsl(var(--border))',
-                            borderRadius: '6px',
-                            fontSize: '0.875rem'
-                          }}
-                        />
-                        <Legend />
-                        <Bar dataKey="maintenance" name="Maintenance" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="fuel" name="Fuel" fill="#10B981" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+        </TabsContent>
+
+        {/* Vehicles Tab */}
+        <TabsContent value="vehicles" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cost by Vehicle</CardTitle>
+              <CardDescription>
+                Comparison of maintenance and fuel costs across vehicles for {selectedYear}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[500px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={vehicleCosts} 
+                  layout="vertical"
+                  margin={{ top: 20, right: 30, left: 150, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis type="category" dataKey="vehicle_name" width={140} />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      borderColor: 'hsl(var(--border))', 
+                      borderRadius: '6px' 
+                    }}
+                  />
+                  <Legend />
+                  <Bar name="Maintenance" dataKey="maintenance" fill="#0088FE" />
+                  <Bar name="Fuel" dataKey="fuel" fill="#00C49F" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Details Tab */}
+        <TabsContent value="details" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vehicle Cost Details</CardTitle>
+              <CardDescription>
+                Detailed breakdown of costs per vehicle for {selectedYear}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-8">
+                {vehicleCosts.map((vehicle) => (
+                  <div key={vehicle.vehicle_id} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium">{vehicle.vehicle_name}</h3>
+                      <div className="font-bold">${vehicle.total.toFixed(2)}</div>
+                    </div>
+                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary"
+                        style={{ 
+                          width: `${(vehicle.total / vehicleCosts[0]?.total || 1) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <div className="text-muted-foreground">
+                        Maintenance: <span className="font-medium text-foreground">${vehicle.maintenance.toFixed(2)}</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        Fuel: <span className="font-medium text-foreground">${vehicle.fuel.toFixed(2)}</span>
+                      </div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Cost Proportions ({year})</CardTitle>
-                    <CardDescription>
-                      Maintenance vs. Fuel cost ratio
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex justify-center">
-                    {renderPieChart([
-                      { name: 'Maintenance', value: Number(totalMaintenanceCost.toFixed(2)) },
-                      { name: 'Fuel', value: Number(totalFuelCost.toFixed(2)) }
-                    ], 'Cost Distribution')}
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Cost Statistics ({year})</CardTitle>
-                    <CardDescription>
-                      Key metrics and cost ratios
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                          <p className="text-sm text-muted-foreground">Maintenance %</p>
-                          <p className="text-2xl font-bold">
-                            {totalCost ? ((totalMaintenanceCost / totalCost) * 100).toFixed(1) : 0}%
-                          </p>
-                        </div>
-                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                          <p className="text-sm text-muted-foreground">Fuel %</p>
-                          <p className="text-2xl font-bold">
-                            {totalCost ? ((totalFuelCost / totalCost) * 100).toFixed(1) : 0}%
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="pt-4 border-t border-border">
-                        <h4 className="font-medium mb-2">Monthly Averages</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Maintenance</p>
-                            <p className="text-lg font-medium">
-                              ${(totalMaintenanceCost / 12).toFixed(2)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Fuel</p>
-                            <p className="text-lg font-medium">
-                              ${(totalFuelCost / 12).toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                ))}
               </div>
-            </TabsContent>
-            
-            <TabsContent value="byCategory" className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Maintenance Cost Breakdown</CardTitle>
-                    <CardDescription>
-                      Distribution by maintenance type
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {maintenancePieData.length > 0 ? (
-                      renderPieChart(maintenancePieData, 'Maintenance Costs')
-                    ) : (
-                      <div className="flex items-center justify-center h-[300px]">
-                        No maintenance data available for {year}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Fuel Cost Breakdown</CardTitle>
-                    <CardDescription>
-                      Distribution by fuel type
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {fuelPieData.length > 0 ? (
-                      renderPieChart(fuelPieData, 'Fuel Costs')
-                    ) : (
-                      <div className="flex items-center justify-center h-[300px]">
-                        No fuel data available for {year}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="byVehicle" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Cost By Vehicle</CardTitle>
-                  <CardDescription>
-                    Breakdown of expenses by vehicle
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {vehicleCosts.length > 0 ? (
-                    <div className="h-[500px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart 
-                          data={vehicleCosts} 
-                          layout="vertical"
-                          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis type="number" className="text-muted-foreground text-xs" />
-                          <YAxis 
-                            type="category" 
-                            dataKey="name" 
-                            width={90}
-                            className="text-muted-foreground text-xs"
-                          />
-                          <Tooltip 
-                            formatter={(value) => `$${Number(value).toFixed(2)}`}
-                            contentStyle={{ 
-                              backgroundColor: 'hsl(var(--background))',
-                              borderColor: 'hsl(var(--border))',
-                              borderRadius: '6px',
-                              fontSize: '0.875rem'
-                            }}
-                          />
-                          <Legend />
-                          <Bar dataKey="maintenance" name="Maintenance" fill="#3B82F6" radius={[0, 4, 4, 0]} />
-                          <Bar dataKey="fuel" name="Fuel" fill="#10B981" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-[400px]">
-                      No cost data available for {year}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="details" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="overflow-hidden">
-                  <CardHeader>
-                    <CardTitle>Maintenance Details</CardTitle>
-                    <CardDescription>
-                      Individual maintenance records for {year}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Vehicle</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="text-right">Cost</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {maintenanceData?.length ? (
-                          maintenanceData.map((item) => (
-                            <TableRow key={item.id}>
-                              <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
-                              <TableCell>{item.vehicle ? `${item.vehicle.make} ${item.vehicle.model}` : 'Unknown'}</TableCell>
-                              <TableCell>{item.description}</TableCell>
-                              <TableCell className="text-right">${Number(item.cost).toFixed(2)}</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center">
-                              No maintenance records found for {year}
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-                
-                <Card className="overflow-hidden">
-                  <CardHeader>
-                    <CardTitle>Fuel Details</CardTitle>
-                    <CardDescription>
-                      Individual fuel records for {year}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Vehicle</TableHead>
-                          <TableHead>Fuel Type</TableHead>
-                          <TableHead>Volume</TableHead>
-                          <TableHead className="text-right">Cost</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {fuelData?.length ? (
-                          fuelData.map((item) => (
-                            <TableRow key={item.id}>
-                              <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
-                              <TableCell>{item.vehicle ? `${item.vehicle.make} ${item.vehicle.model}` : 'Unknown'}</TableCell>
-                              <TableCell className="capitalize">{item.fuel_type}</TableCell>
-                              <TableCell>{item.volume} L</TableCell>
-                              <TableCell className="text-right">${Number(item.cost).toFixed(2)}</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center">
-                              No fuel records found for {year}
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </>
-      )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
+};
+
+export default CostAnalytics;
