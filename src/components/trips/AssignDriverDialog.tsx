@@ -104,7 +104,7 @@ export function AssignDriverDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border border-slate-800 shadow-lg">
+      <DialogContent className="sm:max-w-md bg-slate-900 border border-slate-800 shadow-lg rounded-lg">
         <DialogHeader className="border-b border-slate-800 pb-4">
           <DialogTitle className="text-white flex items-center">
             <UserCheck className="h-5 w-5 mr-2 text-purple-400" />
@@ -119,7 +119,7 @@ export function AssignDriverDialog({
           <div className="space-y-2">
             <Label htmlFor="driver" className="text-slate-300">Select Driver</Label>
             <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-300 focus:ring-purple-500">
+              <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-300 focus:ring-purple-500 rounded-md">
                 <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
@@ -139,7 +139,7 @@ export function AssignDriverDialog({
               placeholder="Add any notes about this assignment..."
               value={assignmentNote}
               onChange={(e) => setAssignmentNote(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-slate-300 placeholder:text-slate-500 focus:ring-purple-500 min-h-[100px]"
+              className="bg-slate-800 border-slate-700 text-slate-300 placeholder:text-slate-500 focus:ring-purple-500 min-h-[100px] rounded-md"
             />
           </div>
         </div>
@@ -148,14 +148,14 @@ export function AssignDriverDialog({
           <Button 
             variant="outline" 
             onClick={onClose} 
-            className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-slate-200"
+            className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-slate-200 rounded-full"
           >
             Cancel
           </Button>
           <Button 
             onClick={handleAssign} 
             disabled={!selectedDriver || isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-purple-600 hover:bg-purple-700 text-white rounded-full"
           >
             {isLoading ? "Assigning..." : "Assign Driver"}
           </Button>
