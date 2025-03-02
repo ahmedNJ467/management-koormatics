@@ -1,5 +1,5 @@
 
-import { formatDate, formatTime, parseFlightDetails } from "@/components/trips/utils";
+import { formatDate, formatTime, parseFlightDetails, parsePassengers } from "@/components/trips/utils";
 import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
