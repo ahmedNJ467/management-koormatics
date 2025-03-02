@@ -195,7 +195,7 @@ const Reports = () => {
       return data.map(trip => {
         const flightInfo = extractFlightInfo(trip.notes || '');
         
-        const displayType = tripTypeDisplayMap[trip.type] || trip.type;
+        const displayType = tripTypeDisplayMap[trip.type as TripType] || trip.type;
         
         return {
           ...trip,
@@ -277,7 +277,7 @@ const Reports = () => {
       tableData = data.map(trip => [
         format(new Date(trip.date), 'MM/dd/yyyy'),
         trip.clients?.name || 'N/A',
-        trip.display_type || tripTypeDisplayMap[trip.type] || trip.type || 'N/A',
+        trip.display_type || 'N/A',
         trip.pickup_location || 'N/A',
         trip.dropoff_location || 'N/A',
         trip.start_time ? `${trip.start_time} - ${trip.end_time || 'N/A'}` : 'N/A',
