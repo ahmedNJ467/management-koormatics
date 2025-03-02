@@ -28,7 +28,7 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { supabase } from "@/integrations/supabase/client";
-import { Trip, DisplayTrip, TripType, TripStatus } from "@/lib/types/trip";
+import { Trip, DisplayTrip, TripType, TripStatus, ServiceType, convertToDisplayTrips } from "@/lib/types/trip";
 import { useToast } from "@/hooks/use-toast";
 
 const Trips = () => {
@@ -97,16 +97,12 @@ const Trips = () => {
 
   useEffect(() => {
     if (date?.from && date?.to) {
-      refetchTrips();
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
     }
-  }, [date]);
-
-  const refetchTrips = async () => {
-    await queryClient.refetchQueries(['trips']);
-  };
+  }, [date, queryClient]);
 
   const formatTripsData = (tripsData: any[]): DisplayTrip[] => {
-    return tripsData.map(trip => {
+    return convertToDisplayTrips(tripsData.map(trip => {
       const client = clientsData?.find(c => c.id === trip.client_id) || { name: 'Unknown Client', type: 'organization' };
       
       const vehicle = vehiclesData?.find(v => v.id === trip.vehicle_id);
@@ -116,72 +112,48 @@ const Trips = () => {
       
       return {
         ...trip,
-        id: trip.id,
-        client_id: trip.client_id,
-        vehicle_id: trip.vehicle_id,
-        driver_id: trip.driver_id,
-        date: trip.date,
-        time: trip.time || '',
-        return_time: trip.return_time || '',
-        start_time: trip.start_time || trip.time || '',
-        end_time: trip.end_time || trip.return_time || '',
-        type: trip.service_type as TripType || 'other',
-        status: trip.status as TripStatus || 'scheduled',
-        amount: trip.amount,
-        pickup_location: trip.pickup_location || '',
-        dropoff_location: trip.dropoff_location || '',
-        notes: trip.special_instructions || trip.notes || '',
-        invoice_id: trip.invoice_id,
-        created_at: trip.created_at,
-        updated_at: trip.updated_at,
         client_name: client.name,
         client_type: client.type,
         vehicle_details: vehicleDetails,
         driver_name: driver?.name || 'Driver not assigned',
         driver_avatar: driver?.avatar_url,
         driver_contact: driver?.contact,
-        flight_number: trip.flight_number,
-        airline: trip.airline,
-        terminal: trip.terminal,
-        special_notes: trip.special_instructions,
-        is_recurring: trip.is_recurring,
+        notes: trip.special_instructions || trip.notes || ''
       };
-    });
+    }));
   };
 
   const trips = tripsData ? formatTripsData(tripsData) : [];
 
-  const addTripMutation = useMutation(
-    async (newTrip: any) => {
+  const addTripMutation = useMutation({
+    mutationFn: async (newTrip: any) => {
       const { data, error } = await supabase
         .from("trips")
         .insert([newTrip]);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["trips"]);
-        toast({
-          title: "Trip added",
-          description: "New trip has been added successfully.",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: `Failed to add trip: ${error.message}`,
-          variant: "destructive",
-        });
-      },
-      onSettled: () => {
-        setIsSubmitting(false);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      toast({
+        title: "Trip added",
+        description: "New trip has been added successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to add trip: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    },
+  });
 
-  const updateTripMutation = useMutation(
-    async (updatedTrip: Trip) => {
+  const updateTripMutation = useMutation({
+    mutationFn: async (updatedTrip: any) => {
       const { data, error } = await supabase
         .from("trips")
         .update(updatedTrip)
@@ -189,30 +161,28 @@ const Trips = () => {
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["trips"]);
-        toast({
-          title: "Trip updated",
-          description: "Trip has been updated successfully.",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: `Failed to update trip: ${error.message}`,
-          variant: "destructive",
-        });
-      },
-      onSettled: () => {
-        setIsSubmitting(false);
-        setEditTripId(null);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      toast({
+        title: "Trip updated",
+        description: "Trip has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to update trip: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+      setEditTripId(null);
+    },
+  });
 
-  const deleteTripMutation = useMutation(
-    async (id: string) => {
+  const deleteTripMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { data, error } = await supabase
         .from("trips")
         .delete()
@@ -220,23 +190,21 @@ const Trips = () => {
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["trips"]);
-        toast({
-          title: "Trip deleted",
-          description: "Trip has been deleted successfully.",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: `Failed to delete trip: ${error.message}`,
-          variant: "destructive",
-        });
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      toast({
+        title: "Trip deleted",
+        description: "Trip has been deleted successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete trip: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
@@ -258,10 +226,10 @@ const Trips = () => {
         pickup_location: values.pickup_location,
         dropoff_location: values.dropoff_location,
         notes: values.notes,
+        special_instructions: values.notes,
         flight_number: values.flight_number,
         airline: values.airline,
         terminal: values.terminal,
-        special_instructions: values.notes,
         is_recurring: values.is_recurring || false,
       };
       
@@ -289,7 +257,9 @@ const Trips = () => {
     <div className="container py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Trips</h1>
-        <DateRangePicker date={date} onDateChange={setDate} />
+        <div className="ml-auto">
+          <DateRangePicker value={date} onChange={setDate} />
+        </div>
       </div>
 
       <Card>

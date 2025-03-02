@@ -1,7 +1,7 @@
 
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day';
-export type ServiceType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day'; // Alias for TripType to match database
+export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
+export type ServiceType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort'; // Alias for TripType to match database
 
 export interface TripMessage {
   id: string;
@@ -76,7 +76,10 @@ export const tripTypeDisplayMap: Record<TripType, string> = {
   'other': 'Other Service',
   'hourly': 'Hourly Service',
   'full_day': 'Full Day',
-  'multi_day': 'Multi Day'
+  'multi_day': 'Multi Day',
+  'one_way_transfer': 'One Way Transfer',
+  'round_trip': 'Round Trip',
+  'security_escort': 'Security Escort'
 };
 
 // Helper function to map between service_type and type
@@ -89,3 +92,17 @@ export const mapTripTypeToServiceType = (tripType: TripType): ServiceType => {
   // They're the same values but might have different type constraints
   return tripType as ServiceType;
 };
+
+// Helper function to convert trips from database to DisplayTrip format
+export function convertToDisplayTrips(trips: any[]): DisplayTrip[] {
+  return trips.map(trip => ({
+    ...trip,
+    // Ensure required DisplayTrip fields are present
+    type: trip.service_type || trip.type || 'other',
+    status: trip.status || 'scheduled',
+    client_name: trip.client_name || '',
+    vehicle_details: trip.vehicle_details || '',
+    driver_name: trip.driver_name || '',
+    notes: trip.notes || trip.special_instructions || ''
+  }));
+}

@@ -47,8 +47,8 @@ export function useClientsQuery() {
         console.error("Error fetching active contracts:", contractError);
       }
       
-      // Get unique client IDs with active contracts - fixed deep instantiation issue
-      const clientsWithActiveContracts = new Set<string>();
+      // Get unique client IDs with active contracts
+      const clientsWithActiveContracts = new Set();
       
       if (activeContractData) {
         activeContractData.forEach(trip => {
