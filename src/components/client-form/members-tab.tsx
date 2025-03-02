@@ -184,7 +184,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
         />
       )}
 
-      {/* Member Detail View Dialog */}
+      {/* Member Detail View Dialog - Only render when isViewingMember is true */}
       {isViewingMember && viewingMemberIndex !== null && members[viewingMemberIndex] && (
         <MemberDetail
           member={members[viewingMemberIndex]}

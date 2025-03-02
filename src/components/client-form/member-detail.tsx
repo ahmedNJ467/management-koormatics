@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
 import { MemberFormValues } from "./types";
@@ -24,6 +24,9 @@ export function MemberDetail({ member, isOpen, onClose, onEdit }: MemberDetailPr
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Member Details</DialogTitle>
+          <DialogDescription>
+            Details for {member.name}
+          </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
@@ -64,7 +67,7 @@ export function MemberDetail({ member, isOpen, onClose, onEdit }: MemberDetailPr
                   className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
                 >
                   <FileText className="h-4 w-4" />
-                  <span>{member.document_name || "View Document"}</span>
+                  <span className="ml-2">{member.document_name || "View Document"}</span>
                 </a>
               </div>
             </div>
