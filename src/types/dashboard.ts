@@ -34,3 +34,11 @@ export interface CostsBreakdownProps {
     total: number;
   };
 }
+
+export interface ActivityItemProps {
+  id: number;
+  title: string;
+  timestamp: string;
+  type: "trip" | "maintenance" | "vehicle" | "driver" | "client" | "fuel";
+  icon: string;
+}

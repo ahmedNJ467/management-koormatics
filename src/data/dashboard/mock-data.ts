@@ -1,4 +1,3 @@
-
 // Mock data for dashboard charts and statistics
 
 export const monthlyData = [
@@ -136,3 +135,48 @@ export const initialCostsBreakdown = {
     total: 13000
   }
 };
+
+export const initialRecentActivities = [
+  { 
+    id: 1, 
+    title: "New trip scheduled for Acme Corp", 
+    timestamp: "10 minutes ago", 
+    type: "trip" as const, 
+    icon: "Calendar" 
+  },
+  { 
+    id: 2, 
+    title: "Vehicle KBT 123X maintenance completed", 
+    timestamp: "30 minutes ago", 
+    type: "maintenance" as const, 
+    icon: "Wrench" 
+  },
+  { 
+    id: 3, 
+    title: "New driver John Smith added", 
+    timestamp: "1 hour ago", 
+    type: "driver" as const, 
+    icon: "UserPlus" 
+  },
+  { 
+    id: 4, 
+    title: "Fuel log added for vehicle KBC 789Y", 
+    timestamp: "2 hours ago", 
+    type: "fuel" as const, 
+    icon: "Fuel" 
+  },
+  { 
+    id: 5, 
+    title: "New client XYZ Ltd registered", 
+    timestamp: "3 hours ago", 
+    type: "client" as const, 
+    icon: "Building" 
+  },
+  { 
+    id: 6, 
+    title: "New vehicle KBZ 456P added to fleet", 
+    timestamp: "5 hours ago", 
+    type: "vehicle" as const, 
+    icon: "Car" 
+  }
+];

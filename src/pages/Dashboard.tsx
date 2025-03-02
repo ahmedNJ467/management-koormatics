@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,9 +9,9 @@ import { AnalyticsTab } from "@/components/dashboard/AnalyticsTab";
 import { CostsTab } from "@/components/dashboard/CostsTab";
 import { AlertsTab } from "@/components/dashboard/AlertsTab";
 import { 
-  initialStats, initialFinancialStats, initialAlerts, initialTrips, initialCostsBreakdown
+  initialStats, initialFinancialStats, initialAlerts, initialTrips, initialCostsBreakdown, initialRecentActivities
 } from "@/data/dashboard/mock-data";
-import { StatCardProps, TripItemProps, AlertItemProps, CostsBreakdownProps } from "@/types/dashboard";
+import { StatCardProps, TripItemProps, AlertItemProps, CostsBreakdownProps, ActivityItemProps } from "@/types/dashboard";
 
 export default function Dashboard() {
   const [stats, setStats] = useState<StatCardProps[]>(initialStats);
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [recentAlerts, setRecentAlerts] = useState<AlertItemProps[]>(initialAlerts);
   const [upcomingTrips, setUpcomingTrips] = useState<TripItemProps[]>(initialTrips);
   const [costsBreakdown, setCostsBreakdown] = useState<CostsBreakdownProps>(initialCostsBreakdown);
+  const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>(initialRecentActivities);
 
   useEffect(() => {
     const vehiclesChannel = supabase
@@ -126,6 +128,25 @@ export default function Dashboard() {
       
       setCostsBreakdown(updatedCostsBreakdown);
       
+      // Update recent activities with random new activity
+      if (Math.random() > 0.7) {
+        const activityTypes = ["trip", "maintenance", "vehicle", "driver", "client", "fuel"];
+        const icons = ["Calendar", "Wrench", "Car", "UserPlus", "Building", "Fuel"];
+        const randomType = activityTypes[Math.floor(Math.random() * activityTypes.length)] as "trip" | "maintenance" | "vehicle" | "driver" | "client" | "fuel";
+        const randomIcon = icons[activityTypes.indexOf(randomType)];
+        
+        const newActivity: ActivityItemProps = {
+          id: Date.now(),
+          title: `New ${randomType} activity generated`,
+          timestamp: "Just now",
+          type: randomType,
+          icon: randomIcon
+        };
+        
+        const updatedActivities = [newActivity, ...recentActivities.slice(0, 5)];
+        setRecentActivities(updatedActivities);
+      }
+      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -152,7 +173,8 @@ export default function Dashboard() {
           <OverviewTab 
             stats={stats} 
             financialStats={financialStats} 
-            upcomingTrips={upcomingTrips} 
+            upcomingTrips={upcomingTrips}
+            recentActivities={recentActivities}
           />
         </TabsContent>
         
