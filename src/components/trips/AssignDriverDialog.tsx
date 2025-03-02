@@ -4,14 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DisplayTrip } from "@/lib/types/trip";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { assignDriverToTrip } from "@/components/trips/operations/driver-operations";
-
-interface Driver {
-  id: string;
-  name: string;
-}
+import { Driver } from "@/lib/types";
 
 interface AssignDriverDialogProps {
   open: boolean;
@@ -26,19 +22,16 @@ export function AssignDriverDialog({
   onClose,
   onDriverAssigned
 }: AssignDriverDialogProps) {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
   
-  useEffect(() => {
-    // Mock data - in a real app, fetch drivers from an API
-    setDrivers([
-      { id: "driver1", name: "John Doe" },
-      { id: "driver2", name: "Jane Smith" },
-      { id: "driver3", name: "Alex Johnson" }
-    ]);
-  }, []);
+  // Mock data - in a real app, fetch drivers from an API
+  const drivers = [
+    { id: "driver1", name: "John Doe" },
+    { id: "driver2", name: "Jane Smith" },
+    { id: "driver3", name: "Alex Johnson" }
+  ];
   
   const handleAssign = async () => {
     if (!selectedDriver || !tripToAssign) return;

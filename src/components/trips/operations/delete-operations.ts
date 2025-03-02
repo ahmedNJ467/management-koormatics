@@ -3,6 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
 
+// Delete trip function for the DeleteTripDialog component
+export const deleteTripFromDatabase = async (tripId: string) => {
+  const { error } = await supabase
+    .from("trips")
+    .delete()
+    .eq("id", tripId);
+
+  if (error) throw error;
+  return true;
+};
+
 // Delete trip
 export const deleteTrip = async (
   tripToDelete: string | null,

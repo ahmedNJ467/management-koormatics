@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -219,17 +220,17 @@ export default function Trips() {
       <AssignDriverDialog
         open={assignOpen}
         tripToAssign={tripToAssign}
-        assignDriver={assignDriver}
-        assignNote={assignNote}
-        drivers={drivers}
-        onDriverChange={setAssignDriver}
-        onNoteChange={setAssignNote}
-        onAssign={handleDriverAssignment}
         onClose={() => {
           setAssignOpen(false);
           setTripToAssign(null);
           setAssignDriver("");
           setAssignNote("");
+        }}
+        onDriverAssigned={() => {
+          queryClient.invalidateQueries({ queryKey: ["trips"] });
+          if (viewTrip) {
+            queryClient.invalidateQueries({ queryKey: ["tripAssignments", viewTrip.id] });
+          }
         }}
       />
 
@@ -250,10 +251,13 @@ export default function Trips() {
       {/* Delete Confirmation Dialog */}
       <DeleteTripDialog
         open={deleteDialogOpen}
-        onDelete={handleTripDelete}
+        tripId={tripToDelete || ""}
         onClose={() => {
           setDeleteDialogOpen(false);
           setTripToDelete(null);
+        }}
+        onTripDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ["trips"] });
         }}
       />
     </div>

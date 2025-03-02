@@ -3,6 +3,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
 
+// Function for the AssignDriverDialog component
+export const assignDriverToTrip = async (tripId: string, driverId: string) => {
+  // Insert into trip_assignments
+  const { error: assignmentError } = await supabase.from('trip_assignments').insert({
+    trip_id: tripId,
+    driver_id: driverId,
+    assigned_at: new Date().toISOString(),
+    status: "pending",
+  });
+  
+  if (assignmentError) throw assignmentError;
+  
+  // Update trip with new driver
+  const { error: updateError } = await supabase
+    .from("trips")
+    .update({ driver_id: driverId })
+    .eq("id", tripId);
+  
+  if (updateError) throw updateError;
+  
+  return true;
+};
+
 // Handle assigning a driver
 export const handleAssignDriver = async (
   tripToAssign: DisplayTrip | null,

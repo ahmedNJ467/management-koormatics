@@ -1,13 +1,12 @@
 
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { DisplayTrip } from "@/lib/types/trip";
 import { deleteTripFromDatabase } from "@/components/trips/operations/delete-operations";
 import { useToast } from "@/hooks/use-toast";
 
 interface DeleteTripDialogProps {
   open: boolean;
-  tripId: string;
+  tripId?: string;
   onClose: () => void;
   onTripDeleted: () => void;
 }
@@ -21,6 +20,8 @@ export function DeleteTripDialog({
   const { toast } = useToast();
   
   const handleDeleteConfirm = async () => {
+    if (!tripId) return;
+    
     try {
       await deleteTripFromDatabase(tripId);
       toast({
