@@ -72,6 +72,8 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
       // Create adapter functions to match the expected types
       const profileUploadAdapter = async (file: File): Promise<string> => {
         if (!file) return '';
+        // uploadProfile function expects a File, but the original code was passing clientId
+        // We need to call uploadProfile correctly with the file itself
         const result = await uploadProfile(file);
         return result || '';
       };

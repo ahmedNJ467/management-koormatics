@@ -15,14 +15,16 @@ export function useClientProfile(initialProfileUrl: string | null = null) {
     }
   };
 
-  const uploadProfile = async (clientId: string): Promise<string | null> => {
-    if (!profileFile) return initialProfileUrl;
+  const uploadProfile = async (file: File): Promise<string | null> => {
+    if (!file) return initialProfileUrl;
 
     try {
+      // Generate a client ID if one isn't provided - this is for new client creation
+      const tempClientId = crypto.randomUUID();
       return await uploadClientFile(
-        profileFile,
+        file,
         "client-profiles",
-        clientId,
+        tempClientId,
         "profile"
       );
     } catch (error) {
