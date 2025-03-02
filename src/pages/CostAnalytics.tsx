@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,7 +204,20 @@ export default function CostAnalytics() {
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+          <Tooltip 
+            formatter={(value) => {
+              if (typeof value === 'number') {
+                return `$${value.toFixed(2)}`;
+              }
+              return `$${value}`;
+            }}
+            contentStyle={{ 
+              backgroundColor: 'hsl(var(--background))',
+              borderColor: 'hsl(var(--border))',
+              borderRadius: '6px',
+              fontSize: '0.875rem'
+            }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
