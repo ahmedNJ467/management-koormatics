@@ -1,16 +1,17 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { FuelLog } from "@/lib/types";
+import type { FuelLog, FuelType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const fuelLogSchema = z.object({
   vehicle_id: z.string().min(1, "Vehicle is required"),
   date: z.string().min(1, "Date is required"),
-  fuel_type: z.enum(["petrol", "diesel"]),
+  fuel_type: z.enum(["petrol", "diesel", "cng"]),
   volume: z.number().min(0.01, "Volume must be greater than 0"),
   cost: z.number().min(0.01, "Cost must be greater than 0"),
   mileage: z.number().min(0, "Mileage must be a positive number"),

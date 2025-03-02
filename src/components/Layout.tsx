@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
-import Sidebar from "./Sidebar";
+import { Sidebar } from "./Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Layout() {

@@ -1,11 +1,12 @@
+
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Car, UserPlus, MapPin, Wrench, Fuel, BarChart3, AlertTriangle, Users, FileText, Receipt, BarChart2, Settings, Home } from "lucide-react";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Sidebar = () => {
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(isMobile);
 
   const navItems = [

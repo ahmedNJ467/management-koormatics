@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +10,7 @@ import { FinancialOverviewChart } from "@/components/dashboard/charts/FinancialO
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { FuelLog, Maintenance } from "@/lib/types";
+import type { FuelLog, Maintenance, MaintenanceType } from "@/lib/types";
 
 export default function CostAnalytics() {
   const [timeframe, setTimeframe] = useState<"monthly" | "quarterly" | "yearly">("monthly");
@@ -41,7 +40,12 @@ export default function CostAnalytics() {
         .order('date', { ascending: false });
       
       if (error) throw error;
-      return data as Maintenance[];
+      
+      // Handle the possible null maintenance_type by defaulting to 'service'
+      return (data || []).map(item => ({
+        ...item,
+        maintenance_type: (item.maintenance_type as MaintenanceType) || 'service'
+      })) as Maintenance[];
     },
   });
 
