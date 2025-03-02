@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 
 // Generate table data for different report types
@@ -9,7 +10,7 @@ export function generateTableData(data: any[], reportType: string) {
   const formatDateString = (dateStr: string) => {
     try {
       const dateObj = new Date(dateStr);
-      return format(dateObj, 'MMM dd, yyyy');
+      return format(dateObj, 'MM/dd/yyyy'); // More compact date format
     } catch (error) {
       return dateStr;
     }
@@ -34,16 +35,23 @@ export function generateTableData(data: any[], reportType: string) {
           }
         }
 
-        // Format date for better readability
+        // Format date for better readability with more compact format
         const formattedDate = formatDateString(trip.date);
         
         // Compact the service type display to reduce space between columns
-        const serviceType = trip.display_type || trip.service_type || 'N/A';
+        const serviceType = (trip.display_type || trip.service_type || 'N/A');
         
-        // Format other fields for consistency
+        // Format other fields for consistency and compactness
         const pickupLocation = trip.pickup_location || 'N/A';
         const dropoffLocation = trip.dropoff_location || 'N/A';
-        const vehicle = `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A';
+        
+        // Make vehicle name more compact
+        const vehicle = trip.vehicles ? 
+          (trip.vehicles.make && trip.vehicles.model ? 
+           `${trip.vehicles.make.substring(0, 8)} ${trip.vehicles.model.substring(0, 5)}` : 
+           (trip.vehicles.make || trip.vehicles.model || 'N/A')).trim() : 
+          'N/A';
+          
         const driver = trip.drivers?.name || 'Not Assigned';
         const status = trip.status || 'Scheduled';
 

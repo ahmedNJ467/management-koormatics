@@ -25,36 +25,36 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
     alternateRowStyles: {
       fillColor: pdfColors.rowAlt as [number, number, number],
     },
-    margin: { top: 2.0, left: 0.5, right: 0.5, bottom: 0.8 },
+    margin: { top: 2.0, left: 0.6, right: 0.6, bottom: 0.8 }, // Increased side margins
     tableWidth: 'auto',
     columnStyles: {
       0: { // Date column (index 0)
-        cellWidth: 1.0,
+        cellWidth: 0.9,
       },
       1: { // Client column (index 1)
-        cellWidth: 2.0, // Adjusted width to align with header
+        cellWidth: 1.8, // Reduced width
         cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
         // Don't set fillColor here, we'll handle it in didDrawCell
         fontStyle: 'normal',
       },
       2: { // Service Type column (index 2)
-        cellWidth: 1.9, // Adjusted width to align with header
+        cellWidth: 1.6, // Reduced width
         cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
       },
       3: { // Pick-up column (index 3)
-        cellWidth: 1.4,
+        cellWidth: 1.3, // Reduced width
       },
       4: { // Drop-off column (index 4)
-        cellWidth: 1.4,
+        cellWidth: 1.3, // Reduced width
       },
       5: { // Vehicle column (index 5)
-        cellWidth: 1.5,
+        cellWidth: 1.3, // Reduced width
       },
       6: { // Driver column (index 6)
-        cellWidth: 1.3,
+        cellWidth: 1.2, // Reduced width
       },
       7: { // Status column (index 7)
-        cellWidth: 1.2,
+        cellWidth: 0.9, // Reduced width
         fontStyle: 'bold'
       },
       // Status column styling for other report types
