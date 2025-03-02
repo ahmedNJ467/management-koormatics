@@ -28,6 +28,9 @@ export function MileageFields({ form }: MileageFieldsProps) {
           {form.formState.errors.previous_mileage && (
             <p className="text-sm text-destructive">{form.formState.errors.previous_mileage.message}</p>
           )}
+          <p className="text-xs text-muted-foreground">
+            Last recorded odometer reading from previous fuel log
+          </p>
         </div>
 
         <div className="space-y-2">
