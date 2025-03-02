@@ -20,7 +20,7 @@ export function useCostAnalyticsData(selectedYear: string) {
   }, [selectedYear, comparisonYear]);
 
   // Fetch maintenance costs for selected year
-  const { data: maintenanceData, isLoading: maintenanceLoading } = useQuery({
+  const { data: maintenanceData, isLoading: maintenanceLoading, error: maintenanceError } = useQuery({
     queryKey: ['maintenanceCosts', selectedYear],
     queryFn: async () => {
       try {
@@ -31,12 +31,13 @@ export function useCostAnalyticsData(selectedYear: string) {
           .lte('date', `${selectedYear}-12-31`);
         
         if (error) {
+          console.error("Maintenance data fetch error:", error);
           toast({
             title: "Error fetching maintenance data",
             description: error.message,
             variant: "destructive",
           });
-          throw error;
+          return [];
         }
         
         return data || [];
@@ -45,10 +46,12 @@ export function useCostAnalyticsData(selectedYear: string) {
         return [];
       }
     },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch fuel costs for selected year
-  const { data: fuelData, isLoading: fuelLoading } = useQuery({
+  const { data: fuelData, isLoading: fuelLoading, error: fuelError } = useQuery({
     queryKey: ['fuelCosts', selectedYear],
     queryFn: async () => {
       try {
@@ -59,12 +62,13 @@ export function useCostAnalyticsData(selectedYear: string) {
           .lte('date', `${selectedYear}-12-31`);
         
         if (error) {
+          console.error("Fuel data fetch error:", error);
           toast({
             title: "Error fetching fuel data",
             description: error.message,
             variant: "destructive",
           });
-          throw error;
+          return [];
         }
         
         return data || [];
@@ -73,12 +77,15 @@ export function useCostAnalyticsData(selectedYear: string) {
         return [];
       }
     },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch comparison year data when needed
   const { 
     data: comparisonMaintenanceData, 
-    isLoading: comparisonMaintenanceLoading 
+    isLoading: comparisonMaintenanceLoading,
+    error: comparisonMaintenanceError 
   } = useQuery({
     queryKey: ['maintenanceCosts', comparisonYear],
     queryFn: async () => {
@@ -92,12 +99,13 @@ export function useCostAnalyticsData(selectedYear: string) {
           .lte('date', `${comparisonYear}-12-31`);
         
         if (error) {
+          console.error("Comparison maintenance data fetch error:", error);
           toast({
             title: "Error fetching comparison maintenance data",
             description: error.message,
             variant: "destructive",
           });
-          throw error;
+          return [];
         }
         
         return data || [];
@@ -107,11 +115,14 @@ export function useCostAnalyticsData(selectedYear: string) {
       }
     },
     enabled: !!comparisonYear,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const { 
     data: comparisonFuelData, 
-    isLoading: comparisonFuelLoading 
+    isLoading: comparisonFuelLoading,
+    error: comparisonFuelError 
   } = useQuery({
     queryKey: ['fuelCosts', comparisonYear],
     queryFn: async () => {
@@ -125,12 +136,13 @@ export function useCostAnalyticsData(selectedYear: string) {
           .lte('date', `${comparisonYear}-12-31`);
         
         if (error) {
+          console.error("Comparison fuel data fetch error:", error);
           toast({
             title: "Error fetching comparison fuel data",
             description: error.message,
             variant: "destructive",
           });
-          throw error;
+          return [];
         }
         
         return data || [];
@@ -140,7 +152,17 @@ export function useCostAnalyticsData(selectedYear: string) {
       }
     },
     enabled: !!comparisonYear,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Log any errors to help with debugging
+  useEffect(() => {
+    if (maintenanceError) console.error("Maintenance query error:", maintenanceError);
+    if (fuelError) console.error("Fuel query error:", fuelError);
+    if (comparisonMaintenanceError) console.error("Comparison maintenance query error:", comparisonMaintenanceError);
+    if (comparisonFuelError) console.error("Comparison fuel query error:", comparisonFuelError);
+  }, [maintenanceError, fuelError, comparisonMaintenanceError, comparisonFuelError]);
 
   const isLoading = maintenanceLoading || fuelLoading || 
     (!!comparisonYear && (comparisonMaintenanceLoading || comparisonFuelLoading));

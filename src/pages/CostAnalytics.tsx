@@ -113,7 +113,7 @@ const CostAnalytics = () => {
       )}
 
       {/* Error state if no data available */}
-      {!isLoading && vehicleCosts.length === 0 && (
+      {!isLoading && (!vehicleCosts || vehicleCosts.length === 0) && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No data available</AlertTitle>
@@ -124,7 +124,7 @@ const CostAnalytics = () => {
       )}
 
       {/* Cost Summary Cards */}
-      {!isLoading && vehicleCosts.length > 0 && (
+      {!isLoading && vehicleCosts && vehicleCosts.length > 0 && (
         <>
           <CostSummaryCards summaryCosts={summaryCosts} selectedYear={selectedYear} />
 
@@ -138,11 +138,11 @@ const CostAnalytics = () => {
             </TabsList>
 
             {/* Tab Contents */}
-            <OverviewTab monthlyData={monthlyData} />
-            <CategoriesTab maintenanceCategories={maintenanceCategories} fuelTypes={fuelTypes} />
-            <VehiclesTab vehicleCosts={vehicleCosts} />
-            <DetailsTab vehicleCosts={vehicleCosts} />
-            {comparisonYear && <ComparisonTab comparisonData={yearComparison} />}
+            {monthlyData && <OverviewTab monthlyData={monthlyData} />}
+            {maintenanceCategories && fuelTypes && <CategoriesTab maintenanceCategories={maintenanceCategories} fuelTypes={fuelTypes} />}
+            {vehicleCosts && <VehiclesTab vehicleCosts={vehicleCosts} />}
+            {vehicleCosts && <DetailsTab vehicleCosts={vehicleCosts} />}
+            {comparisonYear && yearComparison && <ComparisonTab comparisonData={yearComparison} />}
           </Tabs>
         </>
       )}
