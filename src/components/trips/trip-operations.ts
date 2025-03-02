@@ -1,7 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip, TripStatus, TripType, mapTripTypeToDbServiceType, DbServiceType } from "@/lib/types/trip";
 import { format, addDays } from "date-fns";
-import { toast as useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { QueryClient } from "@tanstack/react-query";
 
 // Map UI service types to database service_type values
@@ -24,7 +25,11 @@ export const updateTripStatus = async (
   status: TripStatus, 
   viewTrip: DisplayTrip | null, 
   setViewTrip: (trip: DisplayTrip | null) => void,
-  toast: ReturnType<typeof useToast>,
+  toast: { 
+    title: string;
+    description: string;
+    variant?: "default" | "destructive";
+  } => void,
   queryClient: QueryClient
 ) => {
   try {
@@ -73,7 +78,11 @@ export const deleteTrip = async (
   setEditTrip: (trip: DisplayTrip | null) => void,
   setDeleteDialogOpen: (open: boolean) => void,
   setTripToDelete: (id: string | null) => void,
-  toast: ReturnType<typeof useToast>,
+  toast: { 
+    title: string;
+    description: string;
+    variant?: "default" | "destructive";
+  } => void,
   queryClient: QueryClient
 ) => {
   if (!tripToDelete) return;
@@ -168,7 +177,11 @@ export const handleSaveTrip = async (
   editTrip: DisplayTrip | null,
   setEditTrip: (trip: DisplayTrip | null) => void,
   setBookingOpen: (open: boolean) => void,
-  toast: ReturnType<typeof useToast>,
+  toast: { 
+    title: string;
+    description: string;
+    variant?: "default" | "destructive";
+  } => void,
   queryClient: QueryClient
 ) => {
   event.preventDefault();
@@ -295,7 +308,11 @@ export const handleAssignDriver = async (
   setTripToAssign: (trip: DisplayTrip | null) => void,
   setAssignDriver: (id: string) => void,
   setAssignNote: (note: string) => void,
-  toast: ReturnType<typeof useToast>,
+  toast: { 
+    title: string;
+    description: string;
+    variant?: "default" | "destructive";
+  } => void,
   queryClient: QueryClient
 ) => {
   if (!tripToAssign || !assignDriver) return;
@@ -347,7 +364,11 @@ export const handleSendMessage = async (
   tripToMessage: DisplayTrip | null,
   newMessage: string,
   setNewMessage: (message: string) => void,
-  toast: ReturnType<typeof useToast>,
+  toast: { 
+    title: string;
+    description: string;
+    variant?: "default" | "destructive";
+  } => void,
   queryClient: QueryClient
 ) => {
   if (!tripToMessage || !newMessage.trim()) return;

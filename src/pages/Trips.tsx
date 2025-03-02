@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -68,21 +67,28 @@ export default function Trips() {
     return matchesSearch && matchesStatus;
   });
 
+  // Helper function to wrap toast for passing to operations
+  const toastWrapper = (props: { 
+    title: string; 
+    description: string;
+    variant?: "default" | "destructive";
+  }) => toast(props);
+
   // Handle operations with the refactored functions
   const handleTripStatusUpdate = (tripId: string, status: TripStatus) => 
-    updateTripStatus(tripId, status, viewTrip, setViewTrip, toast, queryClient);
+    updateTripStatus(tripId, status, viewTrip, setViewTrip, toastWrapper, queryClient);
     
   const handleTripDelete = () => 
-    deleteTrip(tripToDelete, viewTrip, editTrip, setViewTrip, setEditTrip, setDeleteDialogOpen, setTripToDelete, toast, queryClient);
+    deleteTrip(tripToDelete, viewTrip, editTrip, setViewTrip, setEditTrip, setDeleteDialogOpen, setTripToDelete, toastWrapper, queryClient);
   
   const handleTripFormSubmit = (event: React.FormEvent<HTMLFormElement>) => 
-    handleSaveTrip(event, editTrip, setEditTrip, setBookingOpen, toast, queryClient);
+    handleSaveTrip(event, editTrip, setEditTrip, setBookingOpen, toastWrapper, queryClient);
   
   const handleDriverAssignment = () => 
-    handleAssignDriver(tripToAssign, assignDriver, assignNote, setAssignOpen, setTripToAssign, setAssignDriver, setAssignNote, toast, queryClient);
+    handleAssignDriver(tripToAssign, assignDriver, assignNote, setAssignOpen, setTripToAssign, setAssignDriver, setAssignNote, toastWrapper, queryClient);
   
   const handleMessageSend = () => 
-    handleSendMessage(tripToMessage || viewTrip, newMessage, setNewMessage, toast, queryClient);
+    handleSendMessage(tripToMessage || viewTrip, newMessage, setNewMessage, toastWrapper, queryClient);
 
   if (isLoading) {
     return (
