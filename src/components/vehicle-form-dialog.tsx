@@ -95,7 +95,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
       } else {
         const { data: newVehicle, error } = await supabase
           .from('vehicles')
-          .insert([data])
+          .insert(data)  // Insert a single object, not an array
           .select()
           .single();
 

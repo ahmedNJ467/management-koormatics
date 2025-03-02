@@ -1,8 +1,5 @@
 
-import { Vehicle } from './vehicle';
-
 export type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type MaintenanceType = 'service' | 'repair' | 'inspection' | 'other';
 
 export interface Maintenance {
   id: string;
@@ -10,12 +7,16 @@ export interface Maintenance {
   date: string;
   description: string;
   cost: number;
-  maintenance_type?: MaintenanceType;
-  next_scheduled?: string;
   status: MaintenanceStatus;
+  next_scheduled?: string;
   notes?: string;
   service_provider?: string;
   created_at?: string;
   updated_at?: string;
-  vehicle?: Vehicle;
+  vehicle?: {
+    id: string;
+    make: string;
+    model: string;
+    registration: string;
+  };
 }

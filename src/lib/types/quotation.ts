@@ -10,13 +10,13 @@ export interface QuotationItem {
 
 export interface Quotation {
   id: string;
-  date: string;
   client_id: string;
-  status: QuotationStatus;
-  total_amount: number;
+  date: string;
   valid_until: string;
-  notes?: string;
+  status: QuotationStatus;
   items: QuotationItem[];
+  total_amount: number;
+  notes?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -24,4 +24,5 @@ export interface Quotation {
 export interface DisplayQuotation extends Quotation {
   client_name: string;
   client_email?: string;
+  client_phone?: string;
 }
