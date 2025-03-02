@@ -1,7 +1,5 @@
-
 import { format } from "date-fns";
 import { Trip, TripStatus, TripType, DisplayTrip } from "@/lib/types/trip";
-import { Plane, ArrowRight, Clock, Calendar } from "lucide-react";
 
 // Format service type for display
 export const formatUIServiceType = (trip: Trip): string => {
