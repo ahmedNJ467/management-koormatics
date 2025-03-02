@@ -14,5 +14,5 @@ export interface Client {
   updated_at?: string;
   archived?: boolean;
   is_archived?: boolean; // Including both property names for compatibility
-  has_active_contract?: boolean;
+  has_active_contract?: boolean; // Add this property
 }

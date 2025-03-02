@@ -1,6 +1,14 @@
 
 import { DisplayTrip } from './trip';
-import { Json } from '@supabase/supabase-js';
+
+// Define a Json type that matches what Supabase expects
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'credit_card' | 'mobile_money' | 'cheque' | 'other';

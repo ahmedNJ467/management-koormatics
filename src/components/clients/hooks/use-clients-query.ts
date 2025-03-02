@@ -16,6 +16,7 @@ export interface Client {
   profile_image_url?: string;
   created_at?: string;
   updated_at?: string;
+  has_active_contract?: boolean;
 }
 
 export const useClientsQuery = () => {
@@ -51,7 +52,23 @@ export const useClientByIdQuery = (clientId: string | null) => {
       
       if (error) throw error;
       
-      return data as any; // Cast to any to avoid deep instantiation issues
+      // Use a type assertion to avoid deep instantiation
+      return data as {
+        id: string;
+        name: string;
+        type: "individual" | "organization";
+        email?: string;
+        phone?: string;
+        address?: string;
+        contact?: string;
+        description?: string;
+        website?: string;
+        is_archived?: boolean;
+        profile_image_url?: string;
+        created_at?: string;
+        updated_at?: string;
+        client_contacts?: any[];
+      };
     },
     enabled: !!clientId,
   });

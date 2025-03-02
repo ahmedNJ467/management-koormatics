@@ -112,7 +112,7 @@ export default function Trips() {
     try {
       const { error } = await supabase
         .from("trips")
-        .update({ status: status })
+        .update({ status })
         .eq("id", tripId);
 
       if (error) throw error;
@@ -122,7 +122,6 @@ export default function Trips() {
         description: `Trip status changed to ${formatStatus(status)}`,
       });
       
-      // Update local viewTrip state if it's the current trip
       if (viewTrip && viewTrip.id === tripId) {
         setViewTrip({...viewTrip, status});
       }
@@ -153,7 +152,6 @@ export default function Trips() {
         description: "Trip has been deleted successfully",
       });
 
-      // Close any open dialogs if they were showing the deleted trip
       if (viewTrip && viewTrip.id === tripToDelete) setViewTrip(null);
       if (editTrip && editTrip.id === tripToDelete) setEditTrip(null);
       
@@ -179,7 +177,6 @@ export default function Trips() {
     const dbServiceType = serviceTypeMap[uiServiceType];
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
-    // Add flight details to notes if it's an airport trip
     let notes = formData.get("special_notes") as string || "";
     if (uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff") {
       const flight = formData.get("flight_number") as string;
@@ -191,7 +188,6 @@ export default function Trips() {
       if (terminal) notes += `\nTerminal: ${terminal}`;
     }
     
-    // Add passenger names to notes if applicable
     const clientId = formData.get("client_id") as string;
     const selectedClient = clients?.find(client => client.id === clientId);
     if (selectedClient?.type === "organization") {
@@ -212,7 +208,6 @@ export default function Trips() {
     
     try {
       if (editTrip) {
-        // Update existing trip
         const tripUpdateData = {
           client_id: formData.get("client_id") as string,
           vehicle_id: formData.get("vehicle_id") as string,
@@ -241,7 +236,6 @@ export default function Trips() {
         
         setEditTrip(null);
       } else if (isRecurringChecked) {
-        // Create recurring trips
         const occurrences = parseInt(formData.get("occurrences") as string) || 1;
         const frequencyValue = formData.get("frequency") as "daily" | "weekly" | "monthly";
         
@@ -260,7 +254,6 @@ export default function Trips() {
         
         setBookingOpen(false);
       } else {
-        // Create new single trip
         const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(uiServiceType);
       
         const tripData = {
@@ -272,7 +265,7 @@ export default function Trips() {
           end_time: needsReturnTime ? (formData.get("return_time") as string) : null,
           type: dbServiceType,
           status: "scheduled" as TripStatus,
-          amount: 0, // Default amount
+          amount: 0,
           pickup_location: formData.get("pickup_location") as string || null,
           dropoff_location: formData.get("dropoff_location") as string || null,
           notes: notes || null,
@@ -309,7 +302,6 @@ export default function Trips() {
     if (!tripToAssign || !assignDriver) return;
     
     try {
-      // Create assignment record
       const { error } = await supabase.from('trip_assignments').insert({
         trip_id: tripToAssign.id,
         driver_id: assignDriver,
@@ -320,7 +312,6 @@ export default function Trips() {
       
       if (error) throw error;
       
-      // Update trip with new driver
       const { error: updateError } = await supabase
         .from("trips")
         .update({ driver_id: assignDriver })
@@ -355,7 +346,7 @@ export default function Trips() {
       const { error } = await supabase.from('trip_messages').insert({
         trip_id: tripToMessage.id,
         sender_type: "admin",
-        sender_name: "Fleet Manager", // In a real app, use the current user's name
+        sender_name: "Fleet Manager",
         message: newMessage.trim(),
         timestamp: new Date().toISOString(),
         is_read: false
@@ -428,7 +419,6 @@ export default function Trips() {
         </div>
       </div>
 
-      {/* Search and Filter */}
       <TripFilterBar 
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -436,7 +426,6 @@ export default function Trips() {
         setStatusFilter={setStatusFilter}
       />
 
-      {/* Calendar or Table View */}
       {calendarView ? (
         <TripCalendarView 
           currentMonth={currentMonth}
@@ -471,7 +460,6 @@ export default function Trips() {
         />
       )}
 
-      {/* Dialogs */}
       <TripDetailsDialog 
         viewTrip={viewTrip}
         setViewTrip={setViewTrip}

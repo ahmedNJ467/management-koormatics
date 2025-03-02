@@ -1,9 +1,30 @@
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { DisplayInvoice, InvoiceItem, convertToInvoice } from "@/lib/types/invoice";
+import { DisplayInvoice, InvoiceItem, Json } from "@/lib/types/invoice";
+import { useEffect } from "react";
 import { DisplayTrip } from "@/lib/types/trip";
 
-export const useInvoicesQuery = () => {
+export function useInvoicesQuery() {
+  const queryClient = useQueryClient();
+
+  // Setup real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel("invoices-changes")
+      .on("postgres_changes", 
+        { event: "*", schema: "public", table: "invoices" }, 
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["invoices"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
@@ -48,7 +69,8 @@ export const useInvoicesQuery = () => {
           }
         }
         
-        return {
+        // Use explicit type assertion instead of extending DisplayInvoice
+        const displayInvoice = {
           ...invoice,
           items: parsedItems,
           // Add properly typed trips array
@@ -58,17 +80,19 @@ export const useInvoicesQuery = () => {
           client_email: invoice.clients?.email || "",
           client_address: invoice.clients?.address || "",
           client_phone: invoice.clients?.phone || "",
-        } as DisplayInvoice;
+        };
+
+        return displayInvoice as DisplayInvoice;
       });
     },
   });
-};
+}
 
-export const useAvailableTripsQuery = (selectedClientId: string) => {
+export function useAvailableTripsQuery(clientId: string | null) {
   return useQuery({
-    queryKey: ["availableTrips", selectedClientId],
+    queryKey: ["availableTrips", clientId],
     queryFn: async () => {
-      if (!selectedClientId) return [];
+      if (!clientId) return [];
 
       const { data, error } = await supabase
         .from("trips")
@@ -78,13 +102,14 @@ export const useAvailableTripsQuery = (selectedClientId: string) => {
           vehicles:vehicle_id(make, model, registration),
           drivers:driver_id(name, contact, avatar_url)
         `)
-        .eq("client_id", selectedClientId)
+        .eq("client_id", clientId)
         .is("invoice_id", null)
         .in("status", ["completed", "in_progress"])
         .order("date", { ascending: false });
 
       if (error) throw error;
 
+      // Use a simpler type assertion to avoid deep nesting
       return data.map((trip: any) => ({
         ...trip,
         type: trip.type || trip.service_type || 'other',
@@ -92,8 +117,8 @@ export const useAvailableTripsQuery = (selectedClientId: string) => {
         client_name: trip.clients?.name || "Unknown Client",
         vehicle_details: `${trip.vehicles?.make || ""} ${trip.vehicles?.model || ""} (${trip.vehicles?.registration || ""})`,
         driver_name: trip.drivers?.name || "Unknown Driver",
-      } as DisplayTrip));
+      })) as DisplayTrip[];
     },
-    enabled: !!selectedClientId,
+    enabled: !!clientId,
   });
-};
+}
