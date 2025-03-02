@@ -1,4 +1,3 @@
-
 import jsPDF from "jspdf";
 import { TextOptionsLight } from "jspdf";
 import { pdfColors } from "./pdfStyles";
@@ -12,8 +11,8 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
   if (content.includes('(Organization)')) {
     // If it's an organization with passengers, adjust formatting
     if (content.includes('Passengers:')) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+      doc.setFillColor(15, 23, 42); // Dark background for organization cells
+      doc.rect(cell.x, cell.y, cell.width, cell.height, 'F');
       
       // Get cell dimensions
       const x = cell.x + 0.15; // Increased padding
@@ -24,29 +23,42 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       
       // Draw organization name with bold
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(41, 128, 185); // Use primary blue for org name
+      doc.setTextColor(255, 255, 255); // White text for organization name
       doc.text(textLines[0].toUpperCase(), x, y);
       y += 0.25;
       
       // Draw organization label
       doc.setFont('helvetica', 'italic');
-      doc.setTextColor(142, 68, 173); // Use secondary purple for label
-      doc.text("Organization", x, y);
+      doc.setTextColor(180, 180, 255); // Light blue for the organization label
+      doc.text("(Organization)", x, y);
       y += 0.35;
+      
+      // Extract passenger count and display it
+      let passengerCount = 0;
+      const passengerLine = textLines.find(line => line.startsWith('Passengers:'));
+      if (passengerLine) {
+        passengerCount = parseInt(passengerLine.split(':')[1].trim());
+      }
       
       // Draw passengers icon and count
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(39, 174, 96); // Use accent green for passenger count
-      const passengerCount = textLines.length - 4; // Calculate actual passenger count
-      doc.text(`👤 ${passengerCount} passengers`, x, y);
+      doc.setTextColor(100, 255, 150); // Bright green for passenger count
+      doc.text(`Passengers: ${passengerCount}`, x, y);
       y += 0.3;
       
       // Draw passenger names with normal font and bullet points
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...pdfColors.text); // Back to normal text color
-      for (let i = 4; i < textLines.length; i++) {
-        doc.text(`• ${textLines[i].trim()}`, x, y);
-        y += 0.25;
+      doc.setTextColor(200, 200, 200); // Light gray for passenger names
+      
+      // Find the index where passengers start
+      const passengerStartIndex = textLines.findIndex(line => line.startsWith('Passengers:')) + 1;
+      
+      // Draw each passenger name with bullet point
+      for (let i = passengerStartIndex; i < textLines.length; i++) {
+        if (textLines[i].trim()) {
+          doc.text(`• ${textLines[i].trim()}`, x, y);
+          y += 0.25;
+        }
       }
     }
   }
@@ -79,6 +91,19 @@ export function formatStatusCell(doc: jsPDF, data: any, filename: string): void 
       doc.setTextColor(230, 126, 34); // Orange for in progress
     } else if (cellContent.includes('pending')) {
       doc.setTextColor(155, 89, 182); // Purple for pending
+    }
+  }
+  
+  // For trips report - status column
+  if (filename === 'trips-report' && data.column.index === 6) {
+    if (cellContent.includes('completed')) {
+      doc.setTextColor(39, 174, 96); // Green for completed
+    } else if (cellContent.includes('scheduled')) {
+      doc.setTextColor(52, 152, 219); // Blue for scheduled
+    } else if (cellContent.includes('cancelled')) {
+      doc.setTextColor(231, 76, 60); // Red for cancelled
+    } else if (cellContent.includes('in_progress')) {
+      doc.setTextColor(230, 126, 34); // Orange for in progress
     }
   }
 }

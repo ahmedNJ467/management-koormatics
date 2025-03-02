@@ -16,14 +16,14 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
       font: pdfFonts.bodyFont
     },
     headStyles: {
-      fillColor: pdfColors.primary,
-      textColor: 255,
+      fillColor: pdfColors.primary as [number, number, number],
+      textColor: [255, 255, 255] as [number, number, number],
       fontStyle: 'bold',
       halign: 'center',
       cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
     },
     alternateRowStyles: {
-      fillColor: pdfColors.rowAlt,
+      fillColor: pdfColors.rowAlt as [number, number, number],
     },
     margin: { top: 2.0, left: 0.5, right: 0.5, bottom: 0.8 },
     tableWidth: 'auto',
@@ -31,24 +31,18 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
       1: { // Client column (index 1)
         cellWidth: 2.5, // Make Client column wider
         cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
-        fillColor: [15, 23, 42] as [number, number, number], // Use proper Color type for dark background
-        textColor: [255, 255, 255] as [number, number, number], // White text for client name
+        // Don't set fillColor here, we'll handle it in didDrawCell
+        fontStyle: 'normal',
       },
-      // Add color coding for status column based on report type
+      // Status column styling
       ...(filename === 'vehicles-report' ? {
-        5: { // Status column for vehicles-report
-          fontStyle: 'bold',
-        }
+        5: { fontStyle: 'bold' }
       } : {}),
       ...(filename === 'maintenance-report' ? {
-        3: { // Status column for maintenance-report
-          fontStyle: 'bold',
-        }
+        3: { fontStyle: 'bold' }
       } : {}),
       ...(filename === 'trips-report' ? {
-        2: { // Service type column styling
-          fillColor: pdfColors.light
-        }
+        6: { fontStyle: 'bold' } // Status column for trips
       } : {})
     },
     didDrawCell: (data) => {
