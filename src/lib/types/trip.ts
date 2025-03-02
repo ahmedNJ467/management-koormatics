@@ -37,7 +37,7 @@ export interface Trip {
   date: string;
   start_time?: string;
   end_time?: string;
-  service_type: ServiceType;  // Updated from 'type' to 'service_type'
+  service_type: ServiceType;
   status: TripStatus;
   amount: number;
   pickup_location?: string;

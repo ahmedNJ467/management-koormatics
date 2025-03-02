@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -67,9 +68,9 @@ const Reports = () => {
   }, [tripsData]);
 
   const processTripDataForChart = () => {
-    const tripsByType = tripsData.reduce((acc: { [key: string]: number }, trip: { type: ServiceType }) => {
-      const type = trip.type;
-      acc[type] = (acc[type] || 0) + 1;
+    const tripsByType = tripsData.reduce((acc: { [key: string]: number }, trip: { service_type: ServiceType }) => {
+      const serviceType = trip.service_type;
+      acc[serviceType] = (acc[serviceType] || 0) + 1;
       return acc;
     }, {});
 

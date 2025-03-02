@@ -526,11 +526,10 @@ export type Database = {
           is_recurring: boolean | null
           notes: string | null
           pickup_location: string | null
+          service_type: Database["public"]["Enums"]["service_type"] | null
           special_instructions: string | null
           start_time: string | null
-          status: Database["public"]["Enums"]["trip_status"]
           terminal: string | null
-          type: Database["public"]["Enums"]["trip_type"]
           updated_at: string | null
           vehicle_id: string
         }
@@ -549,11 +548,10 @@ export type Database = {
           is_recurring?: boolean | null
           notes?: string | null
           pickup_location?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
           special_instructions?: string | null
           start_time?: string | null
-          status?: Database["public"]["Enums"]["trip_status"]
           terminal?: string | null
-          type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string | null
           vehicle_id: string
         }
@@ -572,11 +570,10 @@ export type Database = {
           is_recurring?: boolean | null
           notes?: string | null
           pickup_location?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
           special_instructions?: string | null
           start_time?: string | null
-          status?: Database["public"]["Enums"]["trip_status"]
           terminal?: string | null
-          type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string | null
           vehicle_id?: string
         }
@@ -712,6 +709,13 @@ export type Database = {
         | "completed"
         | "cancelled"
       quotation_status: "draft" | "sent" | "approved" | "rejected" | "expired"
+      service_type:
+        | "airport_pickup"
+        | "airport_dropoff"
+        | "full_day"
+        | "one_way_transfer"
+        | "round_trip"
+        | "security_escort"
       trip_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       trip_type:
         | "airport_pickup"

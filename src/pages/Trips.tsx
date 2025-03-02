@@ -57,7 +57,7 @@ const Trips = () => {
     date: dayjs().format('YYYY-MM-DD'),
     start_time: '',
     end_time: '',
-    type: 'airport_pickup',
+    service_type: 'airport_pickup',
     status: 'scheduled',
     amount: 0,
     pickup_location: '',
@@ -80,7 +80,7 @@ const Trips = () => {
     date: dayjs().format('YYYY-MM-DD'),
     start_time: '',
     end_time: '',
-    type: 'airport_pickup',
+    service_type: 'airport_pickup',
     status: 'scheduled',
     amount: 0,
     pickup_location: '',
@@ -143,7 +143,7 @@ const Trips = () => {
           time: trip.start_time ? dayjs(trip.start_time, 'HH:mm:ss').format('h:mm A') : 'N/A',
           return_time: trip.end_time ? dayjs(trip.end_time, 'HH:mm:ss').format('h:mm A') : 'N/A',
           special_notes: trip.special_instructions || 'None',
-          ui_service_type: trip.type || 'other'
+          ui_service_type: trip.service_type || 'other'
         }));
         setTrips(formattedTrips);
         setCount(count || 0);
@@ -200,7 +200,7 @@ const Trips = () => {
       date: dayjs().format('YYYY-MM-DD'),
       start_time: '',
       end_time: '',
-      type: 'airport_pickup',
+      service_type: 'airport_pickup',
       status: 'scheduled',
       amount: 0,
       pickup_location: '',
@@ -232,7 +232,7 @@ const Trips = () => {
       date: dayjs().format('YYYY-MM-DD'),
       start_time: '',
       end_time: '',
-      type: 'airport_pickup',
+      service_type: 'airport_pickup',
       status: 'scheduled',
       amount: 0,
       pickup_location: '',
@@ -391,7 +391,7 @@ const Trips = () => {
     setSnackbarOpen(false);
   };
 
-    const handleChangePage = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handleChangePage = (event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
@@ -441,7 +441,7 @@ const Trips = () => {
                 <TableCell>{dayjs(trip.date).format('MMMM D, YYYY')}</TableCell>
                 <TableCell>{trip.time}</TableCell>
                 <TableCell>{trip.return_time}</TableCell>
-                <TableCell>{trip.type}</TableCell>
+                <TableCell>{trip.service_type}</TableCell>
                 <TableCell>{trip.status}</TableCell>
                 <TableCell>{trip.amount}</TableCell>
                 <TableCell align="right">
@@ -458,7 +458,7 @@ const Trips = () => {
         </Table>
       </TableContainer>
 
-            <Box display="flex" justifyContent="center" mt={2}>
+      <Box display="flex" justifyContent="center" mt={2}>
         <Pagination
           count={Math.ceil(count / rowsPerPage)}
           page={page}
@@ -568,21 +568,18 @@ const Trips = () => {
               onChange={handleInputChange}
             />
             <FormControl fullWidth margin="normal">
-              <InputLabel id="type-label">Type</InputLabel>
+              <InputLabel id="service_type-label">Service Type</InputLabel>
               <Select
-                labelId="type-label"
-                id="type"
-                name="type"
-                value={form.type}
-                label="Type"
+                labelId="service_type-label"
+                id="service_type"
+                name="service_type"
+                value={form.service_type}
+                label="Service Type"
                 onChange={handleInputChange}
               >
                 <MenuItem value="airport_pickup">Airport Pickup</MenuItem>
                 <MenuItem value="airport_dropoff">Airport Dropoff</MenuItem>
-                <MenuItem value="other">Other</MenuItem>
-                <MenuItem value="hourly">Hourly</MenuItem>
                 <MenuItem value="full_day">Full Day</MenuItem>
-                <MenuItem value="multi_day">Multi Day</MenuItem>
                 <MenuItem value="one_way_transfer">One Way Transfer</MenuItem>
                 <MenuItem value="round_trip">Round Trip</MenuItem>
                 <MenuItem value="security_escort">Security Escort</MenuItem>
@@ -800,21 +797,18 @@ const Trips = () => {
               onChange={handleEditInputChange}
             />
             <FormControl fullWidth margin="normal">
-              <InputLabel id="type-label">Type</InputLabel>
+              <InputLabel id="service_type-label">Service Type</InputLabel>
               <Select
-                labelId="type-label"
-                id="type"
-                name="type"
-                value={editForm.type}
-                label="Type"
+                labelId="service_type-label"
+                id="service_type"
+                name="service_type"
+                value={editForm.service_type}
+                label="Service Type"
                 onChange={handleEditInputChange}
               >
                 <MenuItem value="airport_pickup">Airport Pickup</MenuItem>
                 <MenuItem value="airport_dropoff">Airport Dropoff</MenuItem>
-                <MenuItem value="other">Other</MenuItem>
-                <MenuItem value="hourly">Hourly</MenuItem>
                 <MenuItem value="full_day">Full Day</MenuItem>
-                <MenuItem value="multi_day">Multi Day</MenuItem>
                 <MenuItem value="one_way_transfer">One Way Transfer</MenuItem>
                 <MenuItem value="round_trip">Round Trip</MenuItem>
                 <MenuItem value="security_escort">Security Escort</MenuItem>
