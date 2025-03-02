@@ -58,13 +58,27 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
 
   // Load previous mileage when vehicle changes
   useEffect(() => {
-    if (vehicleId && !fuelLog) {
-      const fetchMileage = async () => {
+    if (!vehicleId) return;
+    
+    const fetchMileage = async () => {
+      try {
+        // For existing fuel logs being edited, don't override the previous mileage
+        if (fuelLog && fuelLog.vehicle_id === vehicleId) return;
+        
         const lastMileage = await getLatestMileage(vehicleId);
         form.setValue("previous_mileage", lastMileage);
-      };
-      fetchMileage();
-    }
+        
+        // If current mileage is not set or less than previous, default it to the previous
+        const currentMileage = form.getValues("current_mileage");
+        if (currentMileage === 0 || currentMileage < lastMileage) {
+          form.setValue("current_mileage", lastMileage);
+        }
+      } catch (error) {
+        console.error("Error fetching latest mileage:", error);
+      }
+    };
+    
+    fetchMileage();
   }, [vehicleId, form, fuelLog]);
 
   // Handle form submission
@@ -73,20 +87,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     try {
       const result = await saveFuelLog(values, fuelLog?.id);
       
-      // Update the query cache with the new data
-      queryClient.setQueryData<FuelLog[]>(['fuel-logs'], (oldData) => {
-        if (!oldData) return [result.data as FuelLog];
-        
-        // If editing, replace the edited item
-        if (fuelLog?.id) {
-          return oldData.map(item => 
-            item.id === fuelLog.id ? (result.data as FuelLog) : item
-          );
-        }
-        
-        // If adding new, prepend to the list
-        return [(result.data as FuelLog), ...oldData];
-      });
+      // Invalidate and refetch the query to ensure the UI updates
+      queryClient.invalidateQueries({ queryKey: ['fuel-logs'] });
       
       toast({
         title: result.isNewRecord ? "Fuel log created" : "Fuel log updated",

@@ -34,8 +34,8 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
         <DialogHeader>
           <DialogTitle>{fuelLog ? "Edit Fuel Log" : "Add New Fuel Log"}</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh]">
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 px-1">
+        <ScrollArea className="max-h-[calc(80vh-4rem)] pr-4" type="always">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 px-1">
             <VehicleSelect form={form} vehicles={vehicles} />
             <FuelDetails form={form} />
             <VolumePrice form={form} />
