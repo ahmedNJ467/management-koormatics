@@ -111,11 +111,14 @@ export const tripTypeDisplayMap: Record<TripType, string> = {
 // Utility function to convert database fields to Trip interface
 export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   // Ensure all required properties are present with defaults
+  const type = dbTrip.service_type || dbTrip.type || 'other';
+  const status = dbTrip.status || 'scheduled';
+  
   return {
     ...dbTrip,
     // Map database fields to Trip interface properties
-    type: dbTrip.service_type || dbTrip.type || 'other',
-    status: dbTrip.status || 'scheduled',
+    type,
+    status,
     start_time: dbTrip.time || dbTrip.start_time,
     end_time: dbTrip.return_time || dbTrip.end_time,
     notes: dbTrip.special_instructions || dbTrip.notes,
@@ -129,8 +132,7 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
     driver_avatar: dbTrip.drivers?.avatar_url,
     driver_contact: dbTrip.drivers?.contact,
     // Include additional fields for displaying in UI
-    display_type: dbTrip.display_type || (dbTrip.service_type && tripTypeDisplayMap[dbTrip.service_type as TripType]) || 
-                 (dbTrip.type && tripTypeDisplayMap[dbTrip.type as TripType]) || 'Other',
+    display_type: dbTrip.display_type || (type && tripTypeDisplayMap[type as TripType]) || 'Other',
   };
 };
 
@@ -145,12 +147,6 @@ export const mapTripToDatabaseFields = (trip: Partial<Trip>): Partial<DbTrip> =>
     return_time: trip.end_time,
     special_instructions: trip.notes,
   };
-  
-  // Remove Trip interface fields that don't exist in the database
-  delete dbTrip.type;
-  delete dbTrip.start_time;
-  delete dbTrip.end_time;
-  delete dbTrip.notes;
   
   return dbTrip;
 };

@@ -1,5 +1,5 @@
 
-import { TripStatus, TripType, DisplayTrip } from "@/lib/types";
+import { TripStatus, TripType } from "@/lib/types/trip";
 
 export interface TripMessageData {
   id: string;
@@ -28,4 +28,42 @@ export interface TripAssignmentData {
   };
   driver_name?: string;
   driver_avatar?: string;
+}
+
+export interface DbTripData {
+  id: string;
+  client_id: string;
+  vehicle_id: string;
+  driver_id: string;
+  date: string;
+  time?: string;
+  return_time?: string;
+  service_type?: TripType;
+  status?: TripStatus;
+  amount: number;
+  pickup_location?: string;
+  dropoff_location?: string;
+  special_instructions?: string;
+  invoice_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  airline?: string;
+  flight_number?: string;
+  terminal?: string;
+  is_recurring?: boolean;
+  // Joined data
+  clients?: {
+    name: string;
+    type?: "organization" | "individual";
+  };
+  vehicles?: {
+    make?: string;
+    model?: string;
+    registration?: string;
+  };
+  drivers?: {
+    name?: string;
+    avatar_url?: string;
+    contact?: string;
+  };
 }
