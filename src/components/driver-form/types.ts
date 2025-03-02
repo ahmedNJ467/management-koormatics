@@ -1,6 +1,6 @@
 
 import * as z from "zod";
-import type { DriverStatus } from "@/lib/types";
+import { DriverStatus } from "@/lib/types/driver";
 
 export const driverSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
