@@ -1,15 +1,7 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-
-// Define colors for charts
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
-
-type CategoryData = {
-  name: string;
-  value: number;
-};
+import { CategoryData, COLORS } from "@/lib/types/cost-analytics";
 
 interface CategoriesTabProps {
   maintenanceCategories: CategoryData[];

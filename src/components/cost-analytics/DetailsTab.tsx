@@ -1,14 +1,6 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
-
-type VehicleCostData = {
-  vehicle_id: string;
-  vehicle_name: string;
-  maintenance: number;
-  fuel: number;
-  total: number;
-};
+import { VehicleCostData } from "@/lib/types/cost-analytics";
 
 interface DetailsTabProps {
   vehicleCosts: VehicleCostData[];

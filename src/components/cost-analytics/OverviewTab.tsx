@@ -1,14 +1,7 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-
-type MonthlyData = {
-  month: string;
-  maintenance: number;
-  fuel: number;
-  total: number;
-};
+import { MonthlyData } from "@/lib/types/cost-analytics";
 
 interface OverviewTabProps {
   monthlyData: MonthlyData[];

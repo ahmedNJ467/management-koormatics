@@ -1,15 +1,7 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-
-type VehicleCostData = {
-  vehicle_id: string;
-  vehicle_name: string;
-  maintenance: number;
-  fuel: number;
-  total: number;
-};
+import { VehicleCostData } from "@/lib/types/cost-analytics";
 
 interface VehiclesTabProps {
   vehicleCosts: VehicleCostData[];

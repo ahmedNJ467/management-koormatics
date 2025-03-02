@@ -1,12 +1,6 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Truck, TrendingUp } from "lucide-react";
-
-type CostData = {
-  maintenance: number;
-  fuel: number;
-  total: number;
-};
+import { CostData } from "@/lib/types/cost-analytics";
 
 interface CostSummaryCardsProps {
   summaryCosts: CostData;
