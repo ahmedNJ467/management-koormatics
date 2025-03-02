@@ -49,8 +49,8 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       
       // Draw passenger names with normal font and bullet points
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(255, 255, 255); // White for passenger names instead of light gray
-      doc.setFontSize(8); // Slightly smaller font size for passengers
+      doc.setTextColor(255, 255, 255); // White for passenger names
+      doc.setFontSize(8); // Smaller font size for passengers
       
       // Find the index where passengers start
       const passengerStartIndex = textLines.findIndex(line => line.startsWith('Passengers:')) + 1;
@@ -59,7 +59,7 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       for (let i = passengerStartIndex; i < textLines.length; i++) {
         if (textLines[i].trim()) {
           doc.text(`• ${textLines[i].trim()}`, x, y);
-          y += 0.25;
+          y += 0.25; // Slightly increased line spacing for better readability
         }
       }
     }

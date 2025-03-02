@@ -57,13 +57,12 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Driver</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={7} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : filteredData && filteredData.length > 0 ? (
                 filteredData.map((trip) => (
@@ -89,12 +88,11 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                     <TableCell>{trip.vehicles?.make} {trip.vehicles?.model}</TableCell>
                     <TableCell>{trip.drivers?.name}</TableCell>
                     <TableCell>{trip.status}</TableCell>
-                    <TableCell className="text-right">${Number(trip.amount || 0).toFixed(2)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center">No data available</TableCell>
+                  <TableCell colSpan={7} className="text-center">No data available</TableCell>
                 </TableRow>
               )}
             </TableBody>

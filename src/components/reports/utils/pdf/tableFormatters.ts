@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 
 // Generate table data for different report types
@@ -17,7 +18,7 @@ export function generateTableData(data: any[], reportType: string) {
 
   switch (reportType) {
     case 'trips-report':
-      tableHeaders = ['Date', 'Client', 'Pick-up', 'Drop-off', 'Vehicle', 'Driver', 'Status', 'Amount'];
+      tableHeaders = ['Date', 'Client', 'Pick-up', 'Drop-off', 'Vehicle', 'Driver', 'Status'];
       tableData = data.map(trip => {
         // Format client information, properly handling organizations with passengers
         let clientDisplay = trip.clients?.name || 'Unknown Client';
@@ -43,8 +44,7 @@ export function generateTableData(data: any[], reportType: string) {
           trip.dropoff_location || 'N/A',
           `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
           trip.drivers?.name || 'Not Assigned',
-          trip.status || 'Scheduled',
-          `$${Number(trip.amount || 0).toFixed(2)}`
+          trip.status || 'Scheduled'
         ];
       });
       break;
