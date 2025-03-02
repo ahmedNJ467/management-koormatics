@@ -87,7 +87,6 @@ export default function Invoices() {
   const [paymentDate, setPaymentDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [paymentNotes, setPaymentNotes] = useState<string>("");
 
-  // Fetch invoices data with simplified type handling
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
@@ -102,9 +101,7 @@ export default function Invoices() {
 
       if (error) throw error;
 
-      // Handle the data conversion with proper typing
       return data.map((invoice: any) => {
-        // Process trips with explicit typing 
         const tripsForInvoice = Array.isArray(invoice.trips) 
           ? invoice.trips.map((trip: any) => ({
               ...trip,
@@ -116,10 +113,8 @@ export default function Invoices() {
             } as DisplayTrip))
           : [];
         
-        // Use the helper function to convert invoice data
         const displayInvoice = convertToInvoice(invoice);
         
-        // Add the processed trips
         displayInvoice.trips = tripsForInvoice;
         
         return displayInvoice;
@@ -127,7 +122,6 @@ export default function Invoices() {
     },
   });
 
-  // Fetch clients for dropdown
   const { data: clients } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
@@ -140,7 +134,6 @@ export default function Invoices() {
     },
   });
 
-  // Fetch available trips (not yet invoiced) for the selected client
   const { data: availableTrips, refetch: refetchAvailableTrips } = useQuery({
     queryKey: ["availableTrips", selectedClientId],
     queryFn: async () => {
@@ -173,7 +166,6 @@ export default function Invoices() {
     enabled: !!selectedClientId,
   });
 
-  // Effect to update available trips when client changes
   useEffect(() => {
     if (selectedClientId) {
       refetchAvailableTrips();
@@ -181,7 +173,6 @@ export default function Invoices() {
     }
   }, [selectedClientId, refetchAvailableTrips]);
 
-  // Effect to initialize payment amount when marking an invoice as paid
   useEffect(() => {
     if (invoiceToMarkPaid) {
       const remainingAmount = invoiceToMarkPaid.total_amount - (invoiceToMarkPaid.paid_amount || 0);
@@ -189,7 +180,6 @@ export default function Invoices() {
     }
   }, [invoiceToMarkPaid]);
 
-  // Subscribe to real-time changes
   useEffect(() => {
     const channel = supabase
       .channel("invoices-changes")
@@ -206,17 +196,14 @@ export default function Invoices() {
     };
   }, [queryClient]);
 
-  // Calculate total amount for invoice items
   const calculateTotal = (items: InvoiceItem[]): number => {
     return items.reduce((sum, item) => sum + (item.amount || 0), 0);
   };
 
-  // Update invoice item amount when quantity or unit price changes
   const updateInvoiceItem = (index: number, field: keyof InvoiceItem, value: any) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
-    // Recalculate amount if quantity or unit_price changed
     if (field === "quantity" || field === "unit_price") {
       const quantity = field === "quantity" ? value : updatedItems[index].quantity;
       const unitPrice = field === "unit_price" ? value : updatedItems[index].unit_price;
@@ -226,19 +213,16 @@ export default function Invoices() {
     setInvoiceItems(updatedItems);
   };
 
-  // Add a new invoice item
   const addInvoiceItem = () => {
     setInvoiceItems([...invoiceItems, { description: "", quantity: 1, unit_price: 0, amount: 0 }]);
   };
 
-  // Remove an invoice item
   const removeInvoiceItem = (index: number) => {
-    if (invoiceItems.length <= 1) return; // Keep at least one item
+    if (invoiceItems.length <= 1) return;
     const updatedItems = invoiceItems.filter((_, i) => i !== index);
     setInvoiceItems(updatedItems);
   };
 
-  // Handle saving an invoice (new or edit)
   const handleSaveInvoice = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -248,13 +232,12 @@ export default function Invoices() {
     
     try {
       if (editInvoice) {
-        // Update existing invoice - prepare data for Supabase
         const invoiceData = {
           client_id: formData.get("client_id") as string,
           date: formData.get("date") as string,
           due_date: formData.get("due_date") as string,
           status: formData.get("status") as InvoiceStatus,
-          items: prepareForSupabase(invoiceItems), // Use helper function
+          items: prepareForSupabase(invoiceItems),
           total_amount: totalAmount,
           paid_amount: editInvoice.paid_amount,
           notes: formData.get("notes") as string || null,
@@ -275,13 +258,12 @@ export default function Invoices() {
         
         setEditInvoice(null);
       } else {
-        // Create new invoice - prepare data for Supabase
         const invoiceData = {
           client_id: formData.get("client_id") as string,
           date: formData.get("date") as string,
           due_date: formData.get("due_date") as string,
           status: formData.get("status") as InvoiceStatus || "draft",
-          items: prepareForSupabase(invoiceItems), // Use helper function
+          items: prepareForSupabase(invoiceItems),
           total_amount: totalAmount,
           paid_amount: 0,
           notes: formData.get("notes") as string || null,
@@ -296,7 +278,6 @@ export default function Invoices() {
         
         if (error) throw error;
 
-        // If trips were selected, update them with the invoice_id
         if (selectedTrips.length > 0 && data && data[0]) {
           const invoiceId = data[0].id;
           
@@ -338,7 +319,6 @@ export default function Invoices() {
     }
   };
 
-  // Handle marking an invoice as paid
   const handleRecordPayment = async () => {
     if (!invoiceToMarkPaid) return;
     
@@ -387,12 +367,10 @@ export default function Invoices() {
     }
   };
 
-  // Delete invoice
   const deleteInvoice = async () => {
     if (!invoiceToDelete) return;
     
     try {
-      // First, remove invoice_id from associated trips
       const { error: tripUpdateError } = await supabase
         .from("trips")
         .update({ invoice_id: null })
@@ -402,7 +380,6 @@ export default function Invoices() {
         console.error("Error unlinking trips:", tripUpdateError);
       }
       
-      // Then delete the invoice
       const { error } = await supabase
         .from("invoices")
         .delete()
@@ -419,7 +396,6 @@ export default function Invoices() {
       setDeleteDialogOpen(false);
       setInvoiceToDelete(null);
       
-      // Close any open dialogs if they were showing the deleted invoice
       if (viewInvoice && viewInvoice.id === invoiceToDelete) setViewInvoice(null);
       if (editInvoice && editInvoice.id === invoiceToDelete) setEditInvoice(null);
     } catch (error) {
@@ -432,8 +408,9 @@ export default function Invoices() {
     }
   };
 
-  // Helper functions for formatting
-  const formatStatus = (status: InvoiceStatus): string => {
+  const formatStatus = (status: InvoiceStatus | undefined): string => {
+    if (!status) return "Unknown";
+    
     return status.replace(/_/g, " ")
       .split(" ")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -451,7 +428,9 @@ export default function Invoices() {
     return format(new Date(dateStr), "MMM d, yyyy");
   };
   
-  const getStatusColor = (status: InvoiceStatus): string => {
+  const getStatusColor = (status: InvoiceStatus | undefined): string => {
+    if (!status) return "bg-gray-100 text-gray-700";
+    
     switch (status) {
       case "draft":
         return "bg-gray-100 text-gray-700";
@@ -468,12 +447,10 @@ export default function Invoices() {
     }
   };
 
-  // Format invoice ID to show first 8 characters
   const formatInvoiceId = (id: string): string => {
     return id.substring(0, 8).toUpperCase();
   };
 
-  // Check if an invoice is overdue
   const isInvoiceOverdue = (invoice: Invoice): boolean => {
     return (
       invoice.status === "sent" &&
@@ -481,7 +458,6 @@ export default function Invoices() {
     );
   };
 
-  // Update invoice statuses based on due dates
   useEffect(() => {
     const updateOverdueInvoices = async () => {
       const overdueInvoices = invoices?.filter(isInvoiceOverdue) || [];
@@ -501,7 +477,6 @@ export default function Invoices() {
     updateOverdueInvoices();
   }, [invoices, queryClient]);
 
-  // Filter invoices based on search and status filter
   const filteredInvoices = invoices?.filter(invoice => {
     const matchesSearch = 
       searchTerm === "" ||
@@ -513,7 +488,6 @@ export default function Invoices() {
     return matchesSearch && matchesStatus;
   });
 
-  // Generate a PDF invoice (placeholder function)
   const generateInvoicePDF = (invoice: DisplayInvoice) => {
     toast({
       title: "PDF Generation",
@@ -522,7 +496,6 @@ export default function Invoices() {
     console.log("Generating PDF for invoice:", invoice);
   };
 
-  // Send invoice by email (placeholder function)
   const sendInvoiceByEmail = (invoice: DisplayInvoice) => {
     toast({
       title: "Email Sending",
@@ -556,7 +529,6 @@ export default function Invoices() {
         </Button>
       </div>
 
-      {/* Search and Filter */}
       <div className="flex gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -582,7 +554,6 @@ export default function Invoices() {
         </Select>
       </div>
 
-      {/* Invoices Table */}
       <div className="bg-white rounded-lg shadow">
         <Table>
           <TableHeader>
@@ -702,7 +673,6 @@ export default function Invoices() {
         </Table>
       </div>
 
-      {/* Invoice Form Dialog (Create & Edit) */}
       <Dialog open={createInvoiceOpen || !!editInvoice} onOpenChange={(open) => {
         if (!open) {
           setCreateInvoiceOpen(false);
@@ -794,7 +764,6 @@ export default function Invoices() {
                               if (checked) {
                                 setSelectedTrips([...selectedTrips, trip.id]);
                                 
-                                // Add trip as an invoice item
                                 const tripDate = format(new Date(trip.date), "MMM d, yyyy");
                                 const description = `Transportation service on ${tripDate}`;
                                 const amount = trip.amount || 0;
@@ -811,7 +780,6 @@ export default function Invoices() {
                               } else {
                                 setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
                                 
-                                // Remove corresponding invoice item (if we can identify it)
                                 const tripDate = format(new Date(trip.date), "MMM d, yyyy");
                                 const itemIndex = invoiceItems.findIndex(
                                   item => item.description.includes(tripDate)
@@ -983,7 +951,6 @@ export default function Invoices() {
         </DialogContent>
       </Dialog>
 
-      {/* View Invoice Dialog */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh]">
           <DialogHeader>
@@ -1164,7 +1131,6 @@ export default function Invoices() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1249,7 +1215,6 @@ export default function Invoices() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
