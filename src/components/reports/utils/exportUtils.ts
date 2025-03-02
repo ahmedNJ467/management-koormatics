@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -24,19 +23,19 @@ export const flattenData = (data: any[]) => {
   });
 };
 
-// Format client with passengers for export
+// Format client with passengers for export - improved spacious format
 export const formatClientWithPassengers = (trip: any) => {
   let clientDisplay = trip.clients?.name || 'N/A';
   
   // Add organization type if available
   if (trip.client_type === 'organization') {
-    clientDisplay += '\nOrganization';
+    clientDisplay += '\n(Organization)';
     
-    // Add passenger count and list if available
+    // Add passenger list if available with better spacing
     if (trip.passengers && trip.passengers.length > 0) {
-      clientDisplay += `\n${trip.passengers.length} passengers`;
+      clientDisplay += '\n\nPassengers:';
       trip.passengers.forEach((passenger: string) => {
-        clientDisplay += `\n- ${passenger}`;
+        clientDisplay += `\n${passenger}`;
       });
     }
   }
@@ -44,7 +43,7 @@ export const formatClientWithPassengers = (trip: any) => {
   return clientDisplay;
 };
 
-// Export to PDF
+// Export to PDF with improved spacious layout
 export const exportToPDF = (data: any[], title: string, filename: string) => {
   if (!data || data.length === 0) return;
   
@@ -54,14 +53,19 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
     format: 'letter'
   });
   
-  doc.setFontSize(18);
-  doc.text(title, 0.5, 0.8);
-  doc.setFontSize(11);
-  doc.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, 0.5, 1.2);
+  // Set up document margins and spacing
+  const pageMargin = 0.5;
   
-  doc.setFontSize(14);
+  // Title and header section
+  doc.setFontSize(22);
+  doc.text(title, pageMargin, 1.0);
+  
+  doc.setFontSize(12);
+  doc.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, pageMargin, 1.4);
+  
+  doc.setFontSize(18);
   doc.setTextColor(0, 51, 102);
-  doc.text("FLEET MANAGEMENT DEPARTMENT", doc.internal.pageSize.width / 2, 0.4, { align: 'center' });
+  doc.text("FLEET MANAGEMENT DEPARTMENT", doc.internal.pageSize.width / 2, 0.6, { align: 'center' });
   
   const flattenedData = flattenData(data);
   
@@ -88,7 +92,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       trip.pickup_location || 'N/A',
       trip.dropoff_location || 'N/A',
       trip.time ? `${trip.time} - ${trip.return_time || 'N/A'}` : 'N/A',
-      trip.flight_info || 'N/A',
+      trip.flight_number ? `${trip.airline || ''} ${trip.flight_number || ''} ${trip.terminal ? `(${trip.terminal})` : ''}`.trim() : 'N/A',
       `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
       trip.drivers?.name || 'N/A'
     ]);
@@ -151,36 +155,76 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
     );
   }
 
+  // Create a more spacious table
   autoTable(doc, {
     head: [tableHeaders],
     body: tableData,
-    startY: 1.5,
+    startY: 1.8,
     styles: {
-      fontSize: 9,
-      cellPadding: 0.1,
+      fontSize: 10,
+      cellPadding: { top: 0.15, right: 0.1, bottom: 0.15, left: 0.1 },
       lineWidth: 0.1,
-      lineColor: [200, 200, 200]
+      lineColor: [200, 200, 200],
+      minCellHeight: 0.4
     },
     headStyles: {
-      fillColor: [66, 139, 202],
+      fillColor: [41, 128, 185],
       textColor: 255,
       fontStyle: 'bold',
+      halign: 'center',
+      cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245],
+      fillColor: [240, 240, 240],
     },
-    margin: { top: 1.5, left: 0.5, right: 0.5, bottom: 0.5 },
+    margin: { top: 1.8, left: pageMargin, right: pageMargin, bottom: 0.5 },
     tableWidth: 'auto',
+    columnStyles: {
+      1: { // Client column (index 1)
+        cellWidth: 2.5, // Make Client column wider
+        cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
+      },
+    },
     didDrawCell: (data) => {
-      // Customize cell rendering as needed
+      // Apply special formatting for client column with passengers
       if (data.section === 'body' && data.column.index === 1) {
-        // Apply special formatting to client column (index 1)
-        const cell = data.cell;
-        const text = cell.text;
-        
-        if (text.includes('\n')) {
-          // For multiline content, adjust cell padding
-          doc.setFontSize(8);
+        const content = data.cell.text.join('\n');
+        if (content.includes('(Organization)')) {
+          // If it's an organization with passengers, adjust formatting
+          if (content.includes('Passengers:')) {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            
+            // Get cell dimensions
+            const cell = data.cell;
+            const x = cell.x + 0.1;
+            let y = cell.y + 0.3;
+            
+            // Clear the cell and redraw text with custom formatting
+            const textLines = content.split('\n');
+            
+            // Draw organization name with bold
+            doc.setFont('helvetica', 'bold');
+            doc.text(textLines[0], x, y);
+            y += 0.25;
+            
+            // Draw organization label
+            doc.setFont('helvetica', 'italic');
+            doc.text(textLines[1], x, y);
+            y += 0.35;
+            
+            // Draw passengers header
+            doc.setFont('helvetica', 'bold');
+            doc.text(textLines[3], x, y);
+            y += 0.3;
+            
+            // Draw passenger names with normal font
+            doc.setFont('helvetica', 'normal');
+            for (let i = 4; i < textLines.length; i++) {
+              doc.text(textLines[i], x + 0.15, y);
+              y += 0.25;
+            }
+          }
         }
       }
     },
@@ -188,7 +232,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       const pageSize = doc.internal.pageSize;
       const pageHeight = pageSize.height;
       
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setTextColor(100);
       
       const pageNumber = doc.getNumberOfPages();
@@ -201,7 +245,7 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       
       doc.text(
         `Generated: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`,
-        pageSize.width - 0.5,
+        pageSize.width - pageMargin,
         pageHeight - 0.3,
         { align: 'right' }
       );
