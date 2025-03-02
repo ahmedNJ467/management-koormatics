@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -59,9 +59,8 @@ import {
   TripType,
   Trip,
   DisplayTrip,
-  Driver,
-  Vehicle,
-  Client,
+  tripTypeDisplayMap,
+  TripAssignment
 } from "@/lib/types";
 import { TripMessageData, TripAssignmentData } from "@/components/trips/types";
 
@@ -87,6 +86,20 @@ const getLastDayOfMonth = (date: Date) => endOfMonth(date);
 // Helper function to generate an array of dates within a specified range
 const getDaysInInterval = (start: Date, end: Date) => {
   return eachDayOfInterval({ start, end });
+};
+
+// Placeholder components for CreateTripForm, EditTripForm, and TripMessages
+// These would normally be imported from their respective files
+const CreateTripForm = ({ clients, vehicles, drivers, onCreate, onClose }) => {
+  return <div>Create Trip Form</div>;
+};
+
+const EditTripForm = ({ trip, clients, vehicles, drivers, onEdit, onClose }) => {
+  return <div>Edit Trip Form</div>;
+};
+
+const TripMessages = ({ trip, messages, onSendMessage, onClose }) => {
+  return <div>Trip Messages</div>;
 };
 
 const Trips = () => {
@@ -926,3 +939,50 @@ const Trips = () => {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Driver Acceptance Dialog */}
+      <AlertDialog open={isDriverAcceptanceDialogOpen} onOpenChange={setIsDriverAcceptanceDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Driver Assignment Response</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to accept or reject this assignment?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeDriverAcceptanceDialog}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="mr-2"
+              onClick={() => handleDriverResponse("rejected")}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Reject
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => handleDriverResponse("accepted")}
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Accept
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default Trips;
