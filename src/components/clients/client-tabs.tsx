@@ -66,8 +66,8 @@ export function ClientTabs({
               <ClientCard 
                 key={client.id}
                 client={client}
-                contactsCount={contactCounts?.[client.id]}
-                membersCount={memberCounts?.[client.id]}
+                contactsCount={client.type === "organization" ? contactCounts?.[client.id] : undefined}
+                membersCount={client.type === "organization" ? memberCounts?.[client.id] : undefined}
                 onClick={onClientClick}
               />
             ))
@@ -86,8 +86,8 @@ export function ClientTabs({
               <ClientCard 
                 key={client.id}
                 client={client}
-                contactsCount={contactCounts?.[client.id]}
-                membersCount={memberCounts?.[client.id]}
+                contactsCount={client.type === "organization" ? contactCounts?.[client.id] : undefined}
+                membersCount={client.type === "organization" ? memberCounts?.[client.id] : undefined}
                 onClick={onClientClick}
                 showActiveContractBadge={true}
               />
@@ -107,6 +107,8 @@ export function ClientTabs({
               <ClientCard
                 key={client.id}
                 client={client}
+                contactsCount={client.type === "organization" ? contactCounts?.[client.id] : undefined}
+                membersCount={client.type === "organization" ? memberCounts?.[client.id] : undefined}
                 onClick={onClientClick}
               />
             ))

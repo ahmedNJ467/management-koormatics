@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,10 @@ export function ClientCard({ client, contactsCount, membersCount, onClick, showA
   const cardClasses = client.has_active_contract 
     ? "cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500"
     : "cursor-pointer hover:shadow-md transition-shadow";
+
+  // Determine if we should show the footer with counts
+  const shouldShowCounts = client.type === "organization" && 
+    (contactsCount !== undefined || membersCount !== undefined);
 
   return (
     <Card 
@@ -91,7 +96,7 @@ export function ClientCard({ client, contactsCount, membersCount, onClick, showA
           </div>
         )}
       </CardContent>
-      {(contactsCount !== undefined || membersCount !== undefined) && (
+      {shouldShowCounts && (
         <CardFooter className="pt-2 border-t text-xs text-muted-foreground flex justify-between">
           {contactsCount !== undefined && (
             <div className="flex items-center gap-1">
