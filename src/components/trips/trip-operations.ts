@@ -25,11 +25,11 @@ export const updateTripStatus = async (
   status: TripStatus, 
   viewTrip: DisplayTrip | null, 
   setViewTrip: (trip: DisplayTrip | null) => void,
-  toast: { 
+  toast: (props: { 
     title: string;
     description: string;
     variant?: "default" | "destructive";
-  } => void,
+  }) => void,
   queryClient: QueryClient
 ) => {
   try {
@@ -78,11 +78,11 @@ export const deleteTrip = async (
   setEditTrip: (trip: DisplayTrip | null) => void,
   setDeleteDialogOpen: (open: boolean) => void,
   setTripToDelete: (id: string | null) => void,
-  toast: { 
+  toast: (props: { 
     title: string;
     description: string;
     variant?: "default" | "destructive";
-  } => void,
+  }) => void,
   queryClient: QueryClient
 ) => {
   if (!tripToDelete) return;
@@ -177,11 +177,11 @@ export const handleSaveTrip = async (
   editTrip: DisplayTrip | null,
   setEditTrip: (trip: DisplayTrip | null) => void,
   setBookingOpen: (open: boolean) => void,
-  toast: { 
+  toast: (props: { 
     title: string;
     description: string;
     variant?: "default" | "destructive";
-  } => void,
+  }) => void,
   queryClient: QueryClient
 ) => {
   event.preventDefault();
@@ -308,11 +308,11 @@ export const handleAssignDriver = async (
   setTripToAssign: (trip: DisplayTrip | null) => void,
   setAssignDriver: (id: string) => void,
   setAssignNote: (note: string) => void,
-  toast: { 
+  toast: (props: { 
     title: string;
     description: string;
     variant?: "default" | "destructive";
-  } => void,
+  }) => void,
   queryClient: QueryClient
 ) => {
   if (!tripToAssign || !assignDriver) return;
@@ -364,11 +364,11 @@ export const handleSendMessage = async (
   tripToMessage: DisplayTrip | null,
   newMessage: string,
   setNewMessage: (message: string) => void,
-  toast: { 
+  toast: (props: { 
     title: string;
     description: string;
     variant?: "default" | "destructive";
-  } => void,
+  }) => void,
   queryClient: QueryClient
 ) => {
   if (!tripToMessage || !newMessage.trim()) return;
