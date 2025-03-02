@@ -1,13 +1,14 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { FileText, MessageCircle, UserCircle, MapPin, Calendar } from "lucide-react";
+import { FileText, MessageCircle, UserCircle, MapPin, Calendar, Users } from "lucide-react";
 import { DisplayTrip } from "@/lib/types/trip";
 import { TripMessage } from "@/lib/types/trip/communication";
 import { TripAssignment } from "@/lib/types/trip/communication";
 import { MessagesTab } from "@/components/trips/tabs/MessagesTab";
 import { AssignmentsTab } from "@/components/trips/tabs/AssignmentsTab";
 import { DetailsTab } from "@/components/trips/tabs/DetailsTab";
+import { PassengersTab } from "@/components/trips/tabs/PassengersTab";
 import { TripDetailHeader } from "@/components/trips/TripDetailHeader";
 import { TripDetailActions } from "@/components/trips/TripDetailActions";
 import { Driver } from "@/lib/types";
@@ -62,6 +63,10 @@ export function TripDetailView({
     }
   };
 
+  // Check if this is an organization client trip
+  const isOrganizationTrip = viewTrip.client_type === "organization";
+  const hasPassengers = isOrganizationTrip && Array.isArray(viewTrip.passengers) && viewTrip.passengers.length > 0;
+
   return (
     <div className="w-full">
       <div className="bg-gradient-to-r from-slate-900/50 to-indigo-950/50 dark:from-indigo-950/70 dark:to-purple-950/70 p-6 rounded-lg mb-6 border border-slate-800/50">
@@ -80,6 +85,16 @@ export function TripDetailView({
           <Badge variant="outline" className="bg-indigo-900/40 text-indigo-300 hover:bg-indigo-900/40 border-indigo-700">
             {tripTypeDisplayMap[viewTrip.type]}
           </Badge>
+          {isOrganizationTrip && (
+            <Badge variant="outline" className="bg-purple-900/40 text-purple-300 hover:bg-purple-900/40 border-purple-700">
+              Organization
+            </Badge>
+          )}
+          {hasPassengers && (
+            <Badge variant="outline" className="bg-teal-900/40 text-teal-300 hover:bg-teal-900/40 border-teal-700">
+              {viewTrip.passengers?.length} {viewTrip.passengers?.length === 1 ? 'Passenger' : 'Passengers'}
+            </Badge>
+          )}
         </div>
         
         <DialogDescription className="text-sm text-slate-400 mb-2">
@@ -95,6 +110,12 @@ export function TripDetailView({
             <FileText className="h-4 w-4 mr-2" />
             Details
           </TabsTrigger>
+          {isOrganizationTrip && (
+            <TabsTrigger value="passengers" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
+              <Users className="h-4 w-4 mr-2" />
+              Passengers
+            </TabsTrigger>
+          )}
           <TabsTrigger value="messages" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
             <MessageCircle className="h-4 w-4 mr-2" />
             Messages
@@ -107,6 +128,11 @@ export function TripDetailView({
         <TabsContent value="details" className="space-y-4 mt-4">
           <DetailsTab viewTrip={viewTrip} />
         </TabsContent>
+        {isOrganizationTrip && (
+          <TabsContent value="passengers" className="space-y-4 mt-4">
+            <PassengersTab viewTrip={viewTrip} />
+          </TabsContent>
+        )}
         <TabsContent value="messages" className="space-y-4 mt-4">
           <MessagesTab 
             messages={messages}
