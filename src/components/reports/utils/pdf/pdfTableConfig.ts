@@ -19,7 +19,7 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
       fillColor: pdfColors.primary as [number, number, number],
       textColor: [255, 255, 255] as [number, number, number],
       fontStyle: 'bold',
-      halign: 'center',
+      halign: 'left', // Align header text to left to match body cells
       cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
     },
     alternateRowStyles: {
@@ -28,25 +28,41 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
     margin: { top: 2.0, left: 0.5, right: 0.5, bottom: 0.8 },
     tableWidth: 'auto',
     columnStyles: {
+      0: { // Date column (index 0)
+        cellWidth: 1.0,
+      },
       1: { // Client column (index 1)
-        cellWidth: 2.5, // Make Client column wider
+        cellWidth: 2.0, // Adjusted width to align with header
         cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
         // Don't set fillColor here, we'll handle it in didDrawCell
         fontStyle: 'normal',
       },
-      2: { // Service Type column (index 2) - reducing right padding and setting specific width
-        cellWidth: 1.8,
+      2: { // Service Type column (index 2)
+        cellWidth: 1.9, // Adjusted width to align with header
         cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
       },
-      // Status column styling
+      3: { // Pick-up column (index 3)
+        cellWidth: 1.4,
+      },
+      4: { // Drop-off column (index 4)
+        cellWidth: 1.4,
+      },
+      5: { // Vehicle column (index 5)
+        cellWidth: 1.5,
+      },
+      6: { // Driver column (index 6)
+        cellWidth: 1.3,
+      },
+      7: { // Status column (index 7)
+        cellWidth: 1.2,
+        fontStyle: 'bold'
+      },
+      // Status column styling for other report types
       ...(filename === 'vehicles-report' ? {
         5: { fontStyle: 'bold' }
       } : {}),
       ...(filename === 'maintenance-report' ? {
         3: { fontStyle: 'bold' }
-      } : {}),
-      ...(filename === 'trips-report' ? {
-        7: { fontStyle: 'bold' } // Status column for trips is now at index 7
       } : {})
     },
     didDrawCell: (data) => {

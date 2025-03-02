@@ -34,18 +34,28 @@ export function generateTableData(data: any[], reportType: string) {
           }
         }
 
+        // Format date for better readability
+        const formattedDate = formatDateString(trip.date);
+        
         // Compact the service type display to reduce space between columns
         const serviceType = trip.display_type || trip.service_type || 'N/A';
+        
+        // Format other fields for consistency
+        const pickupLocation = trip.pickup_location || 'N/A';
+        const dropoffLocation = trip.dropoff_location || 'N/A';
+        const vehicle = `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A';
+        const driver = trip.drivers?.name || 'Not Assigned';
+        const status = trip.status || 'Scheduled';
 
         return [
-          formatDateString(trip.date),
+          formattedDate,
           clientDisplay,
           serviceType,
-          trip.pickup_location || 'N/A',
-          trip.dropoff_location || 'N/A',
-          `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
-          trip.drivers?.name || 'Not Assigned',
-          trip.status || 'Scheduled'
+          pickupLocation,
+          dropoffLocation,
+          vehicle,
+          driver,
+          status
         ];
       });
       break;

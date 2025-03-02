@@ -79,7 +79,7 @@ export function formatStatusCell(doc: jsPDF, data: any, filename: string): void 
     }
   }
   
-  // For trips report - status column (now at index 7 since we moved service type after client)
+  // For trips report - status column (now at index 7)
   if (filename === 'trips-report' && data.column.index === 7) {
     if (cellContent.includes('completed')) {
       doc.setTextColor(39, 174, 96); // Green for completed
