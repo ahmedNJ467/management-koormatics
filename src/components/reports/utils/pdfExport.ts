@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { flattenData, formatClientWithPassengers, getVehicleMaintenanceCosts } from "./dataUtils";
 
-// Export to PDF with improved spacious layout
+// Export to PDF with modern UI and color scheme
 export const exportToPDF = (data: any[], title: string, filename: string) => {
   if (!data || data.length === 0) return;
   
@@ -14,53 +14,98 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
     format: 'letter'
   });
   
+  // Modern color scheme
+  const colors = {
+    primary: [41, 128, 185],     // #2980b9 - Bright blue
+    secondary: [142, 68, 173],   // #8e44ad - Purple
+    accent: [39, 174, 96],       // #27ae60 - Green
+    light: [236, 240, 241],      // #ecf0f1 - Light gray
+    dark: [52, 73, 94],          // #34495e - Dark blue-gray
+    text: [44, 62, 80],          // #2c3e50 - Almost black
+    headerBg: [52, 152, 219],    // #3498db - Light blue
+    rowAlt: [245, 246, 250]      // #f5f6fa - Very light blue-gray
+  };
+  
   // Set up document margins and spacing
   const pageMargin = 0.5;
   
-  // Title and header section
-  doc.setFontSize(22);
-  doc.text(title, pageMargin, 1.0);
+  // Add a gradient header background
+  doc.setFillColor(...colors.headerBg);
+  doc.rect(0, 0, doc.internal.pageSize.width, 1.2, 'F');
   
-  doc.setFontSize(12);
-  doc.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, pageMargin, 1.4);
+  // Add company logo/name styled
+  doc.setFontSize(24);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.text("FLEET MANAGEMENT", doc.internal.pageSize.width / 2, 0.6, { align: 'center' });
   
+  // Add report title
   doc.setFontSize(18);
-  doc.setTextColor(0, 51, 102);
-  doc.text("FLEET MANAGEMENT DEPARTMENT", doc.internal.pageSize.width / 2, 0.6, { align: 'center' });
+  doc.setTextColor(255, 255, 255);
+  doc.text(title, doc.internal.pageSize.width / 2, 0.9, { align: 'center' });
   
-  const flattenedData = flattenData(data);
+  // Add decorative element - line
+  doc.setDrawColor(...colors.accent);
+  doc.setLineWidth(0.03);
+  const lineWidth = 4;
+  const startX = (doc.internal.pageSize.width - lineWidth) / 2;
+  doc.line(startX, 1.1, startX + lineWidth, 1.1);
+  
+  // Add date with modern style
+  doc.setFontSize(11);
+  doc.setTextColor(...colors.dark);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generated on ${format(new Date(), 'MMMM dd, yyyy')}`, pageMargin, 1.6);
   
   const { tableHeaders, tableData } = generateTableData(data, filename);
 
-  // Create a more spacious table
+  // Create a modern styled table
   autoTable(doc, {
     head: [tableHeaders],
     body: tableData,
-    startY: 1.8,
+    startY: 2.0,
     styles: {
       fontSize: 10,
       cellPadding: { top: 0.15, right: 0.1, bottom: 0.15, left: 0.1 },
-      lineWidth: 0.1,
-      lineColor: [200, 200, 200],
-      minCellHeight: 0.4
+      lineWidth: 0.1, 
+      lineColor: [220, 220, 220],
+      textColor: [...colors.text],
+      minCellHeight: 0.4,
+      font: 'helvetica'
     },
     headStyles: {
-      fillColor: [41, 128, 185],
+      fillColor: [...colors.primary],
       textColor: 255,
       fontStyle: 'bold',
       halign: 'center',
       cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
     },
     alternateRowStyles: {
-      fillColor: [240, 240, 240],
+      fillColor: [...colors.rowAlt],
     },
-    margin: { top: 1.8, left: pageMargin, right: pageMargin, bottom: 0.5 },
+    margin: { top: 2.0, left: pageMargin, right: pageMargin, bottom: 0.8 },
     tableWidth: 'auto',
     columnStyles: {
       1: { // Client column (index 1)
         cellWidth: 2.5, // Make Client column wider
         cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
       },
+      // Add color coding for status column based on report type
+      ...(filename === 'vehicles-report' ? {
+        5: { // Status column for vehicles-report
+          fontStyle: 'bold',
+        }
+      } : {}),
+      ...(filename === 'maintenance-report' ? {
+        3: { // Status column for maintenance-report
+          fontStyle: 'bold',
+        }
+      } : {}),
+      ...(filename === 'trips-report' ? {
+        2: { // Service type column styling
+          fillColor: [...colors.light]
+        }
+      } : {})
     },
     didDrawCell: (data) => {
       // Apply special formatting for client column with passengers
@@ -82,25 +127,60 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
             
             // Draw organization name with bold
             doc.setFont('helvetica', 'bold');
+            doc.setTextColor(41, 128, 185); // Use primary blue for org name
             doc.text(textLines[0], x, y);
             y += 0.25;
             
             // Draw organization label
             doc.setFont('helvetica', 'italic');
+            doc.setTextColor(142, 68, 173); // Use secondary purple for label
             doc.text(textLines[1], x, y);
             y += 0.35;
             
             // Draw passengers header
             doc.setFont('helvetica', 'bold');
+            doc.setTextColor(39, 174, 96); // Use accent green for header
             doc.text(textLines[3], x, y);
             y += 0.3;
             
             // Draw passenger names with normal font
             doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...colors.text); // Back to normal text color
             for (let i = 4; i < textLines.length; i++) {
               doc.text(textLines[i], x + 0.15, y);
               y += 0.25;
             }
+          }
+        }
+      }
+      
+      // Color code status values based on their values
+      if (data.section === 'body') {
+        const cellContent = data.cell.text.join('').toLowerCase();
+        
+        // For vehicles and drivers reports - status column
+        if ((filename === 'vehicles-report' && data.column.index === 5) || 
+            (filename === 'drivers-report' && data.column.index === 5)) {
+          // Color code based on status
+          if (cellContent.includes('active')) {
+            doc.setTextColor(39, 174, 96); // Green for active
+          } else if (cellContent.includes('maintenance') || cellContent.includes('repair')) {
+            doc.setTextColor(230, 126, 34); // Orange for maintenance/repair
+          } else if (cellContent.includes('inactive') || cellContent.includes('out of service')) {
+            doc.setTextColor(231, 76, 60); // Red for inactive/out of service
+          }
+        }
+        
+        // For maintenance report - status column
+        if (filename === 'maintenance-report' && data.column.index === 3) {
+          if (cellContent.includes('completed')) {
+            doc.setTextColor(39, 174, 96); // Green for completed
+          } else if (cellContent.includes('scheduled')) {
+            doc.setTextColor(52, 152, 219); // Blue for scheduled
+          } else if (cellContent.includes('in progress')) {
+            doc.setTextColor(230, 126, 34); // Orange for in progress
+          } else if (cellContent.includes('pending')) {
+            doc.setTextColor(155, 89, 182); // Purple for pending
           }
         }
       }
@@ -109,8 +189,13 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
       const pageSize = doc.internal.pageSize;
       const pageHeight = pageSize.height;
       
+      // Add footer with gradient
+      doc.setFillColor(...colors.light);
+      doc.rect(0, pageHeight - 0.6, pageSize.width, 0.6, 'F');
+      
+      // Add page number in footer
       doc.setFontSize(9);
-      doc.setTextColor(100);
+      doc.setTextColor(...colors.dark);
       
       const pageNumber = doc.getNumberOfPages();
       doc.text(
@@ -120,11 +205,21 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
         { align: 'center' }
       );
       
+      // Add timestamp
       doc.text(
         `Generated: ${format(new Date(), 'MM/dd/yyyy HH:mm:ss')}`,
         pageSize.width - pageMargin,
         pageHeight - 0.3,
         { align: 'right' }
+      );
+      
+      // Add company info
+      doc.setTextColor(...colors.primary);
+      doc.text(
+        'Fleet Management System',
+        pageMargin,
+        pageHeight - 0.3,
+        { align: 'left' }
       );
     }
   });
@@ -223,3 +318,4 @@ function generateTableData(data: any[], filename: string) {
   
   return { tableHeaders, tableData };
 }
+
