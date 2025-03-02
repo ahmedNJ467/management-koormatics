@@ -2,6 +2,9 @@
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
 
+// This is what the database accepts for the service_type column
+export type DbServiceType = 'airport_pickup' | 'airport_dropoff' | 'full_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
+
 export interface TripMessage {
   id: string;
   trip_id: string;
@@ -35,7 +38,7 @@ export interface DbTrip {
   date: string;
   time?: string;             // start_time in application
   return_time?: string;      // end_time in application
-  service_type?: string;   // type in application
+  service_type?: DbServiceType;   // type in application
   status?: TripStatus;       // Not in database, derived from special_instructions
   amount: number;
   pickup_location?: string;
@@ -70,7 +73,7 @@ export interface Trip {
   // Additional fields from database
   time?: string;              // Alias for start_time
   return_time?: string;       // Alias for end_time
-  service_type?: string;      // Alias for type
+  service_type?: DbServiceType;      // Alias for type
   special_instructions?: string; // Alias for notes
   airline?: string;
   flight_number?: string;
@@ -144,12 +147,31 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   };
 };
 
+// Map our application TripType to the database-acceptable DbServiceType
+export const mapTripTypeToDbServiceType = (type: TripType): DbServiceType => {
+  switch (type) {
+    case 'airport_pickup':
+    case 'airport_dropoff':
+    case 'round_trip':
+    case 'security_escort':
+    case 'one_way_transfer':
+    case 'full_day':
+      return type as DbServiceType;
+    case 'hourly':
+    case 'multi_day':
+    case 'other':
+    default:
+      // Default to a service type the database accepts
+      return 'other' as DbServiceType;
+  }
+};
+
 export const mapTripToDatabaseFields = (trip: Partial<Trip>): Partial<DbTrip> => {
   // Create a new object with the database field names
   const dbTrip: Partial<DbTrip> = {
     ...trip,
     // Map Trip interface fields to database fields
-    service_type: trip.type,
+    service_type: trip.type ? mapTripTypeToDbServiceType(trip.type) : undefined,
     time: trip.start_time,
     return_time: trip.end_time,
     special_instructions: trip.notes,

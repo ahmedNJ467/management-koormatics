@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -26,9 +25,11 @@ import { Plus, Search, Calendar, Table as TableIcon } from "lucide-react";
 import {
   TripStatus,
   TripType,
+  DbServiceType,
   Trip,
   DisplayTrip,
-  mapDatabaseFieldsToTrip
+  mapDatabaseFieldsToTrip,
+  mapTripTypeToDbServiceType
 } from "@/lib/types/trip";
 import { TripCalendarView } from "@/components/trips/TripCalendarView";
 import { TripListView } from "@/components/trips/TripListView";
@@ -313,7 +314,8 @@ export default function Trips() {
       }
       
       const formServiceType = formData.get("service_type") as string;
-      const dbServiceType = serviceTypeMap[formServiceType] || "other";
+      const tripType: TripType = serviceTypeMap[formServiceType] || "other";
+      const dbServiceType: DbServiceType = mapTripTypeToDbServiceType(tripType);
       
       const formTime = formData.get("time") as string;
       const formReturnTime = formData.get("return_time") as string;
@@ -346,7 +348,8 @@ export default function Trips() {
     const formData = new FormData(form);
     
     const uiServiceType = formData.get("service_type") as string;
-    const dbServiceType: TripType = (serviceTypeMap[uiServiceType] || "other") as TripType;
+    const tripType: TripType = (serviceTypeMap[uiServiceType] || "other") as TripType;
+    const dbServiceType: DbServiceType = mapTripTypeToDbServiceType(tripType);
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
     // Add flight details to notes if it's an airport trip
