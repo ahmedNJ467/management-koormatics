@@ -72,7 +72,6 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   // Memoize the handleFormSubmit function to prevent recreation on each render
   const handleFormSubmit = useCallback(async (values: any) => {
     try {
-      setIsSubmitting(true);
       const result = await submitFormFn({
         client,
         values,
@@ -82,13 +81,15 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         contacts,
         members,
         uploadDocumentFn: uploadClientDocument,
-        setIsSubmitting
+        setIsSubmitting,
+        onSuccess: () => {
+          onOpenChange(false); // Close the dialog on success
+        }
       });
       
       return result;
     } catch (error) {
       console.error("Error submitting form:", error);
-      setIsSubmitting(false);
       return false;
     }
   }, [
@@ -100,7 +101,8 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     members,
     uploadClientDocument,
     setIsSubmitting,
-    submitFormFn
+    submitFormFn,
+    onOpenChange
   ]);
 
   const removeDocument = useCallback((docId: string) => {

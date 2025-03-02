@@ -54,6 +54,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   const viewMember = (index: number) => {
     setViewingMemberIndex(index);
     setIsViewingMember(true);
+    // Don't show a toast when just viewing a member
   };
 
   const cancelMemberEdit = () => {

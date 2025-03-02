@@ -23,6 +23,7 @@ interface Client {
   }>;
   created_at?: string;
   updated_at?: string;
+  has_active_contract?: boolean;
 }
 
 export function useClientData() {
@@ -41,7 +42,30 @@ export function useClientData() {
         .order('name');
       
       if (error) throw error;
-      return data as Client[];
+      
+      // Get clients with active contracts (from trips table)
+      const { data: activeContractData, error: contractError } = await supabase
+        .from('trips')
+        .select('client_id')
+        .eq('status', 'ongoing')
+        .is('invoice_id', null); // Not invoiced yet
+      
+      if (contractError) {
+        console.error("Error fetching active contracts:", contractError);
+      }
+      
+      // Get unique client IDs with active contracts
+      const clientsWithActiveContracts = new Set(
+        activeContractData?.map(trip => trip.client_id) || []
+      );
+      
+      // Add has_active_contract flag to clients
+      const clientsWithFlag = (data || []).map(client => ({
+        ...client,
+        has_active_contract: clientsWithActiveContracts.has(client.id)
+      }));
+      
+      return clientsWithFlag as Client[];
     },
   });
 
@@ -189,8 +213,29 @@ export function useClientData() {
     };
   }, [queryClient]);
 
+  // Subscribe to real-time changes for trips (to update active contracts)
+  useEffect(() => {
+    const channel = supabase
+      .channel('trips-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'trips' }, 
+        () => {
+          // Force refresh the clients data when any trip changes occur
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const activeClients = clients?.filter(client => !client.is_archived) || [];
   const archivedClients = clients?.filter(client => client.is_archived) || [];
+  const activeContractClients = clients?.filter(client => 
+    !client.is_archived && client.has_active_contract
+  ) || [];
 
   const getFilteredClients = (clientList: Client[]) => {
     return clientList.filter((client) => {
@@ -206,6 +251,7 @@ export function useClientData() {
 
   const filteredActiveClients = getFilteredClients(activeClients);
   const filteredArchivedClients = getFilteredClients(archivedClients);
+  const filteredActiveContractClients = getFilteredClients(activeContractClients);
 
   return {
     clients,
@@ -220,7 +266,9 @@ export function useClientData() {
     setActiveTab,
     activeClients,
     archivedClients,
+    activeContractClients,
     filteredActiveClients,
-    filteredArchivedClients
+    filteredArchivedClients,
+    filteredActiveContractClients
   };
 }

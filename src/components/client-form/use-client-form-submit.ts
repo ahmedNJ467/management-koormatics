@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import { ClientDocument } from "./types";
 import { useClientSave } from "./use-client-save";
+import { useToast } from "@/hooks/use-toast";
 
 interface FormSubmitOptions {
   client: any | undefined;
@@ -13,10 +14,12 @@ interface FormSubmitOptions {
   members: any[];
   uploadDocumentFn: (files: FileList, clientId: string) => Promise<ClientDocument[]>;
   setIsSubmitting: (value: boolean) => void;
+  onSuccess?: () => void;
 }
 
 export function useClientFormSubmit() {
   const { saveClient } = useClientSave();
+  const { toast } = useToast();
 
   const handleSubmit = useCallback(async ({
     client,
@@ -27,7 +30,8 @@ export function useClientFormSubmit() {
     contacts,
     members,
     uploadDocumentFn,
-    setIsSubmitting
+    setIsSubmitting,
+    onSuccess
   }: FormSubmitOptions) => {
     try {
       setIsSubmitting(true);
@@ -41,14 +45,24 @@ export function useClientFormSubmit() {
         members,
         uploadDocumentFn
       );
+      
+      if (result && onSuccess) {
+        onSuccess();
+      }
+      
       return result;
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save client. Please try again.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setIsSubmitting(false);
     }
-  }, [saveClient]);
+  }, [saveClient, toast]);
 
   return { handleSubmit };
 }

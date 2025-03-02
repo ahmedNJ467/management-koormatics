@@ -27,6 +27,7 @@ interface Client {
     url: string;
     uploadedAt: string;
   }>;
+  has_active_contract?: boolean;
 }
 
 export default function Clients() {
@@ -45,8 +46,10 @@ export default function Clients() {
     setActiveTab,
     activeClients,
     archivedClients,
+    activeContractClients,
     filteredActiveClients,
     filteredArchivedClients,
+    filteredActiveContractClients,
     contactCounts,
     memberCounts
   } = useClientData();
@@ -117,8 +120,10 @@ export default function Clients() {
         setActiveTab={setActiveTab}
         activeClients={activeClients}
         archivedClients={archivedClients}
+        activeContractClients={activeContractClients}
         filteredActiveClients={filteredActiveClients}
         filteredArchivedClients={filteredArchivedClients}
+        filteredActiveContractClients={filteredActiveContractClients}
         contactCounts={contactCounts}
         memberCounts={memberCounts}
         onClientClick={handleClientClick}
