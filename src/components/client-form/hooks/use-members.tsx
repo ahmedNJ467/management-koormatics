@@ -143,6 +143,7 @@ export function useMembers(initialMembers: MemberFormValues[], onMembersChange: 
 
   return {
     memberFormState,
+    setMemberFormState,
     editingMemberIndex,
     isViewingMember,
     viewingMemberIndex,

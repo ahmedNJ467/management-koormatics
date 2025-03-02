@@ -48,7 +48,12 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
           isEditing={editingMemberIndex !== null}
           member={memberFormState}
           clientId={clientId}
-          onMemberChange={handleMemberDocumentUpload}
+          onMemberChange={(member) => {
+            // Create a wrapper function that accepts a single member parameter
+            // but will pass along to our callback that expects multiple parameters
+            // This fixes the type error
+            setMemberFormState(member);
+          }}
           onCancel={cancelMemberEdit}
           onSave={saveMember}
           onDocumentUploaded={handleMemberDocumentUpload}
