@@ -1,6 +1,6 @@
 
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day';
+export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
 
 export interface TripMessage {
   id: string;
@@ -44,6 +44,15 @@ export interface Trip {
   invoice_id?: string;
   created_at?: string;
   updated_at?: string;
+  // Add database field mappings
+  time?: string;            // Corresponds to start_time
+  return_time?: string;     // Corresponds to end_time
+  service_type?: string;    // Corresponds to type
+  special_instructions?: string; // Corresponds to notes
+  airline?: string;
+  flight_number?: string;
+  terminal?: string;
+  is_recurring?: boolean;
 }
 
 export interface DisplayTrip extends Trip {
@@ -53,15 +62,9 @@ export interface DisplayTrip extends Trip {
   driver_name: string;
   driver_avatar?: string;
   driver_contact?: string;
-  // These fields are for UI display only and not stored directly in the database
-  time?: string; // For displaying formatted start_time
-  return_time?: string; // For displaying formatted end_time
-  flight_number?: string;
-  airline?: string;
-  terminal?: string;
-  special_notes?: string;
-  is_recurring?: boolean; // Added for UI display purposes
-  ui_service_type?: string; // Added to store the UI service type corresponding to database type
+  // Additional UI display fields
+  special_notes?: string;  // Alternative to notes/special_instructions
+  ui_service_type?: string; // UI-friendly display of type
 }
 
 // Mapping of trip types to UI-friendly display names
@@ -71,5 +74,51 @@ export const tripTypeDisplayMap: Record<TripType, string> = {
   'other': 'Other Service',
   'hourly': 'Hourly Service',
   'full_day': 'Full Day',
-  'multi_day': 'Multi Day'
+  'multi_day': 'Multi Day',
+  'one_way_transfer': 'One Way Transfer',
+  'round_trip': 'Round Trip',
+  'security_escort': 'Security Escort'
+};
+
+// Utility function to convert database fields to Trip interface
+export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
+  return {
+    ...dbTrip,
+    // Map database fields to Trip interface
+    type: dbTrip.service_type || 'other',
+    status: dbTrip.status || 'scheduled',
+    start_time: dbTrip.time,
+    end_time: dbTrip.return_time,
+    notes: dbTrip.special_instructions,
+    // Additional display fields
+    client_name: dbTrip.clients?.name || "Unknown Client",
+    client_type: dbTrip.clients?.type,
+    vehicle_details: dbTrip.vehicles ? 
+      `${dbTrip.vehicles.make || ""} ${dbTrip.vehicles.model || ""} (${dbTrip.vehicles.registration || ""})` : 
+      "Vehicle details not available",
+    driver_name: dbTrip.drivers?.name || "Driver not assigned",
+    driver_avatar: dbTrip.drivers?.avatar_url,
+    driver_contact: dbTrip.drivers?.contact,
+  };
+};
+
+// Utility function to convert Trip interface to database fields
+export const mapTripToDatabaseFields = (trip: Partial<Trip>): any => {
+  // Create a new object with the database field names
+  const dbTrip: any = {
+    ...trip,
+    // Map Trip interface fields to database fields
+    service_type: trip.type,
+    time: trip.start_time,
+    return_time: trip.end_time,
+    special_instructions: trip.notes,
+  };
+  
+  // Remove Trip interface fields that don't exist in the database
+  delete dbTrip.type;
+  delete dbTrip.start_time;
+  delete dbTrip.end_time;
+  delete dbTrip.notes;
+  
+  return dbTrip;
 };

@@ -4,6 +4,15 @@ import { DisplayTrip } from './trip';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'credit_card' | 'mobile_money' | 'cheque' | 'other';
 
+// Define Json type to match Supabase's Json type
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export interface InvoiceItem {
   description: string;
   quantity: number;
@@ -36,3 +45,30 @@ export interface DisplayInvoice extends Invoice {
   trips?: DisplayTrip[];
   quotation_number?: string;
 }
+
+// Helper functions for Supabase conversion
+export const prepareForSupabase = (items: InvoiceItem[]): Json => {
+  return items as unknown as Json;
+};
+
+export const convertToInvoice = (supabaseData: any): DisplayInvoice => {
+  let parsedItems: InvoiceItem[] = [];
+  try {
+    if (typeof supabaseData.items === 'string') {
+      parsedItems = JSON.parse(supabaseData.items);
+    } else if (Array.isArray(supabaseData.items)) {
+      parsedItems = supabaseData.items;
+    }
+  } catch (e) {
+    console.error("Error parsing invoice items:", e);
+  }
+
+  return {
+    ...supabaseData,
+    items: parsedItems,
+    client_name: supabaseData.clients?.name || "Unknown Client",
+    client_email: supabaseData.clients?.email || "",
+    client_address: supabaseData.clients?.address || "",
+    client_phone: supabaseData.clients?.phone || "",
+  };
+};

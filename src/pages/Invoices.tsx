@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -59,9 +58,12 @@ import {
   Invoice,
   DisplayInvoice,
   InvoiceItem,
+  Json,
+  prepareForSupabase,
+  convertToInvoice
 } from "@/lib/types/invoice";
 import { DisplayTrip } from "@/lib/types/trip";
-import { Client } from "@/components/clients/hooks/use-clients-query";
+import { Client } from "@/lib/types/client";
 
 export default function Invoices() {
   const { toast } = useToast();
@@ -100,9 +102,9 @@ export default function Invoices() {
 
       if (error) throw error;
 
-      // Handle the data conversion without excessive type nesting
+      // Handle the data conversion with proper typing
       return data.map((invoice: any) => {
-        // Process trips with explicit typing to avoid deep nesting
+        // Process trips with explicit typing 
         const tripsForInvoice = Array.isArray(invoice.trips) 
           ? invoice.trips.map((trip: any) => ({
               ...trip,
@@ -111,31 +113,16 @@ export default function Invoices() {
               client_name: invoice.clients?.name || "Unknown Client",
               vehicle_details: "Vehicle details not available",
               driver_name: "Driver not assigned",
-            }))
+            } as DisplayTrip))
           : [];
         
-        // Parse invoice items safely
-        let parsedItems: any[] = [];
-        try {
-          if (typeof invoice.items === 'string') {
-            parsedItems = JSON.parse(invoice.items);
-          } else if (Array.isArray(invoice.items)) {
-            parsedItems = invoice.items;
-          }
-        } catch (e) {
-          console.error("Error parsing invoice items:", e);
-        }
-
-        // Return a simplified object structure
-        return {
-          ...invoice,
-          items: parsedItems,
-          trips: tripsForInvoice,
-          client_name: invoice.clients?.name || "Unknown Client",
-          client_email: invoice.clients?.email || "",
-          client_address: invoice.clients?.address || "",
-          client_phone: invoice.clients?.phone || "",
-        } as DisplayInvoice; // Type assertion to simplify
+        // Use the helper function to convert invoice data
+        const displayInvoice = convertToInvoice(invoice);
+        
+        // Add the processed trips
+        displayInvoice.trips = tripsForInvoice;
+        
+        return displayInvoice;
       });
     },
   });
@@ -169,15 +156,15 @@ export default function Invoices() {
         `)
         .eq("client_id", selectedClientId)
         .is("invoice_id", null)
-        .in("status", ["completed", "in_progress"])
+        .in("service_type", ["airport_pickup", "airport_dropoff", "full_day", "one_way_transfer", "round_trip", "security_escort"])
         .order("date", { ascending: false });
 
       if (error) throw error;
 
       return data.map((trip: any) => ({
         ...trip,
-        type: trip.type || trip.service_type || 'other',
-        status: trip.status || 'scheduled',
+        type: trip.service_type || 'other',
+        status: 'scheduled',
         client_name: trip.clients?.name || "Unknown Client",
         vehicle_details: `${trip.vehicles?.make || ""} ${trip.vehicles?.model || ""} (${trip.vehicles?.registration || ""})`,
         driver_name: trip.drivers?.name || "Unknown Driver",
@@ -267,7 +254,7 @@ export default function Invoices() {
           date: formData.get("date") as string,
           due_date: formData.get("due_date") as string,
           status: formData.get("status") as InvoiceStatus,
-          items: invoiceItems,
+          items: prepareForSupabase(invoiceItems), // Use helper function
           total_amount: totalAmount,
           paid_amount: editInvoice.paid_amount,
           notes: formData.get("notes") as string || null,
@@ -294,7 +281,7 @@ export default function Invoices() {
           date: formData.get("date") as string,
           due_date: formData.get("due_date") as string,
           status: formData.get("status") as InvoiceStatus || "draft",
-          items: invoiceItems,
+          items: prepareForSupabase(invoiceItems), // Use helper function
           total_amount: totalAmount,
           paid_amount: 0,
           notes: formData.get("notes") as string || null,
