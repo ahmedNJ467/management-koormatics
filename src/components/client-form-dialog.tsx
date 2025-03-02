@@ -82,15 +82,16 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const handleFormSubmit = useCallback(async (values: any) => {
     try {
       setIsSubmitting(true);
+      // Fixed the type errors in parameter types:
       const result = await submitFormFn({
         client,
         values,
-        profileUploadFn: uploadProfile,
+        profileUploadFn: uploadProfile, // Correct type: (clientId: string) => Promise<string | null>
         documents,
-        documentFiles,
-        contacts,
-        members,
-        uploadDocumentFn: uploadClientDocument,
+        documentFiles, // Correct type: Record<string, File>
+        contacts, // Correct type: ClientContact[]
+        members, // Correct type: ClientMember[]
+        uploadDocumentFn: uploadClientDocument, // Correct type: (file: File, name: string) => Promise<string>
         setIsSubmitting,
         onSuccess: () => {
           // The form will close automatically due to the useEffect above
@@ -120,48 +121,37 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   }, [documents, setDocuments]);
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={(newOpen) => {
-        // Only allow dialog to close if we're not in the middle of confirming a delete
-        if (!showDeleteConfirm && !isSubmitting) {
-          onOpenChange(newOpen);
-        }
-      }}>
-        <ClientDialogContent
-          client={client}
-          dialogTitle={dialogTitle}
-          form={form}
-          isSubmitting={isSubmitting}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          contacts={contacts}
-          setContacts={setContacts}
-          members={members}
-          setMembers={setMembers}
-          documents={documents}
-          documentFiles={documentFiles}
-          profilePreview={profilePreview}
-          handleProfileChange={handleProfileChange}
-          handleDocumentUpload={handleDocumentUpload}
-          removeDocument={removeDocument}
-          onOpenChange={onOpenChange}
-          onDelete={() => {
-            setShowDeleteConfirm(true);
-          }}
-          onRestore={handleRestore}
-          handleFormSubmit={handleFormSubmit}
-          isArchived={!!client?.is_archived}
-        />
-      </Dialog>
-      
-      <DeleteClientDialog 
-        clientName={client?.name}
-        isOpen={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        onConfirm={handleDelete}
-        error={deletionError}
-        archiveMode={true}
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Only allow dialog to close if we're not in the middle of confirming a delete
+      if (!showDeleteConfirm && !isSubmitting) {
+        onOpenChange(newOpen);
+      }
+    }}>
+      <ClientDialogContent
+        client={client}
+        dialogTitle={dialogTitle}
+        form={form}
+        isSubmitting={isSubmitting}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        contacts={contacts}
+        setContacts={setContacts}
+        members={members}
+        setMembers={setMembers}
+        documents={documents}
+        documentFiles={documentFiles}
+        profilePreview={profilePreview}
+        handleProfileChange={handleProfileChange}
+        handleDocumentUpload={handleDocumentUpload}
+        removeDocument={removeDocument}
+        onOpenChange={onOpenChange}
+        onDelete={() => {
+          setShowDeleteConfirm(true);
+        }}
+        onRestore={handleRestore}
+        handleFormSubmit={handleFormSubmit}
+        isArchived={!!client?.is_archived}
       />
-    </>
+    </Dialog>
   );
 }

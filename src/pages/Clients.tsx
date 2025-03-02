@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -7,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ClientFilters } from "@/components/clients/client-filters";
 import { ClientTabs } from "@/components/clients/client-tabs";
-import { useClientData } from "@/components/clients/use-client-data";
+import { useClientData, type Client } from "@/components/clients/hooks/use-client-data";
 
 interface Client {
   id: string;
