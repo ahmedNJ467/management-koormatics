@@ -15,6 +15,7 @@ interface MembersTabProps {
 export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   const {
     memberFormState,
+    setMemberFormState,  // Make sure we're destructuring this from useMembers
     editingMemberIndex,
     isViewingMember,
     viewingMemberIndex,
@@ -48,12 +49,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
           isEditing={editingMemberIndex !== null}
           member={memberFormState}
           clientId={clientId}
-          onMemberChange={(member) => {
-            // Create a wrapper function that accepts a single member parameter
-            // but will pass along to our callback that expects multiple parameters
-            // This fixes the type error
-            setMemberFormState(member);
-          }}
+          onMemberChange={setMemberFormState}  // Use the destructured function directly
           onCancel={cancelMemberEdit}
           onSave={saveMember}
           onDocumentUploaded={handleMemberDocumentUpload}
