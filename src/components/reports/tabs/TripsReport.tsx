@@ -1,4 +1,5 @@
 
+
 import { format } from "date-fns";
 import { FileDown, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +55,7 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                 <TableHead>Client</TableHead>
                 <TableHead>Pick-up</TableHead>
                 <TableHead>Drop-off</TableHead>
+                <TableHead>Service Type</TableHead>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Driver</TableHead>
                 <TableHead>Status</TableHead>
@@ -62,7 +64,7 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : filteredData && filteredData.length > 0 ? (
                 filteredData.map((trip) => (
@@ -72,11 +74,14 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                       {trip.clients?.type === 'organization' ? (
                         <div>
                           {trip.clients?.name || 'N/A'}
-                          <span className="block text-xs text-muted-foreground">Organization</span>
                           {trip.passengers && trip.passengers.length > 0 && (
-                            <span className="block text-xs text-muted-foreground">
-                              {trip.passengers.length} passengers
-                            </span>
+                            <div className="mt-1 space-y-1">
+                              {trip.passengers.map((passenger: string, index: number) => (
+                                <div key={index} className="text-xs text-muted-foreground pl-2 border-l-2 border-gray-300">
+                                  {passenger}
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
                       ) : (
@@ -85,6 +90,7 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                     </TableCell>
                     <TableCell>{trip.pickup_location}</TableCell>
                     <TableCell>{trip.dropoff_location}</TableCell>
+                    <TableCell>{trip.display_type || trip.service_type}</TableCell>
                     <TableCell>{trip.vehicles?.make} {trip.vehicles?.model}</TableCell>
                     <TableCell>{trip.drivers?.name}</TableCell>
                     <TableCell>{trip.status}</TableCell>
@@ -92,7 +98,7 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">No data available</TableCell>
+                  <TableCell colSpan={8} className="text-center">No data available</TableCell>
                 </TableRow>
               )}
             </TableBody>
