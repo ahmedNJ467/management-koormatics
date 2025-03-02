@@ -1,3 +1,4 @@
+
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TripType = 'airport_pickup' | 'airport_dropoff' | 'one_way_transfer' | 'round_trip' | 'full_day' | 'security_escort' | 'hourly' | 'multi_day' | 'other';
 

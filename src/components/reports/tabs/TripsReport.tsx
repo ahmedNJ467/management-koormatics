@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { useTripsData } from "../hooks/useReportData";
 import { exportToPDF, exportToCSV } from "../utils/export-utils";
 import { ReportProps } from "../types";
-import { tripTypeDisplayMap } from "@/lib/types";
+import { tripTypeDisplayMap } from "@/lib/types/trip";
 
 export const TripsReport = ({ timeRange, dateRange, setTimeRange, setDateRange }: ReportProps) => {
   const { data: tripsData, isLoading: isLoadingTrips } = useTripsData(timeRange, dateRange);
