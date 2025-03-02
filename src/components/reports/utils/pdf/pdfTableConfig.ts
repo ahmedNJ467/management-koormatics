@@ -31,6 +31,8 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
       1: { // Client column (index 1)
         cellWidth: 2.5, // Make Client column wider
         cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
+        fillColor: [15, 23, 42, 0.97], // Dark background for client column like in the image
+        textColor: [255, 255, 255], // White text for client name
       },
       // Add color coding for status column based on report type
       ...(filename === 'vehicles-report' ? {

@@ -22,26 +22,27 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       // Draw organization name with bold
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(41, 128, 185); // Use primary blue for org name
-      doc.text(textLines[0], x, y);
+      doc.text(textLines[0].toUpperCase(), x, y);
       y += 0.25;
       
       // Draw organization label
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(142, 68, 173); // Use secondary purple for label
-      doc.text(textLines[1], x, y);
+      doc.text("Organization", x, y);
       y += 0.35;
       
-      // Draw passengers header
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(39, 174, 96); // Use accent green for header
-      doc.text(textLines[3], x, y);
+      // Draw passengers icon and count instead of "Passengers:" header
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(39, 174, 96); // Use accent green for passenger count
+      const passengerCount = textLines.length - 4; // Calculate actual passenger count
+      doc.text(`👤 ${passengerCount} passengers`, x, y);
       y += 0.3;
       
-      // Draw passenger names with normal font
+      // Draw passenger names with normal font and bullet points
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...pdfColors.text); // Back to normal text color
       for (let i = 4; i < textLines.length; i++) {
-        doc.text(textLines[i], x + 0.15, y);
+        doc.text(`- ${textLines[i].trim()}`, x, y);
         y += 0.25;
       }
     }
