@@ -90,35 +90,42 @@ export default function Invoices() {
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: invoicesData, error: invoicesError } = await supabase
         .from("invoices")
         .select(`
           *,
-          clients:client_id(name, email, address, phone),
-          trips:invoice_id(*)
+          clients:client_id(name, email, address, phone)
         `)
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (invoicesError) throw invoicesError;
 
-      return data.map((invoice: any) => {
-        const tripsForInvoice = Array.isArray(invoice.trips) 
-          ? invoice.trips.map((trip: any) => ({
-              ...trip,
-              type: trip.service_type || 'other',
-              status: 'scheduled',
-              client_name: invoice.clients?.name || "Unknown Client",
-              vehicle_details: "Vehicle details not available",
-              driver_name: "Driver not assigned",
-            } as DisplayTrip))
-          : [];
-        
-        const displayInvoice = convertToInvoice(invoice);
-        
-        displayInvoice.trips = tripsForInvoice;
-        
-        return displayInvoice;
-      });
+      const invoicesWithTrips = await Promise.all(
+        invoicesData.map(async (invoice) => {
+          const { data: tripsData, error: tripsError } = await supabase
+            .from("trips")
+            .select(`*`)
+            .eq("invoice_id", invoice.id);
+
+          if (tripsError) console.error("Error fetching trips:", tripsError);
+          
+          const tripsForInvoice = tripsData ? tripsData.map((trip: any) => ({
+            ...trip,
+            type: trip.service_type || 'other',
+            status: 'scheduled',
+            client_name: invoice.clients?.name || "Unknown Client",
+            vehicle_details: "Vehicle details not available",
+            driver_name: "Driver not assigned",
+          } as DisplayTrip)) : [];
+          
+          const displayInvoice = convertToInvoice(invoice);
+          displayInvoice.trips = tripsForInvoice;
+          
+          return displayInvoice;
+        })
+      );
+
+      return invoicesWithTrips;
     },
   });
 

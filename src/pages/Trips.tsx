@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +40,7 @@ import { DbTripData, TripMessageData, TripAssignmentData } from "@/components/tr
 import { Driver, Vehicle, Client } from "@/lib/types";
 
 // Map UI service types to database service_type values
-const serviceTypeMap: Record<string, string> = {
+const serviceTypeMap: Record<string, TripType> = {
   "airport_pickup": "airport_pickup",
   "airport_dropoff": "airport_dropoff",
   "round_trip": "round_trip",
@@ -313,7 +312,7 @@ export default function Trips() {
       }
       
       const formServiceType = formData.get("service_type") as string;
-      const dbServiceType = serviceTypeMap[formServiceType];
+      const dbServiceType = serviceTypeMap[formServiceType] || "other";
       
       const formTime = formData.get("time") as string;
       const formReturnTime = formData.get("return_time") as string;
@@ -346,7 +345,7 @@ export default function Trips() {
     const formData = new FormData(form);
     
     const uiServiceType = formData.get("service_type") as string;
-    const dbServiceType = serviceTypeMap[uiServiceType];
+    const dbServiceType = serviceTypeMap[uiServiceType] || "other";
     const isRecurringChecked = formData.get("is_recurring") === "on";
     
     // Add flight details to notes if it's an airport trip

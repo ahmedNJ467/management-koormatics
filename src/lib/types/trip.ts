@@ -1,4 +1,3 @@
-
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
 
@@ -27,7 +26,6 @@ export interface TripAssignment {
   updated_at?: string;
 }
 
-// This interface maps to the database schema directly
 export interface DbTrip {
   id: string;
   client_id: string;
@@ -51,7 +49,6 @@ export interface DbTrip {
   is_recurring?: boolean;
 }
 
-// This is the application's internal representation of a trip
 export interface Trip {
   id: string;
   client_id: string;
@@ -80,7 +77,6 @@ export interface Trip {
   is_recurring?: boolean;
 }
 
-// Extended trip with UI display information
 export interface DisplayTrip extends Trip {
   client_name: string;
   client_type?: "organization" | "individual";
@@ -95,7 +91,6 @@ export interface DisplayTrip extends Trip {
   display_type?: string;      // Formatted display of trip type
 }
 
-// Mapping of trip types to UI-friendly display names
 export const tripTypeDisplayMap: Record<string, string> = {
   'airport_pickup': 'Airport Pickup',
   'airport_dropoff': 'Airport Dropoff',
@@ -108,7 +103,6 @@ export const tripTypeDisplayMap: Record<string, string> = {
   'security_escort': 'Security Escort'
 };
 
-// Utility function to convert database fields to Trip interface
 import { extractTripStatus } from "@/components/trips/utils";
 
 export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
@@ -120,7 +114,7 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   
   // Map to TripType, handling unknown types
   let type: TripType = dbServiceType as TripType;
-  if (!Object.values(TripType).includes(type)) {
+  if (!Object.keys(tripTypeDisplayMap).includes(type)) {
     // If not a valid TripType, default to "other"
     type = "other";
   }
@@ -149,7 +143,6 @@ export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   };
 };
 
-// Utility function to convert Trip interface to database fields
 export const mapTripToDatabaseFields = (trip: Partial<Trip>): Partial<DbTrip> => {
   // Create a new object with the database field names
   const dbTrip: Partial<DbTrip> = {
@@ -164,7 +157,6 @@ export const mapTripToDatabaseFields = (trip: Partial<Trip>): Partial<DbTrip> =>
   return dbTrip;
 };
 
-// Helper function to extract flight information from notes
 export const extractFlightInfo = (notes?: string): string => {
   if (!notes) return '';
   
