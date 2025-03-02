@@ -13,7 +13,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useFuelLogForm } from "./fuel-log-form/use-fuel-log-form";
 import type { FuelLog } from "@/lib/types";
-import { FormHelperText } from "@/components/ui/form";
 
 interface FuelLogFormDialogProps {
   open: boolean;

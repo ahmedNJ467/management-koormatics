@@ -200,11 +200,13 @@ export type Database = {
         Row: {
           cost: number
           created_at: string | null
+          current_mileage: number | null
           date: string
           fuel_type: Database["public"]["Enums"]["fuel_type"]
           id: string
           mileage: number
           notes: string | null
+          previous_mileage: number | null
           updated_at: string | null
           vehicle_id: string
           volume: number
@@ -212,11 +214,13 @@ export type Database = {
         Insert: {
           cost: number
           created_at?: string | null
+          current_mileage?: number | null
           date: string
           fuel_type: Database["public"]["Enums"]["fuel_type"]
           id?: string
           mileage: number
           notes?: string | null
+          previous_mileage?: number | null
           updated_at?: string | null
           vehicle_id: string
           volume: number
@@ -224,11 +228,13 @@ export type Database = {
         Update: {
           cost?: number
           created_at?: string | null
+          current_mileage?: number | null
           date?: string
           fuel_type?: Database["public"]["Enums"]["fuel_type"]
           id?: string
           mileage?: number
           notes?: string | null
+          previous_mileage?: number | null
           updated_at?: string | null
           vehicle_id?: string
           volume?: number

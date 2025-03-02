@@ -11,6 +11,8 @@ export interface FuelLog {
   fuel_type: FuelType;
   volume: number;
   cost: number;
+  previous_mileage: number;
+  current_mileage: number;
   mileage: number;
   notes?: string;
   created_at?: string;
