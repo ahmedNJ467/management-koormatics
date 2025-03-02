@@ -24,7 +24,10 @@ interface DetailsTabProps {
 export function DetailsTab({ viewTrip }: DetailsTabProps) {
   const isAirportTrip = viewTrip.type === 'airport_pickup' || viewTrip.type === 'airport_dropoff';
   const hasFlightDetails = viewTrip.flight_number || viewTrip.airline || viewTrip.terminal;
-  const hasPassengers = viewTrip.client_type === "organization" && viewTrip.passengers && viewTrip.passengers.length > 0;
+  const hasPassengers = viewTrip.client_type === "organization" && 
+    viewTrip.passengers && 
+    Array.isArray(viewTrip.passengers) && 
+    viewTrip.passengers.length > 0;
   
   return (
     <div className="space-y-6">
