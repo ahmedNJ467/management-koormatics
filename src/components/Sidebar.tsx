@@ -4,7 +4,12 @@ import { useLocation } from "react-router-dom";
 import { Car, UserPlus, MapPin, Wrench, Fuel, BarChart3, AlertTriangle, Users, FileText, Receipt, BarChart2, Settings, Home } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-export const Sidebar = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(isMobile);
@@ -26,7 +31,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+    <div className={`sidebar ${isOpen ? "open" : "closed"}`}>
       <button onClick={() => setCollapsed(!collapsed)} className="toggle-button">
         {collapsed ? "Expand" : "Collapse"}
       </button>
