@@ -12,7 +12,8 @@ import {
   Banknote, 
   Info,
   Navigation,
-  Users
+  Users,
+  UserCheck
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,10 +25,16 @@ interface DetailsTabProps {
 export function DetailsTab({ viewTrip }: DetailsTabProps) {
   const isAirportTrip = viewTrip.type === 'airport_pickup' || viewTrip.type === 'airport_dropoff';
   const hasFlightDetails = viewTrip.flight_number || viewTrip.airline || viewTrip.terminal;
-  const hasPassengers = viewTrip.client_type === "organization" && 
-    viewTrip.passengers && 
-    Array.isArray(viewTrip.passengers) && 
-    viewTrip.passengers.length > 0;
+  
+  // Get passengers from both dedicated passengers array and notes
+  const notesPassengers = viewTrip.notes ? parsePassengers(viewTrip.notes) : [];
+  const arrayPassengers = Array.isArray(viewTrip.passengers) ? viewTrip.passengers : [];
+  
+  // Combine both sources and remove duplicates
+  const allPassengers = [...new Set([...arrayPassengers, ...notesPassengers])];
+  
+  // Check if we have passengers to display
+  const hasPassengers = viewTrip.client_type === "organization" && allPassengers.length > 0;
   
   return (
     <div className="space-y-6">
@@ -129,18 +136,18 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
         </CardContent>
       </Card>
       
-      {/* Passengers list card */}
+      {/* Passengers list card - now enhanced to show combined passengers */}
       {hasPassengers && (
         <Card className="border-slate-800 dark:border-slate-700 overflow-hidden shadow-md bg-slate-900/30">
           <CardHeader className="pb-2 bg-slate-900/70 border-b border-slate-800">
             <CardTitle className="text-md flex items-center text-slate-100">
               <Users className="h-4 w-4 mr-2 text-purple-400" />
-              Passengers ({viewTrip.passengers.length})
+              Passengers ({allPassengers.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-3">
-              {viewTrip.passengers.map((passenger, index) => (
+              {allPassengers.map((passenger, index) => (
                 <div key={index} className="flex items-center space-x-3 p-2 rounded-md bg-slate-800/50 border border-slate-700/50">
                   <div className="h-8 w-8 rounded-full bg-purple-900/50 flex items-center justify-center text-purple-300 font-medium">
                     {passenger.charAt(0).toUpperCase()}

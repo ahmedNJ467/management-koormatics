@@ -132,8 +132,13 @@ export function TripListView({
             </TableRow>
           ) : (
             filteredTrips?.map((trip) => {
-              // Extract passengers from notes
-              const tripPassengers = parsePassengers(trip.notes);
+              // Get passengers from both the dedicated passengers array and notes
+              const passengersFromArray = Array.isArray(trip.passengers) ? trip.passengers : [];
+              const passengersFromNotes = parsePassengers(trip.notes);
+              
+              // Combine both sources, remove duplicates
+              const allPassengers = [...new Set([...passengersFromArray, ...passengersFromNotes])];
+              const hasPassengers = allPassengers.length > 0;
               
               return (
                 <TableRow key={trip.id} className="group">
@@ -152,31 +157,31 @@ export function TripListView({
                     {trip.client_type === "organization" && (
                       <div className="flex flex-col gap-1">
                         <Badge variant="outline" className="text-xs">Organization</Badge>
-                        {tripPassengers.length > 0 && (
+                        {hasPassengers && (
                           <div className="mt-1 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Users className="h-3 w-3" />
-                              {tripPassengers.length === 1 ? (
-                                <span title={tripPassengers[0]}>
-                                  {tripPassengers[0].length > 15 
-                                    ? `${tripPassengers[0].substring(0, 15)}...` 
-                                    : tripPassengers[0]}
+                              {allPassengers.length === 1 ? (
+                                <span title={allPassengers[0]}>
+                                  {allPassengers[0].length > 15 
+                                    ? `${allPassengers[0].substring(0, 15)}...` 
+                                    : allPassengers[0]}
                                 </span>
                               ) : (
-                                <span title={tripPassengers.join(', ')}>
-                                  {tripPassengers.length} passengers
+                                <span title={allPassengers.join(', ')}>
+                                  {allPassengers.length} passengers
                                 </span>
                               )}
                             </div>
-                            {tripPassengers.length > 1 && (
+                            {allPassengers.length > 1 && (
                               <div className="mt-1 text-xs text-muted-foreground ml-4">
-                                {tripPassengers.slice(0, 2).map((passenger, i) => (
+                                {allPassengers.slice(0, 2).map((passenger, i) => (
                                   <div key={i} className="truncate max-w-[120px]" title={passenger}>
                                     - {passenger.length > 15 ? `${passenger.substring(0, 15)}...` : passenger}
                                   </div>
                                 ))}
-                                {tripPassengers.length > 2 && (
-                                  <div className="text-xs italic">+ {tripPassengers.length - 2} more</div>
+                                {allPassengers.length > 2 && (
+                                  <div className="text-xs italic">+ {allPassengers.length - 2} more</div>
                                 )}
                               </div>
                             )}
