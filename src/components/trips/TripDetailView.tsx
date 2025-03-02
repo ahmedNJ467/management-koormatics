@@ -1,5 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { FileText, MessageCircle, User } from "lucide-react";
 import { DisplayTrip } from "@/lib/types/trip";
 import { TripMessage } from "@/lib/types/trip/communication";
@@ -47,6 +48,13 @@ export function TripDetailView({
 }: TripDetailViewProps) {
   return (
     <div className="w-full">
+      <DialogTitle className="text-xl font-semibold mb-2">
+        Trip Details
+      </DialogTitle>
+      <DialogDescription className="text-sm text-muted-foreground mb-4">
+        View and manage the details for trip {viewTrip.id.substring(0, 8).toUpperCase()}
+      </DialogDescription>
+
       <TripDetailHeader viewTrip={viewTrip} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">

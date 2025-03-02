@@ -2,60 +2,94 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DisplayTrip } from "@/lib/types/trip";
-import { Driver } from "@/lib/types";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { assignDriverToTrip } from "@/components/trips/operations/driver-operations";
+
+interface Driver {
+  id: string;
+  name: string;
+}
 
 interface AssignDriverDialogProps {
   open: boolean;
   tripToAssign: DisplayTrip | null;
-  assignDriver: string;
-  assignNote: string;
-  drivers?: Driver[];
-  onDriverChange: (driverId: string) => void;
-  onNoteChange: (note: string) => void;
-  onAssign: () => Promise<void>;
   onClose: () => void;
+  onDriverAssigned: () => void;
 }
 
 export function AssignDriverDialog({
   open,
   tripToAssign,
-  assignDriver,
-  assignNote,
-  drivers,
-  onDriverChange,
-  onNoteChange,
-  onAssign,
-  onClose
+  onClose,
+  onDriverAssigned
 }: AssignDriverDialogProps) {
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    // Mock data - in a real app, fetch drivers from an API
+    setDrivers([
+      { id: "driver1", name: "John Doe" },
+      { id: "driver2", name: "Jane Smith" },
+      { id: "driver3", name: "Alex Johnson" }
+    ]);
+  }, []);
+  
+  const handleAssign = async () => {
+    if (!selectedDriver || !tripToAssign) return;
+    
+    setIsLoading(true);
+    try {
+      await assignDriverToTrip(tripToAssign.id, selectedDriver);
+      toast({
+        title: "Driver assigned",
+        description: "Driver has been assigned to the trip successfully."
+      });
+      onDriverAssigned();
+      onClose();
+    } catch (error) {
+      console.error("Error assigning driver:", error);
+      toast({
+        title: "Error",
+        description: "Failed to assign driver. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const formatTripId = (id: string): string => {
     return id.substring(0, 8).toUpperCase();
   };
-
+  
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Assign Driver</DialogTitle>
           <DialogDescription>
-            Assign a driver to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
+            Select a driver to assign to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4 py-4">
+        
+        <div className="py-4">
           <div className="space-y-2">
-            <Label htmlFor="driver">Select Driver</Label>
-            <Select 
-              value={assignDriver} 
-              onValueChange={onDriverChange}
+            <Label htmlFor="driver">Driver</Label>
+            <Select
+              value={selectedDriver}
+              onValueChange={setSelectedDriver}
             >
               <SelectTrigger id="driver">
-                <SelectValue placeholder="Select driver" />
+                <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
               <SelectContent>
-                {drivers?.map((driver) => (
+                {drivers.map((driver) => (
                   <SelectItem key={driver.id} value={driver.id}>
                     {driver.name}
                   </SelectItem>
@@ -63,28 +97,17 @@ export function AssignDriverDialog({
               </SelectContent>
             </Select>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="assignment-note">Note (Optional)</Label>
-            <Textarea 
-              id="assignment-note" 
-              placeholder="Add any instructions or notes for the driver"
-              value={assignNote}
-              onChange={(e) => onNoteChange(e.target.value)}
-              className="min-h-[100px]"
-            />
-          </div>
         </div>
-
+        
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button 
-            onClick={onAssign}
-            disabled={!assignDriver}
+            onClick={handleAssign}
+            disabled={!selectedDriver || isLoading}
           >
-            Assign Driver
+            {isLoading ? "Assigning..." : "Assign Driver"}
           </Button>
         </DialogFooter>
       </DialogContent>
