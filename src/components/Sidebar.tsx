@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   BarChart3,
   Car,
@@ -37,7 +37,7 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   const handleLinkClick = () => {
     if (isMobile && open) {
