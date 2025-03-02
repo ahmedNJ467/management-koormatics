@@ -94,7 +94,6 @@ export function TripDetailView({
     }
   };
 
-  // Add function to extract and display passengers
   const renderPassengers = () => {
     if (viewTrip.client_type !== "organization") return null;
     
@@ -277,36 +276,10 @@ export function TripDetailView({
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex items-center mb-4">
         <h2 className="text-2xl font-semibold tracking-tight">
           Trip Details - {viewTrip.id.substring(0, 8).toUpperCase()}
         </h2>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditTrip(viewTrip)}
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Trip
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              setTripToDelete(viewTrip.id);
-              setDeleteDialogOpen(true);
-            }}
-          >
-            <Trash className="h-4 w-4 mr-2" />
-            Delete Trip
-          </Button>
-          <DialogClose asChild>
-            <Button variant="secondary" size="sm">
-              Close
-            </Button>
-          </DialogClose>
-        </div>
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
@@ -335,9 +308,26 @@ export function TripDetailView({
         </TabsContent>
       </Tabs>
       
-      <DialogFooter>
+      <DialogFooter className="gap-2 mt-6">
+        <Button
+          variant="outline"
+          onClick={() => setEditTrip(viewTrip)}
+        >
+          <Edit className="h-4 w-4 mr-2" />
+          Edit Trip
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={() => {
+            setTripToDelete(viewTrip.id);
+            setDeleteDialogOpen(true);
+          }}
+        >
+          <Trash className="h-4 w-4 mr-2" />
+          Delete Trip
+        </Button>
         <DialogClose asChild>
-          <Button type="button" variant="secondary">
+          <Button variant="secondary">
             Close
           </Button>
         </DialogClose>
