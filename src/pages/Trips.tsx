@@ -7,7 +7,7 @@ import { TripStatus } from "@/lib/types/trip";
 
 import { TripHeader } from "@/components/trips/TripHeader";
 import { TripSearch } from "@/components/trips/TripSearch";
-import { TripListView } from "@/components/trips/TripListView";
+import { TripListView } from "@/components/trips/list-view/TripListView";
 import { TripCalendarView } from "@/components/trips/TripCalendarView";
 import { TripDialogs } from "@/components/trips/TripDialogs";
 import { useTripState } from "@/components/trips/hooks/use-trip-state";
