@@ -25,7 +25,7 @@ export function MileageFields({ form }: MileageFieldsProps) {
               }
             })}
             readOnly
-            className="bg-gray-100"
+            className="bg-muted"
           />
           {form.formState.errors.previous_mileage && (
             <p className="text-sm text-destructive">{form.formState.errors.previous_mileage.message}</p>
@@ -62,7 +62,7 @@ export function MileageFields({ form }: MileageFieldsProps) {
           type="number"
           value={form.watch("mileage")}
           readOnly
-          className="bg-gray-100 border border-input"
+          className="bg-muted border border-input"
         />
         <p className="text-xs text-muted-foreground">
           Calculated: Current Mileage − Previous Mileage
