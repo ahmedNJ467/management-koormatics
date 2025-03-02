@@ -11,8 +11,13 @@ export function drawPdfHeader(doc: jsPDF, title: string): void {
   doc.setFillColor(...pdfColors.headerBg);
   doc.rect(0, 0, doc.internal.pageSize.width, 1.2, 'F');
   
-  // Add logo
-  doc.addImage(pdfConfig.logoPath, 'PNG', pageMargin, 0.3, 0.8, 0.8);
+  try {
+    // Try to add the logo
+    doc.addImage(pdfConfig.logoPath, 'PNG', pageMargin, 0.3, 0.8, 0.8);
+  } catch (error) {
+    console.warn('Could not add logo to PDF header:', error);
+    // Continue without logo
+  }
   
   // Add company name styled
   doc.setFontSize(pdfFonts.titleSize);

@@ -17,7 +17,7 @@ export const pdfColors = {
 // Document configuration
 export const pdfConfig = {
   pageMargin: 0.5,
-  logoPath: 'lovable-uploads/3900a10d-0eb8-4894-a90e-73841e2422de.png',
+  logoPath: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', // Transparent 1x1 pixel fallback
   companyName: 'PBG MOVEMENT & SAFETY DEPT.',
   format: [11, 8.5] as [number, number], // Wider PDF (11 inches width, 8.5 inches height)
   orientation: 'landscape' as const
