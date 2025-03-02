@@ -9,6 +9,7 @@ interface PassengersTabProps {
 }
 
 export function PassengersTab({ viewTrip }: PassengersTabProps) {
+  // Ensure we're working with an array of passengers
   const passengers = Array.isArray(viewTrip.passengers) ? viewTrip.passengers : [];
   
   return (
