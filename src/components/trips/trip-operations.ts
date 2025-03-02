@@ -1,9 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip, TripStatus, TripType, mapTripTypeToDbServiceType, DbServiceType } from "@/lib/types/trip";
 import { format, addDays } from "date-fns";
-import { UseToastReturn } from "@/hooks/use-toast";
-import { UseQueryClient } from "@tanstack/react-query";
+import { toast as useToast } from "@/hooks/use-toast";
+import { QueryClient } from "@tanstack/react-query";
 
 // Map UI service types to database service_type values
 // Making sure all TripType values are included
@@ -25,8 +24,8 @@ export const updateTripStatus = async (
   status: TripStatus, 
   viewTrip: DisplayTrip | null, 
   setViewTrip: (trip: DisplayTrip | null) => void,
-  toast: UseToastReturn["toast"],
-  queryClient: UseQueryClient
+  toast: ReturnType<typeof useToast>,
+  queryClient: QueryClient
 ) => {
   try {
     // Note: We only update a custom status field in our app, not in DB schema
@@ -74,8 +73,8 @@ export const deleteTrip = async (
   setEditTrip: (trip: DisplayTrip | null) => void,
   setDeleteDialogOpen: (open: boolean) => void,
   setTripToDelete: (id: string | null) => void,
-  toast: UseToastReturn["toast"],
-  queryClient: UseQueryClient
+  toast: ReturnType<typeof useToast>,
+  queryClient: QueryClient
 ) => {
   if (!tripToDelete) return;
   
@@ -169,8 +168,8 @@ export const handleSaveTrip = async (
   editTrip: DisplayTrip | null,
   setEditTrip: (trip: DisplayTrip | null) => void,
   setBookingOpen: (open: boolean) => void,
-  toast: UseToastReturn["toast"],
-  queryClient: UseQueryClient
+  toast: ReturnType<typeof useToast>,
+  queryClient: QueryClient
 ) => {
   event.preventDefault();
   const form = event.currentTarget;
@@ -296,8 +295,8 @@ export const handleAssignDriver = async (
   setTripToAssign: (trip: DisplayTrip | null) => void,
   setAssignDriver: (id: string) => void,
   setAssignNote: (note: string) => void,
-  toast: UseToastReturn["toast"],
-  queryClient: UseQueryClient
+  toast: ReturnType<typeof useToast>,
+  queryClient: QueryClient
 ) => {
   if (!tripToAssign || !assignDriver) return;
   
@@ -348,8 +347,8 @@ export const handleSendMessage = async (
   tripToMessage: DisplayTrip | null,
   newMessage: string,
   setNewMessage: (message: string) => void,
-  toast: UseToastReturn["toast"],
-  queryClient: UseQueryClient
+  toast: ReturnType<typeof useToast>,
+  queryClient: QueryClient
 ) => {
   if (!tripToMessage || !newMessage.trim()) return;
   

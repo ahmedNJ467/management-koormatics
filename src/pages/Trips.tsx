@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Calendar, Table as TableIcon } from "lucide-react";
-import { DisplayTrip } from "@/lib/types/trip";
+import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { TripCalendarView } from "@/components/trips/TripCalendarView";
 import { TripListView } from "@/components/trips/TripListView";
 import { TripDetailView } from "@/components/trips/TripDetailView";
@@ -69,7 +69,7 @@ export default function Trips() {
   });
 
   // Handle operations with the refactored functions
-  const handleTripStatusUpdate = (tripId: string, status: string) => 
+  const handleTripStatusUpdate = (tripId: string, status: TripStatus) => 
     updateTripStatus(tripId, status, viewTrip, setViewTrip, toast, queryClient);
     
   const handleTripDelete = () => 
