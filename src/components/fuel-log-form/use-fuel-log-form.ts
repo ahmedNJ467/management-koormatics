@@ -1,17 +1,16 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { FuelLog, FuelType } from "@/lib/types";
+import type { FuelLog } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const fuelLogSchema = z.object({
   vehicle_id: z.string().min(1, "Vehicle is required"),
   date: z.string().min(1, "Date is required"),
-  fuel_type: z.enum(["petrol", "diesel", "cng"]),
+  fuel_type: z.enum(["petrol", "diesel"]),
   volume: z.number().min(0.01, "Volume must be greater than 0"),
   cost: z.number().min(0.01, "Cost must be greater than 0"),
   mileage: z.number().min(0, "Mileage must be a positive number"),
@@ -61,7 +60,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   const handleSubmit = async (values: FuelLogFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
-      // Type assertion to make TypeScript happy as we've updated the database schema
       const formattedValues = {
         vehicle_id: values.vehicle_id,
         date: values.date,
@@ -70,12 +68,12 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
         cost: Number(values.cost),
         mileage: Number(values.mileage),
         notes: values.notes || null
-      };
+      } satisfies Omit<FuelLog, 'id' | 'created_at' | 'updated_at' | 'vehicle'>;
 
       if (fuelLog) {
         const { error: updateError } = await supabase
           .from("fuel_logs")
-          .update(formattedValues as any) // Type assertion needed until types are regenerated
+          .update(formattedValues)
           .eq("id", fuelLog.id);
 
         if (updateError) throw updateError;
@@ -87,7 +85,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       } else {
         const { error: insertError } = await supabase
           .from("fuel_logs")
-          .insert(formattedValues as any); // Type assertion needed until types are regenerated
+          .insert(formattedValues);
 
         if (insertError) throw insertError;
 

@@ -1,52 +1,82 @@
 
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Car, UserPlus, MapPin, Wrench, Fuel, BarChart3, AlertTriangle, Users, FileText, Receipt, BarChart2, Settings, Home } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  BarChart3,
+  Car,
+  Settings,
+  Users,
+  Wrench,
+  Fuel,
+  Users2,
+  FileText,
+  Calendar,
+  Receipt,
+  BarChart,
+  AlertTriangle,
+  DollarSign,
+} from "lucide-react";
+
+const navigation = [
+  { name: "Dashboard", href: "/", icon: BarChart3 },
+  { name: "Vehicles", href: "/vehicles", icon: Car },
+  { name: "Drivers", href: "/drivers", icon: Users },
+  { name: "Maintenance", href: "/maintenance", icon: Wrench },
+  { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
+  { name: "Clients", href: "/clients", icon: Users2 },
+  { name: "Quotations", href: "/quotations", icon: FileText },
+  { name: "Invoices", href: "/invoices", icon: Receipt },
+  { name: "Trips", href: "/trips", icon: Calendar },
+  { name: "Cost Analysis", href: "/cost-analysis", icon: DollarSign },
+  { name: "Reports", href: "/reports", icon: BarChart },
+  { name: "Alerts", href: "/alerts", icon: AlertTriangle },
+  { name: "Settings", href: "/settings", icon: Settings },
+];
 
 interface SidebarProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
 }
 
-export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+export default function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const [collapsed, setCollapsed] = useState(isMobile);
 
-  const navItems = [
-    { label: "Dashboard", icon: Home, path: "/dashboard" },
-    { label: "Vehicles", icon: Car, path: "/vehicles" },
-    { label: "Drivers", icon: UserPlus, path: "/drivers" },
-    { label: "Trips", icon: MapPin, path: "/trips" },
-    { label: "Maintenance", icon: Wrench, path: "/maintenance" },
-    { label: "Fuel Logs", icon: Fuel, path: "/fuel-logs" },
-    { label: "Cost Analytics", icon: BarChart3, path: "/cost-analytics" },
-    { label: "Alerts", icon: AlertTriangle, path: "/alerts" },
-    { label: "Clients", icon: Users, path: "/clients" },
-    { label: "Quotations", icon: FileText, path: "/quotations" },
-    { label: "Invoices", icon: Receipt, path: "/invoices" },
-    { label: "Reports", icon: BarChart2, path: "/reports" },
-    { label: "Settings", icon: Settings, path: "/settings" },
-  ];
+  const handleLinkClick = () => {
+    if (isMobile && open) {
+      onClose();
+    }
+  };
 
   return (
-    <div className={`sidebar ${isOpen ? "open" : "closed"}`}>
-      <button onClick={() => setCollapsed(!collapsed)} className="toggle-button">
-        {collapsed ? "Expand" : "Collapse"}
-      </button>
-      <nav>
-        <ul>
-          {navItems.map(item => (
-            <li key={item.path} className={location.pathname === item.path ? "active" : ""}>
-              <a href={item.path}>
-                <item.icon className="icon" />
-                <span>{item.label}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
+    <aside
+      className={cn(
+        "fixed top-16 h-[calc(100vh-4rem)] w-64 border-r bg-background transition-transform duration-300 ease-in-out z-30",
+        !open && "-translate-x-full"
+      )}
+    >
+      <nav className="flex flex-col gap-1 p-4">
+        {navigation.map((item) => {
+          const isActive = location.pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              onClick={handleLinkClick}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                isActive
+                  ? "bg-secondary/10 text-secondary font-medium"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.name}
+            </Link>
+          );
+        })}
       </nav>
-    </div>
+    </aside>
   );
-};
+}
