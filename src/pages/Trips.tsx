@@ -1,25 +1,18 @@
 
-import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useTripsData } from "@/hooks/use-trips-data";
 import { useTripDetails } from "@/hooks/use-trip-details";
-import { 
-  Dialog,
-  DialogContent
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Calendar, Table as TableIcon } from "lucide-react";
-import { DisplayTrip, TripStatus } from "@/lib/types/trip";
-import { TripCalendarView } from "@/components/trips/TripCalendarView";
+import { TripStatus } from "@/lib/types/trip";
+
+import { TripHeader } from "@/components/trips/TripHeader";
+import { TripSearch } from "@/components/trips/TripSearch";
 import { TripListView } from "@/components/trips/TripListView";
-import { TripDetailView } from "@/components/trips/TripDetailView";
-import { TripForm } from "@/components/trips/TripForm";
-import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
-import { TripMessageDialog } from "@/components/trips/TripMessageDialog";
-import { DeleteTripDialog } from "@/components/trips/DeleteTripDialog";
+import { TripCalendarView } from "@/components/trips/TripCalendarView";
+import { TripDialogs } from "@/components/trips/TripDialogs";
+import { useTripState } from "@/components/trips/hooks/use-trip-state";
+import { useTripFilters } from "@/components/trips/hooks/use-trip-filters";
+
 import { 
   updateTripStatus, 
   deleteTrip, 
@@ -31,42 +24,51 @@ import {
 export default function Trips() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewTrip, setViewTrip] = useState<DisplayTrip | null>(null);
-  const [editTrip, setEditTrip] = useState<DisplayTrip | null>(null);
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [tripToAssign, setTripToAssign] = useState<DisplayTrip | null>(null);
-  const [tripToMessage, setTripToMessage] = useState<DisplayTrip | null>(null);
-  const [assignDriver, setAssignDriver] = useState("");
-  const [assignNote, setAssignNote] = useState("");
-  const [newMessage, setNewMessage] = useState("");
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [tripToDelete, setTripToDelete] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("details");
-  const [calendarView, setCalendarView] = useState(false);
+  
+  // Use custom hook for all trip-related state
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    viewTrip,
+    setViewTrip,
+    editTrip,
+    setEditTrip,
+    bookingOpen,
+    setBookingOpen,
+    assignOpen,
+    setAssignOpen,
+    messageOpen, 
+    setMessageOpen,
+    tripToAssign,
+    setTripToAssign,
+    tripToMessage,
+    setTripToMessage,
+    assignDriver,
+    setAssignDriver,
+    assignNote,
+    setAssignNote,
+    newMessage, 
+    setNewMessage,
+    deleteDialogOpen,
+    setDeleteDialogOpen,
+    tripToDelete,
+    setTripToDelete,
+    activeTab,
+    setActiveTab,
+    calendarView,
+    setCalendarView
+  } = useTripState();
 
   // Fetch all data
   const { trips, isLoading, clients, vehicles, drivers } = useTripsData();
   
+  // Filter trips based on search and status filter
+  const { filteredTrips } = useTripFilters(trips, searchTerm, statusFilter);
+  
   // Fetch trip details data when a trip is viewed
   const { messages, assignments } = useTripDetails(viewTrip);
-
-  // Filter trips based on search and status filter
-  const filteredTrips = trips?.filter(trip => {
-    const matchesSearch = 
-      searchTerm === "" ||
-      trip.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.vehicle_details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.id.substring(0, 8).toUpperCase().includes(searchTerm.toUpperCase());
-    
-    const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
 
   // Helper function to wrap toast for passing to operations
   const toastWrapper = (props: { 
@@ -106,49 +108,20 @@ export default function Trips() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Trips</h2>
-          <p className="text-muted-foreground">Manage trip reservations and driver assignments</p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setCalendarView(!calendarView)}
-          >
-            {calendarView ? <TableIcon className="mr-2 h-4 w-4" /> : <Calendar className="mr-2 h-4 w-4" />}
-            {calendarView ? "List View" : "Calendar View"}
-          </Button>
-          <Button onClick={() => setBookingOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Book Trip
-          </Button>
-        </div>
-      </div>
+      {/* Header */}
+      <TripHeader 
+        calendarView={calendarView} 
+        setCalendarView={setCalendarView} 
+        setBookingOpen={setBookingOpen} 
+      />
 
       {/* Search and Filter */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search trips..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="scheduled">Scheduled</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <TripSearch 
+        searchTerm={searchTerm} 
+        statusFilter={statusFilter} 
+        setSearchTerm={setSearchTerm} 
+        setStatusFilter={setStatusFilter} 
+      />
 
       {/* Calendar or List View */}
       {calendarView ? (
@@ -171,94 +144,43 @@ export default function Trips() {
         />
       )}
 
-      {/* Trip Form Dialog (Edit & Create) */}
-      <Dialog 
-        open={!!editTrip || bookingOpen} 
-        onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false))}
-      > 
-        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
-          <TripForm
-            editTrip={editTrip}
-            clients={clients}
-            vehicles={vehicles}
-            drivers={drivers}
-            onClose={() => {
-              setEditTrip(null);
-              setBookingOpen(false);
-            }}
-            onSubmit={handleTripFormSubmit}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Trip Detail View Dialog */}
-      <Dialog open={!!viewTrip} onOpenChange={(open) => !open && setViewTrip(null)}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh]">
-          {viewTrip && (
-            <TripDetailView
-              viewTrip={viewTrip}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              messages={messages}
-              assignments={assignments}
-              newMessage={newMessage}
-              setNewMessage={setNewMessage}
-              handleSendMessage={handleMessageSend}
-              setTripToAssign={setTripToAssign}
-              setAssignOpen={setAssignOpen}
-              setTripToMessage={setTripToMessage}
-              setMessageOpen={setMessageOpen}
-              setEditTrip={setEditTrip}
-              setTripToDelete={setTripToDelete}
-              setDeleteDialogOpen={setDeleteDialogOpen}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Assign Driver Dialog */}
-      <AssignDriverDialog
-        open={assignOpen}
+      {/* Dialogs */}
+      <TripDialogs
+        viewTrip={viewTrip}
+        editTrip={editTrip}
+        bookingOpen={bookingOpen}
+        assignOpen={assignOpen}
+        messageOpen={messageOpen}
+        deleteDialogOpen={deleteDialogOpen}
         tripToAssign={tripToAssign}
-        onClose={() => {
-          setAssignOpen(false);
-          setTripToAssign(null);
-          setAssignDriver("");
-          setAssignNote("");
-        }}
-        onDriverAssigned={() => {
-          queryClient.invalidateQueries({ queryKey: ["trips"] });
-          if (viewTrip) {
-            queryClient.invalidateQueries({ queryKey: ["tripAssignments", viewTrip.id] });
-          }
-        }}
-      />
-
-      {/* Send Message Dialog */}
-      <TripMessageDialog
-        open={messageOpen}
         tripToMessage={tripToMessage}
+        tripToDelete={tripToDelete}
+        assignDriver={assignDriver}
+        assignNote={assignNote}
         newMessage={newMessage}
-        onMessageChange={setNewMessage}
-        onSendMessage={handleMessageSend}
-        onClose={() => {
-          setMessageOpen(false);
-          setTripToMessage(null);
-          setNewMessage("");
-        }}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteTripDialog
-        open={deleteDialogOpen}
-        tripId={tripToDelete || ""}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          setTripToDelete(null);
-        }}
-        onTripDeleted={() => {
-          queryClient.invalidateQueries({ queryKey: ["trips"] });
-        }}
+        activeTab={activeTab}
+        clients={clients}
+        vehicles={vehicles}
+        drivers={drivers}
+        messages={messages}
+        assignments={assignments}
+        setViewTrip={setViewTrip}
+        setEditTrip={setEditTrip}
+        setBookingOpen={setBookingOpen}
+        setAssignOpen={setAssignOpen}
+        setMessageOpen={setMessageOpen}
+        setDeleteDialogOpen={setDeleteDialogOpen}
+        setTripToAssign={setTripToAssign}
+        setTripToMessage={setTripToMessage}
+        setTripToDelete={setTripToDelete}
+        setAssignDriver={setAssignDriver}
+        setAssignNote={setAssignNote}
+        setNewMessage={setNewMessage}
+        setActiveTab={setActiveTab}
+        handleTripFormSubmit={handleTripFormSubmit}
+        handleDriverAssignment={handleDriverAssignment}
+        handleMessageSend={handleMessageSend}
+        queryClient={queryClient}
       />
     </div>
   );
