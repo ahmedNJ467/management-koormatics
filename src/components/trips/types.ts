@@ -1,5 +1,4 @@
-
-import { TripStatus, TripType, DisplayTrip } from "@/lib/types/trip";
+import { TripStatus, ServiceType, DisplayTrip } from "@/lib/types/trip";
 
 export interface TripMessageData {
   id: string;
@@ -32,12 +31,10 @@ export interface TripAssignmentData {
   driver_avatar?: string;
 }
 
-// Add a utility function to upload trip attachments
 export async function uploadTripAttachment(file: File, tripId: string): Promise<string | null> {
   if (!file) return null;
   
   try {
-    // Reuse the driver upload function but customize for trip attachments
     const bucketName = 'trip-attachments';
     const fileType = 'attachment';
     return await uploadTripFile(file, bucketName, tripId, fileType);
@@ -47,7 +44,6 @@ export async function uploadTripAttachment(file: File, tripId: string): Promise<
   }
 }
 
-// Add a function to upload trip-related files
 export async function uploadTripFile(file: File, bucket: string, tripId: string, fileType: string): Promise<string | null> {
   if (!file) return null;
 
@@ -57,7 +53,6 @@ export async function uploadTripFile(file: File, bucket: string, tripId: string,
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     
-    // Check if bucket exists, create if it doesn't
     const { data: buckets } = await supabase.storage.listBuckets();
     const bucketExists = buckets?.some(b => b.name === bucket);
     
@@ -67,7 +62,6 @@ export async function uploadTripFile(file: File, bucket: string, tripId: string,
       });
     }
 
-    // Upload the file
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(fileName, file, {
@@ -80,7 +74,6 @@ export async function uploadTripFile(file: File, bucket: string, tripId: string,
       throw uploadError;
     }
 
-    // Get the public URL
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
       .getPublicUrl(fileName);

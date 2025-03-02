@@ -1,6 +1,6 @@
 
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
+export type ServiceType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day' | 'one_way_transfer' | 'round_trip' | 'security_escort';
 
 export interface TripMessage {
   id: string;
@@ -37,7 +37,7 @@ export interface Trip {
   date: string;
   start_time?: string;
   end_time?: string;
-  type: TripType;
+  type: ServiceType;  // Renamed from TripType to ServiceType
   status: TripStatus;
   amount: number;
   pickup_location?: string;
@@ -67,8 +67,8 @@ export interface DisplayTrip extends Trip {
   ui_service_type?: string; // Added to store the UI service type corresponding to database type
 }
 
-// Mapping of trip types to UI-friendly display names
-export const tripTypeDisplayMap: Record<TripType, string> = {
+// Renamed from tripTypeDisplayMap to serviceTypeDisplayMap
+export const serviceTypeDisplayMap: Record<ServiceType, string> = {
   'airport_pickup': 'Airport Pickup',
   'airport_dropoff': 'Airport Dropoff',
   'other': 'Other Service',
