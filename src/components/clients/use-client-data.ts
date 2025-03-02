@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +46,7 @@ export function useClientData() {
       const { data: activeContractData, error: contractError } = await supabase
         .from('trips')
         .select('client_id')
-        .eq('status', 'ongoing')
+        .eq('status', 'in_progress')
         .is('invoice_id', null); // Not invoiced yet
       
       if (contractError) {
