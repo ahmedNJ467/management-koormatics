@@ -193,14 +193,18 @@ const Reports = () => {
       if (error) throw error;
       
       return data.map(trip => {
-        const flightInfo = extractFlightInfo(trip.notes || '');
+        const flightInfo = extractFlightInfo(trip.special_instructions || trip.notes || '');
         
-        const displayType = tripTypeDisplayMap[trip.type] || trip.type;
+        const tripType = trip.service_type || 'other';
+        const displayType = tripTypeDisplayMap[tripType as TripType] || tripType;
         
         return {
           ...trip,
+          type: trip.service_type as TripType || 'other',
+          status: trip.status as TripStatus || 'scheduled',
           flight_info: flightInfo,
-          display_type: displayType
+          display_type: displayType,
+          notes: trip.special_instructions || trip.notes || '',
         };
       });
     },
@@ -463,7 +467,7 @@ const Reports = () => {
     setTimeRange("month");
   };
 
-  const extractFlightInfo = (notes: string) => {
+  const extractFlightInfo = (notes: string = '') => {
     let flightInfo = '';
     
     const flightNumberMatch = notes.match(/Flight:?\s*([A-Z0-9]{2,}\s*[0-9]{1,4}[A-Z]?)/i);

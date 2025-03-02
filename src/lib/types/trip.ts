@@ -1,6 +1,7 @@
 
 export type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TripType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day';
+export type ServiceType = 'airport_pickup' | 'airport_dropoff' | 'other' | 'hourly' | 'full_day' | 'multi_day'; // Alias for TripType to match database
 
 export interface TripMessage {
   id: string;
@@ -44,6 +45,16 @@ export interface Trip {
   invoice_id?: string;
   created_at?: string;
   updated_at?: string;
+  
+  // Extra fields to match database
+  flight_number?: string;
+  airline?: string;
+  terminal?: string;
+  special_instructions?: string;
+  is_recurring?: boolean;
+  service_type?: ServiceType; // Database uses service_type instead of type in some places
+  time?: string; // DB has time sometimes instead of start_time
+  return_time?: string; // Alias for end_time
 }
 
 export interface DisplayTrip extends Trip {
@@ -54,13 +65,7 @@ export interface DisplayTrip extends Trip {
   driver_avatar?: string;
   driver_contact?: string;
   // These fields are for UI display only and not stored directly in the database
-  time?: string; // For displaying formatted start_time
-  return_time?: string; // For displaying formatted end_time
-  flight_number?: string;
-  airline?: string;
-  terminal?: string;
   special_notes?: string;
-  is_recurring?: boolean; // Added for UI display purposes
   ui_service_type?: string; // Added to store the UI service type corresponding to database type
 }
 
@@ -72,4 +77,15 @@ export const tripTypeDisplayMap: Record<TripType, string> = {
   'hourly': 'Hourly Service',
   'full_day': 'Full Day',
   'multi_day': 'Multi Day'
+};
+
+// Helper function to map between service_type and type
+export const mapServiceTypeToTripType = (serviceType: ServiceType): TripType => {
+  // They're the same values but might have different type constraints
+  return serviceType as TripType;
+};
+
+export const mapTripTypeToServiceType = (tripType: TripType): ServiceType => {
+  // They're the same values but might have different type constraints
+  return tripType as ServiceType;
 };

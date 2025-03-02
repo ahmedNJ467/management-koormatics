@@ -47,10 +47,16 @@ export function useClientsQuery() {
         console.error("Error fetching active contracts:", contractError);
       }
       
-      // Get unique client IDs with active contracts
-      const clientsWithActiveContracts = new Set(
-        (activeContractData || []).map(trip => trip.client_id)
-      );
+      // Get unique client IDs with active contracts - fixed deep instantiation issue
+      const clientsWithActiveContracts = new Set<string>();
+      
+      if (activeContractData) {
+        activeContractData.forEach(trip => {
+          if (trip.client_id) {
+            clientsWithActiveContracts.add(trip.client_id);
+          }
+        });
+      }
       
       // Add has_active_contract flag to clients
       const clientsWithFlag = (data || []).map(client => ({

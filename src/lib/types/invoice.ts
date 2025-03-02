@@ -1,5 +1,5 @@
 
-import { DisplayTrip } from './trip';
+import { DisplayTrip, Trip } from './trip';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'credit_card' | 'mobile_money' | 'cheque' | 'other';
@@ -35,4 +35,17 @@ export interface DisplayInvoice extends Invoice {
   client_phone?: string;
   trips?: DisplayTrip[];
   quotation_number?: string;
+}
+
+// Helper function to convert trips from database to DisplayTrip format
+export function convertToDisplayTrips(trips: any[]): DisplayTrip[] {
+  return trips.map(trip => ({
+    ...trip,
+    // Ensure required DisplayTrip fields are present
+    type: trip.service_type || trip.type || 'other',
+    status: trip.status || 'scheduled',
+    client_name: trip.client_name || '',
+    vehicle_details: trip.vehicle_details || '',
+    driver_name: trip.driver_name || '',
+  }));
 }

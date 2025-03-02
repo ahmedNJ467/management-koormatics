@@ -6,6 +6,6 @@ export * from './maintenance';
 export * from './fuel';
 export * from './quotation';
 export * from './client';
-export * from './trip';
+export type * from './trip';
 export * from './invoice';
 export * from './cost-analytics';
