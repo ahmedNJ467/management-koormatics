@@ -59,7 +59,7 @@ const CostAnalytics = () => {
   }, [activeTab, comparisonYear]);
 
   const handleComparisonYearChange = (value: string) => {
-    setComparisonYear(value === "" ? null : value);
+    setComparisonYear(value === "none" ? null : value);
   };
 
   return (
@@ -70,14 +70,14 @@ const CostAnalytics = () => {
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Compare with:</span>
             <Select 
-              value={comparisonYear || ""} 
+              value={comparisonYear || "none"} 
               onValueChange={handleComparisonYearChange}
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {yearOptions
                   .filter(year => year !== selectedYear)
                   .map((year) => (
