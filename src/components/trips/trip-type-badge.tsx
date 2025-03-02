@@ -23,12 +23,8 @@ const TripTypeBadge = ({ type, className }: TripTypeBadgeProps) => {
         return "bg-amber-100 text-amber-700 hover:bg-amber-100";
       case 'full_day':
         return "bg-purple-100 text-purple-700 hover:bg-purple-100";
-      case 'multi_day':
-        return "bg-fuchsia-100 text-fuchsia-700 hover:bg-fuchsia-100";
       case 'security_escort':
         return "bg-red-100 text-red-700 hover:bg-red-100";
-      case 'hourly':
-        return "bg-teal-100 text-teal-700 hover:bg-teal-100";
       default:
         return "bg-gray-100 text-gray-700 hover:bg-gray-100";
     }
