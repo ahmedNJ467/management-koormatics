@@ -24,12 +24,12 @@ export function PassengersTab({ viewTrip }: PassengersTabProps) {
       
       {passengers.length > 0 ? (
         <Card className="bg-slate-900/50 border-slate-800/50">
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <ul className="divide-y divide-slate-800/50">
               {passengers.map((passenger, index) => (
                 <li key={index} className="py-3 flex items-center space-x-3">
                   <div className="flex-shrink-0 h-9 w-9 rounded-full bg-indigo-900/40 flex items-center justify-center text-indigo-300">
-                    {passenger.charAt(0).toUpperCase()}
+                    {passenger && typeof passenger === 'string' && passenger.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-slate-200">{passenger}</p>

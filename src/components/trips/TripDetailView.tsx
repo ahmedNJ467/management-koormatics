@@ -67,6 +67,11 @@ export function TripDetailView({
   const isOrganizationTrip = viewTrip.client_type === "organization";
   const hasPassengers = isOrganizationTrip && Array.isArray(viewTrip.passengers) && viewTrip.passengers.length > 0;
 
+  // For debugging
+  console.log("Trip in TripDetailView:", viewTrip);
+  console.log("Is organization trip:", isOrganizationTrip);
+  console.log("Passengers:", viewTrip.passengers);
+
   return (
     <div className="w-full">
       <div className="bg-gradient-to-r from-slate-900/50 to-indigo-950/50 dark:from-indigo-950/70 dark:to-purple-950/70 p-6 rounded-lg mb-6 border border-slate-800/50">
