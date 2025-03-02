@@ -14,7 +14,7 @@ export function useTripsQuery(page: number = 1, rowsPerPage: number = 5) {
 
       const { data, error, count } = await supabase
         .from('trips')
-        .select('*, clients(name, type), vehicles(make, model), drivers(name, avatar_url, contact)', { count: 'exact' })
+        .select('*, clients(name, type), vehicles(details), drivers(name, avatar_url, contact_number)', { count: 'exact' })
         .range(from, to);
 
       if (error) {
@@ -24,12 +24,13 @@ export function useTripsQuery(page: number = 1, rowsPerPage: number = 5) {
 
       const formattedTrips: DisplayTrip[] = data.map((trip: any) => ({
         ...trip,
+        service_type: trip.service_type, // Ensure this matches the DB column name
         client_name: trip.clients?.name || 'Unknown Client',
         client_type: trip.clients?.type || 'individual',
-        vehicle_details: trip.vehicles ? `${trip.vehicles.make} ${trip.vehicles.model}` : 'Unknown Vehicle',
+        vehicle_details: trip.vehicles?.details || 'Unknown Vehicle',
         driver_name: trip.drivers?.name || 'Unknown Driver',
         driver_avatar: trip.drivers?.avatar_url || '',
-        driver_contact: trip.drivers?.contact || '',
+        driver_contact: trip.drivers?.contact_number || '',
         time: trip.start_time ? dayjs(trip.start_time, 'HH:mm:ss').format('h:mm A') : 'N/A',
         return_time: trip.end_time ? dayjs(trip.end_time, 'HH:mm:ss').format('h:mm A') : 'N/A',
         special_notes: trip.special_instructions || 'None',

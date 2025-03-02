@@ -10,4 +10,4 @@ export * from './trip';
 export * from './invoice';
 export * from './cost-analytics';
 
-export type { ServiceType } from './trip';
+export { ServiceType } from './trip';
