@@ -1,19 +1,13 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from 'date-fns';
-import { TripAssignment } from "@/lib/types/trip";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { User, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { formatDate, formatTime } from "@/components/trips/utils";
 import { DisplayTrip } from "@/lib/types/trip";
-import { UserPlus, Check } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { TripAssignment } from "@/lib/types/trip/communication";
 import { Driver } from "@/lib/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface AssignmentsTabProps {
   viewTrip: DisplayTrip;
@@ -24,187 +18,148 @@ interface AssignmentsTabProps {
 }
 
 export function AssignmentsTab({ 
-  viewTrip,
+  viewTrip, 
   assignments, 
   drivers,
-  setTripToAssign, 
+  setTripToAssign,
   setAssignOpen
 }: AssignmentsTabProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [selectedDriver, setSelectedDriver] = useState<string>("");
-  const [assignmentNote, setAssignmentNote] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const formatTimestamp = (timestamp: string): string => {
-    return format(new Date(timestamp), "MMM d, yyyy 'at' h:mm a");
+  const hasAssignments = assignments && assignments.length > 0;
+  const assignmentStatuses = {
+    pending: { icon: <Clock className="h-4 w-4 text-yellow-500" />, label: "Pending" },
+    accepted: { icon: <CheckCircle className="h-4 w-4 text-green-500" />, label: "Accepted" },
+    rejected: { icon: <XCircle className="h-4 w-4 text-red-500" />, label: "Rejected" }
   };
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-700";
-      case "accepted":
-        return "bg-green-100 text-green-700";
-      case "rejected":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
+  const handleAssignDriver = () => {
+    setTripToAssign(viewTrip);
+    setAssignOpen(true);
   };
 
-  const handleAssign = async () => {
-    if (!selectedDriver) {
-      toast({
-        title: "Error",
-        description: "Please select a driver",
-        variant: "destructive",
-      });
-      return;
+  const renderDriverInfo = () => {
+    if (!viewTrip.driver_name || viewTrip.driver_name === "No Driver") {
+      return (
+        <div className="flex flex-col items-center justify-center py-6">
+          <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
+          <p className="text-center text-muted-foreground">No driver assigned</p>
+          <Button 
+            onClick={handleAssignDriver} 
+            variant="outline" 
+            className="mt-4"
+          >
+            <User className="mr-2 h-4 w-4" />
+            Assign Driver
+          </Button>
+        </div>
+      );
     }
 
-    setIsSubmitting(true);
+    return (
+      <div className="flex items-center space-x-4 p-2">
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={viewTrip.driver_avatar} alt={viewTrip.driver_name} />
+          <AvatarFallback>{viewTrip.driver_name.substring(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 space-y-1">
+          <p className="text-sm font-medium">{viewTrip.driver_name}</p>
+          {viewTrip.driver_contact && (
+            <p className="text-xs text-muted-foreground">{viewTrip.driver_contact}</p>
+          )}
+        </div>
+        <Button 
+          onClick={handleAssignDriver} 
+          variant="outline" 
+          size="sm"
+        >
+          Change
+        </Button>
+      </div>
+    );
+  };
 
-    try {
-      const { error } = await supabase
-        .from("trip_assignments")
-        .insert({
-          trip_id: viewTrip.id,
-          driver_id: selectedDriver,
-          status: "pending",
-          notes: assignmentNote || null,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Driver assigned",
-        description: "Driver has been assigned to the trip",
-      });
-
-      // Reset form
-      setSelectedDriver("");
-      setAssignmentNote("");
-      setIsAssigning(false);
-      
-      // Refresh assignments data
-      queryClient.invalidateQueries({ queryKey: ["tripAssignments", viewTrip.id] });
-    } catch (error) {
-      console.error("Error assigning driver:", error);
-      toast({
-        title: "Error",
-        description: "Failed to assign driver",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+  const renderPassengerInfo = () => {
+    // Only show for organization clients
+    if (viewTrip.client_type !== "organization" || !viewTrip.passengers || viewTrip.passengers.length === 0) {
+      return null;
     }
+
+    return (
+      <Card className="mt-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-md">Passengers</CardTitle>
+          <CardDescription>
+            {viewTrip.passengers.length} passenger{viewTrip.passengers.length !== 1 ? 's' : ''} registered
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {viewTrip.passengers.map((passenger, index) => (
+              <li key={index} className="text-sm flex items-center gap-2 pb-2 border-b last:border-0">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span>{passenger}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Driver Assignments</CardTitle>
-        <div className="flex space-x-2">
-          {!isAssigning ? (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsAssigning(true)}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Assign Driver
-            </Button>
-          ) : (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsAssigning(false)}
-            >
-              Cancel
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isAssigning && (
-          <div className="border rounded-md p-4 space-y-4 bg-muted/20">
-            <h3 className="font-medium">Assign a driver to this trip</h3>
-            
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Select Driver</p>
-              <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a driver" />
-                </SelectTrigger>
-                <SelectContent>
-                  {drivers?.map((driver) => (
-                    <SelectItem key={driver.id} value={driver.id}>
-                      {driver.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Notes (optional)</p>
-              <Textarea 
-                value={assignmentNote}
-                onChange={(e) => setAssignmentNote(e.target.value)}
-                placeholder="Add notes about this assignment"
-                className="h-24"
-              />
-            </div>
-            
-            <div className="flex justify-end">
-              <Button 
-                onClick={handleAssign}
-                disabled={isSubmitting || !selectedDriver}
-              >
-                {isSubmitting ? "Assigning..." : "Assign Driver"}
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        {assignments.length === 0 ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground">
-            No assignments yet
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {assignments.map((assignment) => (
-              <div 
-                key={assignment.id} 
-                className="flex items-center justify-between border rounded-md p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    {assignment.driver_avatar ? (
-                      <AvatarImage src={assignment.driver_avatar} alt={assignment.driver_name} />
-                    ) : (
-                      <AvatarFallback>
-                        {assignment.driver_name?.charAt(0) || 'D'}
-                      </AvatarFallback>
-                    )}
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-md">Current Driver</CardTitle>
+          <CardDescription>
+            Driver assigned to this trip
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {renderDriverInfo()}
+        </CardContent>
+      </Card>
+
+      {renderPassengerInfo()}
+
+      {hasAssignments && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-md">Assignment History</CardTitle>
+            <CardDescription>
+              {assignments.length} assignment{assignments.length !== 1 ? 's' : ''} for this trip
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {assignments.map((assignment) => (
+                <div key={assignment.id} className="flex items-start border-b pb-3 last:border-0">
+                  <Avatar className="h-8 w-8 mr-3 mt-1">
+                    <AvatarImage src={assignment.driver_avatar} alt={assignment.driver_name || "Driver"} />
+                    <AvatarFallback>
+                      {(assignment.driver_name || "DR").substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-medium">{assignment.driver_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Assigned: {formatTimestamp(assignment.assigned_at)}
-                    </p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">{assignment.driver_name || "Unknown Driver"}</span>
+                      <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        {assignmentStatuses[assignment.status].icon}
+                        {assignmentStatuses[assignment.status].label}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Assigned on {formatDate(assignment.assigned_at)} at {formatTime(assignment.assigned_at.split('T')[1])}
+                    </div>
+                    {assignment.notes && (
+                      <div className="text-xs mt-1 italic">{assignment.notes}</div>
+                    )}
                   </div>
                 </div>
-                <Badge className={getStatusColor(assignment.status)}>
-                  {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

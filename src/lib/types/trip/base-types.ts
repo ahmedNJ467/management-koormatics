@@ -16,3 +16,16 @@ export const tripTypeDisplayMap: Record<string, string> = {
   'round_trip': 'Round Trip',
   'security_escort': 'Security Escort'
 };
+
+// Add the serviceTypeOptions export for form component
+export const serviceTypeOptions = [
+  'airport_pickup',
+  'airport_dropoff',
+  'other',
+  'hourly',
+  'full_day',
+  'multi_day',
+  'one_way_transfer',
+  'round_trip',
+  'security_escort'
+];

@@ -524,6 +524,7 @@ export type Database = {
           invoice_id: string | null
           is_recurring: boolean | null
           notes: string | null
+          passengers: string[] | null
           pickup_location: string | null
           return_time: string | null
           service_type: Database["public"]["Enums"]["service_type"] | null
@@ -546,6 +547,7 @@ export type Database = {
           invoice_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
+          passengers?: string[] | null
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null
@@ -568,6 +570,7 @@ export type Database = {
           invoice_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
+          passengers?: string[] | null
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null

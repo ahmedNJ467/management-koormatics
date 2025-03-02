@@ -1,289 +1,326 @@
-import { useEffect, useState } from "react";
-import { Label } from "@/components/ui/label";
+
+import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, FormProvider } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { DisplayTrip, TripStatus } from "@/lib/types/trip";
-import { Client, Driver, Vehicle } from "@/lib/types";
-import { serviceTypeOptions } from "@/lib/types/trip/base-types";
-import { RecurringTripFields } from "@/components/trips/RecurringTripFields";
-import { FlightDetailsFields } from "@/components/trips/FlightDetailsFields";
+import { DisplayTrip } from "@/lib/types/trip";
 import { TripStatusSelect } from "@/components/trips/TripStatusSelect";
+import { FlightDetailsFields } from "@/components/trips/FlightDetailsFields";
+import { RecurringTripFields } from "@/components/trips/RecurringTripFields";
+import { serviceTypeMap } from "@/components/trips/trip-operations";
+
+const reverseServiceTypeMap: Record<string, string> = {};
+Object.entries(serviceTypeMap).forEach(([key, value]) => {
+  reverseServiceTypeMap[value] = key;
+});
+
+// Get service type options from the map
+const serviceTypeOptions = Object.keys(serviceTypeMap);
 
 interface TripFormProps {
-  tripData?: DisplayTrip;
-  clients?: Client[];
-  vehicles?: Vehicle[];
-  drivers?: Driver[];
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  updateStatus?: (tripId: string, status: TripStatus) => void;
+  clients: any[];
+  vehicles: any[];
+  drivers: any[];
+  editTrip: DisplayTrip | null;
+  handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }
 
-export function TripForm({
-  tripData,
-  clients,
-  vehicles,
-  drivers,
-  onSubmit,
-  updateStatus,
-}: TripFormProps) {
-  const [selectedServiceType, setSelectedServiceType] = useState<string>(
-    tripData?.service_type || tripData?.type || "point_to_point"
-  );
+export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }: TripFormProps) {
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedClientType, setSelectedClientType] = useState<"organization" | "individual" | undefined>(undefined);
+  const [serviceType, setServiceType] = useState("airport_pickup");
   
-  const [selectedClientId, setSelectedClientId] = useState<string>(
-    tripData?.client_id || ""
-  );
+  const methods = useForm();
+  const { register, watch, setValue, reset } = methods;
   
-  const [isRecurring, setIsRecurring] = useState<boolean>(
-    tripData?.is_recurring || false
-  );
-
-  // Additional state for selected client type
-  const [selectedClientType, setSelectedClientType] = useState<"organization" | "individual" | undefined>(
-    clients?.find(c => c.id === selectedClientId)?.type
-  );
-
-  // Update client type when client selection changes
-  useEffect(() => {
-    if (selectedClientId) {
-      const selectedClient = clients?.find(c => c.id === selectedClientId);
-      setSelectedClientType(selectedClient?.type);
-    } else {
-      setSelectedClientType(undefined);
-    }
-  }, [selectedClientId, clients]);
+  const isRecurring = watch("is_recurring");
+  const watchServiceType = watch("service_type");
+  const watchClientId = watch("client_id");
   
-  // Determine if we need to show return time field
-  const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(selectedServiceType);
-  
-  // Determine if we need to show flight details
-  const needsFlightDetails = ["airport_pickup", "airport_dropoff"].includes(selectedServiceType);
-  
-  // Format date for input field
-  const formatDateForInput = (dateString?: string) => {
-    if (!dateString) return "";
-    try {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
-    } catch (e) {
-      return "";
-    }
+  // Function to get client type
+  const getClientType = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    return client?.type;
   };
-
+  
+  // Initialize service type based on trip type if editing
+  useEffect(() => {
+    if (editTrip) {
+      // Find the UI service type from the DB service type
+      const uiServiceType = reverseServiceTypeMap[editTrip.type] || editTrip.type;
+      setValue("service_type", uiServiceType);
+      setServiceType(uiServiceType);
+      
+      // Set all other form fields
+      setValue("client_id", editTrip.client_id);
+      setValue("vehicle_id", editTrip.vehicle_id);
+      setValue("driver_id", editTrip.driver_id);
+      setValue("date", editTrip.date);
+      setValue("time", editTrip.time);
+      setValue("return_time", editTrip.return_time || "");
+      setValue("pickup_location", editTrip.pickup_location || "");
+      setValue("dropoff_location", editTrip.dropoff_location || "");
+      setValue("special_notes", editTrip.notes || "");
+      setValue("is_recurring", editTrip.is_recurring || false);
+      setValue("status", editTrip.status);
+      
+      // Set flight details if available
+      if (editTrip.flight_number) setValue("flight_number", editTrip.flight_number);
+      if (editTrip.airline) setValue("airline", editTrip.airline);
+      if (editTrip.terminal) setValue("terminal", editTrip.terminal);
+      
+      // Set passenger data if available for organization clients
+      if (editTrip.passengers && editTrip.passengers.length > 0) {
+        setValue("passengers", editTrip.passengers.join('\n'));
+      }
+      
+      // Set selected client and type
+      setSelectedClient(editTrip.client_id);
+      setSelectedClientType(getClientType(editTrip.client_id) as "organization" | "individual" | undefined);
+    }
+  }, [editTrip, setValue]);
+  
+  // Update client type when client changes
+  useEffect(() => {
+    if (watchClientId) {
+      const clientType = getClientType(watchClientId);
+      setSelectedClient(watchClientId);
+      setSelectedClientType(clientType as "organization" | "individual" | undefined);
+    }
+  }, [watchClientId, clients]);
+  
+  // Update service type when it changes
+  useEffect(() => {
+    if (watchServiceType) {
+      setServiceType(watchServiceType);
+    }
+  }, [watchServiceType]);
+  
+  const isAirportService = serviceType === "airport_pickup" || serviceType === "airport_dropoff";
+  const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(serviceType);
+  
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {/* Trip Type */}
-      <div className="space-y-2">
-        <Label htmlFor="service_type">Service Type</Label>
-        <Select
-          name="service_type"
-          value={selectedServiceType}
-          onValueChange={(value) => setSelectedServiceType(value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select service type" />
-          </SelectTrigger>
-          <SelectContent>
-            {serviceTypeOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Client Selection */}
-      <div className="space-y-2">
-        <Label htmlFor="client_id">Client</Label>
-        <Select
-          name="client_id"
-          value={selectedClientId}
-          onValueChange={(value) => setSelectedClientId(value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients?.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name} {client.type === "organization" && "(Organization)"}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <input type="hidden" name="client_type" value={selectedClientType || ""} />
-      </div>
-
-      {/* Passengers Field for Organization Clients */}
-      {selectedClientType === "organization" && (
-        <div className="space-y-2">
-          <Label htmlFor="passengers">Passengers</Label>
-          <Textarea
-            name="passengers"
-            placeholder="Enter passenger names (one per line)"
-            className="h-24"
-            defaultValue={tripData?.passengers?.join('\n') || ''}
-          />
-          <p className="text-xs text-muted-foreground">
-            Enter each passenger name on a new line
-          </p>
+    <FormProvider {...methods}>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Client, Vehicle, Driver Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="client_id">Client</Label>
+            <Select
+              defaultValue={editTrip?.client_id}
+              onValueChange={(value) => setValue("client_id", value)}
+            >
+              <SelectTrigger id="client_id">
+                <SelectValue placeholder="Select a client" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name} {client.type && `(${client.type})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="vehicle_id">Vehicle</Label>
+            <Select
+              defaultValue={editTrip?.vehicle_id}
+              onValueChange={(value) => setValue("vehicle_id", value)}
+            >
+              <SelectTrigger id="vehicle_id">
+                <SelectValue placeholder="Select a vehicle" />
+              </SelectTrigger>
+              <SelectContent>
+                {vehicles.map((vehicle) => (
+                  <SelectItem key={vehicle.id} value={vehicle.id}>
+                    {vehicle.make} {vehicle.model} ({vehicle.registration})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="driver_id">Driver</Label>
+            <Select
+              defaultValue={editTrip?.driver_id}
+              onValueChange={(value) => setValue("driver_id", value)}
+            >
+              <SelectTrigger id="driver_id">
+                <SelectValue placeholder="Select a driver" />
+              </SelectTrigger>
+              <SelectContent>
+                {drivers.map((driver) => (
+                  <SelectItem key={driver.id} value={driver.id}>
+                    {driver.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      )}
-
-      {/* Vehicle Selection */}
-      <div className="space-y-2">
-        <Label htmlFor="vehicle_id">Vehicle</Label>
-        <Select
-          name="vehicle_id"
-          defaultValue={tripData?.vehicle_id}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select vehicle" />
-          </SelectTrigger>
-          <SelectContent>
-            {vehicles?.map((vehicle) => (
-              <SelectItem key={vehicle.id} value={vehicle.id}>
-                {vehicle.make} {vehicle.model} ({vehicle.registration})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Driver Selection */}
-      <div className="space-y-2">
-        <Label htmlFor="driver_id">Driver</Label>
-        <Select
-          name="driver_id"
-          defaultValue={tripData?.driver_id}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select driver" />
-          </SelectTrigger>
-          <SelectContent>
-            {drivers?.map((driver) => (
-              <SelectItem key={driver.id} value={driver.id}>
-                {driver.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Date and Time */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="date">Date</Label>
-          <Input
-            type="date"
-            name="date"
-            defaultValue={formatDateForInput(tripData?.date)}
-            required
-          />
+        
+        <Separator />
+        
+        {/* Trip Details */}
+        <div className="space-y-4">
+          <h3 className="font-medium">Trip Details</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="service_type">Service Type</Label>
+              <Select
+                defaultValue={editTrip?.type ? (reverseServiceTypeMap[editTrip.type] || editTrip.type) : "airport_pickup"}
+                onValueChange={(value) => setValue("service_type", value)}
+              >
+                <SelectTrigger id="service_type">
+                  <SelectValue placeholder="Select service type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceTypeOptions.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                {...register("date")}
+                defaultValue={editTrip?.date || new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="time">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                {...register("time")}
+                defaultValue={editTrip?.time || ""}
+              />
+            </div>
+            
+            {needsReturnTime && (
+              <div className="space-y-2">
+                <Label htmlFor="return_time">Return Time</Label>
+                <Input
+                  id="return_time"
+                  type="time"
+                  {...register("return_time")}
+                  defaultValue={editTrip?.return_time || ""}
+                />
+              </div>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pickup_location">Pickup Location</Label>
+              <Input
+                id="pickup_location"
+                {...register("pickup_location")}
+                placeholder="Enter pickup address"
+                defaultValue={editTrip?.pickup_location || ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dropoff_location">Dropoff Location</Label>
+              <Input
+                id="dropoff_location"
+                {...register("dropoff_location")}
+                placeholder="Enter dropoff address"
+                defaultValue={editTrip?.dropoff_location || ""}
+              />
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="time">Time</Label>
-          <Input
-            type="time"
-            name="time"
-            defaultValue={tripData?.time || tripData?.start_time || ""}
-            required
-          />
+        
+        {/* Flight Details for Airport Services */}
+        {isAirportService && <FlightDetailsFields />}
+        
+        {/* Passenger Information for Organization Clients */}
+        {selectedClientType === "organization" && (
+          <div className="space-y-4">
+            <h3 className="font-medium">Passenger Information</h3>
+            <div className="space-y-2">
+              <Label htmlFor="passengers">Passengers (one per line)</Label>
+              <Textarea
+                id="passengers"
+                {...register("passengers")}
+                placeholder="Enter passenger names (one per line)"
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                For organization clients, add each passenger name on a new line
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="special_notes">Special Notes</Label>
+            <Textarea
+              id="special_notes"
+              {...register("special_notes")}
+              placeholder="Any special instructions or requirements"
+              defaultValue={editTrip?.notes || ""}
+            />
+          </div>
         </div>
-      </div>
-
-      {/* Return Time (for round trips) */}
-      {needsReturnTime && (
-        <div className="space-y-2">
-          <Label htmlFor="return_time">Return Time</Label>
-          <Input
-            type="time"
-            name="return_time"
-            defaultValue={tripData?.return_time || tripData?.end_time || ""}
+        
+        {/* Status Selection for Editing */}
+        {editTrip && (
+          <TripStatusSelect 
+            status={watch("status") || editTrip.status || "scheduled"} 
+            onChange={(value) => setValue("status", value)} 
           />
+        )}
+        
+        {/* Recurring Trip Options */}
+        {!editTrip && (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is_recurring"
+                {...register("is_recurring")}
+                onCheckedChange={(checked) => {
+                  setValue("is_recurring", checked);
+                }}
+              />
+              <Label htmlFor="is_recurring" className="font-normal">
+                This is a recurring trip
+              </Label>
+            </div>
+            
+            {isRecurring && <RecurringTripFields />}
+          </div>
+        )}
+        
+        <Separator />
+        
+        <div className="flex justify-end space-x-2">
+          <Button type="submit">
+            {editTrip ? "Update Trip" : "Book Trip"}
+          </Button>
         </div>
-      )}
-
-      {/* Pickup and Dropoff Locations */}
-      <div className="space-y-2">
-        <Label htmlFor="pickup_location">Pickup Location</Label>
-        <Input
-          name="pickup_location"
-          placeholder="Enter pickup address"
-          defaultValue={tripData?.pickup_location || ""}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="dropoff_location">Dropoff Location</Label>
-        <Input
-          name="dropoff_location"
-          placeholder="Enter dropoff address"
-          defaultValue={tripData?.dropoff_location || ""}
-        />
-      </div>
-
-      {/* Flight Details for Airport Trips */}
-      {needsFlightDetails && (
-        <FlightDetailsFields
-          flightNumber={tripData?.flight_number || ""}
-          airline={tripData?.airline || ""}
-          terminal={tripData?.terminal || ""}
-        />
-      )}
-
-      {/* Special Notes */}
-      <div className="space-y-2">
-        <Label htmlFor="special_notes">Notes</Label>
-        <Textarea
-          name="special_notes"
-          placeholder="Add any special instructions or notes"
-          className="h-24"
-          defaultValue={tripData?.notes || tripData?.special_notes || ""}
-        />
-      </div>
-
-      {/* Status Field (only for editing) */}
-      {tripData && (
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <TripStatusSelect
-            name="status"
-            defaultValue={tripData.status}
-            tripId={tripData.id}
-            updateStatus={updateStatus}
-          />
-        </div>
-      )}
-
-      {/* Recurring Trip Option (only for new trips) */}
-      {!tripData && (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="is_recurring"
-            name="is_recurring"
-            checked={isRecurring}
-            onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
-          />
-          <Label htmlFor="is_recurring" className="cursor-pointer">
-            This is a recurring trip
-          </Label>
-        </div>
-      )}
-
-      {/* Recurring Trip Fields */}
-      {!tripData && isRecurring && (
-        <RecurringTripFields />
-      )}
-
-      {/* Submit Button */}
-      <Button type="submit" className="w-full">
-        {tripData ? "Update Trip" : "Book Trip"}
-      </Button>
-    </form>
+      </form>
+    </FormProvider>
   );
 }
