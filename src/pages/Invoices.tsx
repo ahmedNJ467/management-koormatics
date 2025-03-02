@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO, addDays, isAfter } from "date-fns";
+import { format, addDays, isAfter, isBefore, parseISO } from "date-fns";
 import {
   Table,
   TableBody,
@@ -11,46 +11,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Card, 
-  CardContent, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle,
-  CardDescription 
-} from "@/components/ui/card";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue
-} from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,46 +35,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
   Plus,
   Search,
+  Calendar as CalendarIcon,
   FileText,
-  Users,
-  Calendar,
-  DollarSign,
-  MoreHorizontal,
-  Printer,
   Send,
-  Download,
-  Eye,
-  Edit,
-  Trash,
+  Clock,
   Check,
   X,
-  Receipt,
+  Trash,
+  Download,
+  MoreHorizontal,
   CreditCard,
-  Clock,
+  DollarSign,
+  Calendar,
+  ArrowRight,
   Car,
-  AlertCircle,
-  TrendingUp,
-  ArrowUp
+  User,
 } from "lucide-react";
 import {
-  Client,
+  InvoiceStatus,
+  PaymentMethod,
   Invoice,
   DisplayInvoice,
   InvoiceItem,
-  InvoiceStatus,
-  DisplayTrip,
-  DisplayQuotation,
-  Trip,
-  Quotation
-} from "@/lib/types";
+} from "@/lib/types/invoice";
+import { DisplayTrip } from "@/lib/types/trip";
+import { Client } from "@/components/clients/hooks/use-clients-query";
 
 export default function Invoices() {
   const { toast } = useToast();
@@ -107,29 +69,23 @@ export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewInvoice, setViewInvoice] = useState<DisplayInvoice | null>(null);
-  const [editInvoice, setEditInvoice] = useState<DisplayInvoice | null>(null);
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
+  const [editInvoice, setEditInvoice] = useState<DisplayInvoice | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
-  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("bank_transfer");
-  const [paymentDate, setPaymentDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
-  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
-  const [selectedClient, setSelectedClient] = useState<string>("");
-  const [selectedQuotation, setSelectedQuotation] = useState<string>("");
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedTrips, setSelectedTrips] = useState<string[]>([]);
-  const [currentTab, setCurrentTab] = useState("details");
-  
-  // Initial item for new invoices
-  const initialItem: InvoiceItem = {
-    description: "",
-    quantity: 1,
-    unit_price: 0,
-    amount: 0
-  };
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
+    { description: "", quantity: 1, unit_price: 0, amount: 0 },
+  ]);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState<DisplayInvoice | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank_transfer");
+  const [paymentDate, setPaymentDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [paymentNotes, setPaymentNotes] = useState<string>("");
 
-  // Fetch invoices data
+  // Fetch invoices data with simplified type handling
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
@@ -137,92 +93,54 @@ export default function Invoices() {
         .from("invoices")
         .select(`
           *,
-          clients:client_id(name, email, address, phone)
+          clients:client_id(name, email, address, phone),
+          trips:invoice_id(*)
         `)
         .order("date", { ascending: false });
 
       if (error) throw error;
 
-      // Check for overdue invoices
-      const updatedInvoices = await Promise.all(data.map(async (invoice) => {
-        let status = invoice.status;
-        
-        // Mark as overdue if due date has passed and status is still 'sent'
-        if (invoice.status === 'sent' && isAfter(new Date(), new Date(invoice.due_date))) {
-          status = 'overdue';
-          
-          // Update the status in the database
-          await supabase
-            .from("invoices")
-            .update({ status: 'overdue' })
-            .eq("id", invoice.id);
-        }
-        
-        // Get associated trips
-        const { data: tripData } = await supabase
-          .from("trips")
-          .select(`
-            *,
-            clients:client_id(name),
-            vehicles:vehicle_id(make, model, registration),
-            drivers:driver_id(name)
-          `)
-          .eq("invoice_id", invoice.id);
-          
-        const trips = tripData ? tripData.map((trip) => ({
-          ...trip,
-          client_name: trip.clients?.name || "Unknown Client",
-          vehicle_details: trip.vehicles ? 
-            `${trip.vehicles.make} ${trip.vehicles.model} (${trip.vehicles.registration})` : 
-            "Unknown Vehicle",
-          driver_name: trip.drivers?.name || "Unknown Driver",
-        })) : [];
-
-        // Get quotation number if there's a quotation
-        let quotation_number = null;
-        if (invoice.quotation_id) {
-          const { data: quotationData } = await supabase
-            .from("quotations")
-            .select("id")
-            .eq("id", invoice.quotation_id)
-            .single();
-          
-          if (quotationData) {
-            quotation_number = quotationData.id.substring(0, 8).toUpperCase();
-          }
-        }
-        
-        // Parse items from JSON to proper InvoiceItem array
-        const parsedItems = Array.isArray(invoice.items) 
-          ? invoice.items.map(item => {
-              const itemObj = item as Record<string, any>;
-              return {
-                description: itemObj?.description?.toString() || "",
-                quantity: Number(itemObj?.quantity) || 0,
-                unit_price: Number(itemObj?.unit_price) || 0,
-                amount: Number(itemObj?.amount) || 0
-              };
-            })
+      // Handle the data conversion without excessive type nesting
+      return data.map((invoice: any) => {
+        // Process trips with explicit typing to avoid deep nesting
+        const tripsForInvoice = Array.isArray(invoice.trips) 
+          ? invoice.trips.map((trip: any) => ({
+              ...trip,
+              type: trip.service_type || 'other',
+              status: 'scheduled',
+              client_name: invoice.clients?.name || "Unknown Client",
+              vehicle_details: "Vehicle details not available",
+              driver_name: "Driver not assigned",
+            }))
           : [];
         
+        // Parse invoice items safely
+        let parsedItems: any[] = [];
+        try {
+          if (typeof invoice.items === 'string') {
+            parsedItems = JSON.parse(invoice.items);
+          } else if (Array.isArray(invoice.items)) {
+            parsedItems = invoice.items;
+          }
+        } catch (e) {
+          console.error("Error parsing invoice items:", e);
+        }
+
+        // Return a simplified object structure
         return {
           ...invoice,
-          status,
+          items: parsedItems,
+          trips: tripsForInvoice,
           client_name: invoice.clients?.name || "Unknown Client",
-          client_email: invoice.clients?.email,
-          client_address: invoice.clients?.address,
-          client_phone: invoice.clients?.phone,
-          trips,
-          quotation_number,
-          items: parsedItems
-        } as DisplayInvoice;
-      }));
-
-      return updatedInvoices;
+          client_email: invoice.clients?.email || "",
+          client_address: invoice.clients?.address || "",
+          client_phone: invoice.clients?.phone || "",
+        } as DisplayInvoice; // Type assertion to simplify
+      });
     },
   });
 
-  // Fetch clients data for dropdown
+  // Fetch clients for dropdown
   const { data: clients } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
@@ -230,165 +148,59 @@ export default function Invoices() {
         .from("clients")
         .select("id, name, email, address, phone")
         .order("name");
-      
       if (error) throw error;
       return data as Client[];
     },
   });
 
-  // Fetch quotations data for dropdown
-  const { data: quotations, isLoading: quotationsLoading, error: quotationsError } = useQuery({
-    queryKey: ["quotations", selectedClient],
+  // Fetch available trips (not yet invoiced) for the selected client
+  const { data: availableTrips, refetch: refetchAvailableTrips } = useQuery({
+    queryKey: ["availableTrips", selectedClientId],
     queryFn: async () => {
-      if (!selectedClient) return [];
-      
-      const { data, error } = await supabase
-        .from("quotations")
-        .select(`
-          *,
-          clients:client_id(name, email)
-        `)
-        .eq("client_id", selectedClient)
-        .eq("status", "approved")
-        .order("date", { ascending: false });
-      
-      if (error) throw error;
-      
-      return data.map(quotation => {
-        // Parse items from JSON to proper QuotationItem array
-        const parsedItems = Array.isArray(quotation.items) 
-          ? quotation.items.map(item => {
-              const itemObj = item as Record<string, any>;
-              return {
-                description: itemObj?.description?.toString() || "",
-                quantity: Number(itemObj?.quantity) || 0,
-                unit_price: Number(itemObj?.unit_price) || 0,
-                amount: Number(itemObj?.amount) || 0
-              };
-            })
-          : [];
-        
-        return {
-          ...quotation,
-          items: parsedItems,
-          client_name: quotation.clients?.name || "Unknown Client",
-          client_email: quotation.clients?.email
-        } as DisplayQuotation;
-      });
-    },
-    enabled: !!selectedClient,
-  });
+      if (!selectedClientId) return [];
 
-  // Fetch uninvoiced trips for selected client
-  const { data: availableTrips, isLoading: tripsLoading, error: tripsError } = useQuery({
-    queryKey: ["trips", "uninvoiced", selectedClient],
-    queryFn: async () => {
-      if (!selectedClient) return [];
-      
       const { data, error } = await supabase
         .from("trips")
         .select(`
           *,
-          clients:client_id(name),
+          clients:client_id(name, email, address, phone),
           vehicles:vehicle_id(make, model, registration),
-          drivers:driver_id(name)
+          drivers:driver_id(name, contact, avatar_url)
         `)
-        .eq("client_id", selectedClient)
+        .eq("client_id", selectedClientId)
         .is("invoice_id", null)
-        .in("status", ["completed"])
+        .in("status", ["completed", "in_progress"])
         .order("date", { ascending: false });
-      
+
       if (error) throw error;
-      
-      return data.map((trip) => ({
+
+      return data.map((trip: any) => ({
         ...trip,
+        type: trip.type || trip.service_type || 'other',
+        status: trip.status || 'scheduled',
         client_name: trip.clients?.name || "Unknown Client",
-        vehicle_details: trip.vehicles ? 
-          `${trip.vehicles.make} ${trip.vehicles.model} (${trip.vehicles.registration})` : 
-          "Unknown Vehicle",
+        vehicle_details: `${trip.vehicles?.make || ""} ${trip.vehicles?.model || ""} (${trip.vehicles?.registration || ""})`,
         driver_name: trip.drivers?.name || "Unknown Driver",
-      })) as DisplayTrip[];
+      } as DisplayTrip));
     },
-    enabled: !!selectedClient,
+    enabled: !!selectedClientId,
   });
 
-  // Calculate dashboard metrics
-  const getDashboardMetrics = () => {
-    if (!invoices) return {
-      totalInvoiced: 0,
-      totalPaid: 0,
-      totalPending: 0,
-      totalOverdue: 0,
-      averagePaymentTime: 0,
-      invoiceCount: 0,
-      overdueCount: 0
-    };
+  // Effect to update available trips when client changes
+  useEffect(() => {
+    if (selectedClientId) {
+      refetchAvailableTrips();
+      setSelectedTrips([]);
+    }
+  }, [selectedClientId, refetchAvailableTrips]);
 
-    const totalInvoiced = invoices.reduce((sum, invoice) => sum + invoice.total_amount, 0);
-    const totalPaid = invoices.reduce((sum, invoice) => sum + invoice.paid_amount, 0);
-    const totalPending = totalInvoiced - totalPaid;
-    
-    const overdueInvoices = invoices.filter(invoice => invoice.status === 'overdue');
-    const totalOverdue = overdueInvoices.reduce((sum, invoice) => sum + (invoice.total_amount - invoice.paid_amount), 0);
-    const overdueCount = overdueInvoices.length;
-    
-    // Calculate average payment time for paid invoices (in days)
-    let totalPaymentDays = 0;
-    let paidInvoicesCount = 0;
-    
-    invoices.forEach(invoice => {
-      if (invoice.status === 'paid' && invoice.payment_date) {
-        const invoiceDate = new Date(invoice.date);
-        const paymentDate = new Date(invoice.payment_date);
-        const daysDifference = Math.round((paymentDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24));
-        totalPaymentDays += daysDifference;
-        paidInvoicesCount++;
-      }
-    });
-    
-    const averagePaymentTime = paidInvoicesCount > 0 ? Math.round(totalPaymentDays / paidInvoicesCount) : 0;
-    
-    return {
-      totalInvoiced,
-      totalPaid,
-      totalPending,
-      totalOverdue,
-      averagePaymentTime,
-      invoiceCount: invoices.length,
-      overdueCount
-    };
-  };
-
-  // Get month-over-month revenue growth
-  const getRevenueGrowth = () => {
-    if (!invoices || invoices.length === 0) return 0;
-    
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const currentMonthYear = currentMonth === 0 ? today.getFullYear() - 1 : today.getFullYear();
-    
-    // Calculate current month revenue
-    const currentMonthInvoices = invoices.filter(invoice => {
-      const invoiceDate = new Date(invoice.date);
-      return invoiceDate.getMonth() === currentMonth && invoiceDate.getFullYear() === today.getFullYear();
-    });
-    
-    const currentMonthRevenue = currentMonthInvoices.reduce((sum, invoice) => sum + invoice.total_amount, 0);
-    
-    // Calculate last month revenue
-    const lastMonthInvoices = invoices.filter(invoice => {
-      const invoiceDate = new Date(invoice.date);
-      return invoiceDate.getMonth() === lastMonth && invoiceDate.getFullYear() === currentMonthYear;
-    });
-    
-    const lastMonthRevenue = lastMonthInvoices.reduce((sum, invoice) => sum + invoice.total_amount, 0);
-    
-    // Calculate growth rate
-    if (lastMonthRevenue === 0) return currentMonthRevenue > 0 ? 100 : 0;
-    
-    return Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
-  };
+  // Effect to initialize payment amount when marking an invoice as paid
+  useEffect(() => {
+    if (invoiceToMarkPaid) {
+      const remainingAmount = invoiceToMarkPaid.total_amount - (invoiceToMarkPaid.paid_amount || 0);
+      setPaymentAmount(remainingAmount);
+    }
+  }, [invoiceToMarkPaid]);
 
   // Subscribe to real-time changes
   useEffect(() => {
@@ -407,155 +219,113 @@ export default function Invoices() {
     };
   }, [queryClient]);
 
-  // Initialize invoice items based on selected quotation or trips
-  useEffect(() => {
-    if (selectedQuotation && quotations) {
-      const quotation = quotations.find(q => q.id === selectedQuotation);
-      if (quotation && quotation.items) {
-        setInvoiceItems(quotation.items);
-      }
-    } else if (selectedTrips.length > 0 && availableTrips) {
-      const newItems = selectedTrips.map(tripId => {
-        const trip = availableTrips.find(t => t.id === tripId);
-        return {
-          description: `${formatTripType(trip?.type || 'other')} - ${format(parseISO(trip?.date || new Date().toISOString()), 'MMM d, yyyy')}`,
-          quantity: 1,
-          unit_price: trip?.amount || 0,
-          amount: trip?.amount || 0
-        };
-      });
-      setInvoiceItems(newItems);
-    } else if (editInvoice) {
-      setInvoiceItems(editInvoice.items);
-    } else if (invoiceItems.length === 0) {
-      setInvoiceItems([{...initialItem}]);
-    }
-  }, [selectedQuotation, quotations, selectedTrips, availableTrips, editInvoice]);
+  // Calculate total amount for invoice items
+  const calculateTotal = (items: InvoiceItem[]): number => {
+    return items.reduce((sum, item) => sum + (item.amount || 0), 0);
+  };
 
-  // Reset form when creating new invoice
-  useEffect(() => {
-    if (!createInvoiceOpen && !editInvoice) {
-      setSelectedClient("");
-      setSelectedQuotation("");
-      setSelectedTrips([]);
-      setInvoiceItems([{...initialItem}]);
-    }
-  }, [createInvoiceOpen, editInvoice]);
-
-  // Reset form when editing invoice
-  useEffect(() => {
-    if (editInvoice) {
-      setSelectedClient(editInvoice.client_id);
-      setSelectedQuotation(editInvoice.quotation_id || "");
-      setInvoiceItems(editInvoice.items);
-    }
-  }, [editInvoice]);
-
-  // Set payment amount to remaining balance
-  useEffect(() => {
-    if (viewInvoice && recordPaymentOpen) {
-      const remainingBalance = viewInvoice.total_amount - viewInvoice.paid_amount;
-      setPaymentAmount(remainingBalance.toFixed(2));
-    }
-  }, [viewInvoice, recordPaymentOpen]);
-
-  // Update item amount when quantity or unit price changes
-  const updateItemAmount = (index: number, quantity: number, unitPrice: number) => {
+  // Update invoice item amount when quantity or unit price changes
+  const updateInvoiceItem = (index: number, field: keyof InvoiceItem, value: any) => {
     const updatedItems = [...invoiceItems];
-    updatedItems[index].quantity = quantity;
-    updatedItems[index].unit_price = unitPrice;
-    updatedItems[index].amount = quantity * unitPrice;
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    
+    // Recalculate amount if quantity or unit_price changed
+    if (field === "quantity" || field === "unit_price") {
+      const quantity = field === "quantity" ? value : updatedItems[index].quantity;
+      const unitPrice = field === "unit_price" ? value : updatedItems[index].unit_price;
+      updatedItems[index].amount = quantity * unitPrice;
+    }
+    
     setInvoiceItems(updatedItems);
   };
 
-  // Add a new item to the invoice
-  const addItem = () => {
-    setInvoiceItems([...invoiceItems, {...initialItem}]);
+  // Add a new invoice item
+  const addInvoiceItem = () => {
+    setInvoiceItems([...invoiceItems, { description: "", quantity: 1, unit_price: 0, amount: 0 }]);
   };
 
-  // Remove an item from the invoice
-  const removeItem = (index: number) => {
-    if (invoiceItems.length > 1) {
-      const updatedItems = invoiceItems.filter((_, i) => i !== index);
-      setInvoiceItems(updatedItems);
-    }
+  // Remove an invoice item
+  const removeInvoiceItem = (index: number) => {
+    if (invoiceItems.length <= 1) return; // Keep at least one item
+    const updatedItems = invoiceItems.filter((_, i) => i !== index);
+    setInvoiceItems(updatedItems);
   };
 
-  // Calculate total amount from invoice items
-  const calculateTotal = (): number => {
-    return invoiceItems.reduce((total, item) => total + item.amount, 0);
-  };
-
-  // Handle client selection
-  const handleClientChange = (value: string) => {
-    setSelectedClient(value);
-    setSelectedQuotation("");
-    setSelectedTrips([]);
-  };
-
-  // Handle quotation selection
-  const handleQuotationChange = (value: string) => {
-    if (value === "_none") {
-      setSelectedQuotation("");
-    } else {
-      setSelectedQuotation(value);
-    }
-  };
-
-  // Save invoice (create or update)
+  // Handle saving an invoice (new or edit)
   const handleSaveInvoice = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    // Convert InvoiceItem[] to a JSON-compatible format for Supabase
-    const invoiceData = {
-      client_id: formData.get("client_id") as string,
-      date: formData.get("date") as string,
-      due_date: formData.get("due_date") as string,
-      items: invoiceItems as any, // Cast to any to bypass type checking
-      total_amount: calculateTotal(),
-      paid_amount: editInvoice ? editInvoice.paid_amount : 0,
-      status: formData.get("status") as InvoiceStatus || "draft",
-      quotation_id: selectedQuotation || null,
-      notes: formData.get("notes") as string || null
-    };
+    const totalAmount = calculateTotal(invoiceItems);
     
     try {
       if (editInvoice) {
-        // Update existing invoice
+        // Update existing invoice - prepare data for Supabase
+        const invoiceData = {
+          client_id: formData.get("client_id") as string,
+          date: formData.get("date") as string,
+          due_date: formData.get("due_date") as string,
+          status: formData.get("status") as InvoiceStatus,
+          items: invoiceItems,
+          total_amount: totalAmount,
+          paid_amount: editInvoice.paid_amount,
+          notes: formData.get("notes") as string || null,
+          updated_at: new Date().toISOString(),
+        };
+        
         const { error } = await supabase
           .from("invoices")
           .update(invoiceData)
           .eq("id", editInvoice.id);
-          
+        
         if (error) throw error;
 
         toast({
           title: "Invoice updated",
-          description: "Invoice has been updated successfully",
+          description: "Invoice details have been updated successfully",
         });
         
         setEditInvoice(null);
       } else {
-        // Create new invoice
+        // Create new invoice - prepare data for Supabase
+        const invoiceData = {
+          client_id: formData.get("client_id") as string,
+          date: formData.get("date") as string,
+          due_date: formData.get("due_date") as string,
+          status: formData.get("status") as InvoiceStatus || "draft",
+          items: invoiceItems,
+          total_amount: totalAmount,
+          paid_amount: 0,
+          notes: formData.get("notes") as string || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
         const { data, error } = await supabase
           .from("invoices")
-          .insert(invoiceData as any) // Cast to any to bypass type checking
+          .insert(invoiceData)
           .select();
-          
-        if (error) throw error;
         
-        // Update trips with invoice_id if any trips were selected
-        if (selectedTrips.length > 0 && data) {
-          const newInvoiceId = data[0].id;
+        if (error) throw error;
+
+        // If trips were selected, update them with the invoice_id
+        if (selectedTrips.length > 0 && data && data[0]) {
+          const invoiceId = data[0].id;
           
-          const { error: tripsError } = await supabase
+          const { error: updateError } = await supabase
             .from("trips")
-            .update({ invoice_id: newInvoiceId })
+            .update({ invoice_id: invoiceId })
             .in("id", selectedTrips);
-            
-          if (tripsError) throw tripsError;
+          
+          if (updateError) {
+            console.error("Error updating trips with invoice ID:", updateError);
+            toast({
+              title: "Warning",
+              description: "Invoice created but failed to link some trips",
+              variant: "destructive",
+            });
+          }
         }
 
         toast({
@@ -564,106 +334,31 @@ export default function Invoices() {
         });
         
         setCreateInvoiceOpen(false);
+        setSelectedClientId("");
+        setSelectedTrips([]);
+        setInvoiceItems([{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
       }
       
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["trips", "uninvoiced"] });
+      queryClient.invalidateQueries({ queryKey: ["availableTrips"] });
     } catch (error) {
       console.error("Error saving invoice:", error);
       toast({
         title: "Error",
-        description: "Failed to save invoice",
+        description: "Failed to save invoice details",
         variant: "destructive",
       });
     }
   };
 
-  // Delete invoice
-  const handleDeleteInvoice = async () => {
-    if (!invoiceToDelete) return;
-    
-    try {
-      // Release any associated trips
-      await supabase
-        .from("trips")
-        .update({ invoice_id: null })
-        .eq("invoice_id", invoiceToDelete);
-      
-      // Delete the invoice
-      const { error } = await supabase
-        .from("invoices")
-        .delete()
-        .eq("id", invoiceToDelete);
-        
-      if (error) throw error;
-
-      toast({
-        title: "Invoice deleted",
-        description: "Invoice has been deleted successfully",
-      });
-      
-      setDeleteDialogOpen(false);
-      setInvoiceToDelete(null);
-      
-      // Close any open dialogs if they were showing the deleted invoice
-      if (viewInvoice && viewInvoice.id === invoiceToDelete) setViewInvoice(null);
-      if (editInvoice && editInvoice.id === invoiceToDelete) setEditInvoice(null);
-      
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
-    } catch (error) {
-      console.error("Error deleting invoice:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete invoice",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Update invoice status
-  const updateInvoiceStatus = async (invoiceId: string, status: InvoiceStatus) => {
-    try {
-      const { error } = await supabase
-        .from("invoices")
-        .update({ status })
-        .eq("id", invoiceId);
-        
-      if (error) throw error;
-
-      toast({
-        title: "Status updated",
-        description: `Invoice status changed to ${formatStatus(status)}`,
-      });
-      
-      // Update local state if it's the currently viewed invoice
-      if (viewInvoice && viewInvoice.id === invoiceId) {
-        setViewInvoice({...viewInvoice, status});
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-    } catch (error) {
-      console.error("Error updating invoice status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update invoice status",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Record payment for an invoice
+  // Handle marking an invoice as paid
   const handleRecordPayment = async () => {
-    if (!viewInvoice) return;
+    if (!invoiceToMarkPaid) return;
     
     try {
-      const paymentAmountNum = parseFloat(paymentAmount);
-      if (isNaN(paymentAmountNum) || paymentAmountNum <= 0) {
-        throw new Error("Invalid payment amount");
-      }
-      
-      const newPaidAmount = viewInvoice.paid_amount + paymentAmountNum;
-      const newStatus = newPaidAmount >= viewInvoice.total_amount ? "paid" : viewInvoice.status;
+      const newPaidAmount = (invoiceToMarkPaid.paid_amount || 0) + paymentAmount;
+      const newStatus: InvoiceStatus = 
+        newPaidAmount >= invoiceToMarkPaid.total_amount ? "paid" : "sent";
       
       const { error } = await supabase
         .from("invoices")
@@ -671,18 +366,29 @@ export default function Invoices() {
           paid_amount: newPaidAmount,
           payment_date: paymentDate,
           payment_method: paymentMethod,
-          status: newStatus
+          status: newStatus,
+          notes: invoiceToMarkPaid.notes 
+            ? `${invoiceToMarkPaid.notes}\n\nPayment (${format(new Date(paymentDate), "MMM d, yyyy")}): ${paymentNotes}`
+            : `Payment (${format(new Date(paymentDate), "MMM d, yyyy")}): ${paymentNotes}`,
         })
-        .eq("id", viewInvoice.id);
-        
+        .eq("id", invoiceToMarkPaid.id);
+      
       if (error) throw error;
 
       toast({
         title: "Payment recorded",
-        description: `Payment of ${formatCurrency(paymentAmountNum)} has been recorded`,
+        description: newStatus === "paid" 
+          ? "Invoice has been marked as fully paid" 
+          : "Partial payment has been recorded",
       });
       
-      setRecordPaymentOpen(false);
+      setPaymentDialogOpen(false);
+      setInvoiceToMarkPaid(null);
+      setPaymentAmount(0);
+      setPaymentMethod("bank_transfer");
+      setPaymentDate(format(new Date(), "yyyy-MM-dd"));
+      setPaymentNotes("");
+      
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
     } catch (error) {
       console.error("Error recording payment:", error);
@@ -694,37 +400,59 @@ export default function Invoices() {
     }
   };
 
-  // Send invoice to client
-  const sendInvoice = async (invoiceId: string) => {
+  // Delete invoice
+  const deleteInvoice = async () => {
+    if (!invoiceToDelete) return;
+    
     try {
+      // First, remove invoice_id from associated trips
+      const { error: tripUpdateError } = await supabase
+        .from("trips")
+        .update({ invoice_id: null })
+        .eq("invoice_id", invoiceToDelete);
+      
+      if (tripUpdateError) {
+        console.error("Error unlinking trips:", tripUpdateError);
+      }
+      
+      // Then delete the invoice
       const { error } = await supabase
         .from("invoices")
-        .update({ status: "sent" })
-        .eq("id", invoiceId);
-        
+        .delete()
+        .eq("id", invoiceToDelete);
+
       if (error) throw error;
 
       toast({
-        title: "Invoice sent",
-        description: "Invoice has been marked as sent to client",
+        title: "Invoice deleted",
+        description: "Invoice has been deleted successfully",
       });
-      
+
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      setDeleteDialogOpen(false);
+      setInvoiceToDelete(null);
+      
+      // Close any open dialogs if they were showing the deleted invoice
+      if (viewInvoice && viewInvoice.id === invoiceToDelete) setViewInvoice(null);
+      if (editInvoice && editInvoice.id === invoiceToDelete) setEditInvoice(null);
     } catch (error) {
-      console.error("Error sending invoice:", error);
+      console.error("Error deleting invoice:", error);
       toast({
         title: "Error",
-        description: "Failed to send invoice",
+        description: "Failed to delete invoice",
         variant: "destructive",
       });
     }
   };
 
   // Helper functions for formatting
-  const formatInvoiceId = (id: string): string => {
-    return id ? "INV-" + id.substring(0, 8).toUpperCase() : "INV-XXXXXXXX";
+  const formatStatus = (status: InvoiceStatus): string => {
+    return status.replace(/_/g, " ")
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
-
+  
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -733,26 +461,10 @@ export default function Invoices() {
   };
   
   const formatDate = (dateStr: string): string => {
-    if (!dateStr) return "Unknown Date";
-    try {
-      return format(parseISO(dateStr), "MMM d, yyyy");
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid Date";
-    }
-  };
-  
-  const formatStatus = (status: InvoiceStatus): string => {
-    if (!status) return "Unknown";
-    return status.replace("_", " ")
-      .split(" ")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+    return format(new Date(dateStr), "MMM d, yyyy");
   };
   
   const getStatusColor = (status: InvoiceStatus): string => {
-    if (!status) return "bg-gray-100 text-gray-700";
-    
     switch (status) {
       case "draft":
         return "bg-gray-100 text-gray-700";
@@ -761,7 +473,7 @@ export default function Invoices() {
       case "paid":
         return "bg-green-100 text-green-700";
       case "overdue":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-red-100 text-red-700";
       case "cancelled":
         return "bg-red-100 text-red-700";
       default:
@@ -769,35 +481,38 @@ export default function Invoices() {
     }
   };
 
-  // Format trip type for better display
-  const formatTripType = (type: string): string => {
-    if (!type) return "Transfer";
-    
-    switch (type) {
-      case "airport_pickup":
-        return "Airport Pickup";
-      case "airport_dropoff":
-        return "Airport Dropoff";
-      case "other":
-        return "Transfer";
-      case "hourly":
-        return "Hourly Service";
-      case "full_day":
-        return "Full Day Service";
-      case "multi_day":
-        return "Multi-Day Service";
-      default:
-        try {
-          return type.replace(/_/g, " ")
-            .split(" ")
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-        } catch (error) {
-          console.error("Error formatting trip type:", error);
-          return "Unknown Type";
-        }
-    }
+  // Format invoice ID to show first 8 characters
+  const formatInvoiceId = (id: string): string => {
+    return id.substring(0, 8).toUpperCase();
   };
+
+  // Check if an invoice is overdue
+  const isInvoiceOverdue = (invoice: Invoice): boolean => {
+    return (
+      invoice.status === "sent" &&
+      isBefore(parseISO(invoice.due_date), new Date())
+    );
+  };
+
+  // Update invoice statuses based on due dates
+  useEffect(() => {
+    const updateOverdueInvoices = async () => {
+      const overdueInvoices = invoices?.filter(isInvoiceOverdue) || [];
+      
+      for (const invoice of overdueInvoices) {
+        await supabase
+          .from("invoices")
+          .update({ status: "overdue" })
+          .eq("id", invoice.id);
+      }
+      
+      if (overdueInvoices.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      }
+    };
+    
+    updateOverdueInvoices();
+  }, [invoices, queryClient]);
 
   // Filter invoices based on search and status filter
   const filteredInvoices = invoices?.filter(invoice => {
@@ -811,9 +526,23 @@ export default function Invoices() {
     return matchesSearch && matchesStatus;
   });
 
-  // Calculate dashboard metrics
-  const metrics = getDashboardMetrics();
-  const revenueGrowth = getRevenueGrowth();
+  // Generate a PDF invoice (placeholder function)
+  const generateInvoicePDF = (invoice: DisplayInvoice) => {
+    toast({
+      title: "PDF Generation",
+      description: "PDF generation would happen here in a real app",
+    });
+    console.log("Generating PDF for invoice:", invoice);
+  };
+
+  // Send invoice by email (placeholder function)
+  const sendInvoiceByEmail = (invoice: DisplayInvoice) => {
+    toast({
+      title: "Email Sending",
+      description: "Email sending would happen here in a real app",
+    });
+    console.log("Sending invoice by email:", invoice);
+  };
 
   if (invoicesLoading) {
     return (
@@ -828,11 +557,6 @@ export default function Invoices() {
     );
   }
 
-  // Handle loading and error states for dependent data
-  const isFormDataLoading = createInvoiceOpen && (
-    (selectedClient && (quotationsLoading || tripsLoading))
-  );
-
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -840,94 +564,9 @@ export default function Invoices() {
           <h2 className="text-3xl font-semibold tracking-tight">Invoices</h2>
           <p className="text-muted-foreground">Manage client invoices and payments</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setCreateInvoiceOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Create Invoice
-          </Button>
-        </div>
-      </div>
-
-      {/* Dashboard Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-sm font-medium">
-                Total Invoiced
-              </CardTitle>
-            </div>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalInvoiced)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {revenueGrowth > 0 ? (
-                <span className="text-green-600 flex items-center">
-                  <ArrowUp className="h-3 w-3 mr-1" />
-                  {revenueGrowth}% from last month
-                </span>
-              ) : revenueGrowth < 0 ? (
-                <span className="text-red-600 flex items-center">
-                  <ArrowUp className="h-3 w-3 mr-1 rotate-180" />
-                  {Math.abs(revenueGrowth)}% from last month
-                </span>
-              ) : (
-                <span>No change from last month</span>
-              )}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-sm font-medium">
-                Total Paid
-              </CardTitle>
-            </div>
-            <Check className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalPaid)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {Math.round((metrics.totalPaid / metrics.totalInvoiced) * 100) || 0}% of total invoiced
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-sm font-medium">
-                Pending Payments
-              </CardTitle>
-            </div>
-            <Clock className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalPending)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              From {invoices?.filter(inv => inv.status === 'sent').length || 0} pending invoices
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-sm font-medium">
-                Overdue Payments
-              </CardTitle>
-            </div>
-            <AlertCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalOverdue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              From {metrics.overdueCount} overdue {metrics.overdueCount === 1 ? 'invoice' : 'invoices'}
-            </p>
-          </CardContent>
-        </Card>
+        <Button onClick={() => setCreateInvoiceOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Create Invoice
+        </Button>
       </div>
 
       {/* Search and Filter */}
@@ -956,147 +595,415 @@ export default function Invoices() {
         </Select>
       </div>
 
-      {/* Invoices List */}
-      {!filteredInvoices || filteredInvoices.length === 0 ? (
-        <div className="rounded-lg border p-8 text-center">
-          <FileText className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Invoices Found</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {searchTerm || statusFilter !== "all"
-              ? "No invoices match your search criteria"
-              : "Create your first invoice to get started"}
-          </p>
-          <Button onClick={() => setCreateInvoiceOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Create Invoice
-          </Button>
-        </div>
-      ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
+      {/* Invoices Table */}
+      <div className="bg-white rounded-lg shadow">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Invoice #</TableHead>
+              <TableHead>Client</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredInvoices?.length === 0 ? (
               <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableCell colSpan={7} className="text-center py-8">
+                  No invoices found. Try adjusting your search or create a new invoice.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice) => (
-                <TableRow key={invoice.id}>
+            ) : (
+              filteredInvoices?.map((invoice) => (
+                <TableRow key={invoice.id} className="group">
                   <TableCell className="font-medium">
                     {formatInvoiceId(invoice.id)}
                   </TableCell>
-                  <TableCell>{invoice.client_name}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{invoice.client_name}</div>
+                    {invoice.client_email && (
+                      <div className="text-sm text-muted-foreground">{invoice.client_email}</div>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDate(invoice.date)}</TableCell>
                   <TableCell>{formatDate(invoice.due_date)}</TableCell>
                   <TableCell>
-                    <div>
-                      {formatCurrency(invoice.total_amount)}
-                      {invoice.paid_amount > 0 && invoice.paid_amount < invoice.total_amount && (
-                        <div className="text-xs text-muted-foreground">
-                          Paid: {formatCurrency(invoice.paid_amount)}
-                        </div>
-                      )}
-                    </div>
+                    <div className="font-medium">{formatCurrency(invoice.total_amount)}</div>
+                    {invoice.paid_amount > 0 && invoice.paid_amount < invoice.total_amount && (
+                      <div className="text-sm text-muted-foreground">
+                        Paid: {formatCurrency(invoice.paid_amount)}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={getStatusColor(invoice.status)}>
+                    <Badge className={getStatusColor(invoice.status)}>
                       {formatStatus(invoice.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => setViewInvoice(invoice)}>
-                          <Eye className="mr-2 h-4 w-4" /> View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditInvoice(invoice)} disabled={invoice.status === "paid"}>
-                          <Edit className="mr-2 h-4 w-4" /> Edit Invoice
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        
-                        {invoice.status === "draft" && (
-                          <DropdownMenuItem onClick={() => sendInvoice(invoice.id)}>
-                            <Send className="mr-2 h-4 w-4" /> Send to Client
+                  <TableCell className="text-right">
+                    <div className="flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setViewInvoice(invoice)}
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span className="sr-only">View details</span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => setViewInvoice(invoice)}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            View Details
                           </DropdownMenuItem>
-                        )}
-                        
-                        {(invoice.status === "sent" || invoice.status === "overdue") && invoice.paid_amount < invoice.total_amount && (
-                          <DropdownMenuItem onClick={() => {
-                            setViewInvoice(invoice);
-                            setRecordPaymentOpen(true);
-                          }}>
-                            <DollarSign className="mr-2 h-4 w-4" /> Record Payment
+                          <DropdownMenuItem onClick={() => setEditInvoice(invoice)}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Edit Invoice
                           </DropdownMenuItem>
-                        )}
-                        
-                        <DropdownMenuItem onClick={() => {
-                          // Print preview would go here
-                          toast({
-                            title: "Print preview",
-                            description: `Printing invoice ${formatInvoiceId(invoice.id)}`,
-                          });
-                        }}>
-                          <Printer className="mr-2 h-4 w-4" /> Print
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuItem onClick={() => {
-                          // Download functionality would go here
-                          toast({
-                            title: "Download",
-                            description: `Downloading invoice ${formatInvoiceId(invoice.id)}`,
-                          });
-                        }}>
-                          <Download className="mr-2 h-4 w-4" /> Download PDF
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        {invoice.status !== "cancelled" && (
-                          <DropdownMenuItem onClick={() => updateInvoiceStatus(invoice.id, "cancelled")}>
-                            <X className="mr-2 h-4 w-4" /> Mark Cancelled
+                          <DropdownMenuItem onClick={() => generateInvoicePDF(invoice)}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download PDF
                           </DropdownMenuItem>
-                        )}
-                        
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setInvoiceToDelete(invoice.id);
-                            setDeleteDialogOpen(true);
-                          }}
-                          className="text-red-500"
-                        >
-                          <Trash className="mr-2 h-4 w-4" /> Delete Invoice
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          
+                          {invoice.status !== "paid" && invoice.status !== "cancelled" && (
+                            <DropdownMenuItem onClick={() => {
+                              setInvoiceToMarkPaid(invoice);
+                              setPaymentDialogOpen(true);
+                            }}>
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Record Payment
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {invoice.status === "draft" && (
+                            <DropdownMenuItem onClick={() => sendInvoiceByEmail(invoice)}>
+                              <Send className="h-4 w-4 mr-2" />
+                              Send to Client
+                            </DropdownMenuItem>
+                          )}
+                          
+                          <DropdownMenuSeparator />
+                          
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setInvoiceToDelete(invoice.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-600"
+                          >
+                            <Trash className="h-4 w-4 mr-2" />
+                            Delete Invoice
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Invoice Form Dialog (Create & Edit) */}
+      <Dialog open={createInvoiceOpen || !!editInvoice} onOpenChange={(open) => {
+        if (!open) {
+          setCreateInvoiceOpen(false);
+          setEditInvoice(null);
+          setSelectedClientId("");
+          setSelectedTrips([]);
+          setInvoiceItems([{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
+        }
+      }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{editInvoice ? "Edit Invoice" : "Create New Invoice"}</DialogTitle>
+            <DialogDescription>
+              {editInvoice 
+                ? `Edit invoice details for ${editInvoice.client_name}`
+                : "Create a new invoice for a client"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
+            <form onSubmit={handleSaveInvoice} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="client_id">Client</Label>
+                <Select 
+                  name="client_id" 
+                  value={editInvoice?.client_id || selectedClientId}
+                  onValueChange={setSelectedClientId}
+                  disabled={!!editInvoice}
+                  required
+                >
+                  <SelectTrigger id="client_id">
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients?.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Invoice Date</Label>
+                  <Input 
+                    id="date"
+                    name="date"
+                    type="date"
+                    defaultValue={editInvoice?.date || format(new Date(), "yyyy-MM-dd")}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="due_date">Due Date</Label>
+                  <Input 
+                    id="due_date"
+                    name="due_date"
+                    type="date"
+                    defaultValue={editInvoice?.due_date || format(addDays(new Date(), 30), "yyyy-MM-dd")}
+                    required
+                  />
+                </div>
+              </div>
+
+              {!editInvoice && selectedClientId && (
+                <div className="space-y-2 border p-4 rounded-md">
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>Select Trips to Invoice</Label>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedTrips.length} selected
+                    </span>
+                  </div>
+                  
+                  {availableTrips?.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No uninvoiced trips available for this client
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                      {availableTrips?.map((trip) => (
+                        <div key={trip.id} className="flex items-center space-x-2 p-2 border rounded-md">
+                          <Checkbox 
+                            id={`trip-${trip.id}`}
+                            checked={selectedTrips.includes(trip.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedTrips([...selectedTrips, trip.id]);
+                                
+                                // Add trip as an invoice item
+                                const tripDate = format(new Date(trip.date), "MMM d, yyyy");
+                                const description = `Transportation service on ${tripDate}`;
+                                const amount = trip.amount || 0;
+                                
+                                setInvoiceItems([
+                                  ...invoiceItems,
+                                  { 
+                                    description, 
+                                    quantity: 1, 
+                                    unit_price: amount, 
+                                    amount 
+                                  }
+                                ]);
+                              } else {
+                                setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
+                                
+                                // Remove corresponding invoice item (if we can identify it)
+                                const tripDate = format(new Date(trip.date), "MMM d, yyyy");
+                                const itemIndex = invoiceItems.findIndex(
+                                  item => item.description.includes(tripDate)
+                                );
+                                
+                                if (itemIndex !== -1) {
+                                  const updatedItems = [...invoiceItems];
+                                  updatedItems.splice(itemIndex, 1);
+                                  setInvoiceItems(updatedItems);
+                                }
+                              }
+                            }}
+                          />
+                          <div className="flex-1">
+                            <Label 
+                              htmlFor={`trip-${trip.id}`}
+                              className="font-medium cursor-pointer"
+                            >
+                              {format(new Date(trip.date), "MMM d, yyyy")}
+                            </Label>
+                            <div className="text-sm text-muted-foreground">
+                              {trip.pickup_location && trip.dropoff_location ? (
+                                <span>{trip.pickup_location} to {trip.dropoff_location}</span>
+                              ) : (
+                                <span>{trip.pickup_location || trip.dropoff_location}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium">
+                              {formatCurrency(trip.amount || 0)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center mb-2">
+                  <Label>Invoice Items</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addInvoiceItem}
+                    className="h-8 px-2"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Item
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  {invoiceItems.map((item, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-5">
+                        <Input 
+                          placeholder="Description"
+                          value={item.description}
+                          onChange={(e) => updateInvoiceItem(index, "description", e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input 
+                          type="number"
+                          placeholder="Qty"
+                          value={item.quantity}
+                          onChange={(e) => updateInvoiceItem(index, "quantity", parseFloat(e.target.value))}
+                          min="1"
+                          required
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input 
+                          type="number"
+                          placeholder="Unit Price"
+                          value={item.unit_price}
+                          onChange={(e) => updateInvoiceItem(index, "unit_price", parseFloat(e.target.value))}
+                          min="0"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <div className="flex h-10 items-center px-3 border rounded-md bg-muted">
+                          {formatCurrency(item.amount)}
+                        </div>
+                      </div>
+                      <div className="col-span-1 flex justify-center">
+                        {invoiceItems.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeInvoiceItem(index)}
+                            className="h-8 w-8"
+                          >
+                            <Trash className="h-4 w-4" />
+                            <span className="sr-only">Remove item</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-end pt-4">
+                  <div className="w-[200px] space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(calculateTotal(invoiceItems))}</span>
+                    </div>
+                    <div className="flex justify-between font-medium">
+                      <span>Total:</span>
+                      <span>{formatCurrency(calculateTotal(invoiceItems))}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea 
+                  id="notes"
+                  name="notes"
+                  placeholder="Enter any additional notes for this invoice"
+                  defaultValue={editInvoice?.notes || ""}
+                  rows={3}
+                />
+              </div>
+
+              {editInvoice && (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select 
+                    name="status" 
+                    defaultValue={editInvoice.status}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="overdue">Overdue</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => {
+                  setCreateInvoiceOpen(false);
+                  setEditInvoice(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editInvoice ? "Update Invoice" : "Create Invoice"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* View Invoice Dialog */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>
-              Invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}
-            </DialogTitle>
+            <DialogTitle>Invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}</DialogTitle>
             <DialogDescription>
               {viewInvoice && (
-                <Badge variant="outline" className={getStatusColor(viewInvoice.status)}>
+                <Badge className={getStatusColor(viewInvoice.status)}>
                   {formatStatus(viewInvoice.status)}
                 </Badge>
               )}
@@ -1104,46 +1011,47 @@ export default function Invoices() {
           </DialogHeader>
 
           {viewInvoice && (
-            <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="details">Invoice Details</TabsTrigger>
-                <TabsTrigger value="trips">Related Trips ({viewInvoice.trips?.length || 0})</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+            <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <h3 className="text-sm font-medium">Client Information</h3>
-                    <div className="mt-1 text-sm">
-                      <p className="font-semibold">{viewInvoice.client_name}</p>
-                      {viewInvoice.client_address && <p>{viewInvoice.client_address}</p>}
-                      {viewInvoice.client_email && <p>{viewInvoice.client_email}</p>}
-                      {viewInvoice.client_phone && <p>{viewInvoice.client_phone}</p>}
+                    <h3 className="text-sm font-medium mb-1">Client Details</h3>
+                    <div className="text-sm">
+                      <p className="font-medium">{viewInvoice.client_name}</p>
+                      {viewInvoice.client_address && (
+                        <p className="text-muted-foreground">{viewInvoice.client_address}</p>
+                      )}
+                      {viewInvoice.client_email && (
+                        <p className="text-muted-foreground">{viewInvoice.client_email}</p>
+                      )}
+                      {viewInvoice.client_phone && (
+                        <p className="text-muted-foreground">{viewInvoice.client_phone}</p>
+                      )}
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium">Invoice Information</h3>
-                    <div className="mt-1 text-sm space-y-1">
+                    <h3 className="text-sm font-medium mb-1">Invoice Details</h3>
+                    <div className="text-sm space-y-1">
                       <div className="flex justify-between">
-                        <span>Invoice Date:</span>
+                        <span className="text-muted-foreground">Invoice Date:</span>
                         <span>{formatDate(viewInvoice.date)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Due Date:</span>
+                        <span className="text-muted-foreground">Due Date:</span>
                         <span>{formatDate(viewInvoice.due_date)}</span>
                       </div>
-                      {viewInvoice.quotation_number && (
+                      {viewInvoice.payment_date && (
                         <div className="flex justify-between">
-                          <span>Quotation:</span>
-                          <span>{viewInvoice.quotation_number}</span>
+                          <span className="text-muted-foreground">Payment Date:</span>
+                          <span>{formatDate(viewInvoice.payment_date)}</span>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium mb-2">Items</h3>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Invoice Items</h3>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1163,447 +1071,168 @@ export default function Invoices() {
                         </TableRow>
                       ))}
                     </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-right font-medium">Total</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(viewInvoice.total_amount)}
+                        </TableCell>
+                      </TableRow>
+                      {viewInvoice.paid_amount > 0 && (
+                        <>
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-right font-medium">
+                              Paid
+                            </TableCell>
+                            <TableCell className="text-right font-medium text-green-600">
+                              {formatCurrency(viewInvoice.paid_amount)}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-right font-medium">
+                              Balance Due
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}
+                            </TableCell>
+                          </TableRow>
+                        </>
+                      )}
+                    </TableFooter>
                   </Table>
-                </div>
-
-                <div className="flex justify-end">
-                  <div className="w-1/3 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>{formatCurrency(viewInvoice.total_amount)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Total:</span>
-                      <span>{formatCurrency(viewInvoice.total_amount)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Paid:</span>
-                      <span>{formatCurrency(viewInvoice.paid_amount)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Balance Due:</span>
-                      <span>{formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}</span>
-                    </div>
-                  </div>
                 </div>
 
                 {viewInvoice.notes && (
-                  <div className="mt-4">
+                  <div>
                     <h3 className="text-sm font-medium mb-1">Notes</h3>
-                    <p className="text-sm p-3 bg-muted rounded-md">{viewInvoice.notes}</p>
-                  </div>
-                )}
-
-                {viewInvoice.payment_date && (
-                  <div className="mt-4">
-                    <h3 className="text-sm font-medium mb-1">Payment Information</h3>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between max-w-xs">
-                        <span>Payment Date:</span>
-                        <span>{formatDate(viewInvoice.payment_date)}</span>
-                      </div>
-                      {viewInvoice.payment_method && (
-                        <div className="flex justify-between max-w-xs">
-                          <span>Payment Method:</span>
-                          <span>{viewInvoice.payment_method.replace(/_/g, ' ')}</span>
-                        </div>
-                      )}
+                    <div className="p-3 bg-gray-50 rounded-md text-sm">
+                      {viewInvoice.notes.split('\n').map((line, i) => (
+                        <p key={i}>{line}</p>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                <DialogFooter className="gap-2 sm:justify-between">
-                  <div className="flex gap-2">
-                    {viewInvoice.status === "draft" && (
-                      <Button size="sm" onClick={() => sendInvoice(viewInvoice.id)}>
-                        <Send className="mr-2 h-4 w-4" /> Send to Client
-                      </Button>
-                    )}
-                    
-                    {(viewInvoice.status === "sent" || viewInvoice.status === "overdue") && viewInvoice.paid_amount < viewInvoice.total_amount && (
-                      <Button size="sm" onClick={() => setRecordPaymentOpen(true)}>
-                        <DollarSign className="mr-2 h-4 w-4" /> Record Payment
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => {
-                      // Print preview would go here
-                      toast({
-                        title: "Print preview",
-                        description: `Printing invoice ${formatInvoiceId(viewInvoice.id)}`,
-                      });
-                    }}>
-                      <Printer className="mr-2 h-4 w-4" /> Print
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
-                      // Download functionality would go here
-                      toast({
-                        title: "Download",
-                        description: `Downloading invoice ${formatInvoiceId(viewInvoice.id)}`,
-                      });
-                    }}>
-                      <Download className="mr-2 h-4 w-4" /> Download PDF
-                    </Button>
-                  </div>
-                </DialogFooter>
-              </TabsContent>
-              
-              <TabsContent value="trips" className="space-y-4">
-                {!viewInvoice.trips || viewInvoice.trips.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Car className="mx-auto h-8 w-8 text-muted-foreground opacity-50 mb-2" />
-                    <p className="text-muted-foreground">No trips associated with this invoice</p>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Vehicle</TableHead>
-                          <TableHead>Driver</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {viewInvoice.trips.map((trip) => (
-                          <TableRow key={trip.id}>
-                            <TableCell>{formatDate(trip.date)}</TableCell>
-                            <TableCell>{formatTripType(trip.type)}</TableCell>
-                            <TableCell>{trip.vehicle_details}</TableCell>
-                            <TableCell>{trip.driver_name}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {trip.status && typeof trip.status === 'string' ? 
-                                  trip.status.charAt(0).toUpperCase() + trip.status.slice(1) : 
-                                  "Unknown"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">{formatCurrency(trip.amount)}</TableCell>
+                {viewInvoice.trips && viewInvoice.trips.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Related Trips</h3>
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Route</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Create/Edit Invoice Dialog */}
-      <Dialog 
-        open={createInvoiceOpen || !!editInvoice} 
-        onOpenChange={(open) => !open && (setCreateInvoiceOpen(false), setEditInvoice(null))}
-      >
-        <DialogContent className="sm:max-w-3xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>{editInvoice ? "Edit Invoice" : "Create New Invoice"}</DialogTitle>
-            <DialogDescription>
-              {editInvoice 
-                ? `Modify invoice details for ${editInvoice.client_name}`
-                : "Fill in the details to create a new invoice"}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className="max-h-[calc(90vh-10rem)]">
-            {isFormDataLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading client data...</p>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSaveInvoice} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="client_id">Client</Label>
-                    <Select 
-                      name="client_id" 
-                      value={selectedClient} 
-                      onValueChange={handleClientChange}
-                      disabled={!!editInvoice}
-                      required
-                    >
-                      <SelectTrigger id="client_id">
-                        <SelectValue placeholder="Select client" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients?.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {selectedClient && !editInvoice && (
-                    <div className="space-y-2">
-                      <Label htmlFor="quotation_id">Based on Quotation (Optional)</Label>
-                      <Select 
-                        name="quotation_id" 
-                        value={selectedQuotation || "_none"} 
-                        onValueChange={handleQuotationChange}
-                      >
-                        <SelectTrigger id="quotation_id">
-                          <SelectValue placeholder="Select quotation (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="_none">None</SelectItem>
-                          {quotations?.map((quotation) => (
-                            <SelectItem key={quotation.id} value={quotation.id}>
-                              {quotation.id.substring(0, 8).toUpperCase()} ({formatDate(quotation.date)})
-                            </SelectItem>
+                        </TableHeader>
+                        <TableBody>
+                          {viewInvoice.trips.map((trip) => (
+                            <TableRow key={trip.id}>
+                              <TableCell>{formatDate(trip.date)}</TableCell>
+                              <TableCell>{trip.type}</TableCell>
+                              <TableCell>
+                                {trip.pickup_location && trip.dropoff_location
+                                  ? `${trip.pickup_location} to ${trip.dropoff_location}`
+                                  : trip.pickup_location || trip.dropoff_location || "N/A"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {formatCurrency(trip.amount)}
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-
-                {selectedClient && !selectedQuotation && !editInvoice && availableTrips && availableTrips.length > 0 && (
-                  <div className="space-y-2 border p-4 rounded-md">
-                    <Label className="block mb-2">Include Completed Trips (Optional)</Label>
-                    <div className="grid grid-cols-1 gap-2">
-                      {availableTrips.map(trip => (
-                        <div key={trip.id} className="flex items-center space-x-2">
-                          <input 
-                            type="checkbox"
-                            id={`trip-${trip.id}`}
-                            value={trip.id}
-                            checked={selectedTrips.includes(trip.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedTrips([...selectedTrips, trip.id]);
-                              } else {
-                                setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
-                              }
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                          <Label htmlFor={`trip-${trip.id}`} className="cursor-pointer text-sm">
-                            {formatDate(trip.date)} - {formatTripType(trip.type)} - {formatCurrency(trip.amount)}
-                          </Label>
-                        </div>
-                      ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   </div>
                 )}
+              </div>
+            </ScrollArea>
+          )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Invoice Date</Label>
-                    <Input 
-                      id="date"
-                      name="date"
-                      type="date"
-                      defaultValue={editInvoice?.date || format(new Date(), "yyyy-MM-dd")}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="due_date">Due Date</Label>
-                    <Input 
-                      id="due_date"
-                      name="due_date"
-                      type="date"
-                      defaultValue={editInvoice?.due_date || format(addDays(new Date(), 30), "yyyy-MM-dd")}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label>Invoice Items</Label>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={addItem}
-                      disabled={!!selectedQuotation}
-                    >
-                      <Plus className="mr-2 h-4 w-4" /> Add Item
-                    </Button>
-                  </div>
-
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="text-right">Unit Price</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {invoiceItems.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Input 
-                              value={item.description}
-                              onChange={(e) => {
-                                const updatedItems = [...invoiceItems];
-                                updatedItems[index].description = e.target.value;
-                                setInvoiceItems(updatedItems);
-                              }}
-                              placeholder="Description"
-                              disabled={!!selectedQuotation}
-                              required
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Input 
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const quantity = parseInt(e.target.value) || 0;
-                                updateItemAmount(index, quantity, item.unit_price);
-                              }}
-                              min="1"
-                              className="w-20 text-right"
-                              disabled={!!selectedQuotation}
-                              required
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Input 
-                              type="number"
-                              value={item.unit_price}
-                              onChange={(e) => {
-                                const unitPrice = parseFloat(e.target.value) || 0;
-                                updateItemAmount(index, item.quantity, unitPrice);
-                              }}
-                              min="0"
-                              step="0.01"
-                              className="w-24 text-right"
-                              disabled={!!selectedQuotation}
-                              required
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(item.amount)}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              type="button" 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => removeItem(index)}
-                              disabled={invoiceItems.length === 1 || !!selectedQuotation}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-
-                  <div className="flex justify-end pt-4">
-                    <div className="w-1/3 space-y-1">
-                      <div className="flex justify-between text-sm font-medium">
-                        <span>Total:</span>
-                        <span>{formatCurrency(calculateTotal())}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes (Optional)</Label>
-                  <Textarea 
-                    id="notes"
-                    name="notes"
-                    placeholder="Add any notes or payment instructions"
-                    defaultValue={editInvoice?.notes || ""}
-                    className="min-h-[80px]"
-                  />
-                </div>
-
-                {editInvoice && (
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select name="status" defaultValue={editInvoice.status}>
-                      <SelectTrigger id="status">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="sent">Sent</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
-                    setCreateInvoiceOpen(false);
-                    setEditInvoice(null);
-                  }}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editInvoice ? "Save Changes" : "Create Invoice"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            )}
-          </ScrollArea>
+          <DialogFooter className="gap-2">
+            <div className="flex gap-2 flex-1">
+              {viewInvoice && viewInvoice.status !== "paid" && viewInvoice.status !== "cancelled" && (
+                <Button
+                  onClick={() => {
+                    setInvoiceToMarkPaid(viewInvoice);
+                    setPaymentDialogOpen(true);
+                  }}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" /> Record Payment
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => generateInvoicePDF(viewInvoice!)}>
+                <Download className="mr-2 h-4 w-4" /> Download PDF
+              </Button>
+              {viewInvoice && viewInvoice.status === "draft" && (
+                <Button onClick={() => sendInvoiceByEmail(viewInvoice)}>
+                  <Send className="mr-2 h-4 w-4" /> Send to Client
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Record Payment Dialog */}
-      <Dialog open={recordPaymentOpen} onOpenChange={setRecordPaymentOpen}>
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
-              {viewInvoice && (
-                <span>Record payment for invoice {formatInvoiceId(viewInvoice.id)}</span>
+              {invoiceToMarkPaid && (
+                <>Record payment for invoice {formatInvoiceId(invoiceToMarkPaid.id)}</>
               )}
             </DialogDescription>
           </DialogHeader>
-
+          
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="payment_amount">Payment Amount</Label>
+              <Label htmlFor="paymentAmount">Payment Amount</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="payment_amount"
+                  id="paymentAmount"
                   type="number"
-                  step="0.01"
                   min="0.01"
+                  step="0.01"
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  onChange={(e) => setPaymentAmount(parseFloat(e.target.value))}
                   className="pl-9"
                   required
                 />
               </div>
-              {viewInvoice && (
-                <div className="text-xs text-muted-foreground">
-                  Balance due: {formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}
+              {invoiceToMarkPaid && (
+                <div className="text-sm text-muted-foreground">
+                  Balance due: {formatCurrency(invoiceToMarkPaid.total_amount - (invoiceToMarkPaid.paid_amount || 0))}
                 </div>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="payment_date">Payment Date</Label>
+              <Label htmlFor="paymentMethod">Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+                <SelectTrigger id="paymentMethod">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="credit_card">Credit Card</SelectItem>
+                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentDate">Payment Date</Label>
               <Input
-                id="payment_date"
+                id="paymentDate"
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
@@ -1612,29 +1241,22 @@ export default function Invoices() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="payment_method">Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger id="payment_method">
-                  <SelectValue placeholder="Select payment method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="credit_card">Credit Card</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                  <SelectItem value="cheque">Cheque</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="paymentNotes">Notes (Optional)</Label>
+              <Textarea
+                id="paymentNotes"
+                placeholder="Add any notes about this payment"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+              />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRecordPaymentOpen(false)}>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleRecordPayment}>
-              <CreditCard className="mr-2 h-4 w-4" /> Record Payment
+              <Check className="mr-2 h-4 w-4" /> Record Payment
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1646,17 +1268,12 @@ export default function Invoices() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the invoice. This action cannot be undone.
+              This action will permanently delete this invoice. Associated trips will be unlinked from this invoice.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setDeleteDialogOpen(false);
-              setInvoiceToDelete(null);
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteInvoice}>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteInvoice} className="bg-red-600 hover:bg-red-700">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
