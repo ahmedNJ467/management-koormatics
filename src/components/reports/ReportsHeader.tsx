@@ -29,7 +29,9 @@ export function ReportsHeader({
           onValueChange={(value) => {
             setTimeRange(value);
             if (value !== "custom") {
-              setDateRange(undefined);
+              // Here's the issue - we're using setDateRange which isn't available
+              // We should use handleDateRangeChange instead
+              handleDateRangeChange(undefined);
             }
           }}
         >
