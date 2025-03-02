@@ -1,5 +1,5 @@
 
-import { TripStatus, TripType, DisplayTrip } from "@/lib/types/trip";
+import { TripStatus, TripType, DisplayTrip } from "@/lib/types";
 
 export interface TripMessageData {
   id: string;
