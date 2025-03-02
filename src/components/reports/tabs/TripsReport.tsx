@@ -1,5 +1,4 @@
 
-
 import { format } from "date-fns";
 import { FileDown, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,9 +52,9 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Client</TableHead>
+                <TableHead>Service Type</TableHead>
                 <TableHead>Pick-up</TableHead>
                 <TableHead>Drop-off</TableHead>
-                <TableHead>Service Type</TableHead>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Driver</TableHead>
                 <TableHead>Status</TableHead>
@@ -88,9 +87,9 @@ export function TripsReport({ tripsData, isLoading, timeRange, dateRange }: Trip
                         trip.clients?.name || 'N/A'
                       )}
                     </TableCell>
+                    <TableCell>{trip.display_type || trip.service_type}</TableCell>
                     <TableCell>{trip.pickup_location}</TableCell>
                     <TableCell>{trip.dropoff_location}</TableCell>
-                    <TableCell>{trip.display_type || trip.service_type}</TableCell>
                     <TableCell>{trip.vehicles?.make} {trip.vehicles?.model}</TableCell>
                     <TableCell>{trip.drivers?.name}</TableCell>
                     <TableCell>{trip.status}</TableCell>

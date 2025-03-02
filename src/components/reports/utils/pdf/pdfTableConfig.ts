@@ -42,7 +42,7 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
         3: { fontStyle: 'bold' }
       } : {}),
       ...(filename === 'trips-report' ? {
-        6: { fontStyle: 'bold' } // Status column for trips
+        7: { fontStyle: 'bold' } // Status column for trips is now at index 7
       } : {})
     },
     didDrawCell: (data) => {

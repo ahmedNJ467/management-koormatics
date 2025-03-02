@@ -1,3 +1,4 @@
+
 import jsPDF from "jspdf";
 import { TextOptionsLight } from "jspdf";
 import { pdfColors } from "./pdfStyles";
@@ -78,8 +79,8 @@ export function formatStatusCell(doc: jsPDF, data: any, filename: string): void 
     }
   }
   
-  // For trips report - status column
-  if (filename === 'trips-report' && data.column.index === 6) {
+  // For trips report - status column (now at index 7 since we moved service type after client)
+  if (filename === 'trips-report' && data.column.index === 7) {
     if (cellContent.includes('completed')) {
       doc.setTextColor(39, 174, 96); // Green for completed
     } else if (cellContent.includes('scheduled')) {

@@ -18,7 +18,7 @@ export function generateTableData(data: any[], reportType: string) {
 
   switch (reportType) {
     case 'trips-report':
-      tableHeaders = ['Date', 'Client', 'Pick-up', 'Drop-off', 'Service Type', 'Vehicle', 'Driver', 'Status'];
+      tableHeaders = ['Date', 'Client', 'Service Type', 'Pick-up', 'Drop-off', 'Vehicle', 'Driver', 'Status'];
       tableData = data.map(trip => {
         // Format client information, properly handling organizations with passengers
         let clientDisplay = trip.clients?.name || 'Unknown Client';
@@ -38,9 +38,9 @@ export function generateTableData(data: any[], reportType: string) {
         return [
           formatDateString(trip.date),
           clientDisplay,
+          trip.display_type || trip.service_type || 'N/A',
           trip.pickup_location || 'N/A',
           trip.dropoff_location || 'N/A',
-          trip.display_type || trip.service_type || 'N/A',
           `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',
           trip.drivers?.name || 'Not Assigned',
           trip.status || 'Scheduled'
