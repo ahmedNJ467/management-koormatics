@@ -1,3 +1,4 @@
+
 // Helper function to parse flight details from notes
 export const parseFlightDetails = (notes?: string) => {
   if (!notes) return { flight: null, airline: null, terminal: null };
@@ -54,4 +55,29 @@ export const extractTripStatus = (notes?: string): string => {
   
   const statusMatch = notes.match(/^STATUS:([a-z_]+)/i);
   return statusMatch ? statusMatch[1].toLowerCase() : 'scheduled';
+};
+
+// Extract flight information for display
+export const extractFlightInfo = (notes?: string): string => {
+  if (!notes) return '';
+  
+  let flightInfo = '';
+  
+  const flightNumberMatch = notes.match(/Flight:?\s*([A-Z0-9]{2,}\s*[0-9]{1,4}[A-Z]?)/i);
+  const airlineMatch = notes.match(/Airline:?\s*([^,\n]+)/i);
+  const terminalMatch = notes.match(/Terminal:?\s*([^,\n]+)/i);
+  
+  if (flightNumberMatch) {
+    flightInfo += `${flightNumberMatch[1].trim()}`;
+  }
+  
+  if (airlineMatch) {
+    flightInfo += flightInfo ? `, ${airlineMatch[1].trim()}` : `${airlineMatch[1].trim()}`;
+  }
+  
+  if (terminalMatch) {
+    flightInfo += flightInfo ? `, ${terminalMatch[1].trim()}` : `${terminalMatch[1].trim()}`;
+  }
+  
+  return flightInfo;
 };

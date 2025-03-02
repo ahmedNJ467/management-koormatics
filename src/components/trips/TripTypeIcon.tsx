@@ -4,29 +4,30 @@ import { Plane, ArrowRight, Clock, Calendar, Car, Shield, Repeat } from "lucide-
 
 interface TripTypeIconProps {
   type: TripType;
+  className?: string;
 }
 
-export function TripTypeIcon({ type }: TripTypeIconProps) {
+export function TripTypeIcon({ type, className }: TripTypeIconProps) {
   switch (type) {
     case "airport_pickup":
-      return <Plane className="h-4 w-4" />;
+      return <Plane className={className || "h-4 w-4"} />;
     case "airport_dropoff":
-      return <Plane className="h-4 w-4" />;
+      return <Plane className={className || "h-4 w-4"} />;
     case "other":
-      return <ArrowRight className="h-4 w-4" />;
+      return <ArrowRight className={className || "h-4 w-4"} />;
     case "hourly":
-      return <Clock className="h-4 w-4" />;
+      return <Clock className={className || "h-4 w-4"} />;
     case "full_day":
-      return <Calendar className="h-4 w-4" />;
+      return <Calendar className={className || "h-4 w-4"} />;
     case "multi_day":
-      return <Calendar className="h-4 w-4" />;
+      return <Calendar className={className || "h-4 w-4"} />;
     case "one_way_transfer":
-      return <ArrowRight className="h-4 w-4" />;
+      return <ArrowRight className={className || "h-4 w-4"} />;
     case "round_trip":
-      return <Repeat className="h-4 w-4" />;
+      return <Repeat className={className || "h-4 w-4"} />;
     case "security_escort":
-      return <Shield className="h-4 w-4" />;
+      return <Shield className={className || "h-4 w-4"} />;
     default:
-      return <Car className="h-4 w-4" />;
+      return <Car className={className || "h-4 w-4"} />;
   }
 }
