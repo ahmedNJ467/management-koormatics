@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -38,6 +39,7 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { TripType, TripStatus, convertToDisplayTrips } from "@/lib/types/trip";
 
 const Reports = () => {
+  // Use the correct prop name (value instead of date)
   const [date, setDate] = useState<DateRange | undefined>(undefined);
 
   const { data: tripsData, isLoading: isLoadingTrips } = useQuery({
@@ -186,7 +188,11 @@ const Reports = () => {
     <div className="container py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Reports</h1>
-        <DateRangePicker date={date} onDateChange={setDate} />
+        {/* Fix the props to match DateRangePicker's expected interface */}
+        <DateRangePicker 
+          value={date} 
+          onChange={setDate} 
+        />
       </div>
 
       <Card>

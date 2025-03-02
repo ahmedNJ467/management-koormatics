@@ -58,11 +58,11 @@ export function useClientsQuery() {
         });
       }
       
-      // Add has_active_contract flag to clients
-      const clientsWithFlag = (data || []).map(client => ({
+      // Add has_active_contract flag to clients without using type instantiation
+      const clientsWithFlag = data ? data.map(client => ({
         ...client,
         has_active_contract: clientsWithActiveContracts.has(client.id)
-      }));
+      })) : [];
       
       return clientsWithFlag as Client[];
     },
