@@ -49,7 +49,7 @@ export function useClientsQuery() {
       
       // Get unique client IDs with active contracts
       const clientsWithActiveContracts = new Set(
-        activeContractData?.map(trip => trip.client_id) || []
+        (activeContractData || []).map(trip => trip.client_id)
       );
       
       // Add has_active_contract flag to clients
