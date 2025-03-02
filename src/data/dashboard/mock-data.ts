@@ -33,12 +33,12 @@ export const driverStatusData = [
 ];
 
 export const maintenanceCostData = [
-  { month: "Jan", preventive: 1200, repairs: 800, total: 2000 },
-  { month: "Feb", preventive: 800, repairs: 1400, total: 2200 },
-  { month: "Mar", preventive: 1000, repairs: 600, total: 1600 },
-  { month: "Apr", preventive: 900, repairs: 1100, total: 2000 },
-  { month: "May", preventive: 1200, repairs: 700, total: 1900 },
-  { month: "Jun", preventive: 1100, repairs: 800, total: 1900 },
+  { month: "Jan", scheduled: 1200, repairs: 800, total: 2000 },
+  { month: "Feb", scheduled: 800, repairs: 1400, total: 2200 },
+  { month: "Mar", scheduled: 1000, repairs: 600, total: 1600 },
+  { month: "Apr", scheduled: 900, repairs: 1100, total: 2000 },
+  { month: "May", scheduled: 1200, repairs: 700, total: 1900 },
+  { month: "Jun", scheduled: 1100, repairs: 800, total: 1900 },
 ];
 
 export const fuelCostData = [
@@ -126,7 +126,7 @@ export const initialTrips = [
 
 export const initialCostsBreakdown = {
   maintenance: {
-    preventive: 5200,
+    scheduled: 5200,
     repairs: 4400,
     total: 9600
   },

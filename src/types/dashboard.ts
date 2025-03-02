@@ -24,7 +24,7 @@ export interface AlertItemProps {
 
 export interface CostsBreakdownProps {
   maintenance: {
-    preventive: number;
+    scheduled: number;
     repairs: number;
     total: number;
   };
