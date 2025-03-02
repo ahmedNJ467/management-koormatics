@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 
 // Generate table data for different report types
@@ -35,10 +34,13 @@ export function generateTableData(data: any[], reportType: string) {
           }
         }
 
+        // Compact the service type display to reduce space between columns
+        const serviceType = trip.display_type || trip.service_type || 'N/A';
+
         return [
           formatDateString(trip.date),
           clientDisplay,
-          trip.display_type || trip.service_type || 'N/A',
+          serviceType,
           trip.pickup_location || 'N/A',
           trip.dropoff_location || 'N/A',
           `${trip.vehicles?.make || ''} ${trip.vehicles?.model || ''}`.trim() || 'N/A',

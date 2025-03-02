@@ -34,6 +34,10 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
         // Don't set fillColor here, we'll handle it in didDrawCell
         fontStyle: 'normal',
       },
+      2: { // Service Type column (index 2) - reducing right padding and setting specific width
+        cellWidth: 1.8,
+        cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
+      },
       // Status column styling
       ...(filename === 'vehicles-report' ? {
         5: { fontStyle: 'bold' }
