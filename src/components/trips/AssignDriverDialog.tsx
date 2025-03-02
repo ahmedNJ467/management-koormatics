@@ -1,12 +1,13 @@
 
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DisplayTrip } from "@/lib/types/trip";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { assignDriverToTrip } from "@/components/trips/operations/driver-operations";
+import { supabase } from "@/integrations/supabase/client";
+import { DisplayTrip } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
 
 interface AssignDriverDialogProps {
@@ -22,82 +23,127 @@ export function AssignDriverDialog({
   onClose,
   onDriverAssigned
 }: AssignDriverDialogProps) {
-  const [selectedDriver, setSelectedDriver] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
-  
-  // Mock data - in a real app, fetch drivers from an API
-  const drivers = [
-    { id: "driver1", name: "John Doe" },
-    { id: "driver2", name: "Jane Smith" },
-    { id: "driver3", name: "Alex Johnson" }
-  ];
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState("");
+  const [assignmentNote, setAssignmentNote] = useState("");
+
+  // Load available drivers
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("status", "active");
+      
+      if (!error && data) {
+        setDrivers(data);
+      }
+    };
+
+    if (open) {
+      fetchDrivers();
+    }
+  }, [open]);
+
   const handleAssign = async () => {
-    if (!selectedDriver || !tripToAssign) return;
+    if (!tripToAssign || !selectedDriver) return;
     
     setIsLoading(true);
+    
     try {
-      await assignDriverToTrip(tripToAssign.id, selectedDriver);
+      // Create assignment record
+      const { error: assignmentError } = await supabase
+        .from("trip_assignments")
+        .insert({
+          trip_id: tripToAssign.id,
+          driver_id: selectedDriver,
+          notes: assignmentNote,
+          status: "assigned"
+        });
+
+      if (assignmentError) throw assignmentError;
+
+      // Update trip status if needed
+      if (tripToAssign.status === "scheduled") {
+        const { error: updateError } = await supabase
+          .from("trips")
+          .update({ status: "assigned" })
+          .eq("id", tripToAssign.id);
+
+        if (updateError) throw updateError;
+      }
+      
       toast({
         title: "Driver assigned",
-        description: "Driver has been assigned to the trip successfully."
+        description: "Driver has been successfully assigned to the trip",
       });
+      
       onDriverAssigned();
       onClose();
     } catch (error) {
       console.error("Error assigning driver:", error);
       toast({
         title: "Error",
-        description: "Failed to assign driver. Please try again.",
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Failed to assign driver",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+      setSelectedDriver("");
+      setAssignmentNote("");
     }
   };
-  
+
   const formatTripId = (id: string): string => {
     return id.substring(0, 8).toUpperCase();
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Assign Driver</DialogTitle>
           <DialogDescription>
-            Select a driver to assign to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
+            Assign a driver to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="py-4">
+
+        <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="driver">Driver</Label>
-            <Select
-              value={selectedDriver}
-              onValueChange={setSelectedDriver}
-            >
-              <SelectTrigger id="driver">
+            <Label htmlFor="driver">Select Driver</Label>
+            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+              <SelectTrigger>
                 <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
               <SelectContent>
                 {drivers.map((driver) => (
                   <SelectItem key={driver.id} value={driver.id}>
-                    {driver.name}
+                    {driver.first_name} {driver.last_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Assignment Notes</Label>
+            <Textarea
+              id="notes"
+              placeholder="Add any notes about this assignment..."
+              value={assignmentNote}
+              onChange={(e) => setAssignmentNote(e.target.value)}
+            />
+          </div>
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button 
-            onClick={handleAssign}
+            onClick={handleAssign} 
             disabled={!selectedDriver || isLoading}
           >
             {isLoading ? "Assigning..." : "Assign Driver"}

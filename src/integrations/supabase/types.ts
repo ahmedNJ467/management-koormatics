@@ -523,10 +523,10 @@ export type Database = {
           id: string
           invoice_id: string | null
           is_recurring: boolean | null
+          notes: string | null
           pickup_location: string | null
           return_time: string | null
           service_type: Database["public"]["Enums"]["service_type"] | null
-          special_instructions: string | null
           terminal: string | null
           time: string | null
           updated_at: string | null
@@ -544,10 +544,10 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           is_recurring?: boolean | null
+          notes?: string | null
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null
-          special_instructions?: string | null
           terminal?: string | null
           time?: string | null
           updated_at?: string | null
@@ -565,10 +565,10 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           is_recurring?: boolean | null
+          notes?: string | null
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null
-          special_instructions?: string | null
           terminal?: string | null
           time?: string | null
           updated_at?: string | null

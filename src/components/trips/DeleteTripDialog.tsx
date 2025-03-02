@@ -1,12 +1,12 @@
 
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { deleteTripFromDatabase } from "@/components/trips/operations/delete-operations";
+import { useState } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DeleteTripDialogProps {
   open: boolean;
-  tripId?: string;
+  tripId: string;
   onClose: () => void;
   onTripDeleted: () => void;
 }
@@ -18,48 +18,63 @@ export function DeleteTripDialog({
   onTripDeleted
 }: DeleteTripDialogProps) {
   const { toast } = useToast();
-  
-  const handleDeleteConfirm = async () => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
     if (!tripId) return;
     
+    setIsDeleting(true);
+    
     try {
-      await deleteTripFromDatabase(tripId);
+      // Delete related records first
+      await supabase.from("trip_messages").delete().eq("trip_id", tripId);
+      await supabase.from("trip_assignments").delete().eq("trip_id", tripId);
+      
+      // Then delete the trip
+      const { error } = await supabase
+        .from("trips")
+        .delete()
+        .eq("id", tripId);
+
+      if (error) throw error;
+      
       toast({
         title: "Trip deleted",
-        description: "Trip has been deleted successfully.",
+        description: "Trip has been successfully deleted",
       });
+      
       onTripDeleted();
       onClose();
     } catch (error) {
       console.error("Error deleting trip:", error);
       toast({
         title: "Error",
-        description: "Failed to delete trip. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to delete trip",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
-  
+
   return (
     <AlertDialog open={open} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Trip</AlertDialogTitle>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this trip? This action cannot be undone.
+            This action cannot be undone. This will permanently delete the trip
+            and all associated messages and driver assignments.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel asChild>
-            <Button variant="outline">Cancel</Button>
-          </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteConfirm}
-            >
-              Delete
-            </Button>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isDeleting ? "Deleting..." : "Delete Trip"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

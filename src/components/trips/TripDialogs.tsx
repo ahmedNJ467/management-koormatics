@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TripForm } from "@/components/trips/TripForm";
 import { TripDetailView } from "@/components/trips/TripDetailView";
 import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
@@ -94,6 +93,12 @@ export function TripDialogs({
         onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false))}
       > 
         <DialogContent className="sm:max-w-2xl max-h-[90vh]">
+          <DialogTitle>
+            {editTrip ? "Edit Trip" : "Book New Trip"}
+          </DialogTitle>
+          <DialogDescription>
+            {editTrip ? "Update the trip details below." : "Enter the trip details to book a new trip."}
+          </DialogDescription>
           <TripForm
             editTrip={editTrip}
             clients={clients}
