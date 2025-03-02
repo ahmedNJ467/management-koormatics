@@ -110,9 +110,11 @@ export default function Trips() {
   // Update trip status
   const updateTripStatus = async (tripId: string, status: TripStatus) => {
     try {
+      const updateData: { status: TripStatus } = { status };
+      
       const { error } = await supabase
         .from("trips")
-        .update({ status })
+        .update(updateData)
         .eq("id", tripId);
 
       if (error) throw error;
