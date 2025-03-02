@@ -19,15 +19,15 @@ export function calculateYearComparison(
   }
 
   const currentCosts = {
-    maintenance: maintenanceData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
-    fuel: fuelData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+    maintenance: maintenanceData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
+    fuel: fuelData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
     total: 0
   };
   currentCosts.total = currentCosts.maintenance + currentCosts.fuel;
 
   const previousCosts = {
-    maintenance: comparisonMaintenanceData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
-    fuel: comparisonFuelData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+    maintenance: comparisonMaintenanceData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
+    fuel: comparisonFuelData?.reduce((sum, item) => sum + Number(item.cost || 0), 0) || 0,
     total: 0
   };
   previousCosts.total = previousCosts.maintenance + previousCosts.fuel;

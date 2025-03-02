@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CostSummaryCards } from "@/components/cost-analytics/CostSummaryCards";
 import { OverviewTab } from "@/components/cost-analytics/OverviewTab";
@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const CostAnalytics = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [activeTab, setActiveTab] = useState("overview");
   
   // Use our custom hooks to fetch and process data
   const { 
@@ -45,17 +46,21 @@ const CostAnalytics = () => {
     comparisonYear
   );
 
-  const [activeTab, setActiveTab] = useState("overview");
-
   // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
 
   // If comparison tab is active but comparison year is removed, switch to overview
-  if (activeTab === "comparison" && !comparisonYear) {
-    setActiveTab("overview");
-  }
+  useEffect(() => {
+    if (activeTab === "comparison" && !comparisonYear) {
+      setActiveTab("overview");
+    }
+  }, [activeTab, comparisonYear]);
+
+  const handleComparisonYearChange = (value: string) => {
+    setComparisonYear(value === "" ? null : value);
+  };
 
   return (
     <div className="space-y-6">
@@ -66,7 +71,7 @@ const CostAnalytics = () => {
             <span className="text-sm font-medium">Compare with:</span>
             <Select 
               value={comparisonYear || ""} 
-              onValueChange={(value) => setComparisonYear(value === "" ? null : value)}
+              onValueChange={handleComparisonYearChange}
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Select year" />

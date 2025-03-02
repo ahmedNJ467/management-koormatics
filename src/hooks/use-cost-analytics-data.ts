@@ -1,15 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  CostData,
-  MonthlyData,
-  VehicleCostData,
-  CategoryData,
-  YearComparisonData
-} from "@/lib/types/cost-analytics";
 
 export function useCostAnalyticsData(selectedYear: string) {
   const { toast } = useToast();
@@ -19,26 +12,38 @@ export function useCostAnalyticsData(selectedYear: string) {
   // Generate year options (last 5 years)
   const yearOptions = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
+  // Reset comparison year if it's the same as selected year
+  useEffect(() => {
+    if (comparisonYear === selectedYear) {
+      setComparisonYear(null);
+    }
+  }, [selectedYear, comparisonYear]);
+
   // Fetch maintenance costs for selected year
   const { data: maintenanceData, isLoading: maintenanceLoading } = useQuery({
     queryKey: ['maintenanceCosts', selectedYear],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('maintenance')
-        .select('cost, description, date, vehicle_id, vehicles(make, model, registration)')
-        .gte('date', `${selectedYear}-01-01`)
-        .lte('date', `${selectedYear}-12-31`);
-      
-      if (error) {
-        toast({
-          title: "Error fetching maintenance data",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('maintenance')
+          .select('cost, description, date, vehicle_id, vehicles(make, model, registration)')
+          .gte('date', `${selectedYear}-01-01`)
+          .lte('date', `${selectedYear}-12-31`);
+        
+        if (error) {
+          toast({
+            title: "Error fetching maintenance data",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching maintenance data:", error);
+        return [];
       }
-      
-      return data || [];
     },
   });
 
@@ -46,22 +51,27 @@ export function useCostAnalyticsData(selectedYear: string) {
   const { data: fuelData, isLoading: fuelLoading } = useQuery({
     queryKey: ['fuelCosts', selectedYear],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fuel_logs')
-        .select('cost, fuel_type, date, vehicle_id, vehicles(make, model, registration)')
-        .gte('date', `${selectedYear}-01-01`)
-        .lte('date', `${selectedYear}-12-31`);
-      
-      if (error) {
-        toast({
-          title: "Error fetching fuel data",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('fuel_logs')
+          .select('cost, fuel_type, date, vehicle_id, vehicles(make, model, registration)')
+          .gte('date', `${selectedYear}-01-01`)
+          .lte('date', `${selectedYear}-12-31`);
+        
+        if (error) {
+          toast({
+            title: "Error fetching fuel data",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching fuel data:", error);
+        return [];
       }
-      
-      return data || [];
     },
   });
 
@@ -74,22 +84,27 @@ export function useCostAnalyticsData(selectedYear: string) {
     queryFn: async () => {
       if (!comparisonYear) return [];
       
-      const { data, error } = await supabase
-        .from('maintenance')
-        .select('cost, description, date, vehicle_id, vehicles(make, model, registration)')
-        .gte('date', `${comparisonYear}-01-01`)
-        .lte('date', `${comparisonYear}-12-31`);
-      
-      if (error) {
-        toast({
-          title: "Error fetching comparison maintenance data",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('maintenance')
+          .select('cost, description, date, vehicle_id, vehicles(make, model, registration)')
+          .gte('date', `${comparisonYear}-01-01`)
+          .lte('date', `${comparisonYear}-12-31`);
+        
+        if (error) {
+          toast({
+            title: "Error fetching comparison maintenance data",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching comparison maintenance data:", error);
+        return [];
       }
-      
-      return data || [];
     },
     enabled: !!comparisonYear,
   });
@@ -102,22 +117,27 @@ export function useCostAnalyticsData(selectedYear: string) {
     queryFn: async () => {
       if (!comparisonYear) return [];
       
-      const { data, error } = await supabase
-        .from('fuel_logs')
-        .select('cost, fuel_type, date, vehicle_id, vehicles(make, model, registration)')
-        .gte('date', `${comparisonYear}-01-01`)
-        .lte('date', `${comparisonYear}-12-31`);
-      
-      if (error) {
-        toast({
-          title: "Error fetching comparison fuel data",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('fuel_logs')
+          .select('cost, fuel_type, date, vehicle_id, vehicles(make, model, registration)')
+          .gte('date', `${comparisonYear}-01-01`)
+          .lte('date', `${comparisonYear}-12-31`);
+        
+        if (error) {
+          toast({
+            title: "Error fetching comparison fuel data",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching comparison fuel data:", error);
+        return [];
       }
-      
-      return data || [];
     },
     enabled: !!comparisonYear,
   });
@@ -126,10 +146,10 @@ export function useCostAnalyticsData(selectedYear: string) {
     (!!comparisonYear && (comparisonMaintenanceLoading || comparisonFuelLoading));
 
   return {
-    maintenanceData,
-    fuelData,
-    comparisonMaintenanceData,
-    comparisonFuelData,
+    maintenanceData: maintenanceData || [],
+    fuelData: fuelData || [],
+    comparisonMaintenanceData: comparisonMaintenanceData || [],
+    comparisonFuelData: comparisonFuelData || [],
     isLoading,
     yearOptions,
     comparisonYear,
