@@ -19,7 +19,7 @@ export const MaintenanceCostsChart = () => {
           formatter={(value) => [`$${value}`, '']}
         />
         <Legend />
-        <Bar dataKey="scheduled" name="Scheduled" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="service" name="Service" fill="#3B82F6" radius={[4, 4, 0, 0]} />
         <Bar dataKey="repairs" name="Repairs" fill="#EF4444" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>

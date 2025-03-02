@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +44,6 @@ export default function Dashboard() {
       })
       .subscribe();
       
-    // Add listeners for maintenance and fuel logs tables
     const maintenanceChannel = supabase
       .channel('maintenance-changes')
       .on('postgres_changes', { 
@@ -108,20 +106,16 @@ export default function Dashboard() {
       
       setFinancialStats(newFinancialStats);
       
-      // Update costs breakdown with random changes for demo purposes
-      // In a real app, this would fetch actual data from Supabase
       const updatedCostsBreakdown = { ...costsBreakdown };
       
-      // Randomly update maintenance costs
       if (Math.random() > 0.5) {
         const changeAmount = Math.floor(Math.random() * 200);
-        updatedCostsBreakdown.maintenance.preventive += Math.random() > 0.5 ? changeAmount : -changeAmount;
+        updatedCostsBreakdown.maintenance.service += Math.random() > 0.5 ? changeAmount : -changeAmount;
         updatedCostsBreakdown.maintenance.repairs += Math.random() > 0.5 ? changeAmount : -changeAmount;
         updatedCostsBreakdown.maintenance.total = 
-          updatedCostsBreakdown.maintenance.preventive + updatedCostsBreakdown.maintenance.repairs;
+          updatedCostsBreakdown.maintenance.service + updatedCostsBreakdown.maintenance.repairs;
       }
       
-      // Randomly update fuel costs
       if (Math.random() > 0.5) {
         const changeAmount = Math.floor(Math.random() * 200);
         updatedCostsBreakdown.fuel.diesel += Math.random() > 0.5 ? changeAmount : -changeAmount;

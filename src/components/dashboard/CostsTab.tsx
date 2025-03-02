@@ -27,8 +27,8 @@ export const CostsTab = ({ costsBreakdown }: CostsTabProps) => {
           <CardContent>
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-                <p className="text-sm text-muted-foreground">Scheduled</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${costsBreakdown.maintenance.scheduled.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Service</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${costsBreakdown.maintenance.service.toLocaleString()}</p>
               </div>
               <div className="bg-red-50 dark:bg-red-950/30 p-3 rounded-lg">
                 <p className="text-sm text-muted-foreground">Repairs</p>
