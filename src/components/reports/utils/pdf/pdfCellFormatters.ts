@@ -31,7 +31,7 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       doc.text("Organization", x, y);
       y += 0.35;
       
-      // Draw passengers icon and count instead of "Passengers:" header
+      // Draw passengers icon and count
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(39, 174, 96); // Use accent green for passenger count
       const passengerCount = textLines.length - 4; // Calculate actual passenger count
@@ -42,7 +42,7 @@ export function formatClientCell(doc: jsPDF, data: any, cell: any): void {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...pdfColors.text); // Back to normal text color
       for (let i = 4; i < textLines.length; i++) {
-        doc.text(`- ${textLines[i].trim()}`, x, y);
+        doc.text(`• ${textLines[i].trim()}`, x, y);
         y += 0.25;
       }
     }
