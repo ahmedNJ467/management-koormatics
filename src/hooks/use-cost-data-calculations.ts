@@ -1,12 +1,19 @@
-
 import { 
   CostData,
   MonthlyData,
   VehicleCostData,
-  CategoryData
+  CategoryData,
+  YearComparisonData
 } from "@/lib/types/cost-analytics";
 
-export function useCostDataCalculations(maintenanceData: any[] = [], fuelData: any[] = []) {
+export function useCostDataCalculations(
+  maintenanceData: any[] = [], 
+  fuelData: any[] = [],
+  comparisonMaintenanceData: any[] = [],
+  comparisonFuelData: any[] = [],
+  selectedYear: string,
+  comparisonYear: string | null
+) {
   // Calculate summary data
   const calculateSummaryCosts = (): CostData => {
     const costs: CostData = {
@@ -42,7 +49,6 @@ export function useCostDataCalculations(maintenanceData: any[] = [], fuelData: a
       });
     }
     
-    // Calculate totals
     monthlyData.forEach(item => {
       item.total = item.maintenance + item.fuel;
     });
@@ -96,11 +102,10 @@ export function useCostDataCalculations(maintenanceData: any[] = [], fuelData: a
       });
     }
     
-    // Calculate totals and convert to array
     return Object.values(vehicleCosts).map(vehicle => {
       vehicle.total = vehicle.maintenance + vehicle.fuel;
       return vehicle;
-    }).sort((a, b) => b.total - a.total); // Sort by total cost
+    }).sort((a, b) => b.total - a.total);
   };
 
   // Calculate maintenance categories
@@ -141,18 +146,66 @@ export function useCostDataCalculations(maintenanceData: any[] = [], fuelData: a
       .sort((a, b) => b.value - a.value);
   };
 
+  // Calculate year-over-year comparison data
+  const calculateYearComparison = (): YearComparisonData | null => {
+    if (!comparisonYear) {
+      return null;
+    }
+
+    const currentCosts = {
+      maintenance: maintenanceData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+      fuel: fuelData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+      total: 0
+    };
+    currentCosts.total = currentCosts.maintenance + currentCosts.fuel;
+
+    const previousCosts = {
+      maintenance: comparisonMaintenanceData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+      fuel: comparisonFuelData?.reduce((sum, item) => sum + Number(item.cost), 0) || 0,
+      total: 0
+    };
+    previousCosts.total = previousCosts.maintenance + previousCosts.fuel;
+
+    const calculatePercentChange = (current: number, previous: number): number => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    return {
+      currentYear: selectedYear,
+      previousYear: comparisonYear,
+      maintenance: {
+        current: currentCosts.maintenance,
+        previous: previousCosts.maintenance,
+        percentChange: calculatePercentChange(currentCosts.maintenance, previousCosts.maintenance)
+      },
+      fuel: {
+        current: currentCosts.fuel,
+        previous: previousCosts.fuel,
+        percentChange: calculatePercentChange(currentCosts.fuel, previousCosts.fuel)
+      },
+      total: {
+        current: currentCosts.total,
+        previous: previousCosts.total,
+        percentChange: calculatePercentChange(currentCosts.total, previousCosts.total)
+      }
+    };
+  };
+
   // Generate all the calculated data at once
   const summaryCosts = calculateSummaryCosts();
   const monthlyData = calculateMonthlyData();
   const vehicleCosts = calculateVehicleCosts();
   const maintenanceCategories = calculateMaintenanceCategories();
   const fuelTypes = calculateFuelTypes();
+  const yearComparison = calculateYearComparison();
 
   return {
     summaryCosts,
     monthlyData,
     vehicleCosts,
     maintenanceCategories,
-    fuelTypes
+    fuelTypes,
+    yearComparison
   };
 }

@@ -26,5 +26,26 @@ export type CategoryData = {
   value: number;
 };
 
+// Define type for year-over-year comparison
+export type YearComparisonData = {
+  currentYear: string;
+  previousYear: string;
+  maintenance: {
+    current: number;
+    previous: number;
+    percentChange: number;
+  };
+  fuel: {
+    current: number;
+    previous: number;
+    percentChange: number;
+  };
+  total: {
+    current: number;
+    previous: number;
+    percentChange: number;
+  };
+};
+
 // Define colors for charts
 export const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
