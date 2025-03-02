@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,15 @@ export function TripForm({
       
       if (editTrip.client_type === "organization") {
         setSelectedClientType("organization");
-        const extractedPassengers = parsePassengers(editTrip.notes);
-        setPassengers(extractedPassengers.length > 0 ? extractedPassengers : [""]);
+        
+        // Get passengers from both dedicated passengers array and notes
+        const extractedPassengers = editTrip.notes ? parsePassengers(editTrip.notes) : [];
+        const arrayPassengers = Array.isArray(editTrip.passengers) ? editTrip.passengers : [];
+        
+        // Combine both sources and remove duplicates
+        const allPassengers = [...new Set([...arrayPassengers, ...extractedPassengers])];
+        
+        setPassengers(allPassengers.length > 0 ? allPassengers : [""]);
       } else {
         setSelectedClientType("individual");
         setPassengers([""]);
@@ -117,9 +125,42 @@ export function TripForm({
     setPassengers(updatedPassengers);
   };
 
+  // Prepare passengers data for form submission
+  const prepareFormData = (formData: FormData) => {
+    // Add client type to the form data
+    if (selectedClientType) {
+      formData.append("client_type", selectedClientType);
+    }
+    
+    // Add passengers to the form data if client is an organization
+    if (selectedClientType === "organization") {
+      // Filter out empty passenger names
+      const validPassengers = passengers.filter(name => name.trim().length > 0);
+      
+      if (validPassengers.length > 0) {
+        formData.append("passengers", JSON.stringify(validPassengers));
+      }
+    }
+    
+    return formData;
+  };
+
+  // Wrap the onSubmit handler to include passenger data
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    // Prepare the form data with passengers
+    prepareFormData(formData);
+    
+    // Pass the event to the original onSubmit handler
+    onSubmit(event);
+  };
+
   return (
     <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
-      <form onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="client_id">Client</Label>

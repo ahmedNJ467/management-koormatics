@@ -48,10 +48,25 @@ export const handleSaveTrip = async (
   
   // Extract passenger data for organization clients
   const clientType = formData.get("client_type") as string;
-  const passengersText = formData.get("passengers") as string || "";
-  const passengers = passengersText
-    ? passengersText.split('\n').map(p => p.trim()).filter(Boolean)
-    : [];
+  
+  // Get passengers from the form data
+  let passengers: string[] = [];
+  const passengersValue = formData.get("passengers");
+  
+  if (passengersValue) {
+    try {
+      // Try to parse the passengers JSON string
+      passengers = JSON.parse(passengersValue as string);
+    } catch (error) {
+      console.error("Error parsing passengers:", error);
+      // If parsing fails, assume it's a comma-separated string or a single value
+      if (typeof passengersValue === 'string') {
+        passengers = passengersValue.split(',').map(p => p.trim()).filter(Boolean);
+      }
+    }
+  }
+  
+  console.log("Saving trip with passengers:", passengers);
   
   try {
     if (editTrip) {
