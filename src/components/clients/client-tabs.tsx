@@ -89,6 +89,7 @@ export function ClientTabs({
                 contactsCount={contactCounts?.[client.id]}
                 membersCount={memberCounts?.[client.id]}
                 onClick={onClientClick}
+                showActiveContractBadge={true}
               />
             ))
           ) : (

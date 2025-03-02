@@ -1,8 +1,8 @@
 
-import { Building2, User, UserPlus } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Archive } from "lucide-react";
+import { Users, Phone, AtSign, Globe, Building2, User, MapPin, FileText } from "lucide-react";
 
 interface Client {
   id: string;
@@ -15,7 +15,7 @@ interface Client {
   email?: string;
   phone?: string;
   profile_image_url?: string;
-  is_archived?: boolean;
+  has_active_contract?: boolean;
 }
 
 interface ClientCardProps {
@@ -23,98 +23,101 @@ interface ClientCardProps {
   contactsCount?: number;
   membersCount?: number;
   onClick: (client: Client) => void;
+  showActiveContractBadge?: boolean;
 }
 
-export function ClientCard({ client, contactsCount, membersCount, onClick }: ClientCardProps) {
-  const isArchived = !!client.is_archived;
-  
+export function ClientCard({ client, contactsCount, membersCount, onClick, showActiveContractBadge }: ClientCardProps) {
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const avatarSize = client.type === "organization" ? "h-16 w-16" : "h-16 w-16 rounded-full";
+  const cardClasses = client.has_active_contract 
+    ? "cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500"
+    : "cursor-pointer hover:shadow-md transition-shadow";
+
   return (
     <Card 
-      key={client.id} 
-      className={`group relative cursor-pointer hover:shadow-md transition-shadow ${isArchived ? 'border-dashed' : ''}`}
+      className={cardClasses}
       onClick={() => onClick(client)}
     >
-      {isArchived && (
-        <Badge variant="outline" className="absolute top-2 right-2 bg-muted">
-          <Archive className="h-3 w-3 mr-1" /> Archived
-        </Badge>
-      )}
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center overflow-hidden opacity-100">
-            {client.profile_image_url ? (
-              <img
-                src={client.profile_image_url}
-                alt={client.name}
-                className="h-full w-full object-cover"
-              />
-            ) : client.type === "organization" ? (
-              <Building2 className="h-6 w-6 text-secondary" />
-            ) : (
-              <User className="h-6 w-6 text-secondary" />
+      <CardHeader className="flex flex-row items-center gap-4 pb-2">
+        <Avatar className={avatarSize}>
+          {client.profile_image_url ? (
+            <AvatarImage src={client.profile_image_url} alt={client.name} className="object-cover" />
+          ) : null}
+          <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+        </Avatar>
+        <div className="space-y-1 flex-1">
+          <CardTitle className="flex items-center gap-2">
+            {client.name}
+            {(client.has_active_contract && showActiveContractBadge) && (
+              <Badge className="ml-2 bg-green-500 text-white">Active Contract</Badge>
             )}
-          </div>
-          <div>
-            <h3 className="font-semibold">{client.name}</h3>
-            <p className="text-sm text-muted-foreground capitalize">{client.type}</p>
-          </div>
+          </CardTitle>
+          <CardDescription className="flex items-center gap-1 text-sm">
+            {client.type === "organization" ? (
+              <Building2 className="h-4 w-4" />
+            ) : (
+              <User className="h-4 w-4" />
+            )}
+            {client.type === "organization" ? "Organization" : "Individual"}
+          </CardDescription>
         </div>
-        <div className="mt-4 space-y-2">
-          {client.description && (
-            <p className="text-sm text-muted-foreground">{client.description}</p>
-          )}
-          {client.website && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Website:</span>
-              <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                {client.website}
-              </a>
-            </div>
-          )}
-          {client.address && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Address:</span>
-              <span>{client.address}</span>
-            </div>
-          )}
-          {client.contact && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Contact:</span>
-              <span>{client.contact}</span>
-            </div>
-          )}
-          {client.email && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Email:</span>
-              <span>{client.email}</span>
-            </div>
-          )}
-          {client.phone && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Phone:</span>
-              <span>{client.phone}</span>
-            </div>
-          )}
-          
-          {/* Display contacts and members badges for organizations */}
-          {client.type === "organization" && !isArchived && (
-            <div className="flex gap-2 mt-3">
-              {contactsCount && contactsCount > 0 && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  {contactsCount} Contact{contactsCount !== 1 ? 's' : ''}
-                </Badge>
-              )}
-              {membersCount && membersCount > 0 && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <UserPlus className="h-3 w-3" />
-                  {membersCount} Member{membersCount !== 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
+      </CardHeader>
+      <CardContent className="pb-2 text-sm space-y-2">
+        {client.address && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">{client.address}</span>
+          </div>
+        )}
+        {client.email && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <AtSign className="h-4 w-4 shrink-0" />
+            <span className="truncate">{client.email}</span>
+          </div>
+        )}
+        {client.phone && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Phone className="h-4 w-4 shrink-0" />
+            <span>{client.phone}</span>
+          </div>
+        )}
+        {client.website && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Globe className="h-4 w-4 shrink-0" />
+            <span className="truncate">{client.website}</span>
+          </div>
+        )}
+        {client.description && (
+          <div className="flex items-start gap-2 text-muted-foreground mt-2">
+            <FileText className="h-4 w-4 shrink-0 mt-0.5" />
+            <p className="line-clamp-2">{client.description}</p>
+          </div>
+        )}
       </CardContent>
+      {(contactsCount !== undefined || membersCount !== undefined) && (
+        <CardFooter className="pt-2 border-t text-xs text-muted-foreground flex justify-between">
+          {contactsCount !== undefined && (
+            <div className="flex items-center gap-1">
+              <Phone className="h-3 w-3" />
+              <span>{contactsCount} contact{contactsCount !== 1 ? 's' : ''}</span>
+            </div>
+          )}
+          {membersCount !== undefined && (
+            <div className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              <span>{membersCount} member{membersCount !== 1 ? 's' : ''}</span>
+            </div>
+          )}
+        </CardFooter>
+      )}
     </Card>
   );
 }

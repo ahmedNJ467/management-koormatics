@@ -5,7 +5,7 @@ import { ClientDocument } from "./client-form/types";
 import { DeleteClientDialog } from "./client-form/delete-client-dialog";
 import { useClientDialog } from "./client-form/use-client-dialog";
 import { useClientFormSubmit } from "./client-form/use-client-form-submit";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import { ClientDialogContent } from "./client-form/client-dialog-content";
 
 interface Client {
@@ -58,6 +58,15 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     uploadProfile,
     uploadClientDocument
   } = useClientForm(client);
+  
+  // Close form after successful submission
+  useEffect(() => {
+    if (isSubmitting === false && form.formState.isSubmitSuccessful) {
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 500); // Short delay to ensure data is saved
+    }
+  }, [isSubmitting, form.formState.isSubmitSuccessful, onOpenChange]);
 
   const { handleSubmit: submitFormFn } = useClientFormSubmit();
   
@@ -72,6 +81,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   // Memoize the handleFormSubmit function to prevent recreation on each render
   const handleFormSubmit = useCallback(async (values: any) => {
     try {
+      setIsSubmitting(true);
       const result = await submitFormFn({
         client,
         values,
@@ -83,13 +93,14 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         uploadDocumentFn: uploadClientDocument,
         setIsSubmitting,
         onSuccess: () => {
-          onOpenChange(false); // Close the dialog on success
+          // The form will close automatically due to the useEffect above
         }
       });
       
       return result;
     } catch (error) {
       console.error("Error submitting form:", error);
+      setIsSubmitting(false);
       return false;
     }
   }, [
@@ -101,8 +112,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     members,
     uploadClientDocument,
     setIsSubmitting,
-    submitFormFn,
-    onOpenChange
+    submitFormFn
   ]);
 
   const removeDocument = useCallback((docId: string) => {
@@ -113,7 +123,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     <>
       <Dialog open={open} onOpenChange={(newOpen) => {
         // Only allow dialog to close if we're not in the middle of confirming a delete
-        if (!showDeleteConfirm) {
+        if (!showDeleteConfirm && !isSubmitting) {
           onOpenChange(newOpen);
         }
       }}>
