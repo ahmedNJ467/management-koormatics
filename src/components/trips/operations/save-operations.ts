@@ -66,6 +66,8 @@ export const handleSaveTrip = async (
     }
   }
   
+  // Log the passenger data being saved
+  console.log("Saving trip with client type:", clientType);
   console.log("Saving trip with passengers:", passengers);
   
   try {

@@ -38,6 +38,7 @@ export function TripForm({
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [passengers, setPassengers] = useState<string[]>([""]);
+  const [newPassenger, setNewPassenger] = useState<string>("");
 
   useEffect(() => {
     if (editTrip) {
@@ -105,12 +106,16 @@ export function TripForm({
     const selectedClient = clients?.find(client => client.id === clientId);
     if (selectedClient) {
       setSelectedClientType(selectedClient.type || "individual");
+      // Reset passengers when client changes
       setPassengers([""]);
     }
   };
 
-  const addPassengerField = () => {
-    setPassengers([...passengers, ""]);
+  const addPassenger = () => {
+    if (newPassenger.trim()) {
+      setPassengers([...passengers.filter(p => p.trim()), newPassenger.trim()]);
+      setNewPassenger("");
+    }
   };
 
   const updatePassenger = (index: number, value: string) => {
@@ -119,13 +124,20 @@ export function TripForm({
     setPassengers(updatedPassengers);
   };
 
-  const removePassengerField = (index: number) => {
-    if (passengers.length <= 1) return;
+  const removePassenger = (index: number) => {
     const updatedPassengers = passengers.filter((_, i) => i !== index);
-    setPassengers(updatedPassengers);
+    setPassengers(updatedPassengers.length ? updatedPassengers : [""]);
   };
 
-  // Prepare passengers data for form submission
+  // Handle Enter key in the new passenger input
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newPassenger.trim()) {
+      e.preventDefault(); // Prevent form submission
+      addPassenger();
+    }
+  };
+
+  // Prepare form data for submission
   const prepareFormData = (formData: FormData) => {
     // Add client type to the form data
     if (selectedClientType) {
@@ -210,39 +222,51 @@ export function TripForm({
           <div className="border p-4 rounded-md space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-medium">Passengers</h3>
+            </div>
+            
+            {/* New passenger input with add button */}
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Add new passenger"
+                value={newPassenger}
+                onChange={(e) => setNewPassenger(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1"
+              />
               <Button 
                 type="button" 
-                variant="outline" 
+                variant="default" 
                 size="sm" 
-                onClick={addPassengerField}
-                className="h-8 px-2"
+                onClick={addPassenger}
+                disabled={!newPassenger.trim()}
+                className="h-10"
               >
-                <Plus className="h-4 w-4 mr-1" /> Add Passenger
+                <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
             </div>
             
-            <div className="space-y-3">
-              {passengers.map((passenger, index) => (
+            {/* List of existing passengers */}
+            <div className="space-y-3 max-h-[200px] overflow-y-auto">
+              {passengers.filter(p => p.trim()).map((passenger, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <Input
-                    placeholder={`Passenger ${index + 1} name`}
-                    value={passenger}
-                    onChange={(e) => updatePassenger(index, e.target.value)}
-                    className="flex-1"
-                  />
-                  {passengers.length > 1 && (
-                    <Button 
+                  <div className="flex-1 bg-muted rounded-md px-3 py-2 text-sm flex justify-between items-center">
+                    <span>{passenger}</span>
+                    <button 
                       type="button" 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => removePassengerField(index)}
-                      className="h-8 w-8 p-0"
+                      onClick={() => removePassenger(index)}
+                      className="text-destructive hover:text-destructive/80"
                     >
                       <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                    </button>
+                  </div>
                 </div>
               ))}
+
+              {passengers.filter(p => p.trim()).length === 0 && (
+                <div className="text-sm text-muted-foreground italic p-2 text-center">
+                  No passengers added yet
+                </div>
+              )}
             </div>
           </div>
         )}

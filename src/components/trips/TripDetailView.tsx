@@ -15,6 +15,7 @@ import { Driver } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/components/trips/utils";
 import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
+import { QueryClient } from "@tanstack/react-query";
 
 interface TripDetailViewProps {
   viewTrip: DisplayTrip;
@@ -33,7 +34,8 @@ interface TripDetailViewProps {
   setEditTrip: (trip: DisplayTrip) => void;
   setTripToDelete: (id: string) => void;
   setDeleteDialogOpen: (open: boolean) => void;
-  setViewTrip?: (trip: DisplayTrip) => void;  // Add this prop to allow updating the trip
+  setViewTrip: (trip: DisplayTrip | null) => void;
+  queryClient: QueryClient;
 }
 
 export function TripDetailView({ 
@@ -53,7 +55,8 @@ export function TripDetailView({
   setEditTrip,
   setTripToDelete,
   setDeleteDialogOpen,
-  setViewTrip  // Include this in the props
+  setViewTrip,
+  queryClient
 }: TripDetailViewProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -137,7 +140,7 @@ export function TripDetailView({
         </TabsContent>
         {isOrganizationTrip && (
           <TabsContent value="passengers" className="space-y-4 mt-4">
-            <PassengersTab viewTrip={viewTrip} setViewTrip={setViewTrip} />
+            <PassengersTab viewTrip={viewTrip} setViewTrip={setViewTrip} queryClient={queryClient} />
           </TabsContent>
         )}
         <TabsContent value="messages" className="space-y-4 mt-4">

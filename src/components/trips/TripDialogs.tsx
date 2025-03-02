@@ -141,6 +141,7 @@ export function TripDialogs({
               setTripToDelete={setTripToDelete}
               setDeleteDialogOpen={setDeleteDialogOpen}
               setViewTrip={setViewTrip}
+              queryClient={queryClient}
             />
           )}
         </DialogContent>
