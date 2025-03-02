@@ -1,3 +1,4 @@
+<lov-code>
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -104,8 +105,9 @@ export default function Invoices() {
 
       if (error) throw error;
 
+      // Handle the data conversion without excessive type nesting
       return data.map((invoice: any) => {
-        // Convert trip data with simpler approach
+        // Process trips with explicit typing to avoid deep nesting
         const tripsForInvoice = Array.isArray(invoice.trips) 
           ? invoice.trips.map((trip: any) => ({
               ...trip,
@@ -117,8 +119,8 @@ export default function Invoices() {
             }))
           : [];
         
-        // Parse items with safer approach
-        let parsedItems = [];
+        // Parse invoice items safely
+        let parsedItems: any[] = [];
         try {
           if (typeof invoice.items === 'string') {
             parsedItems = JSON.parse(invoice.items);
@@ -127,10 +129,9 @@ export default function Invoices() {
           }
         } catch (e) {
           console.error("Error parsing invoice items:", e);
-          parsedItems = [];
         }
 
-        // Return simplified object
+        // Return a simplified object structure
         return {
           ...invoice,
           items: parsedItems,
@@ -139,7 +140,7 @@ export default function Invoices() {
           client_email: invoice.clients?.email || "",
           client_address: invoice.clients?.address || "",
           client_phone: invoice.clients?.phone || "",
-        };
+        } as DisplayInvoice; // Type assertion to simplify
       });
     },
   });
@@ -908,368 +909,4 @@ export default function Invoices() {
                         <Input 
                           type="number"
                           placeholder="Unit Price"
-                          value={item.unit_price}
-                          onChange={(e) => updateInvoiceItem(index, "unit_price", parseFloat(e.target.value))}
-                          min="0"
-                          step="0.01"
-                          required
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <div className="h-10 px-3 py-2 border border-input bg-background rounded-md flex items-center text-right">
-                          {formatCurrency(item.amount || 0)}
-                        </div>
-                      </div>
-                      <div className="col-span-1">
-                        {invoiceItems.length > 1 && (
-                          <Button 
-                            type="button"
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeInvoiceItem(index)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <X className="h-4 w-4 text-muted-foreground" />
-                            <span className="sr-only">Remove item</span>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="flex justify-end pt-4 border-t mt-4">
-                  <div className="space-y-1 text-right">
-                    <p className="text-sm text-muted-foreground">Total Amount</p>
-                    <p className="text-xl font-semibold">{formatCurrency(calculateTotal(invoiceItems))}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select 
-                  name="status" 
-                  defaultValue={editInvoice?.status || "draft"}
-                  required
-                >
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    {editInvoice && (
-                      <>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  placeholder="Add notes to this invoice"
-                  className="min-h-[100px]"
-                  defaultValue={editInvoice?.notes || ""}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setCreateInvoiceOpen(false);
-                  setEditInvoice(null);
-                }}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editInvoice ? "Update Invoice" : "Create Invoice"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Invoice Dialog */}
-      {viewInvoice && (
-        <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-          <DialogContent className="sm:max-w-2xl max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle>Invoice #{formatInvoiceId(viewInvoice.id)}</DialogTitle>
-              <Badge className={getStatusColor(viewInvoice.status)}>
-                {formatStatus(viewInvoice.status)}
-              </Badge>
-            </DialogHeader>
-            
-            <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Client</h3>
-                    <div className="mt-2">
-                      <p className="font-medium">{viewInvoice.client_name}</p>
-                      {viewInvoice.client_email && <p>{viewInvoice.client_email}</p>}
-                      {viewInvoice.client_phone && <p>{viewInvoice.client_phone}</p>}
-                      {viewInvoice.client_address && (
-                        <p className="whitespace-pre-line">{viewInvoice.client_address}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1 text-right">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Invoice Date</h3>
-                      <p>{formatDate(viewInvoice.date)}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Due Date</h3>
-                      <p>{formatDate(viewInvoice.due_date)}</p>
-                    </div>
-                    
-                    {viewInvoice.payment_date && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Payment Date</h3>
-                        <p>{formatDate(viewInvoice.payment_date)}</p>
-                      </div>
-                    )}
-                    
-                    {viewInvoice.payment_method && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Payment Method</h3>
-                        <p>{viewInvoice.payment_method.replace(/_/g, " ")}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Invoice Items</h3>
-                  <div className="border rounded-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="text-right">Qty</TableHead>
-                          <TableHead className="text-right">Unit Price</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {viewInvoice.items.map((item, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{item.description}</TableCell>
-                            <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                      <TableFooter>
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-right font-medium">Total</TableCell>
-                          <TableCell className="text-right font-bold">{formatCurrency(viewInvoice.total_amount)}</TableCell>
-                        </TableRow>
-                        {viewInvoice.paid_amount > 0 && (
-                          <>
-                            <TableRow>
-                              <TableCell colSpan={3} className="text-right font-medium">Paid</TableCell>
-                              <TableCell className="text-right">{formatCurrency(viewInvoice.paid_amount)}</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell colSpan={3} className="text-right font-medium">Balance</TableCell>
-                              <TableCell className="text-right font-bold">
-                                {formatCurrency(viewInvoice.total_amount - viewInvoice.paid_amount)}
-                              </TableCell>
-                            </TableRow>
-                          </>
-                        )}
-                      </TableFooter>
-                    </Table>
-                  </div>
-                </div>
-                
-                {viewInvoice.notes && (
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Notes</h3>
-                    <div className="p-4 border rounded-md bg-gray-50">
-                      <p className="whitespace-pre-line">{viewInvoice.notes}</p>
-                    </div>
-                  </div>
-                )}
-                
-                {viewInvoice.trips && viewInvoice.trips.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Related Trips</h3>
-                    <div className="space-y-2">
-                      {viewInvoice.trips.map((trip) => (
-                        <div key={trip.id} className="p-3 border rounded-md flex justify-between items-center">
-                          <div>
-                            <p className="font-medium">{formatDate(trip.date)}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {trip.pickup_location && trip.dropoff_location
-                                ? `${trip.pickup_location} to ${trip.dropoff_location}`
-                                : trip.pickup_location || trip.dropoff_location}
-                            </p>
-                          </div>
-                          {trip.amount && (
-                            <div className="font-medium">
-                              {formatCurrency(trip.amount)}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            
-            <DialogFooter className="gap-2 sm:gap-0">
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setViewInvoice(null)}>
-                  Close
-                </Button>
-                <Button variant="outline" onClick={() => generateInvoicePDF(viewInvoice)}>
-                  <Download className="mr-2 h-4 w-4" /> Download PDF
-                </Button>
-              </div>
-              
-              {viewInvoice.status !== "paid" && viewInvoice.status !== "cancelled" && (
-                <Button onClick={() => {
-                  setInvoiceToMarkPaid(viewInvoice);
-                  setPaymentDialogOpen(true);
-                  setViewInvoice(null);
-                }}>
-                  <CreditCard className="mr-2 h-4 w-4" /> Record Payment
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Payment Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-            <DialogDescription>
-              Record a payment for invoice #{invoiceToMarkPaid ? formatInvoiceId(invoiceToMarkPaid.id) : ""}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {invoiceToMarkPaid && (
-            <div className="space-y-4 py-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Total Amount:</span>
-                <span className="font-medium">{formatCurrency(invoiceToMarkPaid.total_amount)}</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Previously Paid:</span>
-                <span>{formatCurrency(invoiceToMarkPaid.paid_amount || 0)}</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Remaining Balance:</span>
-                <span className="font-bold">
-                  {formatCurrency((invoiceToMarkPaid.total_amount) - (invoiceToMarkPaid.paid_amount || 0))}
-                </span>
-              </div>
-              
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="payment_amount">Payment Amount</Label>
-                <Input
-                  id="payment_amount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  max={invoiceToMarkPaid.total_amount - (invoiceToMarkPaid.paid_amount || 0)}
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(parseFloat(e.target.value))}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="payment_date">Payment Date</Label>
-                <Input
-                  id="payment_date"
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="payment_method">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-                  <SelectTrigger id="payment_method">
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="credit_card">Credit Card</SelectItem>
-                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="payment_notes">Notes</Label>
-                <Textarea
-                  id="payment_notes"
-                  placeholder="Add payment details"
-                  value={paymentNotes}
-                  onChange={(e) => setPaymentNotes(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRecordPayment}>
-              Record Payment
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the 
-              invoice and remove it from our database.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={deleteInvoice} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
+                          

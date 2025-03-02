@@ -32,6 +32,17 @@ import {
   useDriversQuery 
 } from "@/components/trips/hooks/form-data-hooks";
 
+// Import helper functions
+import {
+  formatDate,
+  formatTime,
+  formatDateTime,
+  formatStatus,
+  getStatusColor,
+  parseFlightDetails,
+  parsePassengers
+} from "@/components/trips/utils/trip-helpers";
+
 export default function Trips() {
   const { toast } = useToast();
   
@@ -171,6 +182,11 @@ export default function Trips() {
         setActiveTab={setActiveTab}
         messages={messages}
         assignments={assignments}
+        formatDate={formatDate}
+        formatTime={formatTime}
+        formatDateTime={formatDateTime}
+        formatStatus={formatStatus}
+        getStatusColor={getStatusColor}
       />
       
       <TripBookingDialog 
@@ -182,6 +198,8 @@ export default function Trips() {
         vehicles={vehicles}
         drivers={drivers}
         handleSaveTrip={handleSaveTrip}
+        parsePassengers={parsePassengers}
+        parseFlightDetails={parseFlightDetails}
       />
       
       <TripAssignDialog 

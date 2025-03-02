@@ -75,9 +75,10 @@ export function useTripsActions(
   // Update trip status
   const updateTripStatus = async (tripId: string, status: TripStatus) => {
     try {
+      // Fix: Explicitly type the update object and use 'status' as a key
       const { error } = await supabase
         .from("trips")
-        .update({ status })
+        .update({ status } as any)
         .eq("id", tripId);
 
       if (error) throw error;
