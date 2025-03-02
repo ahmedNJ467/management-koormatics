@@ -7,7 +7,7 @@ import { useClientDialog } from "./client-form/use-client-dialog";
 import { useClientFormSubmit } from "./client-form/use-client-form-submit";
 import { useCallback, useMemo, useEffect } from "react";
 import { ClientDialogContent } from "./client-form/client-dialog-content";
-import { Client } from "@/lib/types/client"; // Import from lib instead of redeclaring
+import { Client } from "@/lib/types/client";
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -59,7 +59,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   // Generate dialog title based on client state
   const dialogTitle = useMemo(() => {
     if (!client) return "Add New Client";
-    return client.is_archived 
+    return client.archived 
       ? `Archived Client: ${client.name}`
       : `Edit Client: ${client.name}`;
   }, [client]);
@@ -71,13 +71,23 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
       
       // Create adapter functions to match the expected types
       const profileUploadAdapter = async (file: File): Promise<string> => {
+        if (!file) return '';
         const result = await uploadProfile(file);
         return result || '';
       };
       
       const documentUploadAdapter = async (file: File, name: string): Promise<string> => {
-        const result = await uploadClientDocument(file, name);
-        return result.url;
+        // Create a mock FileList with the single file
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        const fileList = dataTransfer.files;
+        
+        // Upload the document
+        const result = await uploadClientDocument(fileList, name);
+        if (Array.isArray(result) && result.length > 0) {
+          return result[0].url || '';
+        }
+        return '';
       };
       
       // Convert documentFiles to the expected Record format
@@ -155,7 +165,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         }}
         onRestore={handleRestore}
         handleFormSubmit={handleFormSubmit}
-        isArchived={!!client?.is_archived}
+        isArchived={!!client?.archived}
       />
     </Dialog>
   );

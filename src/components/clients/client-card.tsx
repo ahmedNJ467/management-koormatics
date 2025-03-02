@@ -1,22 +1,8 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Users, Phone, AtSign, Globe, Building2, User, MapPin, FileText } from "lucide-react";
-
-interface Client {
-  id: string;
-  name: string;
-  type: "organization" | "individual";
-  description?: string;
-  website?: string;
-  address?: string;
-  contact?: string;
-  email?: string;
-  phone?: string;
-  profile_image_url?: string;
-  has_active_contract?: boolean;
-}
+import { Client } from "@/lib/types/client";
 
 interface ClientCardProps {
   client: Client;
@@ -36,7 +22,10 @@ export function ClientCard({ client, contactsCount, membersCount, onClick, showA
       .substring(0, 2);
   };
 
-  const avatarSize = client.type === "organization" ? "h-16 w-16" : "h-16 w-16 rounded-full";
+  const avatarSize = client.type === "organization" 
+    ? "h-16 w-16 rounded"
+    : "h-16 w-16 rounded-full";
+
   const cardClasses = client.has_active_contract 
     ? "cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500"
     : "cursor-pointer hover:shadow-md transition-shadow";
