@@ -59,7 +59,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   // Generate dialog title based on client state
   const dialogTitle = useMemo(() => {
     if (!client) return "Add New Client";
-    return client.archived 
+    return (client.archived || client.is_archived) 
       ? `Archived Client: ${client.name}`
       : `Edit Client: ${client.name}`;
   }, [client]);
@@ -165,7 +165,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
         }}
         onRestore={handleRestore}
         handleFormSubmit={handleFormSubmit}
-        isArchived={!!client?.archived}
+        isArchived={!!(client?.archived || client?.is_archived)}
       />
     </Dialog>
   );
