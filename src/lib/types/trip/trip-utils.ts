@@ -1,7 +1,6 @@
-
 import { extractTripStatus } from "@/components/trips/utils";
 import { TripType, DbServiceType, tripTypeDisplayMap } from "./base-types";
-import { DisplayTrip, DbTrip } from "./trip-data";
+import { DisplayTrip, DbTrip, Trip } from "./trip-data";
 
 export const mapDatabaseFieldsToTrip = (dbTrip: any): DisplayTrip => {
   // Ensure all required properties are present with defaults
