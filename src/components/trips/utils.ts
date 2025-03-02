@@ -49,6 +49,25 @@ export const parsePassengers = (notes?: string): string[] => {
     .filter(Boolean);
 };
 
+// Add this function to parse flight details from form for UI display
+export const parseFlightDetails = (flightNumber?: string, airline?: string, terminal?: string): string => {
+  let flightInfo = '';
+  
+  if (flightNumber) {
+    flightInfo += flightNumber;
+  }
+  
+  if (airline) {
+    flightInfo += flightInfo ? `, ${airline}` : airline;
+  }
+  
+  if (terminal) {
+    flightInfo += flightInfo ? `, ${terminal}` : terminal;
+  }
+  
+  return flightInfo;
+};
+
 // The following functions are no longer needed since we store flight info in dedicated columns
 // but are kept for backward compatibility with old data
 

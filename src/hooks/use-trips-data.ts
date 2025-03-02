@@ -25,7 +25,8 @@ export function useTripsData() {
 
       if (error) throw error;
 
-      return data.map((trip: DbTripData) => {
+      // Type assertion to help TypeScript understand the structure
+      return data.map((trip: any) => {
         return mapDatabaseFieldsToTrip(trip);
       });
     },

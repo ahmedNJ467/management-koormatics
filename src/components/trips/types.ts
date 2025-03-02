@@ -39,7 +39,7 @@ export interface DbTripData {
   time?: string;
   return_time?: string;
   service_type?: TripType;
-  status?: TripStatus;
+  status?: string; // Changed from TripStatus to string to match the database schema
   amount: number;
   pickup_location?: string;
   dropoff_location?: string;
@@ -51,6 +51,7 @@ export interface DbTripData {
   flight_number?: string;
   terminal?: string;
   is_recurring?: boolean;
+  notes?: string; // Keep notes for backward compatibility
   // Joined data
   clients?: {
     name: string;
