@@ -55,7 +55,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       .limit(1);
     
     if (error || !data || data.length === 0) return 0;
-    return data[0].current_mileage || 0;
+    return data[0]?.current_mileage || 0;
   };
 
   const form = useForm<FuelLogFormValues>({
@@ -68,7 +68,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       price_per_liter: fuelLog.cost / fuelLog.volume, // Calculate price per liter from existing data
       cost: fuelLog.cost,
       previous_mileage: fuelLog.previous_mileage || 0,
-      current_mileage: fuelLog.current_mileage || fuelLog.mileage,
+      current_mileage: fuelLog.current_mileage || 0,
       mileage: fuelLog.mileage,
       notes: fuelLog.notes || "",
     } : {
@@ -102,9 +102,9 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
 
   // Calculate mileage difference
   useEffect(() => {
-    if (currentMileage && previousMileage) {
-      const distance = currentMileage - previousMileage;
-      form.setValue("mileage", distance >= 0 ? distance : 0);
+    if (currentMileage >= 0 && previousMileage >= 0) {
+      const distance = Math.max(0, currentMileage - previousMileage);
+      form.setValue("mileage", distance);
     }
   }, [currentMileage, previousMileage, form]);
 
