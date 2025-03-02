@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -7,27 +8,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ClientFilters } from "@/components/clients/client-filters";
 import { ClientTabs } from "@/components/clients/client-tabs";
 import { useClientData, type Client } from "@/components/clients/hooks/use-client-data";
-
-interface Client {
-  id: string;
-  name: string;
-  type: "organization" | "individual";
-  description?: string;
-  website?: string;
-  address?: string;
-  contact?: string;
-  email?: string;
-  phone?: string;
-  profile_image_url?: string;
-  is_archived?: boolean;
-  documents?: Array<{
-    id: string;
-    name: string;
-    url: string;
-    uploadedAt: string;
-  }>;
-  has_active_contract?: boolean;
-}
 
 export default function Clients() {
   const { toast } = useToast();

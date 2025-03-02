@@ -19,6 +19,7 @@ export const memberSchema = z.object({
   notes: z.string().optional(),
   document_url: z.string().optional(),
   document_name: z.string().optional(),
+  tempId: z.string().optional(), // Added for temporary IDs during file upload
 });
 
 export const clientSchema = z.object({
@@ -40,4 +41,28 @@ export type ClientDocument = {
   name: string;
   url: string;
   uploadedAt: string;
+};
+
+// Add explicit ClientContact and ClientMember types matching the shapes used in code
+export type ClientContact = {
+  id?: string;
+  name: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  is_primary?: boolean;
+  client_id?: string;
+};
+
+export type ClientMember = {
+  id?: string;
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  document_url?: string;
+  document_name?: string;
+  tempId?: string;
+  client_id?: string;
 };

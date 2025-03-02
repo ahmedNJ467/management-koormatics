@@ -1,27 +1,13 @@
 
 import { Dialog } from "@/components/ui/dialog";
 import { useClientForm } from "./client-form/use-client-form";
-import { ClientDocument } from "./client-form/types";
+import { ClientDocument, ClientContact, ClientMember } from "./client-form/types";
 import { DeleteClientDialog } from "./client-form/delete-client-dialog";
 import { useClientDialog } from "./client-form/use-client-dialog";
 import { useClientFormSubmit } from "./client-form/use-client-form-submit";
 import { useCallback, useMemo, useEffect } from "react";
 import { ClientDialogContent } from "./client-form/client-dialog-content";
-
-interface Client {
-  id: string;
-  name: string;
-  type: "organization" | "individual";
-  description?: string;
-  website?: string;
-  address?: string;
-  contact?: string;
-  email?: string;
-  phone?: string;
-  profile_image_url?: string;
-  is_archived?: boolean;
-  documents?: ClientDocument[];
-}
+import { Client } from "@/lib/types/client"; // Import from lib instead of redeclaring
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -82,16 +68,35 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
   const handleFormSubmit = useCallback(async (values: any) => {
     try {
       setIsSubmitting(true);
-      // Fixed the type errors in parameter types:
+      
+      // Create adapter functions to match the expected types
+      const profileUploadAdapter = async (file: File): Promise<string> => {
+        const result = await uploadProfile(file);
+        return result || '';
+      };
+      
+      const documentUploadAdapter = async (file: File, name: string): Promise<string> => {
+        const result = await uploadClientDocument(file, name);
+        return result.url;
+      };
+      
+      // Convert documentFiles to the expected Record format
+      const documentFilesRecord: Record<string, File> = {};
+      if (Array.isArray(documentFiles)) {
+        documentFiles.forEach((file, index) => {
+          documentFilesRecord[`file_${index}`] = file;
+        });
+      }
+      
       const result = await submitFormFn({
         client,
         values,
-        profileUploadFn: uploadProfile, // Correct type: (clientId: string) => Promise<string | null>
+        profileUploadFn: profileUploadAdapter,
         documents,
-        documentFiles, // Correct type: Record<string, File>
-        contacts, // Correct type: ClientContact[]
-        members, // Correct type: ClientMember[]
-        uploadDocumentFn: uploadClientDocument, // Correct type: (file: File, name: string) => Promise<string>
+        documentFiles: documentFilesRecord,
+        contacts: contacts as ClientContact[],
+        members: members as ClientMember[],
+        uploadDocumentFn: documentUploadAdapter,
         setIsSubmitting,
         onSuccess: () => {
           // The form will close automatically due to the useEffect above

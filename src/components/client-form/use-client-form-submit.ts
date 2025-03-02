@@ -2,34 +2,7 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-
-export type ClientDocument = {
-  id: string;
-  name: string;
-  url: string;
-  uploadedAt: string;
-};
-
-export type ClientContact = {
-  id: string;
-  name: string;
-  position?: string;
-  email?: string;
-  phone?: string;
-  is_primary?: boolean;
-};
-
-export type ClientMember = {
-  id?: string;
-  name: string;
-  role?: string;
-  email?: string;
-  phone?: string;
-  notes?: string;
-  document_url?: string;
-  document_name?: string;
-  tempId?: string;
-};
+import { ClientContact, ClientDocument, ClientMember } from "./types";
 
 interface FormSubmitParams {
   client: any;
