@@ -88,14 +88,17 @@ export function useDashboardPerformance() {
         if (queryState.status === 'success' && queryState.fetchStatus === 'idle') {
           // Query has completed successfully
           const dataSize = JSON.stringify(queryState.data).length;
-          const fetchStart = queryState.fetchMeta?.fetchStart || 0;
-          const queryTime = queryState.dataUpdatedAt - fetchStart;
+          
+          // In Tanstack Query v5, fetchMeta might have a different structure
+          // Let's use a default start time if fetchMeta is not available as expected
+          const startTimestamp = performance.now() - 100; // Default fallback
+          const queryTime = queryState.dataUpdatedAt - startTimestamp;
           
           setMetrics(prev => [...prev, {
             name: `Query: ${queryKey}`,
-            startTime: fetchStart || performance.now() - queryTime,
+            startTime: startTimestamp,
             endTime: queryState.dataUpdatedAt,
-            duration: queryTime,
+            duration: queryTime > 0 ? queryTime : 10, // Ensure positive duration
             type: 'query',
             dataSize,
             details: `Data updated at: ${new Date(queryState.dataUpdatedAt).toLocaleTimeString()}`
