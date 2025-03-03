@@ -83,21 +83,22 @@ export function useDashboardPerformance() {
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (event.type === 'updated' && event.query.getObserversCount() > 0) {
         const queryKey = JSON.stringify(event.query.queryKey);
-        const queryStatus = event.query.getState();
+        const queryState = event.query.state;
         
-        if (queryStatus.status === 'success' && queryStatus.fetchStatus === 'idle') {
+        if (queryState.status === 'success' && queryState.fetchStatus === 'idle') {
           // Query has completed successfully
-          const dataSize = JSON.stringify(queryStatus.data).length;
-          const queryTime = queryStatus.dataUpdatedAt - queryStatus.fetchMeta?.fetchStart || 0;
+          const dataSize = JSON.stringify(queryState.data).length;
+          const fetchStart = queryState.fetchMeta?.fetchStart || 0;
+          const queryTime = queryState.dataUpdatedAt - fetchStart;
           
           setMetrics(prev => [...prev, {
             name: `Query: ${queryKey}`,
-            startTime: queryStatus.fetchMeta?.fetchStart || performance.now() - queryTime,
-            endTime: queryStatus.dataUpdatedAt,
+            startTime: fetchStart || performance.now() - queryTime,
+            endTime: queryState.dataUpdatedAt,
             duration: queryTime,
             type: 'query',
             dataSize,
-            details: `Data updated at: ${new Date(queryStatus.dataUpdatedAt).toLocaleTimeString()}`
+            details: `Data updated at: ${new Date(queryState.dataUpdatedAt).toLocaleTimeString()}`
           }]);
         }
       }
