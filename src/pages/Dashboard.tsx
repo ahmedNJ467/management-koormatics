@@ -8,14 +8,8 @@ import { AlertsTab } from "@/components/dashboard/AlertsTab";
 import { useDashboardRealtime } from "@/hooks/use-dashboard-realtime";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { generateVehicleStats, generateFinancialStats } from "@/utils/dashboard-stats";
-import { useState } from "react";
-import { PerformanceMonitor } from "@/components/dashboard/performance/PerformanceMonitor";
-import { Cog } from "lucide-react";
 
 export default function Dashboard() {
-  // State for showing performance monitor
-  const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(false);
-  
   // Use the dashboard data hook to fetch all data
   const {
     recentAlerts,
@@ -44,25 +38,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground mt-1">
-            Fleet management overview and analytics
-          </p>
-        </div>
-        <button 
-          className="flex items-center text-sm gap-1 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setShowPerformanceMonitor(!showPerformanceMonitor)}
-        >
-          <Cog className="h-4 w-4" />
-          {showPerformanceMonitor ? "Hide" : "Show"} Performance Monitor
-        </button>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <p className="text-muted-foreground mt-1">
+          Fleet management overview and analytics
+        </p>
       </div>
-      
-      {showPerformanceMonitor && (
-        <PerformanceMonitor />
-      )}
       
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
