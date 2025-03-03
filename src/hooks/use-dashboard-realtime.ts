@@ -1,82 +1,103 @@
 
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export function useDashboardRealtime() {
   const queryClient = useQueryClient();
 
-  // Subscribe to real-time changes for all relevant tables
   useEffect(() => {
-    // Create a single channel for all dashboard-related changes
-    const channel = supabase
-      .channel('dashboard-changes')
-      // Listen for vehicle changes
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'vehicles' 
-      }, (payload) => {
-        console.log('Vehicle change detected:', payload);
-        toast('Vehicle data updated');
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      })
-      // Listen for driver changes
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'drivers' 
-      }, (payload) => {
-        console.log('Driver change detected:', payload);
-        toast('Driver data updated');
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      })
-      // Listen for maintenance changes
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'maintenance' 
-      }, (payload) => {
-        console.log('Maintenance change detected:', payload);
-        toast('Maintenance data updated');
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      })
-      // Listen for fuel logs changes
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'fuel_logs' 
-      }, (payload) => {
-        console.log('Fuel log change detected:', payload);
-        toast('Fuel data updated');
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      })
-      // Listen for trip changes
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'trips' 
-      }, (payload) => {
-        console.log('Trip change detected:', payload);
-        toast('Trip data updated');
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      })
-      // Listen for client changes
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'clients' 
-      }, (payload) => {
-        console.log('Client change detected:', payload);
-        toast('Client data updated');
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    // Set up real-time subscriptions to relevant tables
+    const vehiclesSubscription = supabase
+      .channel('dashboard-vehicles')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'vehicles'
+      }, () => {
+        // Invalidate vehicle stats query
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "vehicles"] });
+        toast.info("Vehicle data updated");
       })
       .subscribe();
 
-    // Cleanup function to remove the channel when component unmounts
+    const driversSubscription = supabase
+      .channel('dashboard-drivers')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'drivers'
+      }, () => {
+        // Invalidate driver stats query
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "drivers"] });
+        toast.info("Driver data updated");
+      })
+      .subscribe();
+
+    const maintenanceSubscription = supabase
+      .channel('dashboard-maintenance')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'maintenance'
+      }, () => {
+        // Invalidate maintenance and financial data queries
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "financial"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "activity"] });
+        toast.info("Maintenance data updated");
+      })
+      .subscribe();
+
+    const fuelLogsSubscription = supabase
+      .channel('dashboard-fuel-logs')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'fuel_logs'
+      }, () => {
+        // Invalidate fuel logs and financial data queries
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "financial"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "activity"] });
+        toast.info("Fuel log data updated");
+      })
+      .subscribe();
+
+    const tripsSubscription = supabase
+      .channel('dashboard-trips')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'trips'
+      }, () => {
+        // Invalidate trips and activity data queries
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "trips"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "activity"] });
+        toast.info("Trip data updated");
+      })
+      .subscribe();
+
+    const clientsSubscription = supabase
+      .channel('dashboard-clients')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'clients'
+      }, () => {
+        // Invalidate trips query (which includes client data)
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "trips"] });
+        toast.info("Client data updated");
+      })
+      .subscribe();
+
+    // Clean up subscriptions when the component unmounts
     return () => {
-      supabase.removeChannel(channel);
+      vehiclesSubscription.unsubscribe();
+      driversSubscription.unsubscribe();
+      maintenanceSubscription.unsubscribe();
+      fuelLogsSubscription.unsubscribe();
+      tripsSubscription.unsubscribe();
+      clientsSubscription.unsubscribe();
     };
   }, [queryClient]);
 }
