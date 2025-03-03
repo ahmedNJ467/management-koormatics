@@ -39,7 +39,8 @@ export default function Dashboard() {
         // Calculate vehicle statistics
         const totalVehicles = data.length;
         const activeVehicles = data.filter(v => v.status === 'active').length;
-        const inMaintenance = data.filter(v => v.status === 'maintenance').length;
+        // Fix 1: Change 'maintenance' to 'in_service' to match vehicle_status enum
+        const inMaintenance = data.filter(v => v.status === 'in_service').length;
         const vehicleTypes = data.reduce((acc, vehicle) => {
           acc[vehicle.type] = (acc[vehicle.type] || 0) + 1;
           return acc;
@@ -105,7 +106,7 @@ export default function Dashboard() {
         // Fetch maintenance costs for the last 30 days
         const { data: maintenanceData, error: maintenanceError } = await supabase
           .from("maintenance")
-          .select("cost, date")
+          .select("cost, date, description") // Fix 2: Include description in the select
           .gte("date", formattedThirtyDaysAgo)
           .lte("date", formattedToday);
         
@@ -190,8 +191,9 @@ export default function Dashboard() {
         if (error) throw error;
         
         // Format trips data
-        const formattedTrips = data.map(trip => ({
-          id: trip.id,
+        // Fix 3: Convert string ID to number in formatted trips
+        const formattedTrips: TripItemProps[] = data.map(trip => ({
+          id: parseInt(trip.id, 10) || Math.floor(Math.random() * 1000000), // Fallback to random number if parsing fails
           client: trip.clients?.name || 'Unknown Client',
           destination: trip.dropoff_location || 'Not specified',
           date: `${trip.date} ${trip.time || ''}`.trim(),
