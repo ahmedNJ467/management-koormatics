@@ -1,11 +1,14 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { monthlyData } from '@/data/dashboard/mock-data';
 
-export const FleetOverviewChart = () => {
+interface FleetOverviewChartProps {
+  data?: any[];
+}
+
+export const FleetOverviewChart = ({ data = [] }: FleetOverviewChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={monthlyData}>
+      <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="month" className="text-muted-foreground text-xs" />
         <YAxis className="text-muted-foreground text-xs" />

@@ -1,11 +1,14 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { maintenanceCostData } from '@/data/dashboard/mock-data';
 
-export const MaintenanceCostsChart = () => {
+interface MaintenanceCostsChartProps {
+  data?: any[];
+}
+
+export const MaintenanceCostsChart = ({ data = [] }: MaintenanceCostsChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={maintenanceCostData}>
+      <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="month" className="text-muted-foreground text-xs" />
         <YAxis className="text-muted-foreground text-xs" />

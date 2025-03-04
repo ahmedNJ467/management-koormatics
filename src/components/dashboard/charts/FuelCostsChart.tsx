@@ -1,11 +1,14 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { fuelCostData } from '@/data/dashboard/mock-data';
 
-export const FuelCostsChart = () => {
+interface FuelCostsChartProps {
+  data?: any[];
+}
+
+export const FuelCostsChart = ({ data = [] }: FuelCostsChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={fuelCostData}>
+      <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="month" className="text-muted-foreground text-xs" />
         <YAxis className="text-muted-foreground text-xs" />

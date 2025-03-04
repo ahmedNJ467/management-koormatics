@@ -1,13 +1,16 @@
 
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
-import { fleetDistributionData } from '@/data/dashboard/mock-data';
 
-export const FleetDistributionChart = () => {
+interface FleetDistributionChartProps {
+  data?: any[];
+}
+
+export const FleetDistributionChart = ({ data = [] }: FleetDistributionChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
-          data={fleetDistributionData}
+          data={data}
           cx="50%"
           cy="50%"
           innerRadius={70}
@@ -17,7 +20,7 @@ export const FleetDistributionChart = () => {
           label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
           labelLine={false}
         >
-          {fleetDistributionData.map((entry, index) => (
+          {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>
