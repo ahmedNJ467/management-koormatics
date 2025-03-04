@@ -8,7 +8,7 @@ export interface StatCardProps {
 }
 
 export interface TripItemProps {
-  id: number;
+  id: string | number; // Update to accept both string and number
   client: string;
   destination: string;
   date: string;
