@@ -154,6 +154,42 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          client_name: string
+          contract_file: string | null
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          contract_file?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          contract_file?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           avatar_url: string | null
@@ -411,6 +447,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      spare_parts: {
+        Row: {
+          category: string
+          compatibility: string[] | null
+          created_at: string
+          id: string
+          last_ordered: string | null
+          location: string
+          manufacturer: string
+          min_stock_level: number
+          name: string
+          part_image: string | null
+          part_number: string
+          quantity: number
+          status: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          compatibility?: string[] | null
+          created_at?: string
+          id?: string
+          last_ordered?: string | null
+          location: string
+          manufacturer: string
+          min_stock_level?: number
+          name: string
+          part_image?: string | null
+          part_number: string
+          quantity?: number
+          status: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          compatibility?: string[] | null
+          created_at?: string
+          id?: string
+          last_ordered?: string | null
+          location?: string
+          manufacturer?: string
+          min_stock_level?: number
+          name?: string
+          part_image?: string | null
+          part_number?: string
+          quantity?: number
+          status?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       trip_assignments: {
         Row: {
