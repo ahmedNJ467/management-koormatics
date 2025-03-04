@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart2, BarChart, AlertTriangle, Calendar, Activity, RefreshCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
