@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 
 interface AlertsTabProps {
   recentAlerts: AlertItemProps[];
+  isLoading?: boolean;
 }
 
-export const AlertsTab = ({ recentAlerts }: AlertsTabProps) => {
+export const AlertsTab = ({ recentAlerts, isLoading = false }: AlertsTabProps) => {
   return (
     <div className="space-y-4">
       {recentAlerts.map((alert) => (

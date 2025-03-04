@@ -5,7 +5,11 @@ import { FleetDistributionChart } from "@/components/dashboard/charts/FleetDistr
 import { DriverStatusChart } from "@/components/dashboard/charts/DriverStatusChart";
 import { Fuel, PieChart, Users } from "lucide-react";
 
-export const AnalyticsTab = () => {
+interface AnalyticsTabProps {
+  isLoading?: boolean;
+}
+
+export const AnalyticsTab = ({ isLoading = false }: AnalyticsTabProps) => {
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">

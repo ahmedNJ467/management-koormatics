@@ -7,9 +7,10 @@ import { Fuel, Wrench } from "lucide-react";
 
 interface CostsTabProps {
   costsBreakdown: CostsBreakdownProps;
+  isLoading?: boolean;
 }
 
-export const CostsTab = ({ costsBreakdown }: CostsTabProps) => {
+export const CostsTab = ({ costsBreakdown, isLoading = false }: CostsTabProps) => {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">

@@ -12,9 +12,10 @@ interface OverviewTabProps {
   financialStats: StatCardProps[];
   upcomingTrips: TripItemProps[];
   recentActivities: ActivityItemProps[];
+  isLoading?: boolean;
 }
 
-export const OverviewTab = ({ stats, financialStats, upcomingTrips, recentActivities }: OverviewTabProps) => {
+export const OverviewTab = ({ stats, financialStats, upcomingTrips, recentActivities, isLoading = false }: OverviewTabProps) => {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
