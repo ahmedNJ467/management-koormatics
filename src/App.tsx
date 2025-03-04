@@ -18,6 +18,8 @@ import Invoices from "./pages/Invoices";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import CostAnalytics from "./pages/CostAnalytics";
+import Contracts from "./pages/Contracts";
+import SpareParts from "./pages/SpareParts";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 
@@ -42,6 +44,8 @@ const App = () => (
               <Route path="quotations" element={<Quotations />} />
               <Route path="trips" element={<Trips />} />
               <Route path="invoices" element={<Invoices />} />
+              <Route path="contracts" element={<Contracts />} />
+              <Route path="spare-parts" element={<SpareParts />} />
               <Route path="reports" element={<Reports />} />
               <Route path="cost-analytics" element={<CostAnalytics />} />
               <Route path="settings" element={<Settings />} />

@@ -16,6 +16,8 @@ import {
   BarChart,
   AlertTriangle,
   DollarSign,
+  FileContract,
+  Package,
 } from "lucide-react";
 
 const navigation = [
@@ -24,7 +26,9 @@ const navigation = [
   { name: "Drivers", href: "/drivers", icon: Users },
   { name: "Maintenance", href: "/maintenance", icon: Wrench },
   { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
+  { name: "Spare Parts", href: "/spare-parts", icon: Package },
   { name: "Clients", href: "/clients", icon: Users2 },
+  { name: "Contracts", href: "/contracts", icon: FileContract },
   { name: "Quotations", href: "/quotations", icon: FileText },
   { name: "Invoices", href: "/invoices", icon: Receipt },
   { name: "Trips", href: "/trips", icon: Calendar },
