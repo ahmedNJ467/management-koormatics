@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { ReportsHeader } from "@/components/reports/ReportsHeader";
-import { ReportsSummaryCards } from "@/components/reports/ReportsSummaryCards";
 import { ReportsTabs } from "@/components/reports/ReportsTabs";
 import { useReportsData } from "@/components/reports/hooks/useReportsData";
 import { useReportFilters } from "@/components/reports/hooks/useReportFilters";
@@ -39,15 +38,6 @@ export default function Reports() {
         dateRange={dateRange} 
         handleDateRangeChange={handleDateRangeChange} 
         clearDateRange={clearDateRange}
-      />
-
-      <ReportsSummaryCards 
-        fuelData={fuelData} 
-        maintenanceData={maintenanceData} 
-        tripsData={tripsData} 
-        isLoadingFuel={isLoadingFuel} 
-        isLoadingMaintenance={isLoadingMaintenance} 
-        isLoadingTrips={isLoadingTrips} 
       />
 
       <ReportsTabs 
