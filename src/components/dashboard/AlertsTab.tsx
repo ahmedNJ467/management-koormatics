@@ -25,7 +25,7 @@ export const AlertsTab = () => {
   // Set up real-time listener for alerts table
   useEffect(() => {
     const alertsChannel = supabase
-      .channel('alerts-changes')
+      .channel('alerts-dashboard-changes')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 

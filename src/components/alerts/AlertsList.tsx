@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { Alert } from "@/types/alert";
 import { AlertItem } from "./AlertItem";
 import { AlertFilters } from "./AlertFilters";
 import { useAlertsData } from "@/hooks/use-alerts-data";
@@ -52,9 +51,6 @@ export const AlertsList = () => {
         title: "Alert resolved",
         description: "The alert has been marked as resolved.",
       });
-
-      // Invalidate the alerts query to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["alerts"] });
     } catch (error) {
       toast({
         title: "Error",
@@ -81,7 +77,7 @@ export const AlertsList = () => {
         </div>
       ) : alerts && alerts.length > 0 ? (
         <div className="space-y-4">
-          {alerts.map((alert: Alert) => (
+          {alerts.map((alert) => (
             <AlertItem key={alert.id} alert={alert} onResolve={handleResolveAlert} />
           ))}
         </div>
