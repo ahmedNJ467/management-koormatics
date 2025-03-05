@@ -17,11 +17,14 @@ export const exportToCSV = (data: any[], filename: string) => {
     headers.join(','),
     ...flattenedData.map(row => 
       headers.map(header => {
+        // Fix: Handle undefined values properly before trying to use string methods
         const val = row[header] !== undefined ? row[header] : '';
-        const escaped = typeof val === 'string' && 
+        // Only try to escape if it's a string
+        const escaped = typeof val === 'string' ? 
           (val.includes(',') || val.includes('"') || val.includes('\n')) 
             ? `"${val.replace(/"/g, '""')}"` 
-            : val;
+            : val
+          : val; // If not a string, don't try to escape it
         return escaped;
       }).join(',')
     )
