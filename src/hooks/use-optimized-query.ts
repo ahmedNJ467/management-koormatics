@@ -37,23 +37,19 @@ export function useOptimizedQuery<TData, TError>(
       errorMessage,
       customErrorHandler,
     },
-    // Handle errors with the onError callback
-    onError: (error: TError) => {
-      console.error(`Query error (${queryKey.join('/')}):`, error);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      
-      // Call custom error handler if provided
-      if (customErrorHandler) {
-        customErrorHandler(error);
-      }
-      
-      // Call the original onError if it exists
-      if (queryOptions.onError) {
-        queryOptions.onError(error);
+    callbacks: {
+      onError: (error: TError) => {
+        console.error(`Query error (${queryKey.join('/')}):`, error);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        // Call custom error handler if provided
+        if (customErrorHandler) {
+          customErrorHandler(error);
+        }
       }
     }
   });
