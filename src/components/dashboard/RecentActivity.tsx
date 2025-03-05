@@ -48,11 +48,11 @@ export const RecentActivity = ({
     return (
       <div className="space-y-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-start space-x-4">
-            <Skeleton className="h-8 w-8 rounded-full" />
+          <div key={i} className="flex items-start space-x-4 animate-pulse">
+            <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
             <div className="space-y-2">
-              <Skeleton className="h-4 w-[250px]" />
-              <Skeleton className="h-3 w-[120px]" />
+              <div className="h-4 w-[250px] bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-3 w-[120px] bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
           </div>
         ))}
@@ -65,8 +65,8 @@ export const RecentActivity = ({
       {activities.length > 0 ? (
         <>
           {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3">
-              <div className="bg-background p-1.5 rounded-full border border-border">
+            <div key={activity.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors duration-150">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/30 p-2 rounded-full shadow-sm">
                 {getIcon(activity.type)}
               </div>
               <div className="space-y-1">
@@ -77,6 +77,14 @@ export const RecentActivity = ({
               </div>
             </div>
           ))}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full mt-4 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            onClick={() => navigate('/activities')}
+          >
+            View all activities
+          </Button>
         </>
       ) : (
         <div className="text-center py-8 flex flex-col items-center text-muted-foreground">
