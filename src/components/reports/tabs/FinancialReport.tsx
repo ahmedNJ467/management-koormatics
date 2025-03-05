@@ -70,7 +70,7 @@ export function FinancialReport({
   
   // Expense breakdown data for pie chart
   const expenseBreakdown = [
-    { name: 'Maintenance', value: filteredMaintenance.filter(item => item.status !== 'scheduled').reduce((sum, item) => sum + Number(item.cost || 0), 0) },
+    { name: 'Maintenance', value: filteredMaintenance.filter(item => item.status === 'completed').reduce((sum, item) => sum + Number(item.cost || 0), 0) },
     { name: 'Fuel', value: filteredFuel.reduce((sum, item) => sum + Number(item.cost || 0), 0) }
   ];
   

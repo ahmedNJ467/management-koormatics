@@ -34,17 +34,17 @@ export function calculateYearComparison(
     return response;
   }
   
-  // Filter out scheduled maintenance
-  const nonScheduledMaintenance = maintenanceData.filter(item => item?.status !== 'scheduled');
-  const nonScheduledComparisonMaintenance = comparisonMaintenanceData.filter(item => item?.status !== 'scheduled');
+  // Filter to only include completed maintenance
+  const completedMaintenance = maintenanceData.filter(item => item?.status === 'completed');
+  const completedComparisonMaintenance = comparisonMaintenanceData.filter(item => item?.status === 'completed');
   
   // Calculate current year costs
-  response.maintenance.current = nonScheduledMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.maintenance.current = completedMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
   response.fuel.current = fuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
   response.total.current = response.maintenance.current + response.fuel.current;
   
   // Calculate comparison year costs
-  response.maintenance.previous = nonScheduledComparisonMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.maintenance.previous = completedComparisonMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
   response.fuel.previous = comparisonFuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
   response.total.previous = response.maintenance.previous + response.fuel.previous;
   

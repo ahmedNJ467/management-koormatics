@@ -14,12 +14,12 @@ export function calculateMonthlyData(
   }));
   
   if (maintenanceData) {
-    // Filter out scheduled maintenance
-    const nonScheduledMaintenance = maintenanceData.filter(
-      item => item?.status !== 'scheduled'
+    // Filter to only include completed maintenance
+    const completedMaintenance = maintenanceData.filter(
+      item => item?.status === 'completed'
     );
     
-    nonScheduledMaintenance.forEach(item => {
+    completedMaintenance.forEach(item => {
       const month = new Date(item.date).getMonth();
       monthlyData[month].maintenance += Number(item.cost);
     });

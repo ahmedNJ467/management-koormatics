@@ -9,12 +9,12 @@ export function calculateVehicleCosts(
   
   // Process maintenance data by vehicle
   if (maintenanceData) {
-    // Filter out scheduled maintenance
-    const nonScheduledMaintenance = maintenanceData.filter(
-      item => item?.status !== 'scheduled'
+    // Filter to only include completed maintenance
+    const completedMaintenance = maintenanceData.filter(
+      item => item?.status === 'completed'
     );
     
-    nonScheduledMaintenance.forEach(item => {
+    completedMaintenance.forEach(item => {
       const vehicleId = item.vehicle_id;
       if (!vehicleId) return;
       

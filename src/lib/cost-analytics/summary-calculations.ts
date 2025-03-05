@@ -9,13 +9,13 @@ export function calculateSummaryCosts(
   const safeMaintenanceData = Array.isArray(maintenanceData) ? maintenanceData : [];
   const safeFuelData = Array.isArray(fuelData) ? fuelData : [];
 
-  // Filter out scheduled maintenance
-  const nonScheduledMaintenance = safeMaintenanceData.filter(
-    item => item?.status !== 'scheduled'
+  // Filter out maintenance records that are not completed
+  const completedMaintenance = safeMaintenanceData.filter(
+    item => item?.status === 'completed'
   );
 
   const costs: CostData = {
-    maintenance: nonScheduledMaintenance.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
+    maintenance: completedMaintenance.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
     fuel: safeFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
     total: 0
   };
