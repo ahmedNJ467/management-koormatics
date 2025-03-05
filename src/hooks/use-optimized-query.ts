@@ -24,9 +24,34 @@ export function useOptimizedQuery<TData, TError>(
     ...queryOptions 
   } = options || {};
 
+  // Create a modified query function that handles errors
+  const wrappedQueryFn = async (): Promise<TData> => {
+    try {
+      return await queryFn();
+    } catch (error) {
+      // Log the error
+      console.error(`Query error (${queryKey.join('/')}):`, error);
+      
+      // Show error toast
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // Call custom error handler if provided
+      if (customErrorHandler) {
+        customErrorHandler(error as TError);
+      }
+      
+      // Re-throw to let React Query handle it
+      throw error;
+    }
+  };
+
   return useQuery({
     queryKey,
-    queryFn,
+    queryFn: wrappedQueryFn,
     staleTime: 5 * 60 * 1000, // 5 minutes (default is 0)
     gcTime: 10 * 60 * 1000, // 10 minutes (default is 5 minutes)
     retry: 2, // Retry failed requests twice (default is 3)
@@ -36,26 +61,6 @@ export function useOptimizedQuery<TData, TError>(
       ...(queryOptions.meta || {}),
       errorMessage,
       customErrorHandler,
-    },
-    // In React Query v5, onError is directly part of the query options
-    onError: (error: TError) => {
-      console.error(`Query error (${queryKey.join('/')}):`, error);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      
-      // Call custom error handler if provided
-      if (customErrorHandler) {
-        customErrorHandler(error);
-      }
-      
-      // Call the original onError if it exists
-      if (queryOptions.onError) {
-        const originalOnError = queryOptions.onError as (error: TError) => void;
-        originalOnError(error);
-      }
     }
   });
 }
