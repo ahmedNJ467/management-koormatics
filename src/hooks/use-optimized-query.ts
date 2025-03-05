@@ -31,10 +31,9 @@ export function useOptimizedQuery<TData, TError>(
     refetchOnWindowFocus: false, // Disable automatic refetching when window regains focus (default is true)
     ...queryOptions,
     meta: {
-      ...queryOptions.meta,
+      ...(queryOptions.meta || {}),
       errorMessage,
     },
-    // Use onSettled to handle both success and error cases if needed
     onError: (error: TError) => {
       console.error(`Query error (${queryKey.join('/')}):`, error);
       toast({
