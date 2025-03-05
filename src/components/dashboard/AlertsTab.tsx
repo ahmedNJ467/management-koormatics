@@ -1,6 +1,5 @@
 
 import { useEffect } from "react";
-import { AlertItemProps } from "@/types/dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +41,7 @@ export const AlertsTab = () => {
   }, [queryClient]);
 
   // Transform alerts data for the component
-  const formattedAlerts: AlertItemProps[] = (alerts || []).map((alert) => ({
+  const formattedAlerts = (alerts || []).map((alert) => ({
     id: alert.id,
     title: alert.title,
     priority: alert.priority,
