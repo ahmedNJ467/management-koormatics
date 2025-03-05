@@ -14,11 +14,18 @@ export function calculateSummaryCosts(
     item => item?.status === 'completed'
   );
 
+  console.log('Completed maintenance items:', completedMaintenance);
+  
   const costs: CostData = {
     maintenance: completedMaintenance.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
     fuel: safeFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
     total: 0
   };
+  
   costs.total = costs.maintenance + costs.fuel;
+  console.log('Calculated maintenance costs:', costs.maintenance);
+  console.log('Calculated fuel costs:', costs.fuel);
+  console.log('Total costs:', costs.total);
+  
   return costs;
 }

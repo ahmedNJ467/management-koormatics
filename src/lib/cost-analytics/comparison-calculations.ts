@@ -34,18 +34,24 @@ export function calculateYearComparison(
     return response;
   }
   
+  // Ensure we have valid arrays
+  const safeMaintenanceData = Array.isArray(maintenanceData) ? maintenanceData : [];
+  const safeFuelData = Array.isArray(fuelData) ? fuelData : [];
+  const safeComparisonMaintenanceData = Array.isArray(comparisonMaintenanceData) ? comparisonMaintenanceData : [];
+  const safeComparisonFuelData = Array.isArray(comparisonFuelData) ? comparisonFuelData : [];
+  
   // Filter to only include completed maintenance
-  const completedMaintenance = maintenanceData.filter(item => item?.status === 'completed');
-  const completedComparisonMaintenance = comparisonMaintenanceData.filter(item => item?.status === 'completed');
+  const completedMaintenance = safeMaintenanceData.filter(item => item?.status === 'completed');
+  const completedComparisonMaintenance = safeComparisonMaintenanceData.filter(item => item?.status === 'completed');
   
   // Calculate current year costs
   response.maintenance.current = completedMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
-  response.fuel.current = fuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.fuel.current = safeFuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
   response.total.current = response.maintenance.current + response.fuel.current;
   
   // Calculate comparison year costs
   response.maintenance.previous = completedComparisonMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
-  response.fuel.previous = comparisonFuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.fuel.previous = safeComparisonFuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
   response.total.previous = response.maintenance.previous + response.fuel.previous;
   
   // Calculate percent changes

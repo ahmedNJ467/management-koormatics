@@ -8,7 +8,7 @@ export function calculateVehicleCosts(
   const vehicleCosts: Record<string, VehicleCostData> = {};
   
   // Process maintenance data by vehicle
-  if (maintenanceData) {
+  if (maintenanceData && Array.isArray(maintenanceData)) {
     // Filter to only include completed maintenance
     const completedMaintenance = maintenanceData.filter(
       item => item?.status === 'completed'
@@ -37,7 +37,7 @@ export function calculateVehicleCosts(
   }
   
   // Process fuel data by vehicle
-  if (fuelData) {
+  if (fuelData && Array.isArray(fuelData)) {
     fuelData.forEach(item => {
       const vehicleId = item.vehicle_id;
       if (!vehicleId) return;

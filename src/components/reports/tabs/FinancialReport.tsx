@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -37,10 +36,20 @@ export function FinancialReport({
   const filteredMaintenance = filterDataByDate(maintenanceData, timeRange, dateRange);
   const filteredFuel = filterDataByDate(fuelData, timeRange, dateRange);
   
+  console.log('Financial Report - Maintenance data before filter:', maintenanceData);
+  console.log('Financial Report - Filtered maintenance data:', filteredMaintenance);
+  
+  // Only include completed maintenance for expense calculations
+  const completedMaintenance = Array.isArray(filteredMaintenance) 
+    ? filteredMaintenance.filter(item => item && item.status === 'completed')
+    : [];
+  
+  console.log('Financial Report - Completed maintenance items:', completedMaintenance);
+  
   // Calculate financial metrics
   const financialData = calculateFinancialData(
     filteredTrips || [],
-    filteredMaintenance || [],
+    completedMaintenance || [], // Pass only completed maintenance
     filteredFuel || []
   );
   
@@ -70,10 +79,18 @@ export function FinancialReport({
   
   // Expense breakdown data for pie chart
   const expenseBreakdown = [
-    { name: 'Maintenance', value: filteredMaintenance.filter(item => item.status === 'completed').reduce((sum, item) => sum + Number(item.cost || 0), 0) },
-    { name: 'Fuel', value: filteredFuel.reduce((sum, item) => sum + Number(item.cost || 0), 0) }
+    { 
+      name: 'Maintenance', 
+      value: completedMaintenance.reduce((sum, item) => sum + Number(item.cost || 0), 0) 
+    },
+    { 
+      name: 'Fuel', 
+      value: Array.isArray(filteredFuel) ? filteredFuel.reduce((sum, item) => sum + Number(item.cost || 0), 0) : 0 
+    }
   ];
   
+  console.log('Financial Report - Expense breakdown:', expenseBreakdown);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

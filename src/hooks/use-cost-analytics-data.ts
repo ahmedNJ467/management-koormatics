@@ -26,7 +26,7 @@ export function useCostAnalyticsData(selectedYear: string) {
       try {
         const { data, error } = await supabase
           .from('maintenance')
-          .select('cost, description, date, vehicle_id, vehicles(make, model, registration)')
+          .select('cost, description, date, vehicle_id, status, vehicles(make, model, registration)')
           .gte('date', `${selectedYear}-01-01`)
           .lte('date', `${selectedYear}-12-31`);
         
@@ -40,6 +40,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           return [];
         }
         
+        console.log("Fetched maintenance data:", data);
         return data || [];
       } catch (error) {
         console.error("Error fetching maintenance data:", error);
@@ -126,7 +127,7 @@ export function useCostAnalyticsData(selectedYear: string) {
       try {
         const { data, error } = await supabase
           .from('maintenance')
-          .select('cost, description, date, vehicle_id, vehicles(make, model, registration)')
+          .select('cost, description, date, vehicle_id, status, vehicles(make, model, registration)')
           .gte('date', `${comparisonYear}-01-01`)
           .lte('date', `${comparisonYear}-12-31`);
         

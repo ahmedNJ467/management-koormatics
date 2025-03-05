@@ -13,22 +13,26 @@ export function calculateMonthlyData(
     total: 0
   }));
   
-  if (maintenanceData) {
+  if (maintenanceData && Array.isArray(maintenanceData)) {
     // Filter to only include completed maintenance
     const completedMaintenance = maintenanceData.filter(
       item => item?.status === 'completed'
     );
     
     completedMaintenance.forEach(item => {
-      const month = new Date(item.date).getMonth();
-      monthlyData[month].maintenance += Number(item.cost);
+      if (item.date) {
+        const month = new Date(item.date).getMonth();
+        monthlyData[month].maintenance += Number(item.cost || 0);
+      }
     });
   }
   
-  if (fuelData) {
+  if (fuelData && Array.isArray(fuelData)) {
     fuelData.forEach(item => {
-      const month = new Date(item.date).getMonth();
-      monthlyData[month].fuel += Number(item.cost);
+      if (item.date) {
+        const month = new Date(item.date).getMonth();
+        monthlyData[month].fuel += Number(item.cost || 0);
+      }
     });
   }
   
