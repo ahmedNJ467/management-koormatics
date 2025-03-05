@@ -13,6 +13,7 @@ export interface SparePart {
   compatibility?: string[];
   part_image?: string;
   last_ordered?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
