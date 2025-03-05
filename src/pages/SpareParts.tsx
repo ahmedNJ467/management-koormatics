@@ -1,63 +1,51 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Tag, HardDrive, Plus, Edit, Trash2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Package, Tag, HardDrive, Plus, Edit, Trash2, Search, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-export interface SparePart {
-  id: string;
-  name: string;
-  part_number: string;
-  category: string;
-  manufacturer: string;
-  quantity: number;
-  unit_price: number;
-  location: string;
-  status: "in_stock" | "low_stock" | "out_of_stock";
-  min_stock_level: number;
-  compatibility?: string[];
-  part_image?: string;
-  last_ordered?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Badge } from "@/components/ui/badge";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { PartForm } from "@/components/spare-parts/part-form";
+import { PartFormSchema } from "@/components/spare-parts/schemas/spare-part-schema";
+import { PartStatusBadge } from "@/components/spare-parts/part-status-badge";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { SparePart } from "@/components/spare-parts/types";
+import { exportToCSV } from "@/components/reports/utils/csvExport";
 
 const SpareParts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
-  const [formData, setFormData] = useState<Partial<SparePart>>({
-    name: "",
-    part_number: "",
-    category: "",
-    manufacturer: "",
-    quantity: 0,
-    unit_price: 0,
-    location: "",
-    status: "in_stock",
-    min_stock_level: 5,
-    compatibility: []
+  const [sortConfig, setSortConfig] = useState<{column: string, direction: 'asc' | 'desc'}>({
+    column: "updated_at",
+    direction: "desc"
   });
-  const [partImage, setPartImage] = useState<File | null>(null);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: spareParts = [], isLoading } = useQuery({
+  const { data: spareParts = [], isLoading, isError } = useQuery({
     queryKey: ["spare_parts"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("spare_parts")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order(sortConfig.column, { ascending: sortConfig.direction === 'asc' });
 
       if (error) {
         console.error("Error fetching spare parts:", error);
@@ -74,22 +62,17 @@ const SpareParts = () => {
   });
 
   const addPartMutation = useMutation({
-    mutationFn: async (newPart: Partial<SparePart>) => {
-      if (!newPart.name || !newPart.part_number || !newPart.category || 
-          !newPart.manufacturer || !newPart.location) {
-        throw new Error("Missing required fields");
-      }
-      
+    mutationFn: async (newPart: z.infer<typeof PartFormSchema>) => {
       const partToInsert = {
         name: newPart.name,
         part_number: newPart.part_number,
         category: newPart.category,
         manufacturer: newPart.manufacturer,
-        quantity: newPart.quantity || 0,
-        unit_price: newPart.unit_price || 0,
+        quantity: newPart.quantity,
+        unit_price: newPart.unit_price,
         location: newPart.location,
-        status: newPart.status || "in_stock",
-        min_stock_level: newPart.min_stock_level || 5,
+        status: getStatusFromQuantity(newPart.quantity, newPart.min_stock_level),
+        min_stock_level: newPart.min_stock_level,
         compatibility: newPart.compatibility || []
       };
 
@@ -101,14 +84,14 @@ const SpareParts = () => {
 
       if (error) throw error;
 
-      if (partImage && data.id) {
-        const fileExt = partImage.name.split(".").pop();
+      if (newPart.part_image && data.id) {
+        const fileExt = newPart.part_image.name.split(".").pop();
         const fileName = `${data.id}.${fileExt}`;
         const filePath = `parts/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("images")
-          .upload(filePath, partImage);
+          .upload(filePath, newPart.part_image);
 
         if (uploadError) throw uploadError;
 
@@ -128,7 +111,6 @@ const SpareParts = () => {
         title: "Part added successfully",
         description: "The new part has been added to inventory.",
       });
-      resetForm();
       setIsAddDialogOpen(false);
     },
     onError: (error) => {
@@ -142,26 +124,39 @@ const SpareParts = () => {
   });
 
   const updatePartMutation = useMutation({
-    mutationFn: async (updatedPart: Partial<SparePart>) => {
+    mutationFn: async (updatedPart: z.infer<typeof PartFormSchema>) => {
       if (!selectedPart?.id) throw new Error("No part selected");
+
+      const partToUpdate = {
+        name: updatedPart.name,
+        part_number: updatedPart.part_number,
+        category: updatedPart.category,
+        manufacturer: updatedPart.manufacturer,
+        quantity: updatedPart.quantity,
+        unit_price: updatedPart.unit_price,
+        location: updatedPart.location,
+        status: getStatusFromQuantity(updatedPart.quantity, updatedPart.min_stock_level),
+        min_stock_level: updatedPart.min_stock_level,
+        compatibility: updatedPart.compatibility || []
+      };
 
       const { data, error } = await supabase
         .from("spare_parts")
-        .update(updatedPart)
+        .update(partToUpdate)
         .eq("id", selectedPart.id)
         .select()
         .single();
 
       if (error) throw error;
 
-      if (partImage) {
-        const fileExt = partImage.name.split(".").pop();
+      if (updatedPart.part_image) {
+        const fileExt = updatedPart.part_image.name.split(".").pop();
         const fileName = `${selectedPart.id}.${fileExt}`;
         const filePath = `parts/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("images")
-          .upload(filePath, partImage, { upsert: true });
+          .upload(filePath, updatedPart.part_image, { upsert: true });
 
         if (uploadError) throw uploadError;
 
@@ -181,7 +176,6 @@ const SpareParts = () => {
         title: "Part updated successfully",
         description: "The part details have been updated.",
       });
-      resetForm();
       setIsEditDialogOpen(false);
     },
     onError: (error) => {
@@ -220,6 +214,7 @@ const SpareParts = () => {
         title: "Part deleted",
         description: "The part has been removed from inventory.",
       });
+      setIsDeleteDialogOpen(false);
     },
     onError: (error) => {
       console.error("Error deleting part:", error);
@@ -231,78 +226,21 @@ const SpareParts = () => {
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      part_number: "",
-      category: "",
-      manufacturer: "",
-      quantity: 0,
-      unit_price: 0,
-      location: "",
-      status: "in_stock",
-      min_stock_level: 5,
-      compatibility: []
-    });
-    setPartImage(null);
-    setSelectedPart(null);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    let processedValue: any = value;
-    
-    if (name === 'quantity' || name === 'unit_price' || name === 'min_stock_level') {
-      processedValue = parseFloat(value) || 0;
-    }
-    
-    setFormData((prev) => ({ ...prev, [name]: processedValue }));
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPartImage(e.target.files[0]);
-    }
-  };
-
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const status = getStatusFromQuantity(Number(formData.quantity), Number(formData.min_stock_level));
-    addPartMutation.mutate({
-      ...formData,
-      status
-    });
-  };
-
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const status = getStatusFromQuantity(Number(formData.quantity), Number(formData.min_stock_level));
-    updatePartMutation.mutate({
-      ...formData,
-      status
-    });
-  };
-
   const openEditDialog = (part: SparePart) => {
     setSelectedPart(part);
-    setFormData({
-      name: part.name,
-      part_number: part.part_number,
-      category: part.category,
-      manufacturer: part.manufacturer,
-      quantity: part.quantity,
-      unit_price: part.unit_price,
-      location: part.location,
-      min_stock_level: part.min_stock_level,
-      compatibility: part.compatibility || []
-    });
     setIsEditDialogOpen(true);
   };
 
-  const confirmDelete = (part: SparePart) => {
-    if (window.confirm(`Are you sure you want to delete "${part.name}" (${part.part_number})?`)) {
-      deletePartMutation.mutate(part.id);
-    }
+  const openDeleteDialog = (part: SparePart) => {
+    setSelectedPart(part);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleSort = (column: string) => {
+    setSortConfig(current => ({
+      column,
+      direction: current.column === column && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
   const getStatusFromQuantity = (quantity: number, minStockLevel: number): SparePart['status'] => {
@@ -315,90 +253,136 @@ const SpareParts = () => {
     part.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     part.part_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
     part.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    part.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
+    part.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    part.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const inStockParts = filteredParts.filter((p) => p.status === "in_stock");
   const lowStockParts = filteredParts.filter((p) => p.status === "low_stock");
   const outOfStockParts = filteredParts.filter((p) => p.status === "out_of_stock");
 
+  const handleExportCSV = () => {
+    try {
+      exportToCSV(filteredParts, 'spare-parts-inventory');
+      toast({
+        title: "Export successful",
+        description: "The spare parts data has been exported to CSV",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the data",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Spare Parts Inventory</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Part
-        </Button>
-      </div>
-
-      <div className="flex items-center space-x-4">
-        <Input
-          placeholder="Search parts..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-sm"
-        />
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Spare Parts Inventory</h1>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2"
+          >
+            <ArrowUpDown className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700">
+            <Plus className="mr-2 h-4 w-4" /> Add Part
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="bg-green-50 dark:bg-green-900/20">
+        <Card className="overflow-hidden border-green-100 dark:border-green-900/30">
+          <CardHeader className="bg-green-50 dark:bg-green-900/20 pb-2">
             <CardTitle className="flex items-center text-green-700 dark:text-green-400">
               <Package className="mr-2 h-5 w-5" />
               In Stock
             </CardTitle>
+            <CardDescription className="text-green-600/80 dark:text-green-400/80">
+              Ready to use parts
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold">{inStockParts.length}</div>
+            <div className="text-3xl font-bold text-green-700 dark:text-green-400">{inStockParts.length}</div>
             <p className="text-sm text-muted-foreground">Available parts</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="bg-yellow-50 dark:bg-yellow-900/20">
+        <Card className="overflow-hidden border-yellow-100 dark:border-yellow-900/30">
+          <CardHeader className="bg-yellow-50 dark:bg-yellow-900/20 pb-2">
             <CardTitle className="flex items-center text-yellow-700 dark:text-yellow-400">
               <Tag className="mr-2 h-5 w-5" />
               Low Stock
             </CardTitle>
+            <CardDescription className="text-yellow-600/80 dark:text-yellow-400/80">
+              Below minimum level
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold">{lowStockParts.length}</div>
+            <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">{lowStockParts.length}</div>
             <p className="text-sm text-muted-foreground">Need attention</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="bg-red-50 dark:bg-red-900/20">
+        <Card className="overflow-hidden border-red-100 dark:border-red-900/30">
+          <CardHeader className="bg-red-50 dark:bg-red-900/20 pb-2">
             <CardTitle className="flex items-center text-red-700 dark:text-red-400">
-              <HardDrive className="mr-2 h-5 w-5" />
+              <AlertTriangle className="mr-2 h-5 w-5" />
               Out of Stock
             </CardTitle>
+            <CardDescription className="text-red-600/80 dark:text-red-400/80">
+              Unavailable parts
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold">{outOfStockParts.length}</div>
+            <div className="text-3xl font-bold text-red-700 dark:text-red-400">{outOfStockParts.length}</div>
             <p className="text-sm text-muted-foreground">Need reordering</p>
           </CardContent>
         </Card>
       </div>
 
+      <div className="flex items-center space-x-4 mb-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search parts by name, number, category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 bg-background"
+          />
+        </div>
+      </div>
+
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle>Parts Inventory</CardTitle>
+          <CardDescription>
+            Manage your spare parts inventory, track stock levels, and maintain part information.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="all">
-            <TabsList className="mb-4">
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="mb-4 grid grid-cols-4 md:w-auto">
               <TabsTrigger value="all">All ({filteredParts.length})</TabsTrigger>
-              <TabsTrigger value="in_stock">In Stock ({inStockParts.length})</TabsTrigger>
-              <TabsTrigger value="low_stock">Low Stock ({lowStockParts.length})</TabsTrigger>
-              <TabsTrigger value="out_of_stock">Out of Stock ({outOfStockParts.length})</TabsTrigger>
+              <TabsTrigger value="in_stock" className="text-green-600">In Stock ({inStockParts.length})</TabsTrigger>
+              <TabsTrigger value="low_stock" className="text-yellow-600">Low Stock ({lowStockParts.length})</TabsTrigger>
+              <TabsTrigger value="out_of_stock" className="text-red-600">Out of Stock ({outOfStockParts.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all">
               <PartsTable
                 parts={filteredParts}
                 onEdit={openEditDialog}
-                onDelete={confirmDelete}
+                onDelete={openDeleteDialog}
+                isLoading={isLoading}
+                onSort={handleSort}
+                sortConfig={sortConfig}
               />
             </TabsContent>
 
@@ -406,7 +390,10 @@ const SpareParts = () => {
               <PartsTable
                 parts={inStockParts}
                 onEdit={openEditDialog}
-                onDelete={confirmDelete}
+                onDelete={openDeleteDialog}
+                isLoading={isLoading}
+                onSort={handleSort}
+                sortConfig={sortConfig}
               />
             </TabsContent>
 
@@ -414,7 +401,10 @@ const SpareParts = () => {
               <PartsTable
                 parts={lowStockParts}
                 onEdit={openEditDialog}
-                onDelete={confirmDelete}
+                onDelete={openDeleteDialog}
+                isLoading={isLoading}
+                onSort={handleSort}
+                sortConfig={sortConfig}
               />
             </TabsContent>
 
@@ -422,7 +412,10 @@ const SpareParts = () => {
               <PartsTable
                 parts={outOfStockParts}
                 onEdit={openEditDialog}
-                onDelete={confirmDelete}
+                onDelete={openDeleteDialog}
+                isLoading={isLoading}
+                onSort={handleSort}
+                sortConfig={sortConfig}
               />
             </TabsContent>
           </Tabs>
@@ -430,294 +423,74 @@ const SpareParts = () => {
       </Card>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Part</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new part to your inventory.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAddSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Part Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="part_number" className="text-right">
-                  Part Number
-                </Label>
-                <Input
-                  id="part_number"
-                  name="part_number"
-                  value={formData.part_number}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category" className="text-right">
-                  Category
-                </Label>
-                <Input
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="manufacturer" className="text-right">
-                  Manufacturer
-                </Label>
-                <Input
-                  id="manufacturer"
-                  name="manufacturer"
-                  value={formData.manufacturer}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="quantity" className="text-right">
-                  Quantity
-                </Label>
-                <Input
-                  id="quantity"
-                  name="quantity"
-                  type="number"
-                  value={formData.quantity}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unit_price" className="text-right">
-                  Unit Price
-                </Label>
-                <Input
-                  id="unit_price"
-                  name="unit_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.unit_price}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="location" className="text-right">
-                  Storage Location
-                </Label>
-                <Input
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="min_stock_level" className="text-right">
-                  Min Stock Level
-                </Label>
-                <Input
-                  id="min_stock_level"
-                  name="min_stock_level"
-                  type="number"
-                  value={formData.min_stock_level}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="part_image" className="text-right">
-                  Part Image
-                </Label>
-                <Input
-                  id="part_image"
-                  name="part_image"
-                  type="file"
-                  onChange={handleImageChange}
-                  className="col-span-3"
-                  accept="image/*"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={addPartMutation.isPending}>
-                {addPartMutation.isPending ? "Saving..." : "Save Part"}
-              </Button>
-            </DialogFooter>
-          </form>
+          
+          <PartForm 
+            onSubmit={(data) => addPartMutation.mutate(data)}
+            onCancel={() => setIsAddDialogOpen(false)}
+            isSubmitting={addPartMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Part</DialogTitle>
+            <DialogDescription>
+              Update the details of this spare part.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEditSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-name" className="text-right">
-                  Part Name
-                </Label>
-                <Input
-                  id="edit-name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-part_number" className="text-right">
-                  Part Number
-                </Label>
-                <Input
-                  id="edit-part_number"
-                  name="part_number"
-                  value={formData.part_number}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-category" className="text-right">
-                  Category
-                </Label>
-                <Input
-                  id="edit-category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-manufacturer" className="text-right">
-                  Manufacturer
-                </Label>
-                <Input
-                  id="edit-manufacturer"
-                  name="manufacturer"
-                  value={formData.manufacturer}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-quantity" className="text-right">
-                  Quantity
-                </Label>
-                <Input
-                  id="edit-quantity"
-                  name="quantity"
-                  type="number"
-                  value={formData.quantity}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-unit_price" className="text-right">
-                  Unit Price
-                </Label>
-                <Input
-                  id="edit-unit_price"
-                  name="unit_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.unit_price}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-location" className="text-right">
-                  Storage Location
-                </Label>
-                <Input
-                  id="edit-location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-min_stock_level" className="text-right">
-                  Min Stock Level
-                </Label>
-                <Input
-                  id="edit-min_stock_level"
-                  name="min_stock_level"
-                  type="number"
-                  value={formData.min_stock_level}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-part_image" className="text-right">
-                  New Image
-                </Label>
-                <Input
-                  id="edit-part_image"
-                  name="part_image"
-                  type="file"
-                  onChange={handleImageChange}
-                  className="col-span-3"
-                  accept="image/*"
-                />
-              </div>
-              {selectedPart?.part_image && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="text-right">Current Image</div>
-                  <div className="col-span-3 text-sm text-muted-foreground">
-                    An image is already attached
-                  </div>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updatePartMutation.isPending}>
-                {updatePartMutation.isPending ? "Updating..." : "Update Part"}
-              </Button>
-            </DialogFooter>
-          </form>
+          
+          {selectedPart && (
+            <PartForm 
+              onSubmit={(data) => updatePartMutation.mutate(data)}
+              onCancel={() => setIsEditDialogOpen(false)}
+              isSubmitting={updatePartMutation.isPending}
+              defaultValues={{
+                name: selectedPart.name,
+                part_number: selectedPart.part_number,
+                category: selectedPart.category,
+                manufacturer: selectedPart.manufacturer,
+                quantity: selectedPart.quantity,
+                unit_price: selectedPart.unit_price,
+                location: selectedPart.location,
+                min_stock_level: selectedPart.min_stock_level,
+                compatibility: selectedPart.compatibility || []
+              }}
+              existingImage={selectedPart.part_image}
+            />
+          )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the part{" "}
+              <span className="font-medium">{selectedPart?.name}</span> from the inventory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => selectedPart && deletePartMutation.mutate(selectedPart.id)}
+              disabled={deletePartMutation.isPending}
+            >
+              {deletePartMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -726,24 +499,94 @@ interface PartsTableProps {
   parts: SparePart[];
   onEdit: (part: SparePart) => void;
   onDelete: (part: SparePart) => void;
+  isLoading: boolean;
+  onSort: (column: string) => void;
+  sortConfig: {column: string, direction: 'asc' | 'desc'};
 }
 
-const PartsTable = ({ parts, onEdit, onDelete }: PartsTableProps) => {
-  if (parts.length === 0) {
-    return <div className="text-center py-4 text-muted-foreground">No parts found</div>;
+const PartsTable = ({ parts, onEdit, onDelete, isLoading, onSort, sortConfig }: PartsTableProps) => {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
+  if (parts.length === 0) {
+    return (
+      <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+        <Package className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No parts found</h3>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          No spare parts match your current search or filter criteria.
+        </p>
+      </div>
+    );
+  }
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortConfig.column !== column) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
+    }
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUpDown className="h-4 w-4 ml-1 text-primary" /> 
+      : <ArrowUpDown className="h-4 w-4 ml-1 text-primary rotate-180" />;
+  };
+
   return (
-    <ScrollArea className="h-[400px]">
+    <div className="border rounded-md">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Part Name</TableHead>
-            <TableHead>Part Number</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Manufacturer</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead className="text-right">Unit Price</TableHead>
+            <TableHead 
+              className="cursor-pointer w-[250px]"
+              onClick={() => onSort('name')}
+            >
+              <div className="flex items-center">
+                Part Name <SortIcon column="name" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer"
+              onClick={() => onSort('part_number')}
+            >
+              <div className="flex items-center">
+                Part Number <SortIcon column="part_number" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer" 
+              onClick={() => onSort('category')}
+            >
+              <div className="flex items-center">
+                Category <SortIcon column="category" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer"
+              onClick={() => onSort('manufacturer')}
+            >
+              <div className="flex items-center">
+                Manufacturer <SortIcon column="manufacturer" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="text-right cursor-pointer"
+              onClick={() => onSort('quantity')}
+            >
+              <div className="flex items-center justify-end">
+                Stock <SortIcon column="quantity" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="text-right cursor-pointer"
+              onClick={() => onSort('unit_price')}
+            >
+              <div className="flex items-center justify-end">
+                Price <SortIcon column="unit_price" />
+              </div>
+            </TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -752,43 +595,39 @@ const PartsTable = ({ parts, onEdit, onDelete }: PartsTableProps) => {
           {parts.map((part) => (
             <TableRow key={part.id}>
               <TableCell className="font-medium">{part.name}</TableCell>
-              <TableCell>{part.part_number}</TableCell>
-              <TableCell>{part.category}</TableCell>
-              <TableCell>{part.manufacturer}</TableCell>
-              <TableCell className="text-right">{part.quantity}</TableCell>
-              <TableCell className="text-right">${part.unit_price.toFixed(2)}</TableCell>
+              <TableCell className="font-mono text-sm">{part.part_number}</TableCell>
               <TableCell>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    part.status === "in_stock"
-                      ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
-                      : part.status === "low_stock"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400"
-                      : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
-                  }`}
-                >
-                  {part.status === "in_stock" 
-                    ? "In Stock" 
-                    : part.status === "low_stock" 
-                    ? "Low Stock" 
-                    : "Out of Stock"}
-                </span>
+                <Badge variant="outline" className="bg-gray-50 dark:bg-gray-800">
+                  {part.category}
+                </Badge>
+              </TableCell>
+              <TableCell>{part.manufacturer}</TableCell>
+              <TableCell className="text-right font-semibold">
+                {part.quantity}
+              </TableCell>
+              <TableCell className="text-right">
+                ${part.unit_price.toFixed(2)}
+              </TableCell>
+              <TableCell>
+                <PartStatusBadge status={part.status} />
               </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => onEdit(part)}
                     title="Edit part"
+                    className="hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => onDelete(part)}
                     title="Delete part"
+                    className="hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -798,7 +637,7 @@ const PartsTable = ({ parts, onEdit, onDelete }: PartsTableProps) => {
           ))}
         </TableBody>
       </Table>
-    </ScrollArea>
+    </div>
   );
 };
 
