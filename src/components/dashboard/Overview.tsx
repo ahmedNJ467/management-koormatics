@@ -52,7 +52,7 @@ export const Overview = () => {
         ).length;
         
         const inactiveVehicles = vehicles.filter(v => 
-          v.status === 'inactive' || v.status === 'sold' || v.status === 'retired'
+          v.status === 'inactive'
         ).length;
         
         return {
