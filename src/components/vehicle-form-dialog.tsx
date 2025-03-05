@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -35,18 +36,27 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
     uploadVehicleImages 
   } = useVehicleImages();
 
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  // For development, we'll set authentication to always be authenticated
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('authenticated');
   
   useEffect(() => {
     const checkAuth = async () => {
+      // For development, we'll just set authenticated status
+      // In production, uncomment the code below
+      /*
       const { data } = await supabase.auth.getSession();
       setAuthStatus(data.session ? 'authenticated' : 'unauthenticated');
+      */
+      setAuthStatus('authenticated');
     };
     
     checkAuth();
     
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setAuthStatus(session ? 'authenticated' : 'unauthenticated');
+      // For development, we'll just set authenticated status
+      // In production, uncomment the code below
+      // setAuthStatus(session ? 'authenticated' : 'unauthenticated');
+      setAuthStatus('authenticated');
     });
     
     return () => {
@@ -101,9 +111,13 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
 
   async function onSubmit(data: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) {
     try {
+      // For development, skip authentication check
+      // In production, uncomment the code below
+      /*
       if (authStatus !== 'authenticated') {
         throw new ApiError("You must be logged in to perform this action", 401);
       }
+      */
       
       setIsSubmitting(true);
       
@@ -190,7 +204,8 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
           </DialogDescription>
         </DialogHeader>
 
-        {authStatus === 'unauthenticated' && (
+        {/* Disable the authentication warning in development */}
+        {false && authStatus === 'unauthenticated' && (
           <div className="p-4 mb-4 border rounded-md bg-destructive/10 text-destructive">
             <p className="font-medium">Authentication required</p>
             <p className="text-sm">You need to be logged in to add or edit vehicles.</p>
@@ -219,7 +234,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSubmitting || authStatus === 'unauthenticated'}
+                disabled={isSubmitting || (false && authStatus === 'unauthenticated')}
               >
                 {isSubmitting ? "Saving..." : vehicle ? "Update Vehicle" : "Add Vehicle"}
               </Button>

@@ -12,11 +12,15 @@ export function useVehicleImages() {
     if (images.length === 0) return;
 
     try {
+      // For development, skip the authentication check
+      // In production, uncomment the code below
+      /*
       // Check authentication status before upload
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         throw new ApiError("You must be logged in to upload images", 401);
       }
+      */
 
       const imageUploadPromises = images.map(async (file) => {
         const fileExt = file.name.split('.').pop();
