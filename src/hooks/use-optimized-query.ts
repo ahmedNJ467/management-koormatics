@@ -7,9 +7,7 @@ type OptimizedQueryOptions<TData, TError> = Omit<
   "queryKey" | "queryFn"
 > & {
   errorMessage?: string;
-  meta?: {
-    onError?: (error: TError) => void;
-  };
+  meta?: Record<string, unknown>;
 };
 
 export function useOptimizedQuery<TData, TError>(
@@ -28,10 +26,8 @@ export function useOptimizedQuery<TData, TError>(
     retry: 2, // Retry failed requests twice (default is 3)
     refetchOnWindowFocus: false, // Disable automatic refetching when window regains focus (default is true)
     ...queryOptions,
-    meta: {
-      ...meta,
-    },
-    onError: (error) => {
+    meta,
+    onError: (error: TError) => {
       console.error(`Query error (${queryKey.join('/')}):`, error);
       toast({
         title: "Error",
@@ -39,8 +35,9 @@ export function useOptimizedQuery<TData, TError>(
         variant: "destructive",
       });
       
-      if (meta?.onError) {
-        meta.onError(error);
+      // Call custom error handler if provided
+      if (queryOptions.onError) {
+        queryOptions.onError(error);
       }
     },
   });
