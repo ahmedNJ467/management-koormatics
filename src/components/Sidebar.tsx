@@ -54,7 +54,7 @@ const navigationGroups = [
   {
     category: "Analytics & Reports",
     items: [
-      { name: "Cost Analytics", href: "/cost-analytics", icon: DollarSign },
+      { name: "Revenue & Cost Analytics", href: "/cost-analytics", icon: DollarSign },
       { name: "Reports", href: "/reports", icon: BarChart },
       { name: "Alerts", href: "/alerts", icon: AlertTriangle },
     ]

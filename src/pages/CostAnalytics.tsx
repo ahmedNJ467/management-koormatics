@@ -11,6 +11,7 @@ import { DetailsTab } from "@/components/cost-analytics/DetailsTab";
 import { ComparisonTab } from "@/components/cost-analytics/ComparisonTab";
 import { useCostAnalyticsData } from "@/hooks/use-cost-analytics-data";
 import { useCostDataCalculations } from "@/hooks/use-cost-data-calculations";
+import { calculateFinancialData } from "@/lib/financial-calculations";
 import { AlertCircle, Loader } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -21,9 +22,11 @@ const CostAnalytics = () => {
   // Use our custom hooks to fetch and process data
   const { 
     maintenanceData, 
-    fuelData, 
+    fuelData,
+    tripsData,
     comparisonMaintenanceData, 
     comparisonFuelData,
+    comparisonTripsData,
     isLoading, 
     yearOptions,
     comparisonYear,
@@ -46,6 +49,20 @@ const CostAnalytics = () => {
     comparisonYear
   );
 
+  // Calculate financial data (revenue, profit)
+  const financialData = calculateFinancialData(
+    tripsData || [],
+    maintenanceData || [],
+    fuelData || []
+  );
+
+  // Calculate comparison financial data if needed
+  const comparisonFinancialData = comparisonYear ? calculateFinancialData(
+    comparisonTripsData || [],
+    comparisonMaintenanceData || [],
+    comparisonFuelData || []
+  ) : null;
+
   // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -65,7 +82,7 @@ const CostAnalytics = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Cost Analytics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Revenue & Cost Analytics</h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Compare with:</span>
@@ -108,7 +125,75 @@ const CostAnalytics = () => {
       {isLoading && (
         <div className="flex items-center justify-center py-8">
           <Loader className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-lg">Loading cost data...</span>
+          <span className="ml-2 text-lg">Loading data...</span>
+        </div>
+      )}
+
+      {/* Revenue & Cost Summary */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Revenue</CardTitle>
+              <CardDescription>Total trip revenue</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${financialData.totalRevenue.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                From {financialData.tripCount} trips
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Expenses</CardTitle>
+              <CardDescription>Total costs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${financialData.totalExpenses.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Maintenance & fuel
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className={financialData.profit >= 0 ? "border-green-500" : "border-red-500"}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Profit</CardTitle>
+              <CardDescription>Revenue minus expenses</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${financialData.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                ${financialData.profit.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {financialData.totalRevenue > 0 ? 
+                  `Margin: ${financialData.profitMargin.toFixed(1)}%` : 
+                  "No revenue recorded"}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Total Costs</CardTitle>
+              <CardDescription>Breakdown</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${summaryCosts.total.toFixed(2)}
+              </div>
+              <div className="grid grid-cols-2 text-xs text-muted-foreground gap-1">
+                <div>Maintenance: ${summaryCosts.maintenance.toFixed(2)}</div>
+                <div>Fuel: ${summaryCosts.fuel.toFixed(2)}</div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -118,16 +203,14 @@ const CostAnalytics = () => {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No data available</AlertTitle>
           <AlertDescription>
-            There is no cost data available for the selected year. Please try selecting a different year or add some cost data.
+            There is no cost or revenue data available for the selected year. Please try selecting a different year or add some data.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Cost Summary Cards */}
+      {/* Cost data tabs */}
       {!isLoading && vehicleCosts && vehicleCosts.length > 0 && (
         <>
-          <CostSummaryCards summaryCosts={summaryCosts} selectedYear={selectedYear} />
-
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
