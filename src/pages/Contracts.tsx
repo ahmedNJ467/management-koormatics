@@ -68,7 +68,7 @@ export default function Contracts() {
     mutationFn: async (newContract: Partial<Contract>) => {
       const { data, error } = await supabase
         .from("contracts")
-        .insert([newContract])
+        .insert(newContract)
         .select()
         .single();
 
