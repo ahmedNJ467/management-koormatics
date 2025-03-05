@@ -20,6 +20,7 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
+  Bell
 } from "lucide-react";
 import { useState } from "react";
 
@@ -52,11 +53,11 @@ const navigationGroups = [
     ]
   },
   {
-    category: "Analytics & Reports",
+    category: "Monitoring",
     items: [
+      { name: "Alerts", href: "/alerts", icon: Bell },
       { name: "Revenue & Cost Analytics", href: "/cost-analytics", icon: DollarSign },
       { name: "Reports", href: "/reports", icon: BarChart },
-      { name: "Alerts", href: "/alerts", icon: AlertTriangle },
     ]
   },
   {

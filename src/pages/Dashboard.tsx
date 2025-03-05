@@ -10,9 +10,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOptimizedQuery } from "@/hooks/use-optimized-query";
 import { useApiErrorHandler } from "@/lib/api-error-handler";
-import { AlertItemProps } from "@/types/dashboard";
+import { Alert } from "@/types/alert";
+import { useAlertsData } from "@/hooks/use-alerts-data";
+import { useActivitiesData } from "@/hooks/use-activities-data";
+import { formatDistanceToNow } from 'date-fns';
+import { ActivityItemProps } from "@/types/dashboard";
+import { AlertTriangle, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const { handleError } = useApiErrorHandler();
 
@@ -48,64 +56,31 @@ export default function Dashboard() {
     },
   });
 
-  // Mock data for recent activities (since 'activities' table doesn't exist in the database)
-  const mockActivities = [
-    { id: 1, title: "Vehicle maintenance completed", timestamp: "1 hour ago", type: "maintenance" },
-    { id: 2, title: "New driver added", timestamp: "3 hours ago", type: "driver" },
-    { id: 3, title: "Trip completed", timestamp: "5 hours ago", type: "trip" },
-    { id: 4, title: "Fuel log added", timestamp: "1 day ago", type: "fuel" },
-    { id: 5, title: "Vehicle inspection scheduled", timestamp: "2 days ago", type: "maintenance" },
-  ];
-
-  // Use mock data instead of fetching from non-existent 'activities' table
-  const { data: recentActivities = mockActivities, isLoading: isActivitiesLoading } = useQuery({
-    queryKey: ["recent-activities"],
-    queryFn: async () => {
-      // In a real app, you would fetch from an actual table
-      return mockActivities;
-    },
+  // Fetch real activities data from the activities table
+  const { data: activitiesData, isLoading: isActivitiesLoading } = useActivitiesData(5);
+  
+  // Transform activities data for the component
+  const recentActivities = activitiesData?.map((activity) => {
+    const formattedTimestamp = formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true });
+    
+    return {
+      id: activity.id,
+      title: activity.title,
+      timestamp: formattedTimestamp,
+      type: activity.type,
+    };
   });
 
-  // Mock data for alerts (since 'alerts' table doesn't exist in the database)
-  const mockAlerts: AlertItemProps[] = [
-    { id: 1, title: "Vehicle maintenance due", priority: "high", date: "Today" },
-    { id: 2, title: "Driver license expiring", priority: "medium", date: "Tomorrow" },
-    { id: 3, title: "Low fuel warning", priority: "high", date: "Today" },
-    { id: 4, title: "Vehicle inspection due", priority: "low", date: "Next week" },
-    { id: 5, title: "Trip scheduling conflict", priority: "medium", date: "Tomorrow" },
-  ];
-
-  // Use mock data instead of fetching from non-existent 'alerts' table
-  const { data: alerts = mockAlerts, isLoading: isAlertsLoading } = useOptimizedQuery(
-    ["alerts"],
-    async () => {
-      try {
-        // In a real app, you would fetch from an actual table
-        return mockAlerts;
-      } catch (error) {
-        throw handleError(error, "Failed to load alerts");
-      }
-    },
-    {
-      errorMessage: "Could not load alerts data",
-    }
-  );
-
-  // Example usage of optimized query for dashboard stats (using mock data)
-  const { data: optimizedData, isLoading: isOptimizedLoading } = useOptimizedQuery(
-    ["dashboard-stats"],
-    async () => {
-      try {
-        // Your fetch logic here
-        return {};
-      } catch (error) {
-        throw handleError(error, "Failed to load dashboard statistics");
-      }
-    },
-    {
-      errorMessage: "Could not load dashboard data",
-    }
-  );
+  // Fetch real alerts data from the alerts table (only active alerts)
+  const { data: alertsData, isLoading: isAlertsLoading } = useAlertsData({ resolved: false });
+  
+  // Transform alerts data for the component
+  const alerts = alertsData?.map((alert) => ({
+    id: alert.id,
+    title: alert.title,
+    priority: alert.priority,
+    date: formatDistanceToNow(new Date(alert.date), { addSuffix: true }),
+  }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -167,23 +142,38 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
+            {alerts && alerts.length > 0 && (
+              <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
+            )}
           </CardHeader>
           <CardContent>
             {isAlertsLoading ? (
               <Skeleton className="h-7 w-20" />
             ) : (
-              <div className="text-2xl font-bold">{alerts.length}</div>
+              <div className="text-2xl font-bold">{alerts?.length || 0}</div>
             )}
             <p className="text-xs text-muted-foreground">
               {isAlertsLoading ? (
                 <Skeleton className="h-4 w-28 mt-1" />
-              ) : (
+              ) : alerts && alerts.length > 0 ? (
                 `${alerts.filter((a) => a.priority === "high").length} high priority`
+              ) : (
+                "No active alerts"
               )}
             </p>
+            {alerts && alerts.length > 0 && (
+              <Button 
+                variant="link" 
+                size="sm" 
+                className="mt-2 p-0 h-auto text-xs text-blue-500"
+                onClick={() => navigate('/alerts')}
+              >
+                View all alerts
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -200,23 +190,40 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         <Card className="col-span-1 md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Activity & Alerts</CardTitle>
-            <CardDescription>
-              Recent system activities and important alerts
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Activity & Alerts</CardTitle>
+              <CardDescription>
+                Recent system activities and important alerts
+              </CardDescription>
+            </div>
+            {(alerts && alerts.length > 0) && (
+              <div className="relative">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                  {alerts.length}
+                </span>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
-                <TabsTrigger value="alerts">Alerts</TabsTrigger>
+                <TabsTrigger value="alerts" className="relative">
+                  Alerts
+                  {(alerts && alerts.length > 0) && (
+                    <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                      {alerts.length}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="activity" className="space-y-4">
-                <RecentActivity activities={recentActivities} isLoading={isActivitiesLoading} />
+                <RecentActivity activities={recentActivities || []} isLoading={isActivitiesLoading} />
               </TabsContent>
               <TabsContent value="alerts" className="space-y-4">
-                <AlertsTab recentAlerts={alerts} isLoading={isAlertsLoading} />
+                <AlertsTab recentAlerts={alerts || []} isLoading={isAlertsLoading} />
               </TabsContent>
             </Tabs>
           </CardContent>
