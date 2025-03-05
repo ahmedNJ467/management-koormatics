@@ -75,7 +75,7 @@ const SpareParts = () => {
         status: getStatusFromQuantity(newPart.quantity, newPart.min_stock_level),
         min_stock_level: newPart.min_stock_level,
         compatibility: newPart.compatibility || [],
-        notes: newPart.notes
+        notes: newPart.notes || ""
       };
 
       console.log("Inserting part data:", partToInsert);
@@ -157,7 +157,7 @@ const SpareParts = () => {
         status: getStatusFromQuantity(updatedPart.quantity, updatedPart.min_stock_level),
         min_stock_level: updatedPart.min_stock_level,
         compatibility: updatedPart.compatibility || [],
-        notes: updatedPart.notes
+        notes: updatedPart.notes || ""
       };
 
       const { data, error } = await supabase
@@ -443,7 +443,7 @@ const SpareParts = () => {
       </Card>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Add New Part</DialogTitle>
             <DialogDescription>
@@ -463,7 +463,7 @@ const SpareParts = () => {
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Edit Part</DialogTitle>
             <DialogDescription>
@@ -489,7 +489,7 @@ const SpareParts = () => {
                 location: selectedPart.location,
                 min_stock_level: selectedPart.min_stock_level,
                 compatibility: selectedPart.compatibility || [],
-                notes: selectedPart.notes
+                notes: selectedPart.notes || ""
               }}
               existingImage={selectedPart.part_image}
             />

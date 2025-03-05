@@ -59,6 +59,7 @@ export const PartForm = ({
   };
 
   const handleSubmit = (data: z.infer<typeof PartFormSchema>) => {
+    console.log("Form submitted with data:", data);
     onSubmit(data);
   };
 
