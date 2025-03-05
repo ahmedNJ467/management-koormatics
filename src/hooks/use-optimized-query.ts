@@ -2,15 +2,23 @@
 import { useQuery, UseQueryOptions, UseQueryResult } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+type OptimizedQueryOptions<TData, TError> = Omit<
+  UseQueryOptions<TData, TError, TData, unknown[]>,
+  "queryKey" | "queryFn"
+> & {
+  errorMessage?: string;
+  meta?: {
+    onError?: (error: TError) => void;
+  };
+};
+
 export function useOptimizedQuery<TData, TError>(
   queryKey: unknown[],
   queryFn: () => Promise<TData>,
-  options?: Omit<UseQueryOptions<TData, TError, TData>, "queryKey" | "queryFn"> & {
-    errorMessage?: string;
-  }
+  options?: OptimizedQueryOptions<TData, TError>
 ): UseQueryResult<TData, TError> {
   const { toast } = useToast();
-  const { errorMessage = "An error occurred while fetching data", ...queryOptions } = options || {};
+  const { errorMessage = "An error occurred while fetching data", meta, ...queryOptions } = options || {};
 
   return useQuery({
     queryKey,
@@ -20,6 +28,9 @@ export function useOptimizedQuery<TData, TError>(
     retry: 2, // Retry failed requests twice (default is 3)
     refetchOnWindowFocus: false, // Disable automatic refetching when window regains focus (default is true)
     ...queryOptions,
+    meta: {
+      ...meta,
+    },
     onError: (error) => {
       console.error(`Query error (${queryKey.join('/')}):`, error);
       toast({
@@ -27,8 +38,9 @@ export function useOptimizedQuery<TData, TError>(
         description: errorMessage,
         variant: "destructive",
       });
-      if (options?.onError) {
-        options.onError(error);
+      
+      if (meta?.onError) {
+        meta.onError(error);
       }
     },
   });

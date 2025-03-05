@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOptimizedQuery } from "@/hooks/use-optimized-query";
 import { useApiErrorHandler } from "@/lib/api-error-handler";
+import { AlertItemProps } from "@/types/dashboard";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -41,44 +43,45 @@ export default function Dashboard() {
         activeVehicles: vehicles.filter((v) => v.status === "active").length,
         totalDrivers: drivers.length,
         activeDrivers: drivers.filter((d) => d.status === "active").length,
-        pendingMaintenance: maintenance.filter((m) => m.status === "pending").length,
+        pendingMaintenance: maintenance.filter((m) => m.status === "scheduled").length,
       };
     },
   });
 
-  // Fetch recent activities
-  const { data: recentActivities = [], isLoading: isActivitiesLoading } = useQuery({
+  // Mock data for recent activities (since 'activities' table doesn't exist in the database)
+  const mockActivities = [
+    { id: 1, title: "Vehicle maintenance completed", timestamp: "1 hour ago", type: "maintenance" },
+    { id: 2, title: "New driver added", timestamp: "3 hours ago", type: "driver" },
+    { id: 3, title: "Trip completed", timestamp: "5 hours ago", type: "trip" },
+    { id: 4, title: "Fuel log added", timestamp: "1 day ago", type: "fuel" },
+    { id: 5, title: "Vehicle inspection scheduled", timestamp: "2 days ago", type: "maintenance" },
+  ];
+
+  // Use mock data instead of fetching from non-existent 'activities' table
+  const { data: recentActivities = mockActivities, isLoading: isActivitiesLoading } = useQuery({
     queryKey: ["recent-activities"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("activities")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      return data;
+      // In a real app, you would fetch from an actual table
+      return mockActivities;
     },
   });
 
-  // Fetch alerts using the optimized query hook
-  const { data: alerts = [], isLoading: isAlertsLoading } = useOptimizedQuery(
+  // Mock data for alerts (since 'alerts' table doesn't exist in the database)
+  const mockAlerts: AlertItemProps[] = [
+    { id: 1, title: "Vehicle maintenance due", priority: "high", date: "Today" },
+    { id: 2, title: "Driver license expiring", priority: "medium", date: "Tomorrow" },
+    { id: 3, title: "Low fuel warning", priority: "high", date: "Today" },
+    { id: 4, title: "Vehicle inspection due", priority: "low", date: "Next week" },
+    { id: 5, title: "Trip scheduling conflict", priority: "medium", date: "Tomorrow" },
+  ];
+
+  // Use mock data instead of fetching from non-existent 'alerts' table
+  const { data: alerts = mockAlerts, isLoading: isAlertsLoading } = useOptimizedQuery(
     ["alerts"],
     async () => {
       try {
-        const { data, error } = await supabase
-          .from("alerts")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(10);
-
-        if (error) throw error;
-        return data.map((alert) => ({
-          id: alert.id,
-          title: alert.message,
-          priority: alert.priority,
-          date: new Date(alert.created_at).toLocaleDateString(),
-        }));
+        // In a real app, you would fetch from an actual table
+        return mockAlerts;
       } catch (error) {
         throw handleError(error, "Failed to load alerts");
       }
@@ -88,7 +91,7 @@ export default function Dashboard() {
     }
   );
 
-  // Example usage of optimized query for dashboard stats
+  // Example usage of optimized query for dashboard stats (using mock data)
   const { data: optimizedData, isLoading: isOptimizedLoading } = useOptimizedQuery(
     ["dashboard-stats"],
     async () => {

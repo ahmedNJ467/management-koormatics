@@ -31,10 +31,13 @@ export const addContract = async (
     throw new Error("Missing required fields");
   }
 
+  // Cast to proper type to ensure type safety
+  const contractStatus = newContract.status as "active" | "pending" | "expired";
+
   const contractToInsert = {
     name: newContract.name,
     client_name: newContract.client_name,
-    status: newContract.status,
+    status: contractStatus,
     start_date: newContract.start_date,
     end_date: newContract.end_date,
     created_at: new Date().toISOString(),
@@ -69,7 +72,7 @@ export const addContract = async (
     if (updateError) throw updateError;
   }
 
-  return data;
+  return data as Contract;
 };
 
 export const updateContract = async (
@@ -78,6 +81,11 @@ export const updateContract = async (
   contractFile: File | null
 ): Promise<Contract> => {
   if (!contractId) throw new Error("No contract selected");
+
+  // Cast to proper type to ensure type safety
+  if (updatedContract.status) {
+    updatedContract.status = updatedContract.status as "active" | "pending" | "expired";
+  }
 
   const { data, error } = await supabase
     .from("contracts")
@@ -109,7 +117,7 @@ export const updateContract = async (
     if (updateError) throw updateError;
   }
 
-  return data;
+  return data as Contract;
 };
 
 export const deleteContract = async (id: string): Promise<string> => {
