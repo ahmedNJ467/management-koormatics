@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { deleteTripFromDatabase } from "@/components/trips/operations/delete-operations";
 
 interface DeleteTripDialogProps {
   open: boolean;
@@ -21,22 +21,12 @@ export function DeleteTripDialog({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!tripId) return;
+    if (!tripId || isDeleting) return;
     
     setIsDeleting(true);
     
     try {
-      // Delete related records first
-      await supabase.from("trip_messages").delete().eq("trip_id", tripId);
-      await supabase.from("trip_assignments").delete().eq("trip_id", tripId);
-      
-      // Then delete the trip
-      const { error } = await supabase
-        .from("trips")
-        .delete()
-        .eq("id", tripId);
-
-      if (error) throw error;
+      await deleteTripFromDatabase(tripId);
       
       toast({
         title: "Trip deleted",
@@ -52,18 +42,22 @@ export function DeleteTripDialog({
         variant: "destructive",
       });
     } finally {
+      // Always make sure we reset state, even if there was an error
       setIsDeleting(false);
-      // Call onClose after the deletion process is complete to prevent UI freezing
+      // Call onClose after the deletion process is complete
       onClose();
     }
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={(open) => {
-      if (!open && !isDeleting) {
-        onClose();
-      }
-    }}>
+    <AlertDialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        if (!isOpen && !isDeleting) {
+          onClose();
+        }
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -75,7 +69,10 @@ export function DeleteTripDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

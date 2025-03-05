@@ -6,7 +6,7 @@ import { QueryClient } from "@tanstack/react-query";
 // Delete trip function for the DeleteTripDialog component
 export const deleteTripFromDatabase = async (tripId: string) => {
   try {
-    // Delete related records first
+    // Delete related records first to avoid orphaned data
     await supabase.from("trip_messages").delete().eq("trip_id", tripId);
     await supabase.from("trip_assignments").delete().eq("trip_id", tripId);
     
@@ -68,5 +68,9 @@ export const deleteTrip = async (
       description: "Failed to delete trip",
       variant: "destructive",
     });
+    
+    // Even on error, we should reset the state to prevent UI freezing
+    setTripToDelete(null);
+    setDeleteDialogOpen(false);
   }
 };
