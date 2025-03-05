@@ -1,11 +1,12 @@
 
-import { Car, Fuel, Wrench, TrendingUp, Users } from "lucide-react";
+import { Car, Fuel, Wrench, TrendingUp, Users, DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VehiclesReport } from "./tabs/VehiclesReport";
 import { FuelReport } from "./tabs/FuelReport";
 import { MaintenanceReport } from "./tabs/MaintenanceReport";
 import { TripsReport } from "./tabs/TripsReport";
 import { DriversReport } from "./tabs/DriversReport";
+import { FinancialReport } from "./tabs/FinancialReport";
 import { DateRange } from "react-day-picker";
 
 interface TabProps {
@@ -39,6 +40,11 @@ const reportTabs: TabProps[] = [
     title: "Drivers",
     value: "drivers",
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    title: "Financial",
+    value: "financial",
+    icon: <DollarSign className="h-4 w-4" />,
   },
 ];
 
@@ -77,7 +83,7 @@ export function ReportsTabs({
 }: ReportsTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-4">
+      <TabsList className="grid grid-cols-2 md:grid-cols-6 mb-4">
         {reportTabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
             {tab.icon}
@@ -124,6 +130,19 @@ export function ReportsTabs({
         <DriversReport
           driversData={driversData}
           isLoading={isLoadingDrivers}
+        />
+      </TabsContent>
+
+      <TabsContent value="financial" className="space-y-4">
+        <FinancialReport
+          tripsData={tripsData}
+          maintenanceData={maintenanceData}
+          fuelData={fuelData}
+          isLoadingTrips={isLoadingTrips}
+          isLoadingMaintenance={isLoadingMaintenance}
+          isLoadingFuel={isLoadingFuel}
+          timeRange={timeRange}
+          dateRange={dateRange}
         />
       </TabsContent>
     </Tabs>

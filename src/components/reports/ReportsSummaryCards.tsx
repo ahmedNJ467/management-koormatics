@@ -32,9 +32,17 @@ export function ReportsSummaryCards({
     if (!tripsData) return 0;
     return tripsData.reduce((sum, trip) => sum + Number(trip.amount || 0), 0);
   };
+  
+  const calculateTotalExpenses = () => {
+    return calculateTotalFuelCost() + calculateTotalMaintenanceCost();
+  };
+  
+  const calculateProfit = () => {
+    return calculateTotalTripRevenue() - calculateTotalExpenses();
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Fuel Expenses</CardTitle>
@@ -66,6 +74,24 @@ export function ReportsSummaryCards({
           <div className="text-2xl font-bold">
             ${isLoadingTrips ? "..." : calculateTotalTripRevenue().toFixed(2)}
           </div>
+        </CardContent>
+      </Card>
+      <Card className={calculateProfit() >= 0 ? "border-green-500" : "border-red-500"}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Profit</CardTitle>
+          <CardDescription>Revenue minus expenses</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className={`text-2xl font-bold ${calculateProfit() >= 0 ? "text-green-600" : "text-red-600"}`}>
+            ${(isLoadingTrips || isLoadingFuel || isLoadingMaintenance) ? "..." : calculateProfit().toFixed(2)}
+          </div>
+          {!isLoadingTrips && !isLoadingFuel && !isLoadingMaintenance && (
+            <div className="text-xs text-muted-foreground">
+              {calculateTotalTripRevenue() > 0 ? 
+                `Margin: ${((calculateProfit() / calculateTotalTripRevenue()) * 100).toFixed(1)}%` : 
+                "No revenue recorded"}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
