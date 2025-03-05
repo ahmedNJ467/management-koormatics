@@ -37,19 +37,24 @@ export function useOptimizedQuery<TData, TError>(
       errorMessage,
       customErrorHandler,
     },
-    callbacks: {
-      onError: (error: TError) => {
-        console.error(`Query error (${queryKey.join('/')}):`, error);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        
-        // Call custom error handler if provided
-        if (customErrorHandler) {
-          customErrorHandler(error);
-        }
+    // In React Query v5, onError is directly part of the query options
+    onError: (error: TError) => {
+      console.error(`Query error (${queryKey.join('/')}):`, error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // Call custom error handler if provided
+      if (customErrorHandler) {
+        customErrorHandler(error);
+      }
+      
+      // Call the original onError if it exists
+      if (queryOptions.onError) {
+        const originalOnError = queryOptions.onError as (error: TError) => void;
+        originalOnError(error);
       }
     }
   });
