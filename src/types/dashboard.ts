@@ -16,7 +16,7 @@ export interface TripItemProps {
 }
 
 export interface AlertItemProps {
-  id: number;
+  id: number | string; // Update to accept both string and number
   title: string;
   priority: "high" | "medium" | "low";
   date: string;
@@ -36,7 +36,7 @@ export interface CostsBreakdownProps {
 }
 
 export interface ActivityItemProps {
-  id: number;
+  id: number | string; // Update to accept both string and number
   title: string;
   timestamp: string;
   type: "trip" | "maintenance" | "vehicle" | "driver" | "client" | "fuel";

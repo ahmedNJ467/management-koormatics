@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert } from "@/types/alert";
@@ -42,6 +41,5 @@ export const useAlertsData = (filter?: {
         throw handleError(error, "Failed to fetch alerts");
       }
     },
-    keepPreviousData: true,
   });
 };

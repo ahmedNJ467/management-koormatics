@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,27 +59,41 @@ export default function Dashboard() {
   const { data: activitiesData, isLoading: isActivitiesLoading } = useActivitiesData(5);
   
   // Transform activities data for the component
-  const recentActivities = activitiesData?.map((activity) => {
+  const recentActivities: ActivityItemProps[] = activitiesData ? activitiesData.map((activity) => {
     const formattedTimestamp = formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true });
     
+    // Add the required icon property based on the activity type
+    const getIconForType = (type: string) => {
+      switch (type) {
+        case "maintenance": return "wrench";
+        case "trip": return "car";
+        case "vehicle": return "truck";
+        case "driver": return "user";
+        case "client": return "briefcase";
+        case "fuel": return "fuel";
+        default: return "activity";
+      }
+    };
+    
     return {
-      id: activity.id,
+      id: Number(activity.id), // Converting to number as expected by ActivityItemProps
       title: activity.title,
       timestamp: formattedTimestamp,
       type: activity.type,
+      icon: getIconForType(activity.type),
     };
-  });
+  }) : [];
 
   // Fetch real alerts data from the alerts table (only active alerts)
   const { data: alertsData, isLoading: isAlertsLoading } = useAlertsData({ resolved: false });
   
   // Transform alerts data for the component
-  const alerts = alertsData?.map((alert) => ({
-    id: alert.id,
+  const alerts = alertsData ? alertsData.map((alert) => ({
+    id: Number(alert.id), // Converting to number as expected by AlertItemProps
     title: alert.title,
     priority: alert.priority,
     date: formatDistanceToNow(new Date(alert.date), { addSuffix: true }),
-  }));
+  })) : [];
 
   return (
     <div className="flex flex-col gap-4">

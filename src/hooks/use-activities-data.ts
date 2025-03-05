@@ -23,6 +23,6 @@ export const useActivitiesData = (limit: number = 5) => {
       } catch (error) {
         throw handleError(error, "Failed to fetch activities");
       }
-    },
+    }
   });
 };

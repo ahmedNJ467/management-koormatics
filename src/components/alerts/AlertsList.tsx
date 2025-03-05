@@ -62,7 +62,7 @@ export const AlertsList = () => {
         </div>
       ) : alerts && alerts.length > 0 ? (
         <div className="space-y-4">
-          {alerts.map((alert) => (
+          {alerts.map((alert: Alert) => (
             <AlertItem key={alert.id} alert={alert} onResolve={handleResolveAlert} />
           ))}
         </div>
