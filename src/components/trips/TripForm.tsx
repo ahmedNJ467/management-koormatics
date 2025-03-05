@@ -11,6 +11,7 @@ import { LocationFields } from "./form/LocationFields";
 import { DateTimeFields } from "./form/DateTimeFields";
 import { NotesField } from "./form/NotesField";
 import { FormFooter } from "./form/FormFooter";
+import { AmountField } from "./form/AmountField";
 import { formatUIServiceType, prepareFormData } from "./form/utils";
 
 export function TripForm({
@@ -157,6 +158,8 @@ export function TripForm({
         />
 
         <LocationFields editTrip={editTrip} />
+        
+        <AmountField editTrip={editTrip} />
 
         <NotesField editTrip={editTrip} />
 
