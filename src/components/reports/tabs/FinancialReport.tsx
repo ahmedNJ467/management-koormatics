@@ -70,7 +70,7 @@ export function FinancialReport({
   
   // Expense breakdown data for pie chart
   const expenseBreakdown = [
-    { name: 'Maintenance', value: filteredMaintenance.reduce((sum, item) => sum + Number(item.cost || 0), 0) },
+    { name: 'Maintenance', value: filteredMaintenance.filter(item => item.status !== 'scheduled').reduce((sum, item) => sum + Number(item.cost || 0), 0) },
     { name: 'Fuel', value: filteredFuel.reduce((sum, item) => sum + Number(item.cost || 0), 0) }
   ];
   
@@ -130,7 +130,7 @@ export function FinancialReport({
                   {formatCurrency(financialData.totalExpenses)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Maintenance & fuel costs
+                  Maintenance & fuel expenses
                 </p>
               </CardContent>
             </Card>
@@ -184,7 +184,7 @@ export function FinancialReport({
             <Card>
               <CardHeader>
                 <CardTitle>Expense Breakdown</CardTitle>
-                <CardDescription>Maintenance vs. fuel costs</CardDescription>
+                <CardDescription>Maintenance vs. fuel expenses</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">

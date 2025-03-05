@@ -122,7 +122,7 @@ const CostAnalytics = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Revenue & Cost Analytics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Revenue & Expense Analytics</h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Compare with:</span>
@@ -169,7 +169,7 @@ const CostAnalytics = () => {
         </div>
       )}
 
-      {/* Revenue & Cost Summary */}
+      {/* Revenue & Expense Summary */}
       {!isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Revenue Card */}
@@ -203,7 +203,7 @@ const CostAnalytics = () => {
                 <Wrench className="h-5 w-5 mr-2 text-red-500" />
                 <span>Expenses</span>
               </CardTitle>
-              <CardDescription>Breakdown of all costs</CardDescription>
+              <CardDescription>Breakdown of all expenses</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
@@ -271,12 +271,12 @@ const CostAnalytics = () => {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No data available</AlertTitle>
           <AlertDescription>
-            There is no cost or revenue data available for the selected year. Please try selecting a different year or add some data.
+            There is no expense or revenue data available for the selected year. Please try selecting a different year or add some data.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Cost data tabs */}
+      {/* Expense data tabs */}
       {!isLoading && vehicleCosts && vehicleCosts.length > 0 && (
         <>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
