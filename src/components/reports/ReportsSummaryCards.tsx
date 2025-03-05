@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { calculateFinancialData } from "@/lib/financial-calculations";
 
 interface ReportsSummaryCardsProps {
   fuelData: any[] | undefined;
@@ -18,28 +19,13 @@ export function ReportsSummaryCards({
   isLoadingMaintenance,
   isLoadingTrips
 }: ReportsSummaryCardsProps) {
-  const calculateTotalFuelCost = () => {
-    if (!fuelData) return 0;
-    return fuelData.reduce((sum, log) => sum + Number(log.cost || 0), 0);
-  };
+  const financialData = calculateFinancialData(
+    tripsData || [],
+    maintenanceData || [],
+    fuelData || []
+  );
 
-  const calculateTotalMaintenanceCost = () => {
-    if (!maintenanceData) return 0;
-    return maintenanceData.reduce((sum, record) => sum + Number(record.cost || 0), 0);
-  };
-
-  const calculateTotalTripRevenue = () => {
-    if (!tripsData) return 0;
-    return tripsData.reduce((sum, trip) => sum + Number(trip.amount || 0), 0);
-  };
-  
-  const calculateTotalExpenses = () => {
-    return calculateTotalFuelCost() + calculateTotalMaintenanceCost();
-  };
-  
-  const calculateProfit = () => {
-    return calculateTotalTripRevenue() - calculateTotalExpenses();
-  };
+  const isLoading = isLoadingFuel || isLoadingMaintenance || isLoadingTrips;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -50,7 +36,7 @@ export function ReportsSummaryCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            ${isLoadingFuel ? "..." : calculateTotalFuelCost().toFixed(2)}
+            ${isLoading ? "..." : financialData.totalExpenses.toFixed(2)}
           </div>
         </CardContent>
       </Card>
@@ -61,7 +47,7 @@ export function ReportsSummaryCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            ${isLoadingMaintenance ? "..." : calculateTotalMaintenanceCost().toFixed(2)}
+            ${isLoading ? "..." : financialData.totalExpenses.toFixed(2)}
           </div>
         </CardContent>
       </Card>
@@ -72,23 +58,23 @@ export function ReportsSummaryCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            ${isLoadingTrips ? "..." : calculateTotalTripRevenue().toFixed(2)}
+            ${isLoading ? "..." : financialData.totalRevenue.toFixed(2)}
           </div>
         </CardContent>
       </Card>
-      <Card className={calculateProfit() >= 0 ? "border-green-500" : "border-red-500"}>
+      <Card className={financialData.profit >= 0 ? "border-green-500" : "border-red-500"}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Profit</CardTitle>
           <CardDescription>Revenue minus expenses</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${calculateProfit() >= 0 ? "text-green-600" : "text-red-600"}`}>
-            ${(isLoadingTrips || isLoadingFuel || isLoadingMaintenance) ? "..." : calculateProfit().toFixed(2)}
+          <div className={`text-2xl font-bold ${financialData.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+            ${isLoading ? "..." : financialData.profit.toFixed(2)}
           </div>
-          {!isLoadingTrips && !isLoadingFuel && !isLoadingMaintenance && (
+          {!isLoading && (
             <div className="text-xs text-muted-foreground">
-              {calculateTotalTripRevenue() > 0 ? 
-                `Margin: ${((calculateProfit() / calculateTotalTripRevenue()) * 100).toFixed(1)}%` : 
+              {financialData.totalRevenue > 0 ? 
+                `Margin: ${financialData.profitMargin.toFixed(1)}%` : 
                 "No revenue recorded"}
             </div>
           )}
