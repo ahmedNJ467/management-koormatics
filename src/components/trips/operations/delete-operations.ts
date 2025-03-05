@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
 
-// Delete trip function for the DeleteTripDialog component
+// Delete trip function that handles the database operation
 export const deleteTripFromDatabase = async (tripId: string) => {
+  if (!tripId) throw new Error("No trip ID provided");
+  
   try {
     // Delete related records first to avoid orphaned data
     await supabase.from("trip_messages").delete().eq("trip_id", tripId);
@@ -24,7 +26,7 @@ export const deleteTripFromDatabase = async (tripId: string) => {
   }
 };
 
-// Delete trip
+// Delete trip from the Trips page
 export const deleteTrip = async (
   tripToDelete: string | null,
   viewTrip: DisplayTrip | null,
@@ -42,8 +44,8 @@ export const deleteTrip = async (
 ) => {
   if (!tripToDelete) return;
   
-  // First, reset state to avoid UI freezing
-  // It's important to close dialogs and clean up UI state early
+  // First, reset dialog state to avoid UI freezing
+  // It's important to close the dialog early
   setDeleteDialogOpen(false);
 
   try {
@@ -63,8 +65,6 @@ export const deleteTrip = async (
     // Update the data
     queryClient.invalidateQueries({ queryKey: ["trips"] });
     
-    // Reset delete state last
-    setTripToDelete(null);
   } catch (error) {
     console.error("Error deleting trip:", error);
     toast({
@@ -72,5 +72,8 @@ export const deleteTrip = async (
       description: "Failed to delete trip",
       variant: "destructive",
     });
+  } finally {
+    // Always reset delete state, even on error
+    setTripToDelete(null);
   }
 };

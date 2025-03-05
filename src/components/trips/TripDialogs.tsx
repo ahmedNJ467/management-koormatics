@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TripForm } from "@/components/trips/TripForm";
@@ -88,6 +89,19 @@ export function TripDialogs({
   const onViewTripOpenChange = (open: boolean) => {
     if (!open) {
       setViewTrip(null);
+    }
+  };
+
+  const handleTripDeleted = () => {
+    // Invalidate trips query to refresh the list
+    queryClient.invalidateQueries({ queryKey: ["trips"] });
+    
+    // Close any open dialogs showing the deleted trip
+    if (viewTrip && viewTrip.id === tripToDelete) {
+      setViewTrip(null);
+    }
+    if (editTrip && editTrip.id === tripToDelete) {
+      setEditTrip(null);
     }
   };
 
@@ -187,15 +201,7 @@ export function TripDialogs({
           setDeleteDialogOpen(false);
           setTripToDelete(null);
         }}
-        onTripDeleted={() => {
-          queryClient.invalidateQueries({ queryKey: ["trips"] });
-          if (viewTrip && viewTrip.id === tripToDelete) {
-            setViewTrip(null);
-          }
-          if (editTrip && editTrip.id === tripToDelete) {
-            setEditTrip(null);
-          }
-        }}
+        onTripDeleted={handleTripDeleted}
       />
     </>
   );

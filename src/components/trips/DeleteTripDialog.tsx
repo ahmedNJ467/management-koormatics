@@ -20,19 +20,23 @@ export function DeleteTripDialog({
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!tripId || isDeleting) return;
     
     setIsDeleting(true);
     
     try {
+      // Perform the deletion operation
       await deleteTripFromDatabase(tripId);
       
+      // Only notify on success
       toast({
         title: "Trip deleted",
         description: "Trip has been successfully deleted",
       });
       
+      // Call the callback to update parent state
       onTripDeleted();
     } catch (error) {
       console.error("Error deleting trip:", error);
@@ -42,7 +46,7 @@ export function DeleteTripDialog({
         variant: "destructive",
       });
     } finally {
-      // Always make sure we reset state and close dialog, regardless of success or failure
+      // Always reset state and close dialog
       setIsDeleting(false);
       onClose();
     }
@@ -68,10 +72,7 @@ export function DeleteTripDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              handleDelete();
-            }}
+            onClick={handleDelete}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
