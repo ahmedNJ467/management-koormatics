@@ -2,6 +2,8 @@
 import { useQuery, UseQueryOptions, UseQueryResult } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+// Define custom options type that extends UseQueryOptions but omits the queryKey and queryFn
+// We'll add our own custom properties
 type OptimizedQueryOptions<TData, TError> = Omit<
   UseQueryOptions<TData, TError, TData, unknown[]>,
   "queryKey" | "queryFn"
@@ -22,7 +24,8 @@ export function useOptimizedQuery<TData, TError>(
     ...queryOptions 
   } = options || {};
 
-  return useQuery({
+  // Create a merged options object that complies with the React Query v5 API
+  const mergedOptions: UseQueryOptions<TData, TError, TData, unknown[]> = {
     queryKey,
     queryFn,
     staleTime: 5 * 60 * 1000, // 5 minutes (default is 0)
@@ -34,30 +37,27 @@ export function useOptimizedQuery<TData, TError>(
       ...(queryOptions.meta || {}),
       errorMessage,
     },
-    // In React Query v5, we need to handle errors through the onSettled property or with onSuccess/onError callbacks
-    onSuccess: (data) => {
-      if (queryOptions.onSuccess) {
-        queryOptions.onSuccess(data);
-      }
-    },
-    onSettled: (data, error) => {
-      if (error) {
-        console.error(`Query error (${queryKey.join('/')}):`, error);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        
-        // Call custom error handler if provided
-        if (customErrorHandler) {
-          customErrorHandler(error as TError);
-        }
-      }
-      
-      if (queryOptions.onSettled) {
-        queryOptions.onSettled(data, error);
-      }
-    },
-  });
+  };
+
+  // Custom error handling function
+  const handleError = (error: TError) => {
+    console.error(`Query error (${queryKey.join('/')}):`, error);
+    toast({
+      title: "Error",
+      description: errorMessage,
+      variant: "destructive",
+    });
+    
+    // Call custom error handler if provided
+    if (customErrorHandler) {
+      customErrorHandler(error);
+    }
+  };
+
+  // Add onError handler to the merged options
+  if (!mergedOptions.onError) {
+    mergedOptions.onError = handleError;
+  }
+
+  return useQuery(mergedOptions);
 }
