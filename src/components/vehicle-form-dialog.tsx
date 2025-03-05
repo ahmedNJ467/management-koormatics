@@ -83,23 +83,57 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
   async function onSubmit(data: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) {
     try {
       setIsSubmitting(true);
+      
+      // Ensure proper formatting of the data
+      const formattedData = {
+        ...data,
+        year: data.year ? Number(data.year) : null,
+        insurance_expiry: data.insurance_expiry || null,
+        registration: data.registration.trim().toUpperCase(), // Normalize registration to prevent conflicts
+      };
 
       if (vehicle) {
+        // Update existing vehicle
         const { error } = await supabase
           .from('vehicles')
-          .update(data)
+          .update(formattedData)
           .eq('id', vehicle.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Update vehicle error:", error);
+          throw error;
+        }
+        
         await uploadVehicleImages(vehicle.id);
       } else {
+        // Check if a vehicle with the same registration exists
+        const { data: existingVehicle, error: checkError } = await supabase
+          .from('vehicles')
+          .select('id')
+          .eq('registration', formattedData.registration)
+          .single();
+        
+        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is the "not found" error
+          console.error("Check existing vehicle error:", checkError);
+          throw checkError;
+        }
+        
+        if (existingVehicle) {
+          throw new Error(`A vehicle with registration ${formattedData.registration} already exists`);
+        }
+        
+        // Insert new vehicle
         const { data: newVehicle, error } = await supabase
           .from('vehicles')
-          .insert(data)  // Insert a single object, not an array
+          .insert(formattedData)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Insert vehicle error:", error);
+          throw error;
+        }
+        
         if (newVehicle) {
           await uploadVehicleImages(newVehicle.id);
         }
@@ -114,9 +148,11 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
       form.reset();
       onOpenChange(false);
     } catch (error) {
+      console.error("Vehicle form submission error:", error);
+      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save vehicle",
+        description: error instanceof Error ? error.message : "Failed to save vehicle. Please check if a vehicle with the same registration already exists.",
         variant: "destructive",
       });
     } finally {
