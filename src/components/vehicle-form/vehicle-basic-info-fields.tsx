@@ -65,8 +65,17 @@ export function VehicleBasicInfoFields({ form }: VehicleBasicInfoFieldsProps) {
               <Input 
                 type="number" 
                 placeholder="2024"
+                min="1900"
+                max={new Date().getFullYear() + 1}
                 {...field}
-                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                value={field.value || ''}
+                onChange={(e) => {
+                  const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                  // Validate it's a reasonable year
+                  if (!value || (value >= 1900 && value <= new Date().getFullYear() + 1)) {
+                    field.onChange(value);
+                  }
+                }}
               />
             </FormControl>
             <FormMessage />

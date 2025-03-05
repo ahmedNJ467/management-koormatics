@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/lib/types';
+import { ApiError } from '@/lib/api-error-handler';
 
 export function useVehicleImages() {
   const [images, setImages] = useState<File[]>([]);
@@ -11,6 +12,12 @@ export function useVehicleImages() {
     if (images.length === 0) return;
 
     try {
+      // Check authentication status before upload
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new ApiError("You must be logged in to upload images", 401);
+      }
+
       const imageUploadPromises = images.map(async (file) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${vehicleId}/${crypto.randomUUID()}.${fileExt}`;
@@ -21,7 +28,7 @@ export function useVehicleImages() {
           .list(vehicleId);
 
         if (existingFile?.some(f => f.name === fileName)) {
-          throw new Error('File already exists');
+          throw new ApiError('File already exists', 409);
         }
 
         const { error: uploadError, data } = await supabase.storage

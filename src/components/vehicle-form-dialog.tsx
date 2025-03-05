@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -15,6 +14,7 @@ import { VehicleStatusField } from "./vehicle-form/vehicle-status-field";
 import { VehicleNotesField } from "./vehicle-form/vehicle-notes-field";
 import { VehicleImagesField } from "./vehicle-form/vehicle-images-field";
 import { useVehicleImages } from "./vehicle-form/use-vehicle-images";
+import { ApiError, useApiErrorHandler } from "@/lib/api-error-handler";
 
 interface VehicleFormDialogProps {
   open: boolean;
@@ -24,6 +24,7 @@ interface VehicleFormDialogProps {
 
 export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDialogProps) {
   const { toast } = useToast();
+  const { handleError } = useApiErrorHandler();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { 
@@ -33,6 +34,25 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
     setImagePreviewUrls, 
     uploadVehicleImages 
   } = useVehicleImages();
+
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setAuthStatus(data.session ? 'authenticated' : 'unauthenticated');
+    };
+    
+    checkAuth();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setAuthStatus(session ? 'authenticated' : 'unauthenticated');
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const form = useForm<Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>>({
     defaultValues: {
@@ -49,7 +69,6 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
     },
   });
 
-  // Set form values when vehicle prop changes
   useEffect(() => {
     if (vehicle) {
       form.reset({
@@ -82,18 +101,20 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
 
   async function onSubmit(data: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) {
     try {
+      if (authStatus !== 'authenticated') {
+        throw new ApiError("You must be logged in to perform this action", 401);
+      }
+      
       setIsSubmitting(true);
       
-      // Ensure proper formatting of the data
       const formattedData = {
         ...data,
         year: data.year ? Number(data.year) : null,
         insurance_expiry: data.insurance_expiry || null,
-        registration: data.registration.trim().toUpperCase(), // Normalize registration to prevent conflicts
+        registration: data.registration.trim().toUpperCase(),
       };
 
       if (vehicle) {
-        // Update existing vehicle
         const { error } = await supabase
           .from('vehicles')
           .update(formattedData)
@@ -106,23 +127,28 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
         
         await uploadVehicleImages(vehicle.id);
       } else {
-        // Check if a vehicle with the same registration exists
-        const { data: existingVehicle, error: checkError } = await supabase
-          .from('vehicles')
-          .select('id')
-          .eq('registration', formattedData.registration)
-          .single();
-        
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is the "not found" error
-          console.error("Check existing vehicle error:", checkError);
-          throw checkError;
+        try {
+          const { data: existingVehicle, error: checkError } = await supabase
+            .from('vehicles')
+            .select('id')
+            .eq('registration', formattedData.registration)
+            .maybeSingle();
+          
+          if (checkError) {
+            console.error("Check existing vehicle error:", checkError);
+            throw checkError;
+          }
+          
+          if (existingVehicle) {
+            throw new ApiError(`A vehicle with registration ${formattedData.registration} already exists`, 409);
+          }
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 409) {
+            throw error;
+          }
+          console.warn("Error checking existing vehicle:", error);
         }
         
-        if (existingVehicle) {
-          throw new Error(`A vehicle with registration ${formattedData.registration} already exists`);
-        }
-        
-        // Insert new vehicle
         const { data: newVehicle, error } = await supabase
           .from('vehicles')
           .insert(formattedData)
@@ -148,13 +174,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error("Vehicle form submission error:", error);
-      
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save vehicle. Please check if a vehicle with the same registration already exists.",
-        variant: "destructive",
-      });
+      handleError(error, error instanceof ApiError ? error.message : "Failed to save vehicle. Please check if a vehicle with the same registration already exists.");
     } finally {
       setIsSubmitting(false);
     }
@@ -169,6 +189,13 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
             {vehicle ? 'Update the details of your vehicle below.' : 'Fill in the details of your new vehicle below.'}
           </DialogDescription>
         </DialogHeader>
+
+        {authStatus === 'unauthenticated' && (
+          <div className="p-4 mb-4 border rounded-md bg-destructive/10 text-destructive">
+            <p className="font-medium">Authentication required</p>
+            <p className="text-sm">You need to be logged in to add or edit vehicles.</p>
+          </div>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -190,7 +217,10 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || authStatus === 'unauthenticated'}
+              >
                 {isSubmitting ? "Saving..." : vehicle ? "Update Vehicle" : "Add Vehicle"}
               </Button>
             </div>
