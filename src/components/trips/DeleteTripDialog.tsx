@@ -42,9 +42,8 @@ export function DeleteTripDialog({
         variant: "destructive",
       });
     } finally {
-      // Always make sure we reset state, even if there was an error
+      // Always make sure we reset state and close dialog, regardless of success or failure
       setIsDeleting(false);
-      // Call onClose after the deletion process is complete
       onClose();
     }
   };

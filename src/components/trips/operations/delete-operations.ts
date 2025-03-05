@@ -42,10 +42,15 @@ export const deleteTrip = async (
 ) => {
   if (!tripToDelete) return;
   
+  // First, reset state to avoid UI freezing
+  // It's important to close dialogs and clean up UI state early
+  setDeleteDialogOpen(false);
+
   try {
     // Use the dedicated function for deletion to ensure consistency
     await deleteTripFromDatabase(tripToDelete);
 
+    // Notify user of success
     toast({
       title: "Trip deleted",
       description: "Trip has been deleted successfully",
@@ -55,12 +60,11 @@ export const deleteTrip = async (
     if (viewTrip && viewTrip.id === tripToDelete) setViewTrip(null);
     if (editTrip && editTrip.id === tripToDelete) setEditTrip(null);
 
-    // Update the UI state
+    // Update the data
     queryClient.invalidateQueries({ queryKey: ["trips"] });
     
-    // Reset state in a safe order to prevent UI freezing
+    // Reset delete state last
     setTripToDelete(null);
-    setDeleteDialogOpen(false);
   } catch (error) {
     console.error("Error deleting trip:", error);
     toast({
@@ -68,9 +72,5 @@ export const deleteTrip = async (
       description: "Failed to delete trip",
       variant: "destructive",
     });
-    
-    // Even on error, we should reset the state to prevent UI freezing
-    setTripToDelete(null);
-    setDeleteDialogOpen(false);
   }
 };

@@ -189,6 +189,12 @@ export function TripDialogs({
         }}
         onTripDeleted={() => {
           queryClient.invalidateQueries({ queryKey: ["trips"] });
+          if (viewTrip && viewTrip.id === tripToDelete) {
+            setViewTrip(null);
+          }
+          if (editTrip && editTrip.id === tripToDelete) {
+            setEditTrip(null);
+          }
         }}
       />
     </>
