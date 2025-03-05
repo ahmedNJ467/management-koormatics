@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DialogFooter } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PartFormSchema } from "./schemas/spare-part-schema";
 import { supabase } from "@/integrations/supabase/client";
 import { X, Plus } from "lucide-react";
@@ -43,7 +43,7 @@ export const PartForm = ({
       location: defaultValues?.location || "",
       min_stock_level: defaultValues?.min_stock_level || 5,
       compatibility: defaultValues?.compatibility || [],
-      notes: ""
+      notes: defaultValues?.notes || ""
     }
   });
 
@@ -80,16 +80,16 @@ export const PartForm = ({
     );
   };
 
-  // Fetch existing image preview if available
-  useState(() => {
+  // Fixed: Fetching existing image preview using useEffect
+  useEffect(() => {
     const fetchImage = async () => {
       if (existingImage) {
         try {
-          const { data, error } = await supabase.storage
+          const { data } = await supabase.storage
             .from("images")
             .getPublicUrl(existingImage);
           
-          if (!error && data) {
+          if (data) {
             setPreviewUrl(data.publicUrl);
           }
         } catch (error) {
@@ -99,7 +99,7 @@ export const PartForm = ({
     };
     
     fetchImage();
-  });
+  }, [existingImage]);
 
   return (
     <Form {...form}>
