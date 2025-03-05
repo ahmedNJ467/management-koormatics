@@ -44,7 +44,6 @@ export function DeleteTripDialog({
       });
       
       onTripDeleted();
-      onClose();
     } catch (error) {
       console.error("Error deleting trip:", error);
       toast({
@@ -54,11 +53,17 @@ export function DeleteTripDialog({
       });
     } finally {
       setIsDeleting(false);
+      // Call onClose after the deletion process is complete to prevent UI freezing
+      onClose();
     }
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={(open) => {
+      if (!open && !isDeleting) {
+        onClose();
+      }
+    }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -68,7 +73,7 @@ export function DeleteTripDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
