@@ -7,7 +7,7 @@ type OptimizedQueryOptions<TData, TError> = Omit<
   "queryKey" | "queryFn"
 > & {
   errorMessage?: string;
-  meta?: Record<string, unknown>;
+  customErrorHandler?: (error: TError) => void;
 };
 
 export function useOptimizedQuery<TData, TError>(
@@ -16,7 +16,11 @@ export function useOptimizedQuery<TData, TError>(
   options?: OptimizedQueryOptions<TData, TError>
 ): UseQueryResult<TData, TError> {
   const { toast } = useToast();
-  const { errorMessage = "An error occurred while fetching data", meta, ...queryOptions } = options || {};
+  const { 
+    errorMessage = "An error occurred while fetching data", 
+    customErrorHandler,
+    ...queryOptions 
+  } = options || {};
 
   return useQuery({
     queryKey,
@@ -26,7 +30,11 @@ export function useOptimizedQuery<TData, TError>(
     retry: 2, // Retry failed requests twice (default is 3)
     refetchOnWindowFocus: false, // Disable automatic refetching when window regains focus (default is true)
     ...queryOptions,
-    meta,
+    meta: {
+      ...queryOptions.meta,
+      errorMessage,
+    },
+    // Use onSettled to handle both success and error cases if needed
     onError: (error: TError) => {
       console.error(`Query error (${queryKey.join('/')}):`, error);
       toast({
@@ -36,8 +44,8 @@ export function useOptimizedQuery<TData, TError>(
       });
       
       // Call custom error handler if provided
-      if (queryOptions.onError) {
-        queryOptions.onError(error);
+      if (customErrorHandler) {
+        customErrorHandler(error);
       }
     },
   });
