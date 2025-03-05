@@ -1,19 +1,53 @@
 
+import { useEffect } from "react";
 import { AlertItemProps } from "@/types/dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Clock, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAlertsData } from "@/hooks/use-alerts-data";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
-export const AlertsTab = ({
-  recentAlerts,
-  isLoading = false,
-}: {
-  recentAlerts: AlertItemProps[];
-  isLoading?: boolean;
-}) => {
+export const AlertsTab = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Fetch only active (unresolved) alerts and limit to 5
+  const { data: alerts, isLoading, error } = useAlertsData({ 
+    resolved: false,
+    limit: 5
+  });
+  
+  // Set up real-time listener for alerts table
+  useEffect(() => {
+    const alertsChannel = supabase
+      .channel('alerts-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'alerts' 
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["alerts"] });
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(alertsChannel);
+    };
+  }, [queryClient]);
+
+  // Transform alerts data for the component
+  const formattedAlerts: AlertItemProps[] = (alerts || []).map((alert) => ({
+    id: alert.id,
+    title: alert.title,
+    priority: alert.priority,
+    date: formatDistanceToNow(new Date(alert.date), { addSuffix: true })
+  }));
 
   if (isLoading) {
     return (
@@ -34,11 +68,19 @@ export const AlertsTab = ({
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-6 text-red-500">
+        Failed to load alerts. Please try again.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {recentAlerts.length > 0 ? (
+      {formattedAlerts.length > 0 ? (
         <>
-          {recentAlerts.map((alert) => (
+          {formattedAlerts.map((alert) => (
             <div key={alert.id} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors duration-150 flex items-start space-x-3">
               <div className={`p-2 rounded-full shadow-sm ${
                 alert.priority === "high" 

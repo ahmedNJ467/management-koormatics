@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert } from "@/types/alert";
@@ -7,6 +8,7 @@ export const useAlertsData = (filter?: {
   resolved?: boolean;
   priority?: string;
   type?: string;
+  limit?: number;
 }) => {
   const { handleError } = useApiErrorHandler();
 
@@ -21,11 +23,14 @@ export const useAlertsData = (filter?: {
           if (filter.resolved !== undefined) {
             query = query.eq("resolved", filter.resolved);
           }
-          if (filter.priority) {
+          if (filter.priority && filter.priority !== "") {
             query = query.eq("priority", filter.priority);
           }
-          if (filter.type) {
+          if (filter.type && filter.type !== "") {
             query = query.eq("type", filter.type);
+          }
+          if (filter.limit) {
+            query = query.limit(filter.limit);
           }
         }
 
