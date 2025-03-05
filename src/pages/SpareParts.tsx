@@ -453,7 +453,7 @@ const SpareParts = () => {
           
           <PartForm 
             onSubmit={(data) => {
-              console.log("Form submitted with data:", data);
+              console.log("Add form submitted with data:", data);
               addPartMutation.mutate(data);
             }}
             onCancel={() => setIsAddDialogOpen(false)}

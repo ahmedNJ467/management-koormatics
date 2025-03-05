@@ -58,7 +58,7 @@ export const PartForm = ({
     }
   };
 
-  const handleSubmit = (data: z.infer<typeof PartFormSchema>) => {
+  const handleFormSubmit = (data: z.infer<typeof PartFormSchema>) => {
     console.log("Form submitted with data:", data);
     onSubmit(data);
   };
@@ -104,7 +104,7 @@ export const PartForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         <ScrollArea className="max-h-[60vh] pr-3 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-1">
             <div className="space-y-4 md:col-span-2">
