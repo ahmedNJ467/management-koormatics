@@ -1,16 +1,22 @@
+
 import { useState } from "react";
-import { FileText, Plus, Edit, Trash2, Download } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import ContractTable from "@/components/contracts/ContractTable";
+import AddContractDialog from "@/components/contracts/AddContractDialog";
+import EditContractDialog from "@/components/contracts/EditContractDialog";
+import {
+  fetchContracts,
+  addContract,
+  updateContract,
+  deleteContract,
+  downloadContractFile,
+} from "@/components/contracts/ContractService";
 
 export interface Contract {
   id: string;
@@ -42,74 +48,13 @@ export default function Contracts() {
   // Query to fetch contracts
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ["contracts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contracts")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching contracts:", error);
-        toast({
-          title: "Error loading contracts",
-          description: error.message,
-          variant: "destructive",
-        });
-        return [];
-      }
-
-      return data as Contract[];
-    },
+    queryFn: fetchContracts,
   });
 
   // Mutation to add a new contract
   const addContractMutation = useMutation({
     mutationFn: async (newContract: Partial<Contract>) => {
-      // Ensure all required fields are present
-      if (!newContract.name || !newContract.client_name || !newContract.status || 
-          !newContract.start_date || !newContract.end_date) {
-        throw new Error("Missing required fields");
-      }
-      
-      const contractToInsert = {
-        name: newContract.name,
-        client_name: newContract.client_name,
-        status: newContract.status,
-        start_date: newContract.start_date,
-        end_date: newContract.end_date,
-        created_at: new Date().toISOString()
-      };
-
-      const { data, error } = await supabase
-        .from("contracts")
-        .insert(contractToInsert)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Upload contract file if provided
-      if (contractFile && data.id) {
-        const fileExt = contractFile.name.split(".").pop();
-        const fileName = `${data.id}.${fileExt}`;
-        const filePath = `contracts/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("documents")
-          .upload(filePath, contractFile);
-
-        if (uploadError) throw uploadError;
-
-        // Update contract with file path
-        const { error: updateError } = await supabase
-          .from("contracts")
-          .update({ contract_file: filePath })
-          .eq("id", data.id);
-
-        if (updateError) throw updateError;
-      }
-
-      return data;
+      return addContract(newContract, contractFile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
@@ -134,38 +79,7 @@ export default function Contracts() {
   const updateContractMutation = useMutation({
     mutationFn: async (updatedContract: Partial<Contract>) => {
       if (!selectedContract?.id) throw new Error("No contract selected");
-
-      const { data, error } = await supabase
-        .from("contracts")
-        .update(updatedContract)
-        .eq("id", selectedContract.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Upload new contract file if provided
-      if (contractFile) {
-        const fileExt = contractFile.name.split(".").pop();
-        const fileName = `${selectedContract.id}.${fileExt}`;
-        const filePath = `contracts/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("documents")
-          .upload(filePath, contractFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        // Update contract with file path
-        const { error: updateError } = await supabase
-          .from("contracts")
-          .update({ contract_file: filePath })
-          .eq("id", selectedContract.id);
-
-        if (updateError) throw updateError;
-      }
-
-      return data;
+      return updateContract(selectedContract.id, updatedContract, contractFile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
@@ -188,27 +102,8 @@ export default function Contracts() {
 
   // Mutation to delete a contract
   const deleteContractMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("contracts")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      // Also delete the file from storage if it exists
-      const contract = contracts.find(c => c.id === id);
-      if (contract?.contract_file) {
-        const { error: deleteFileError } = await supabase.storage
-          .from("documents")
-          .remove([contract.contract_file]);
-
-        if (deleteFileError) console.error("Error deleting file:", deleteFileError);
-      }
-
-      return id;
-    },
-    onSuccess: (id) => {
+    mutationFn: deleteContract,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       toast({
         title: "Contract deleted",
@@ -226,28 +121,15 @@ export default function Contracts() {
   });
 
   // Function to download contract file
-  const downloadContract = async (contract: Contract) => {
-    if (!contract.contract_file) {
-      toast({
-        title: "No file available",
-        description: "This contract doesn't have an associated file.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleDownloadContract = async (contract: Contract) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .download(contract.contract_file);
-
-      if (error) throw error;
-
+      const data = await downloadContractFile(contract);
+      
       // Create download link
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
       a.href = url;
-      a.download = contract.contract_file.split("/").pop() || "contract";
+      a.download = contract.contract_file?.split("/").pop() || "contract";
       document.body.appendChild(a);
       a.click();
       URL.revokeObjectURL(url);
@@ -368,7 +250,7 @@ export default function Contracts() {
                 contracts={filteredContracts}
                 onEdit={openEditDialog}
                 onDelete={confirmDelete}
-                onDownload={downloadContract}
+                onDownload={handleDownloadContract}
               />
             </TabsContent>
 
@@ -377,7 +259,7 @@ export default function Contracts() {
                 contracts={activeContracts}
                 onEdit={openEditDialog}
                 onDelete={confirmDelete}
-                onDownload={downloadContract}
+                onDownload={handleDownloadContract}
               />
             </TabsContent>
 
@@ -386,7 +268,7 @@ export default function Contracts() {
                 contracts={pendingContracts}
                 onEdit={openEditDialog}
                 onDelete={confirmDelete}
-                onDownload={downloadContract}
+                onDownload={handleDownloadContract}
               />
             </TabsContent>
 
@@ -395,7 +277,7 @@ export default function Contracts() {
                 contracts={expiredContracts}
                 onEdit={openEditDialog}
                 onDelete={confirmDelete}
-                onDownload={downloadContract}
+                onDownload={handleDownloadContract}
               />
             </TabsContent>
           </Tabs>
@@ -403,306 +285,27 @@ export default function Contracts() {
       </Card>
 
       {/* Add Contract Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Add New Contract</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Contract Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="client_name" className="text-right">
-                  Client
-                </Label>
-                <Input
-                  id="client_name"
-                  name="client_name"
-                  value={formData.client_name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">
-                  Status
-                </Label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  required
-                >
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="expired">Expired</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="start_date" className="text-right">
-                  Start Date
-                </Label>
-                <Input
-                  id="start_date"
-                  name="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="end_date" className="text-right">
-                  End Date
-                </Label>
-                <Input
-                  id="end_date"
-                  name="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="contract_file" className="text-right">
-                  Upload File
-                </Label>
-                <Input
-                  id="contract_file"
-                  name="contract_file"
-                  type="file"
-                  onChange={handleFileChange}
-                  className="col-span-3"
-                  accept=".pdf,.doc,.docx"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={addContractMutation.isPending}>
-                {addContractMutation.isPending ? "Saving..." : "Save Contract"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AddContractDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        formData={formData as any}
+        handleInputChange={handleInputChange}
+        handleFileChange={handleFileChange}
+        handleSubmit={handleAddSubmit}
+        isPending={addContractMutation.isPending}
+      />
 
       {/* Edit Contract Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Edit Contract</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-name" className="text-right">
-                  Contract Name
-                </Label>
-                <Input
-                  id="edit-name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-client_name" className="text-right">
-                  Client
-                </Label>
-                <Input
-                  id="edit-client_name"
-                  name="client_name"
-                  value={formData.client_name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-status" className="text-right">
-                  Status
-                </Label>
-                <select
-                  id="edit-status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  required
-                >
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="expired">Expired</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-start_date" className="text-right">
-                  Start Date
-                </Label>
-                <Input
-                  id="edit-start_date"
-                  name="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-end_date" className="text-right">
-                  End Date
-                </Label>
-                <Input
-                  id="edit-end_date"
-                  name="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-contract_file" className="text-right">
-                  Upload New File
-                </Label>
-                <Input
-                  id="edit-contract_file"
-                  name="contract_file"
-                  type="file"
-                  onChange={handleFileChange}
-                  className="col-span-3"
-                  accept=".pdf,.doc,.docx"
-                />
-              </div>
-              {selectedContract?.contract_file && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="text-right">Current File</div>
-                  <div className="col-span-3 text-sm text-muted-foreground">
-                    A file is already attached
-                  </div>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updateContractMutation.isPending}>
-                {updateContractMutation.isPending ? "Updating..." : "Update Contract"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <EditContractDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        formData={formData}
+        selectedContract={selectedContract}
+        handleInputChange={handleInputChange}
+        handleFileChange={handleFileChange}
+        handleSubmit={handleEditSubmit}
+        isPending={updateContractMutation.isPending}
+      />
     </div>
   );
 }
-
-// Contract Table Component
-interface ContractTableProps {
-  contracts: Contract[];
-  onEdit: (contract: Contract) => void;
-  onDelete: (contract: Contract) => void;
-  onDownload: (contract: Contract) => void;
-}
-
-const ContractTable = ({ contracts, onEdit, onDelete, onDownload }: ContractTableProps) => {
-  if (contracts.length === 0) {
-    return <div className="text-center py-4 text-muted-foreground">No contracts found</div>;
-  }
-
-  return (
-    <ScrollArea className="h-[400px]">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Contract Name</TableHead>
-            <TableHead>Client</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {contracts.map((contract) => (
-            <TableRow key={contract.id}>
-              <TableCell className="font-medium">{contract.name}</TableCell>
-              <TableCell>{contract.client_name}</TableCell>
-              <TableCell>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    contract.status === "active"
-                      ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
-                      : contract.status === "pending"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400"
-                      : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
-                  }`}
-                >
-                  {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
-                </span>
-              </TableCell>
-              <TableCell>{new Date(contract.start_date).toLocaleDateString()}</TableCell>
-              <TableCell>{new Date(contract.end_date).toLocaleDateString()}</TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onEdit(contract)}
-                    title="Edit contract"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onDelete(contract)}
-                    title="Delete contract"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  {contract.contract_file && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDownload(contract)}
-                      title="Download contract"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </ScrollArea>
-  );
-};

@@ -20,11 +20,11 @@ export const AlertsTab = ({ recentAlerts, isLoading = false }: AlertsTabProps) =
         </>
       ) : recentAlerts.length > 0 ? (
         recentAlerts.map((alert) => (
-          <Alert key={alert.id} className="flex items-center justify-between">
-            <AlertDescription className="flex-1">
+          <Alert key={alert.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <AlertDescription className="flex-1 mb-2 sm:mb-0">
               {alert.title}
             </AlertDescription>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end sm:self-auto">
               <Badge
                 variant="outline"
                 className={
@@ -37,7 +37,7 @@ export const AlertsTab = ({ recentAlerts, isLoading = false }: AlertsTabProps) =
               >
                 {alert.priority}
               </Badge>
-              <span className="text-sm text-muted-foreground">{alert.date}</span>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">{alert.date}</span>
             </div>
           </Alert>
         ))
