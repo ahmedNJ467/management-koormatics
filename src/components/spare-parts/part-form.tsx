@@ -104,8 +104,8 @@ export const PartForm = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <ScrollArea className="max-h-[60vh] pr-3 -mr-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <ScrollArea className="max-h-[60vh] pr-3 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-1">
             <div className="space-y-4 md:col-span-2">
               <FormField
                 control={form.control}
@@ -352,7 +352,7 @@ export const PartForm = ({
           </div>
         </ScrollArea>
         
-        <DialogFooter className="flex justify-between sm:justify-end gap-2 pt-2">
+        <DialogFooter className="flex justify-between sm:justify-end gap-2 pt-4 mt-6 border-t">
           <Button variant="outline" type="button" onClick={onCancel}>
             Cancel
           </Button>

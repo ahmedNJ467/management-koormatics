@@ -10,9 +10,9 @@ export const PartFormSchema = z.object({
   unit_price: z.number().min(0, "Price cannot be negative"),
   location: z.string().min(1, "Storage location is required"),
   min_stock_level: z.number().min(0, "Minimum stock level cannot be negative"),
-  compatibility: z.array(z.string()).optional(),
+  compatibility: z.array(z.string()).optional().default([]),
   part_image: z.instanceof(File).optional(),
-  notes: z.string().optional(),
+  notes: z.string().optional().default(""),
 });
 
 export type PartFormValues = z.infer<typeof PartFormSchema>;

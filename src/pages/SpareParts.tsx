@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -63,6 +62,8 @@ const SpareParts = () => {
 
   const addPartMutation = useMutation({
     mutationFn: async (newPart: z.infer<typeof PartFormSchema>) => {
+      console.log("Adding new part:", newPart);
+      
       const partToInsert = {
         name: newPart.name,
         part_number: newPart.part_number,
@@ -73,8 +74,11 @@ const SpareParts = () => {
         location: newPart.location,
         status: getStatusFromQuantity(newPart.quantity, newPart.min_stock_level),
         min_stock_level: newPart.min_stock_level,
-        compatibility: newPart.compatibility || []
+        compatibility: newPart.compatibility || [],
+        notes: newPart.notes
       };
+
+      console.log("Inserting part data:", partToInsert);
 
       const { data, error } = await supabase
         .from("spare_parts")
@@ -82,25 +86,40 @@ const SpareParts = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting part:", error);
+        throw error;
+      }
+
+      console.log("Part inserted successfully:", data);
 
       if (newPart.part_image && data.id) {
         const fileExt = newPart.part_image.name.split(".").pop();
         const fileName = `${data.id}.${fileExt}`;
         const filePath = `parts/${fileName}`;
 
+        console.log("Uploading image:", filePath);
+
         const { error: uploadError } = await supabase.storage
           .from("images")
           .upload(filePath, newPart.part_image);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          throw uploadError;
+        }
+
+        console.log("Image uploaded successfully");
 
         const { error: updateError } = await supabase
           .from("spare_parts")
           .update({ part_image: filePath })
           .eq("id", data.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Error updating part with image path:", updateError);
+          throw updateError;
+        }
       }
 
       return data;
@@ -137,7 +156,8 @@ const SpareParts = () => {
         location: updatedPart.location,
         status: getStatusFromQuantity(updatedPart.quantity, updatedPart.min_stock_level),
         min_stock_level: updatedPart.min_stock_level,
-        compatibility: updatedPart.compatibility || []
+        compatibility: updatedPart.compatibility || [],
+        notes: updatedPart.notes
       };
 
       const { data, error } = await supabase
@@ -423,7 +443,7 @@ const SpareParts = () => {
       </Card>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add New Part</DialogTitle>
             <DialogDescription>
@@ -432,7 +452,10 @@ const SpareParts = () => {
           </DialogHeader>
           
           <PartForm 
-            onSubmit={(data) => addPartMutation.mutate(data)}
+            onSubmit={(data) => {
+              console.log("Form submitted with data:", data);
+              addPartMutation.mutate(data);
+            }}
             onCancel={() => setIsAddDialogOpen(false)}
             isSubmitting={addPartMutation.isPending}
           />
@@ -440,7 +463,7 @@ const SpareParts = () => {
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Part</DialogTitle>
             <DialogDescription>
@@ -450,7 +473,10 @@ const SpareParts = () => {
           
           {selectedPart && (
             <PartForm 
-              onSubmit={(data) => updatePartMutation.mutate(data)}
+              onSubmit={(data) => {
+                console.log("Edit form submitted with data:", data);
+                updatePartMutation.mutate(data);
+              }}
               onCancel={() => setIsEditDialogOpen(false)}
               isSubmitting={updatePartMutation.isPending}
               defaultValues={{
@@ -462,7 +488,8 @@ const SpareParts = () => {
                 unit_price: selectedPart.unit_price,
                 location: selectedPart.location,
                 min_stock_level: selectedPart.min_stock_level,
-                compatibility: selectedPart.compatibility || []
+                compatibility: selectedPart.compatibility || [],
+                notes: selectedPart.notes
               }}
               existingImage={selectedPart.part_image}
             />
