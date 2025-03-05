@@ -62,14 +62,24 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     
     const fetchMileage = async () => {
       try {
-        // If editing existing fuel log, don't override the previous mileage
-        if (fuelLog && fuelLog.vehicle_id === vehicleId) return;
+        console.log("Vehicle ID changed to:", vehicleId);
         
+        // If editing existing fuel log, don't override the previous mileage
+        if (fuelLog && fuelLog.vehicle_id === vehicleId) {
+          console.log("Editing existing fuel log, keeping previous mileage:", fuelLog.previous_mileage);
+          return;
+        }
+        
+        console.log("Fetching latest mileage for vehicle:", vehicleId);
         const lastMileage = await getLatestMileage(vehicleId);
+        console.log("Fetched last mileage:", lastMileage);
+        
         form.setValue("previous_mileage", lastMileage);
         
         // Clear current mileage so user can fill it
-        form.setValue("current_mileage", 0);
+        if (!fuelLog) {
+          form.setValue("current_mileage", 0);
+        }
       } catch (error) {
         console.error("Error fetching latest mileage:", error);
       }
