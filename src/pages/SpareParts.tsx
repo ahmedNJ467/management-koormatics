@@ -1,12 +1,11 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Tag, HardDrive, Plus, Edit, Trash2, Upload } from "lucide-react";
+import { Package, Tag, HardDrive, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,7 +51,6 @@ const SpareParts = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query to fetch spare parts
   const { data: spareParts = [], isLoading } = useQuery({
     queryKey: ["spare_parts"],
     queryFn: async () => {
@@ -75,18 +73,34 @@ const SpareParts = () => {
     },
   });
 
-  // Mutation to add a new spare part
   const addPartMutation = useMutation({
     mutationFn: async (newPart: Partial<SparePart>) => {
+      if (!newPart.name || !newPart.part_number || !newPart.category || 
+          !newPart.manufacturer || !newPart.location) {
+        throw new Error("Missing required fields");
+      }
+      
+      const partToInsert = {
+        name: newPart.name,
+        part_number: newPart.part_number,
+        category: newPart.category,
+        manufacturer: newPart.manufacturer,
+        quantity: newPart.quantity || 0,
+        unit_price: newPart.unit_price || 0,
+        location: newPart.location,
+        status: newPart.status || "in_stock",
+        min_stock_level: newPart.min_stock_level || 5,
+        compatibility: newPart.compatibility || []
+      };
+
       const { data, error } = await supabase
         .from("spare_parts")
-        .insert(newPart)
+        .insert(partToInsert)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Upload part image if provided
       if (partImage && data.id) {
         const fileExt = partImage.name.split(".").pop();
         const fileName = `${data.id}.${fileExt}`;
@@ -98,7 +112,6 @@ const SpareParts = () => {
 
         if (uploadError) throw uploadError;
 
-        // Update part with image path
         const { error: updateError } = await supabase
           .from("spare_parts")
           .update({ part_image: filePath })
@@ -128,7 +141,6 @@ const SpareParts = () => {
     },
   });
 
-  // Mutation to update an existing part
   const updatePartMutation = useMutation({
     mutationFn: async (updatedPart: Partial<SparePart>) => {
       if (!selectedPart?.id) throw new Error("No part selected");
@@ -142,7 +154,6 @@ const SpareParts = () => {
 
       if (error) throw error;
 
-      // Upload new part image if provided
       if (partImage) {
         const fileExt = partImage.name.split(".").pop();
         const fileName = `${selectedPart.id}.${fileExt}`;
@@ -154,7 +165,6 @@ const SpareParts = () => {
 
         if (uploadError) throw uploadError;
 
-        // Update part with image path
         const { error: updateError } = await supabase
           .from("spare_parts")
           .update({ part_image: filePath })
@@ -184,7 +194,6 @@ const SpareParts = () => {
     },
   });
 
-  // Mutation to delete a part
   const deletePartMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -194,7 +203,6 @@ const SpareParts = () => {
 
       if (error) throw error;
 
-      // Also delete the image from storage if it exists
       const part = spareParts.find(p => p.id === id);
       if (part?.part_image) {
         const { error: deleteFileError } = await supabase.storage
@@ -244,7 +252,6 @@ const SpareParts = () => {
     const { name, value } = e.target;
     let processedValue: any = value;
     
-    // Handle number inputs
     if (name === 'quantity' || name === 'unit_price' || name === 'min_stock_level') {
       processedValue = parseFloat(value) || 0;
     }
@@ -304,7 +311,6 @@ const SpareParts = () => {
     return 'in_stock';
   };
 
-  // Filter parts based on search query
   const filteredParts = spareParts.filter((part) =>
     part.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     part.part_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -312,7 +318,6 @@ const SpareParts = () => {
     part.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group parts by status
   const inStockParts = filteredParts.filter((p) => p.status === "in_stock");
   const lowStockParts = filteredParts.filter((p) => p.status === "low_stock");
   const outOfStockParts = filteredParts.filter((p) => p.status === "out_of_stock");
@@ -424,7 +429,6 @@ const SpareParts = () => {
         </CardContent>
       </Card>
 
-      {/* Add Part Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
@@ -566,7 +570,6 @@ const SpareParts = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Part Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
@@ -719,7 +722,6 @@ const SpareParts = () => {
   );
 };
 
-// Parts Table Component
 interface PartsTableProps {
   parts: SparePart[];
   onEdit: (part: SparePart) => void;

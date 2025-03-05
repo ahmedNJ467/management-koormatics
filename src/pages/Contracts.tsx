@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { FileText, Plus, Edit, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -66,9 +65,24 @@ export default function Contracts() {
   // Mutation to add a new contract
   const addContractMutation = useMutation({
     mutationFn: async (newContract: Partial<Contract>) => {
+      // Ensure all required fields are present
+      if (!newContract.name || !newContract.client_name || !newContract.status || 
+          !newContract.start_date || !newContract.end_date) {
+        throw new Error("Missing required fields");
+      }
+      
+      const contractToInsert = {
+        name: newContract.name,
+        client_name: newContract.client_name,
+        status: newContract.status,
+        start_date: newContract.start_date,
+        end_date: newContract.end_date,
+        created_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from("contracts")
-        .insert(newContract)
+        .insert(contractToInsert)
         .select()
         .single();
 
