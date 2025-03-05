@@ -7,14 +7,19 @@ export function calculateVehicleCosts(
 ): VehicleCostData[] {
   const vehicleCosts: Record<string, VehicleCostData> = {};
   
-  // Process maintenance data
-  if (maintenanceData && maintenanceData.length > 0) {
-    maintenanceData.forEach(item => {
-      if (!item.vehicle_id) return; // Skip items without vehicle_id
-      
+  // Process maintenance data by vehicle
+  if (maintenanceData) {
+    // Filter out scheduled maintenance
+    const nonScheduledMaintenance = maintenanceData.filter(
+      item => item?.status !== 'scheduled'
+    );
+    
+    nonScheduledMaintenance.forEach(item => {
       const vehicleId = item.vehicle_id;
+      if (!vehicleId) return;
+      
       const vehicleName = item.vehicles ? 
-        `${item.vehicles.make} ${item.vehicles.model} (${item.vehicles.registration})` : 
+        `${item.vehicles.make} ${item.vehicles.model} - ${item.vehicles.registration}` : 
         'Unknown Vehicle';
       
       if (!vehicleCosts[vehicleId]) {
@@ -27,20 +32,18 @@ export function calculateVehicleCosts(
         };
       }
       
-      // Ensure cost is treated as a number
-      const cost = Number(item.cost) || 0;
-      vehicleCosts[vehicleId].maintenance += cost;
+      vehicleCosts[vehicleId].maintenance += Number(item.cost || 0);
     });
   }
   
-  // Process fuel data
-  if (fuelData && fuelData.length > 0) {
+  // Process fuel data by vehicle
+  if (fuelData) {
     fuelData.forEach(item => {
-      if (!item.vehicle_id) return; // Skip items without vehicle_id
-      
       const vehicleId = item.vehicle_id;
+      if (!vehicleId) return;
+      
       const vehicleName = item.vehicles ? 
-        `${item.vehicles.make} ${item.vehicles.model} (${item.vehicles.registration})` : 
+        `${item.vehicles.make} ${item.vehicles.model} - ${item.vehicles.registration}` : 
         'Unknown Vehicle';
       
       if (!vehicleCosts[vehicleId]) {
@@ -53,17 +56,14 @@ export function calculateVehicleCosts(
         };
       }
       
-      // Ensure cost is treated as a number
-      const cost = Number(item.cost) || 0;
-      vehicleCosts[vehicleId].fuel += cost;
+      vehicleCosts[vehicleId].fuel += Number(item.cost || 0);
     });
   }
   
-  // Calculate totals and sort by highest total cost
-  return Object.values(vehicleCosts)
-    .map(vehicle => {
-      vehicle.total = vehicle.maintenance + vehicle.fuel;
-      return vehicle;
-    })
-    .sort((a, b) => b.total - a.total);
+  // Calculate totals for each vehicle
+  Object.values(vehicleCosts).forEach(vehicle => {
+    vehicle.total = vehicle.maintenance + vehicle.fuel;
+  });
+  
+  return Object.values(vehicleCosts).sort((a, b) => b.total - a.total);
 }

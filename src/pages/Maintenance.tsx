@@ -121,7 +121,7 @@ export default function Maintenance() {
               <TableHead>Description</TableHead>
               <TableHead>Service Provider</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Cost (USD)</TableHead>
+              <TableHead className="text-right">Expense (USD)</TableHead>
               <TableHead>Next Scheduled</TableHead>
             </TableRow>
           </TableHeader>

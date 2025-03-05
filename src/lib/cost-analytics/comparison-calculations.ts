@@ -1,60 +1,64 @@
 
 import { YearComparisonData } from '@/lib/types/cost-analytics';
 
-export function calculatePercentChange(current: number, previous: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return ((current - previous) / previous) * 100;
-}
-
 export function calculateYearComparison(
-  maintenanceData: any[] = [], 
+  maintenanceData: any[] = [],
   fuelData: any[] = [],
   comparisonMaintenanceData: any[] = [],
   comparisonFuelData: any[] = [],
   selectedYear: string,
   comparisonYear: string | null
-): YearComparisonData | null {
-  if (!comparisonYear || !selectedYear) {
-    return null;
-  }
-
-  // Ensure we have valid arrays, even if empty
-  const currentMaintenanceData = Array.isArray(maintenanceData) ? maintenanceData : [];
-  const currentFuelData = Array.isArray(fuelData) ? fuelData : [];
-  const prevMaintenanceData = Array.isArray(comparisonMaintenanceData) ? comparisonMaintenanceData : [];
-  const prevFuelData = Array.isArray(comparisonFuelData) ? comparisonFuelData : [];
-
-  const currentCosts = {
-    maintenance: currentMaintenanceData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
-    fuel: currentFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
-    total: 0
-  };
-  currentCosts.total = currentCosts.maintenance + currentCosts.fuel;
-
-  const previousCosts = {
-    maintenance: prevMaintenanceData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
-    fuel: prevFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
-    total: 0
-  };
-  previousCosts.total = previousCosts.maintenance + previousCosts.fuel;
-
-  return {
+): YearComparisonData {
+  // Default response structure
+  const response: YearComparisonData = {
     currentYear: selectedYear,
-    previousYear: comparisonYear,
+    previousYear: comparisonYear || '',
     maintenance: {
-      current: currentCosts.maintenance,
-      previous: previousCosts.maintenance,
-      percentChange: calculatePercentChange(currentCosts.maintenance, previousCosts.maintenance)
+      current: 0,
+      previous: 0,
+      percentChange: 0
     },
     fuel: {
-      current: currentCosts.fuel,
-      previous: previousCosts.fuel,
-      percentChange: calculatePercentChange(currentCosts.fuel, previousCosts.fuel)
+      current: 0,
+      previous: 0,
+      percentChange: 0
     },
     total: {
-      current: currentCosts.total,
-      previous: previousCosts.total,
-      percentChange: calculatePercentChange(currentCosts.total, previousCosts.total)
+      current: 0,
+      previous: 0,
+      percentChange: 0
     }
   };
+  
+  if (!comparisonYear) {
+    return response;
+  }
+  
+  // Filter out scheduled maintenance
+  const nonScheduledMaintenance = maintenanceData.filter(item => item?.status !== 'scheduled');
+  const nonScheduledComparisonMaintenance = comparisonMaintenanceData.filter(item => item?.status !== 'scheduled');
+  
+  // Calculate current year costs
+  response.maintenance.current = nonScheduledMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.fuel.current = fuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.total.current = response.maintenance.current + response.fuel.current;
+  
+  // Calculate comparison year costs
+  response.maintenance.previous = nonScheduledComparisonMaintenance.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.fuel.previous = comparisonFuelData.reduce((sum, item) => sum + Number(item?.cost || 0), 0);
+  response.total.previous = response.maintenance.previous + response.fuel.previous;
+  
+  // Calculate percent changes
+  response.maintenance.percentChange = calculatePercentChange(response.maintenance.previous, response.maintenance.current);
+  response.fuel.percentChange = calculatePercentChange(response.fuel.previous, response.fuel.current);
+  response.total.percentChange = calculatePercentChange(response.total.previous, response.total.current);
+  
+  return response;
+}
+
+function calculatePercentChange(previous: number, current: number): number {
+  if (previous === 0) {
+    return current === 0 ? 0 : 100;
+  }
+  return ((current - previous) / previous) * 100;
 }

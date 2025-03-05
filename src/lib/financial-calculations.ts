@@ -29,8 +29,11 @@ export function calculateFinancialData(
   // Calculate total revenue from trips
   const totalRevenue = tripsData.reduce((sum, trip) => sum + Number(trip.amount || 0), 0);
   
+  // Filter out scheduled maintenance
+  const nonScheduledMaintenance = maintenanceData.filter(record => record.status !== 'scheduled');
+  
   // Calculate total expenses (maintenance + fuel)
-  const maintenanceCosts = maintenanceData.reduce((sum, record) => sum + Number(record.cost || 0), 0);
+  const maintenanceCosts = nonScheduledMaintenance.reduce((sum, record) => sum + Number(record.cost || 0), 0);
   const fuelCosts = fuelData.reduce((sum, record) => sum + Number(record.cost || 0), 0);
   const totalExpenses = maintenanceCosts + fuelCosts;
   
@@ -43,7 +46,7 @@ export function calculateFinancialData(
   const averageTripRevenue = tripCount > 0 ? totalRevenue / tripCount : 0;
   
   // Calculate monthly data
-  const monthlyData = calculateMonthlyFinancialData(tripsData, maintenanceData, fuelData);
+  const monthlyData = calculateMonthlyFinancialData(tripsData, nonScheduledMaintenance, fuelData);
   
   return {
     totalRevenue,
