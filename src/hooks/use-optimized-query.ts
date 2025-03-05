@@ -24,8 +24,7 @@ export function useOptimizedQuery<TData, TError>(
     ...queryOptions 
   } = options || {};
 
-  // Create a merged options object that complies with the React Query v5 API
-  const mergedOptions: UseQueryOptions<TData, TError, TData, unknown[]> = {
+  return useQuery({
     queryKey,
     queryFn,
     staleTime: 5 * 60 * 1000, // 5 minutes (default is 0)
@@ -36,13 +35,10 @@ export function useOptimizedQuery<TData, TError>(
     meta: {
       ...(queryOptions.meta || {}),
       errorMessage,
+      customErrorHandler,
     },
-  };
-
-  // Add our own onSettled handler to handle errors
-  const originalOnSettled = mergedOptions.onSettled;
-  mergedOptions.onSettled = (data: TData | undefined, error: TError | null) => {
-    if (error) {
+    // Handle errors with the onError callback
+    onError: (error: TError) => {
       console.error(`Query error (${queryKey.join('/')}):`, error);
       toast({
         title: "Error",
@@ -54,13 +50,11 @@ export function useOptimizedQuery<TData, TError>(
       if (customErrorHandler) {
         customErrorHandler(error);
       }
+      
+      // Call the original onError if it exists
+      if (queryOptions.onError) {
+        queryOptions.onError(error);
+      }
     }
-    
-    // Call the original onSettled if it exists
-    if (originalOnSettled) {
-      originalOnSettled(data, error);
-    }
-  };
-
-  return useQuery(mergedOptions);
+  });
 }
