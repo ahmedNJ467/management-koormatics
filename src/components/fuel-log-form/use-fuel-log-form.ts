@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -70,13 +69,15 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           return;
         }
         
+        // Otherwise, get the latest mileage for this vehicle
         console.log("Fetching latest mileage for vehicle:", vehicleId);
         const lastMileage = await getLatestMileage(vehicleId);
         console.log("Fetched last mileage:", lastMileage);
         
+        // Set previous mileage to the last recorded mileage
         form.setValue("previous_mileage", lastMileage);
         
-        // Clear current mileage so user can fill it
+        // Clear current mileage so user can fill it in with new value
         if (!fuelLog) {
           form.setValue("current_mileage", 0);
         }

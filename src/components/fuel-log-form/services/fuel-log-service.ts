@@ -18,6 +18,7 @@ export async function getLatestMileage(vehicleId: string) {
   
   console.log("Fetching latest mileage for vehicle:", vehicleId);
   
+  // Query fuel logs for this vehicle, ordered by date (most recent first)
   const { data, error } = await supabase
     .from('fuel_logs')
     .select('current_mileage')
@@ -32,6 +33,7 @@ export async function getLatestMileage(vehicleId: string) {
   
   console.log("Latest mileage data:", data);
   
+  // Return the current_mileage from the most recent fuel log, or 0 if no logs exist
   if (!data || data.length === 0) return 0;
   return data[0]?.current_mileage || 0;
 }
