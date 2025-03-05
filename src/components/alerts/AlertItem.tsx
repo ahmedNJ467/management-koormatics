@@ -3,7 +3,7 @@ import { Alert } from "@/types/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Calendar, Car, Users, Fuel, Check } from "lucide-react";
+import { AlertTriangle, Calendar, Car, Users, Fuel, Check, Wrench } from "lucide-react";
 import { format } from "date-fns";
 
 interface AlertItemProps {
@@ -15,7 +15,7 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
   const getIconByType = (type: string) => {
     switch (type) {
       case "maintenance":
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+        return <Wrench className="h-5 w-5 text-amber-500" />;
       case "trip":
         return <Calendar className="h-5 w-5 text-blue-500" />;
       case "vehicle":
@@ -30,7 +30,13 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
   };
 
   return (
-    <Card className={alert.resolved ? "opacity-60" : ""}>
+    <Card className={`border-l-4 ${
+      alert.priority === "high" 
+        ? "border-l-red-500" 
+        : alert.priority === "medium"
+        ? "border-l-amber-500"
+        : "border-l-blue-500"
+    } ${alert.resolved ? "opacity-60 bg-gray-50 dark:bg-gray-800/50" : ""}`}>
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-shrink-0">

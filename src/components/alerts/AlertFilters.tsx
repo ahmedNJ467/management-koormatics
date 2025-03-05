@@ -56,7 +56,7 @@ export const AlertFilters = ({ onFilterChange }: AlertFiltersProps) => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <Tabs defaultValue="active" value={status} onValueChange={handleStatusChange}>
-          <TabsList>
+          <TabsList className="bg-slate-100 dark:bg-slate-800">
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="resolved">Resolved</TabsTrigger>
           </TabsList>

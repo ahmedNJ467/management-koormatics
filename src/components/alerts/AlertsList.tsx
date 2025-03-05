@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Alert } from "@/types/alert";
 import { AlertItem } from "./AlertItem";
 import { AlertFilters } from "./AlertFilters";
@@ -19,6 +19,25 @@ export const AlertsList = () => {
   });
 
   const { data: alerts, isLoading, isError } = useAlertsData(filters);
+
+  // Set up real-time listener for alerts table changes
+  useEffect(() => {
+    const alertsChannel = supabase
+      .channel('alerts-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'alerts' 
+      }, () => {
+        // Invalidate and refetch the alerts query when any change happens
+        queryClient.invalidateQueries({ queryKey: ["alerts"] });
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(alertsChannel);
+    };
+  }, [queryClient]);
 
   const handleResolveAlert = async (id: string) => {
     try {
