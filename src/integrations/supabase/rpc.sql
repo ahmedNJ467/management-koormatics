@@ -57,3 +57,18 @@ BEGIN
   );
 END;
 $$;
+
+-- Function to update a part's notes
+CREATE OR REPLACE FUNCTION public.update_part_notes(
+  part_id UUID,
+  notes_value TEXT
+) RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE public.spare_parts
+  SET notes = notes_value
+  WHERE id = part_id;
+END;
+$$;
+
