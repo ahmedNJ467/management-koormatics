@@ -9,7 +9,7 @@ interface MemberFormWrapperProps {
   onMemberChange: (member: MemberFormValues) => void;
   onCancel: () => void;
   onSave: () => void;
-  onDocumentUploaded: (url: string, name: string) => void;
+  onDocumentUploaded: (file: File) => void;
   onDocumentClear: () => void;
 }
 
@@ -24,15 +24,22 @@ export function MemberFormWrapper({
   onDocumentClear
 }: MemberFormWrapperProps) {
   return (
-    <MemberForm 
-      isEditing={isEditing}
-      member={member}
-      clientId={clientId}
-      onMemberChange={onMemberChange}
-      onCancel={onCancel}
-      onSave={onSave}
-      onDocumentUploaded={onDocumentUploaded}
-      onDocumentClear={onDocumentClear}
-    />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-medium">
+          {isEditing ? "Edit Organization Member" : "Add Organization Member"}
+        </h2>
+      </div>
+
+      <MemberForm
+        member={member}
+        isEditing={isEditing}
+        onMemberChange={onMemberChange}
+        onCancel={onCancel}
+        onSave={onSave}
+        onDocumentUploaded={onDocumentUploaded}
+        onDocumentClear={onDocumentClear}
+      />
+    </div>
   );
 }

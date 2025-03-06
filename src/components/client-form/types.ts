@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 export const contactSchema = z.object({
@@ -66,3 +65,16 @@ export type ClientMember = {
   tempId?: string;
   client_id?: string;
 };
+
+export interface MemberFormValues {
+  id?: string;
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  document_url?: string;
+  document_name?: string;
+  tempId?: string; // Temporary ID for document handling
+  tempFile?: File; // Temporary file for upload
+}

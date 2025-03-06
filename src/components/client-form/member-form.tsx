@@ -1,100 +1,67 @@
 
-import { useCallback } from "react";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { MemberFormHeader } from "./member-form-fields/form-header";
+import { MemberBasicInfoFields } from "./member-form-fields/basic-info-fields";
+import { MemberNotesField } from "./member-form-fields/notes-field";
+import { MemberFormActions } from "./member-form-fields/form-actions";
 import { MemberFormValues } from "./types";
 import { MemberDocumentUpload } from "./member-document-upload";
-import { BasicInfoFields } from "./member-form-fields/basic-info-fields";
-import { NotesField } from "./member-form-fields/notes-field";
-import { FormActions } from "./member-form-fields/form-actions";
-import { FormHeader } from "./member-form-fields/form-header";
 
 interface MemberFormProps {
-  isEditing: boolean;
   member: MemberFormValues;
-  clientId?: string;
+  isEditing: boolean;
   onMemberChange: (member: MemberFormValues) => void;
   onCancel: () => void;
   onSave: () => void;
-  onDocumentUploaded: (url: string, name: string) => void;
+  onDocumentUploaded: (file: File) => void;
   onDocumentClear: () => void;
 }
 
 export function MemberForm({
-  isEditing,
   member,
-  clientId,
+  isEditing,
   onMemberChange,
   onCancel,
   onSave,
   onDocumentUploaded,
   onDocumentClear
 }: MemberFormProps) {
-  // Memoize handlers to prevent recreating them on every render
-  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onMemberChange({...member, name: e.target.value});
-  }, [member, onMemberChange]);
+  // Create a form context using react-hook-form
+  const form = useForm<MemberFormValues>({
+    defaultValues: member,
+  });
 
-  const handleRoleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onMemberChange({...member, role: e.target.value});
-  }, [member, onMemberChange]);
-
-  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onMemberChange({...member, email: e.target.value});
-  }, [member, onMemberChange]);
-
-  const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onMemberChange({...member, phone: e.target.value});
-  }, [member, onMemberChange]);
-
-  const handleNotesChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onMemberChange({...member, notes: e.target.value});
-  }, [member, onMemberChange]);
-
-  const changeHandlers = {
-    handleNameChange,
-    handleRoleChange,
-    handleEmailChange,
-    handlePhoneChange
-  };
+  // Watch the form values to update the parent component
+  React.useEffect(() => {
+    const subscription = form.watch((value) => {
+      onMemberChange(value as MemberFormValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onMemberChange]);
 
   return (
-    <div className="space-y-4 border p-4 rounded-md">
-      <FormHeader isEditing={isEditing} onCancel={onCancel} />
+    <form onSubmit={form.handleSubmit(onSave)} className="space-y-6">
+      <MemberFormHeader isEditing={isEditing} />
       
-      <div className="grid grid-cols-2 gap-4">
-        <BasicInfoFields 
-          member={member} 
-          onChange={changeHandlers} 
+      <div className="grid gap-6">
+        <MemberBasicInfoFields form={form} />
+        
+        <MemberDocumentUpload
+          documentUrl={member.document_url}
+          documentName={member.document_name}
+          onDocumentUploaded={onDocumentUploaded}
+          onDocumentCleared={onDocumentClear}
         />
         
-        {/* Document Upload */}
-        <div className="col-span-2">
-          {clientId ? (
-            <MemberDocumentUpload
-              documentName={member.document_name || null}
-              documentUrl={member.document_url || null}
-              clientId={clientId}
-              memberId={member.id || crypto.randomUUID()}
-              onDocumentUploaded={onDocumentUploaded}
-              onDocumentClear={onDocumentClear}
-            />
-          ) : (
-            <div className="text-sm text-muted-foreground">
-              Document upload will be available after saving the client.
-            </div>
-          )}
-        </div>
-        
-        <NotesField 
-          value={member.notes || ""} 
-          onChange={handleNotesChange} 
-        />
+        <MemberNotesField form={form} />
       </div>
       
-      <FormActions 
-        isEditing={isEditing} 
-        onCancel={onCancel} 
-        onSave={onSave} 
+      <MemberFormActions
+        onCancel={onCancel}
+        isEditing={isEditing}
+        isSubmitting={form.formState.isSubmitting}
       />
-    </div>
+    </form>
   );
 }

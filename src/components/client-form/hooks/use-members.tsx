@@ -29,13 +29,17 @@ export function useMembers(initialMembers: MemberFormValues[], onMembersChange: 
       phone: "",
       notes: "",
       document_url: "",
-      document_name: ""
+      document_name: "",
+      tempId: crypto.randomUUID() // Temporary ID for document upload
     });
   };
 
   const editMember = (index: number) => {
     setEditingMemberIndex(index);
-    setMemberFormState({...initialMembers[index]});
+    setMemberFormState({
+      ...initialMembers[index],
+      tempId: crypto.randomUUID() // Temporary ID for document upload
+    });
     setIsAddingMember(true);
   };
 
@@ -126,11 +130,12 @@ export function useMembers(initialMembers: MemberFormValues[], onMembersChange: 
     });
   };
 
-  const handleMemberDocumentUpload = (url: string, name: string) => {
+  const handleMemberDocumentUpload = (file: File) => {
     setMemberFormState({
       ...memberFormState,
-      document_url: url,
-      document_name: name
+      document_url: URL.createObjectURL(file), // Temporary URL for preview
+      document_name: file.name,
+      tempFile: file // Store the file for later upload
     });
   };
 
@@ -138,7 +143,8 @@ export function useMembers(initialMembers: MemberFormValues[], onMembersChange: 
     setMemberFormState({
       ...memberFormState,
       document_url: "",
-      document_name: ""
+      document_name: "",
+      tempFile: undefined
     });
   };
 

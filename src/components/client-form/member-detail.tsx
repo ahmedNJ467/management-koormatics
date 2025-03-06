@@ -1,10 +1,14 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, Pencil, Trash } from "lucide-react";
 import { MemberFormValues } from "./types";
-import { useState } from "react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { FileText, Pencil, Trash2 } from "lucide-react";
 
 interface MemberDetailProps {
   member: MemberFormValues;
@@ -14,123 +18,93 @@ interface MemberDetailProps {
   onDelete: () => void;
 }
 
-export function MemberDetail({ member, isOpen, onClose, onEdit, onDelete }: MemberDetailProps) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  
-  // Handler to prevent event propagation and ensure dialog remains open
-  const handleDialogChange = (open: boolean) => {
-    if (!open) {
-      onClose();
-    }
-    // Don't call onClose when dialog opens, only when it closes
-  };
-
-  const handleDeleteClick = () => {
-    setConfirmDelete(true);
-  };
-
-  const handleConfirmDelete = () => {
-    setConfirmDelete(false);
-    onDelete();
-  };
-
+export function MemberDetail({
+  member,
+  isOpen,
+  onClose,
+  onEdit,
+  onDelete,
+}: MemberDetailProps) {
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
-          <DialogHeader>
-            <DialogTitle>Member Details</DialogTitle>
-            <DialogDescription>
-              Details for {member.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <div className="text-sm font-medium">Name:</div>
-              <div className="col-span-3">{member.name}</div>
-            </div>
-            
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Member Details</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <h3 className="font-semibold text-lg">{member.name}</h3>
             {member.role && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div className="text-sm font-medium">Role:</div>
-                <div className="col-span-3">{member.role}</div>
-              </div>
+              <p className="text-muted-foreground">{member.role}</p>
             )}
-            
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
             {member.email && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div className="text-sm font-medium">Email:</div>
-                <div className="col-span-3">{member.email}</div>
+              <div>
+                <p className="font-medium">Email</p>
+                <p>{member.email}</p>
               </div>
             )}
-            
+
             {member.phone && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div className="text-sm font-medium">Phone:</div>
-                <div className="col-span-3">{member.phone}</div>
-              </div>
-            )}
-            
-            {member.document_url && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div className="text-sm font-medium">Document:</div>
-                <div className="col-span-3">
-                  <a 
-                    href={member.document_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span className="ml-2">{member.document_name || "View Document"}</span>
-                  </a>
-                </div>
-              </div>
-            )}
-            
-            {member.notes && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div className="text-sm font-medium">Notes:</div>
-                <div className="col-span-3 whitespace-pre-wrap">{member.notes}</div>
+              <div>
+                <p className="font-medium">Phone</p>
+                <p>{member.phone}</p>
               </div>
             )}
           </div>
-          
-          <DialogFooter className="flex justify-between space-x-2">
-            <div className="flex-grow">
-              <Button variant="destructive" onClick={handleDeleteClick} className="w-full">
-                <Trash className="h-4 w-4 mr-2" /> Delete
-              </Button>
-            </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={onClose}>
-                Close
-              </Button>
-              <Button onClick={onEdit}>
-                <Pencil className="h-4 w-4 mr-2" /> Edit
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove this member from the organization. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          {member.document_url && (
+            <div className="mt-4">
+              <p className="font-medium text-sm">Document</p>
+              <div className="flex items-center mt-1">
+                <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                <a
+                  href={member.document_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline text-sm"
+                >
+                  {member.document_name || "View Document"}
+                </a>
+              </div>
+            </div>
+          )}
+
+          {member.notes && (
+            <div className="mt-4">
+              <p className="font-medium text-sm">Notes</p>
+              <p className="text-sm whitespace-pre-wrap">{member.notes}</p>
+            </div>
+          )}
+        </div>
+        <DialogFooter className="flex justify-between sm:justify-between">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onEdit}
+              className="flex items-center gap-1"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={onDelete}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" />
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+            </Button>
+          </div>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

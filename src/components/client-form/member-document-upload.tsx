@@ -1,130 +1,104 @@
 
-import { FileText, Download, X, Upload } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { uploadMemberDocument } from "./use-member-uploads";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Upload, X, FileText } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface MemberDocumentUploadProps {
-  documentName: string | null;
-  documentUrl: string | null;
-  clientId?: string;
-  memberId?: string;
-  onDocumentUploaded: (url: string, name: string) => void;
-  onDocumentClear: () => void;
+  documentUrl?: string;
+  documentName?: string;
+  onDocumentUploaded: (file: File) => void;
+  onDocumentCleared: () => void;
 }
 
-export function MemberDocumentUpload({ 
-  documentName, 
+export function MemberDocumentUpload({
   documentUrl,
-  clientId,
-  memberId,
-  onDocumentUploaded, 
-  onDocumentClear 
+  documentName,
+  onDocumentUploaded,
+  onDocumentCleared
 }: MemberDocumentUploadProps) {
-  const { toast } = useToast();
-  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      console.error("No file selected for upload");
-      return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      onDocumentUploaded(files[0]);
     }
-    
-    if (!clientId) {
-      console.error("Missing clientId for document upload");
-      toast({
-        title: "Upload Error",
-        description: "Client ID is missing. Please save the client first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!memberId) {
-      console.error("Missing memberId for document upload");
-      // Use a random UUID if the member hasn't been saved yet
-      const tempMemberId = crypto.randomUUID();
-      console.log("Generated temporary member ID:", tempMemberId);
-    }
-    
-    const actualMemberId = memberId || crypto.randomUUID();
-    
-    try {
-      setIsUploading(true);
-      console.log(`Uploading document for client ${clientId}, member ${actualMemberId}, file: ${file.name}, size: ${file.size}, type: ${file.type}`);
-      
-      const result = await uploadMemberDocument(file, clientId, actualMemberId);
-      
-      console.log("Upload result:", result);
-      onDocumentUploaded(result.url, result.name);
-      
-      toast({
-        title: "Document uploaded",
-        description: "Member document has been uploaded successfully."
-      });
-    } catch (error) {
-      console.error("Failed to upload document:", error);
-      
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload member document. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      onDocumentUploaded(files[0]);
     }
   };
 
   return (
-    <div className="flex flex-col space-y-2">
-      <label className="text-sm font-medium">Document / ID / Passport</label>
-      <div className="flex items-center space-x-2">
-        <Input
-          type="file"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-          onChange={handleDocumentChange}
-          className="hidden"
-          id="member-document-upload"
-          disabled={isUploading}
-        />
-        <label
-          htmlFor="member-document-upload"
-          className={`flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+    <div className="space-y-2">
+      <Label htmlFor="document-upload">Document Upload</Label>
+      
+      {documentUrl ? (
+        <div className="flex items-center space-x-2 p-2 border rounded">
+          <FileText className="h-5 w-5 text-blue-500" />
+          <a 
+            href={documentUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-blue-500 hover:underline flex-1 truncate"
+          >
+            {documentName || "Document"}
+          </a>
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="sm" 
+            onClick={onDocumentCleared}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div
+          className={`border-2 border-dashed rounded-md p-6 text-center cursor-pointer transition-colors ${
+            isDragging ? "border-primary bg-primary/10" : "border-muted"
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => document.getElementById("document-upload")?.click()}
         >
-          {isUploading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-          ) : (
-            <Upload className="h-4 w-4" />
-          )}
-          <span>{isUploading ? "Uploading..." : documentName || "Upload Document"}</span>
-        </label>
-        {documentName && !isUploading && (
-          <div className="flex items-center space-x-2">
-            {documentUrl && (
-              <a 
-                href={documentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-800"
-              >
-                <Download className="h-4 w-4" />
-                <span>View</span>
-              </a>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onDocumentClear}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <div className="flex flex-col items-center gap-2">
+            <Upload className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">
+                Drag and drop a file, or click to browse
+              </p>
+              <p className="text-xs text-muted-foreground">
+                PDF, Word, or image files accepted
+              </p>
+            </div>
           </div>
-        )}
-      </div>
+          <input
+            id="document-upload"
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+          />
+        </div>
+      )}
     </div>
   );
 }
