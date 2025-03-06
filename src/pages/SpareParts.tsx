@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { createPartsDirectory } from "@/components/spare-parts/utils/upload-utils";
 
 const SpareParts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -36,6 +37,7 @@ const SpareParts = () => {
   useEffect(() => {
     const checkStorage = async () => {
       try {
+        // First check if the storage service is available
         const { data: buckets, error } = await supabase.storage.listBuckets();
         
         if (error) {
@@ -44,13 +46,36 @@ const SpareParts = () => {
           return;
         }
         
+        // Check if the images bucket exists
         const hasImagesBucket = buckets?.some(bucket => bucket.id === 'images');
         if (!hasImagesBucket) {
           console.log("Images bucket not available");
           setStorageAlert("Image uploads are disabled because the 'images' storage bucket is not configured.");
-        } else {
-          console.log("Images bucket found and available");
+          return;
+        }
+        
+        // Check if the parts directory exists and create it if needed
+        try {
+          const { data: files, error: dirError } = await supabase.storage
+            .from("images")
+            .list('parts');
+            
+          if (dirError) {
+            console.error("Error checking parts directory:", dirError);
+            // Try to create the parts directory
+            const created = await createPartsDirectory();
+            if (!created) {
+              setStorageAlert("Image uploads are disabled because the 'parts' directory could not be created.");
+              return;
+            }
+          }
+          
+          // If we get here, everything is properly configured
+          console.log("Images bucket and parts directory available");
           setStorageAlert(null);
+        } catch (dirCheckError) {
+          console.error("Error checking parts directory:", dirCheckError);
+          setStorageAlert("Image uploads are disabled because the storage directory could not be accessed.");
         }
       } catch (error) {
         console.error("Storage availability check error:", error);

@@ -1,6 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+export const createPartsDirectory = async (): Promise<boolean> => {
+  try {
+    console.log("Creating parts directory in images bucket");
+    await supabase.storage
+      .from("images")
+      .upload('parts/.placeholder', new Blob(['']));
+    console.log("Parts directory created successfully");
+    return true;
+  } catch (error) {
+    console.error("Failed to create parts directory:", error);
+    return false;
+  }
+};
+
 export const uploadPartImage = async (
   imageFile: File, 
   partId: string,
@@ -45,25 +59,25 @@ export const uploadPartImage = async (
     // Make sure parts directory exists
     try {
       // Try to list the 'parts' directory
-      const { data: partsDir } = await supabase.storage
+      const { data: partsDir, error: listError } = await supabase.storage
         .from("images")
         .list('parts');
         
-      // If 'parts' directory doesn't exist, create it
-      if (!partsDir || partsDir.length === 0) {
-        console.log("Parts directory doesn't exist, creating it");
-        await supabase.storage
-          .from("images")
-          .upload('parts/.placeholder', new Blob(['']));
+      // If there's an error or the parts directory doesn't exist, create it
+      if (listError || !partsDir || partsDir.length === 0) {
+        console.log("Creating parts directory");
+        const created = await createPartsDirectory();
+        if (!created) {
+          onError("Could not create upload directory. Please try again later.");
+          return null;
+        }
       }
     } catch (dirError) {
       console.log("Error checking parts directory, attempting to create it:", dirError);
-      try {
-        await supabase.storage
-          .from("images")
-          .upload('parts/.placeholder', new Blob(['']));
-      } catch (createDirError) {
-        console.error("Failed to create parts directory:", createDirError);
+      const created = await createPartsDirectory();
+      if (!created) {
+        onError("Could not create upload directory. Please try again later.");
+        return null;
       }
     }
     
