@@ -53,9 +53,14 @@ export const ImageUpload = ({
           id="part_image"
           type="file"
           onChange={(e) => {
+            // Important: Call both the ref's onChange and our local handler
             handleImageChange(e);
+            const file = e.target.files?.[0];
+            if (file) {
+              // Set the file value in the form
+              form.setValue("part_image", file);
+            }
           }}
-          name={imageInputRef.name}
           ref={imageInputRef.ref}
           onBlur={imageInputRef.onBlur}
           accept="image/*"
@@ -76,7 +81,7 @@ export const ImageUpload = ({
               className="absolute top-0 right-0 h-6 w-6 rounded-full translate-x-1/3 -translate-y-1/3"
               onClick={() => {
                 setPreviewUrl(null);
-                form.resetField("part_image");
+                form.setValue("part_image", null);
               }}
             >
               <X className="h-3 w-3" />

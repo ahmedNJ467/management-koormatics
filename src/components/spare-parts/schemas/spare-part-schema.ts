@@ -11,7 +11,7 @@ export const PartFormSchema = z.object({
   location: z.string().min(1, "Storage location is required"),
   min_stock_level: z.number().min(0, "Minimum stock level cannot be negative"),
   compatibility: z.array(z.string()).optional().default([]),
-  part_image: z.instanceof(File).optional(),
+  part_image: z.any().optional(), // Allow any type for part_image to handle File objects
   notes: z.string().optional().default(""),
 });
 

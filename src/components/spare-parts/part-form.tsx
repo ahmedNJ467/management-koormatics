@@ -52,6 +52,13 @@ export const PartForm = ({
     onSubmit(data);
   };
 
+  // Sync with the existing image if it exists
+  useEffect(() => {
+    if (existingImage) {
+      form.setValue("part_image", undefined); // Clear any previous values
+    }
+  }, [existingImage, form]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
