@@ -98,26 +98,8 @@ export function useClientDialog(
       setIsPerformingAction(true);
       setPermanentDeletionError(null);
       
-      // With our updated database constraint, we can just delete the client directly
-      // The ON DELETE SET NULL constraint will handle setting client_id to NULL in trips
-      
-      // Delete related contacts
-      const { error: contactsError } = await supabase
-        .from("client_contacts")
-        .delete()
-        .eq("client_id", client.id);
-      
-      if (contactsError) throw contactsError;
-      
-      // Delete related members
-      const { error: membersError } = await supabase
-        .from("client_members")
-        .delete()
-        .eq("client_id", client.id);
-      
-      if (membersError) throw membersError;
-      
-      // Finally delete the client
+      // Now we can directly delete the client thanks to the ON DELETE SET NULL constraints
+      // This will automatically set client_id to NULL in trips and invoices tables
       const { error } = await supabase
         .from("clients")
         .delete()

@@ -359,7 +359,7 @@ export type Database = {
       }
       invoices: {
         Row: {
-          client_id: string
+          client_id: string | null
           created_at: string | null
           date: string
           due_date: string
@@ -375,7 +375,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           created_at?: string | null
           date: string
           due_date: string
@@ -391,7 +391,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           created_at?: string | null
           date?: string
           due_date?: string
@@ -859,6 +859,10 @@ export type Database = {
     }
     Functions: {
       create_client_members_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      modify_invoices_client_id_nullable: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

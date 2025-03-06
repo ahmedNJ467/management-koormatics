@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -54,7 +53,6 @@ export default function Clients() {
 
   const handleFormClose = (open: boolean) => {
     setFormOpen(open);
-    // When dialog closes, refresh the data
     if (!open) {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
@@ -100,22 +98,6 @@ export default function Clients() {
     setDeleteError(null);
     
     try {
-      // Now we can just delete the client directly
-      // The foreign key constraint will handle setting client_id to NULL in trips
-      
-      // First delete related contacts
-      await supabase
-        .from("client_contacts")
-        .delete()
-        .eq("client_id", clientToDelete.id);
-      
-      // Then delete related members
-      await supabase
-        .from("client_members")
-        .delete()
-        .eq("client_id", clientToDelete.id);
-      
-      // Finally delete the client
       const { error } = await supabase
         .from("clients")
         .delete()
