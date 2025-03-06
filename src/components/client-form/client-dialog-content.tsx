@@ -28,3 +28,67 @@ interface ClientDialogContentProps {
   handleFormSubmit: (values: any) => Promise<boolean>;
   isArchived?: boolean;
 }
+
+export function ClientDialogContent({
+  client,
+  dialogTitle,
+  form,
+  isSubmitting,
+  activeTab,
+  setActiveTab,
+  contacts,
+  setContacts,
+  members,
+  setMembers,
+  documents,
+  documentFiles,
+  profilePreview,
+  handleProfileChange,
+  handleDocumentUpload,
+  removeDocument,
+  onOpenChange,
+  onDelete,
+  onRestore,
+  onPermanentDelete,
+  handleFormSubmit,
+  isArchived = false
+}: ClientDialogContentProps) {
+  return (
+    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{dialogTitle}</DialogTitle>
+        <DialogDescription>
+          {isArchived 
+            ? "View archived client details. You can restore this client or permanently delete it."
+            : client 
+              ? "Edit client details, contacts, and related information." 
+              : "Fill in the details to add a new client."}
+        </DialogDescription>
+      </DialogHeader>
+      
+      <ClientForm
+        client={client}
+        form={form}
+        isSubmitting={isSubmitting}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        contacts={contacts}
+        setContacts={setContacts}
+        members={members}
+        setMembers={setMembers}
+        documents={documents}
+        documentFiles={documentFiles}
+        profilePreview={profilePreview}
+        handleProfileChange={handleProfileChange}
+        handleDocumentUpload={handleDocumentUpload}
+        removeDocument={removeDocument}
+        onCancel={() => onOpenChange(false)}
+        onDelete={onDelete}
+        onRestore={onRestore}
+        onPermanentDelete={onPermanentDelete}
+        handleSubmitForm={handleFormSubmit}
+        isArchived={isArchived}
+      />
+    </DialogContent>
+  );
+}

@@ -14,6 +14,9 @@ export function useClientDialog(
   const [activeTab, setActiveTab] = useState("details");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletionError, setDeletionError] = useState<string | null>(null);
+  const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false);
+  const [permanentDeletionError, setPermanentDeletionError] = useState<string | null>(null);
+  const [isPerformingAction, setIsPerformingAction] = useState(false);
   
   // Function to archive a client
   const handleDelete = useCallback(async () => {
@@ -87,6 +90,59 @@ export function useClientDialog(
     }
   }, [client, onOpenChange, toast, queryClient]);
   
+  // Function to permanently delete a client
+  const handlePermanentDelete = useCallback(async () => {
+    if (!client) return;
+    
+    try {
+      setIsPerformingAction(true);
+      setPermanentDeletionError(null);
+      
+      // First delete related contacts
+      await supabase
+        .from("client_contacts")
+        .delete()
+        .eq("client_id", client.id);
+      
+      // Then delete related members
+      await supabase
+        .from("client_members")
+        .delete()
+        .eq("client_id", client.id);
+      
+      // Finally delete the client
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", client.id);
+      
+      if (error) throw error;
+      
+      // Close the dialog
+      setShowPermanentDeleteConfirm(false);
+      onOpenChange(false);
+      
+      // Show success message
+      toast({
+        title: "Client deleted",
+        description: "The client has been permanently deleted.",
+      });
+      
+      // Refresh the client list
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      
+      // Call the deletion callback if provided
+      if (onClientDeleted) {
+        onClientDeleted();
+      }
+    } catch (error: any) {
+      console.error("Error permanently deleting client:", error);
+      setPermanentDeletionError(error.message || "There was an error deleting this client. It might be referenced in other records.");
+    } finally {
+      setIsPerformingAction(false);
+    }
+  }, [client, onOpenChange, toast, queryClient, onClientDeleted]);
+  
   return {
     activeTab,
     setActiveTab,
@@ -94,6 +150,13 @@ export function useClientDialog(
     setShowDeleteConfirm,
     deletionError,
     handleDelete,
-    handleRestore
+    handleRestore,
+    showPermanentDeleteConfirm,
+    setShowPermanentDeleteConfirm,
+    permanentDeletionError,
+    setPermanentDeletionError,
+    isPerformingAction,
+    setIsPerformingAction,
+    handlePermanentDelete
   };
 }
