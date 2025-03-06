@@ -17,11 +17,12 @@ export function MemberDetail({ member, isOpen, onClose, onEdit }: MemberDetailPr
     if (!open) {
       onClose();
     }
+    // Don't call onClose when dialog opens, only when it closes
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Member Details</DialogTitle>
           <DialogDescription>

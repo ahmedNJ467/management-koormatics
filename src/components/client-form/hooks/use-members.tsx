@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MemberFormValues } from "../types";
 import { useToast } from "@/hooks/use-toast";
@@ -46,8 +45,9 @@ export function useMembers(initialMembers: MemberFormValues[], onMembersChange: 
 
   const handleCloseViewDialog = () => {
     setIsViewingMember(false);
-    // Don't reset the viewingMemberIndex until the dialog is fully closed
-    // This prevents the component from trying to access a non-existent member
+    setTimeout(() => {
+      setViewingMemberIndex(null);
+    }, 300);
   };
 
   const cancelMemberEdit = () => {

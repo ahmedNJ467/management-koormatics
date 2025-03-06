@@ -1,6 +1,7 @@
 
 import { MemberDetail } from "./member-detail";
 import { MemberFormValues } from "./types";
+import { useEffect } from "react";
 
 interface MemberViewWrapperProps {
   isViewing: boolean;
@@ -15,6 +16,7 @@ export function MemberViewWrapper({
   onClose, 
   onEdit 
 }: MemberViewWrapperProps) {
+  // Early return if not viewing or no member
   if (!isViewing || !member) return null;
 
   return (
