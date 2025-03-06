@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -128,10 +129,10 @@ export function useClientDialog(
       setShowPermanentDeleteConfirm(false);
       onOpenChange(false);
       
-      // Show success message
+      // Show success message with different wording for permanent deletion
       toast({
-        title: "Client deleted",
-        description: "The client has been permanently deleted.",
+        title: "Client permanently deleted",
+        description: "The client has been completely removed from the system.",
       });
       
       // Refresh the client list

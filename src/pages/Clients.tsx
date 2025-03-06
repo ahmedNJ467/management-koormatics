@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -127,8 +128,8 @@ export default function Clients() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       
       toast({
-        title: "Client deleted",
-        description: "The client has been permanently deleted.",
+        title: "Client permanently deleted",
+        description: "The client has been completely removed from the system.",
       });
     } catch (error: any) {
       console.error("Error deleting client:", error);
