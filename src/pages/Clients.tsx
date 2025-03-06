@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -112,6 +113,7 @@ export default function Clients() {
       toast({
         title: "Client permanently deleted",
         description: "The client has been completely removed from the system.",
+        variant: "destructive", // Use destructive variant for deletion toast
       });
     } catch (error: any) {
       console.error("Error deleting client:", error);

@@ -111,10 +111,11 @@ export function useClientDialog(
       setShowPermanentDeleteConfirm(false);
       onOpenChange(false);
       
-      // Show success message with different wording for permanent deletion
+      // Show success message with different styling and wording for permanent deletion
       toast({
         title: "Client permanently deleted",
         description: "The client has been completely removed from the system.",
+        variant: "destructive", // Use destructive variant for deletion toast
       });
       
       // Refresh the client list
