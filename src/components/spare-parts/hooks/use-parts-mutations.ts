@@ -24,35 +24,20 @@ export const usePartsMutations = () => {
         }
         
         // Check if images bucket exists
-        const hasImagesBucket = buckets?.some(bucket => bucket.id === 'images');
+        const imagesBucket = buckets?.find(bucket => bucket.id === 'images');
         
-        if (!hasImagesBucket) {
+        if (!imagesBucket) {
           console.warn("Images bucket not available");
           setIsStorageAvailable(false);
           return;
         }
         
-        // Check if parts directory exists
-        try {
-          const { data: files, error: dirError } = await supabase.storage
-            .from("images")
-            .list('parts');
-            
-          if (dirError || !files || files.length === 0) {
-            console.log("Creating parts directory");
-            const created = await createPartsDirectory();
-            if (!created) {
-              setIsStorageAvailable(false);
-              return;
-            }
-          }
-        } catch (dirError) {
-          console.error("Error checking parts directory:", dirError);
-          const created = await createPartsDirectory();
-          if (!created) {
-            setIsStorageAvailable(false);
-            return;
-          }
+        // Ensure the parts directory exists
+        const dirCreated = await createPartsDirectory();
+        if (!dirCreated) {
+          console.error("Failed to create or verify parts directory");
+          setIsStorageAvailable(false);
+          return;
         }
         
         // If we reach here, storage is fully configured

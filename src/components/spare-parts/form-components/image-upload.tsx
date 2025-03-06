@@ -43,42 +43,29 @@ export const ImageUpload = ({
           console.error("Storage availability check failed:", error);
           setStorageAvailable(false);
           setImageError("Storage service is not available");
+          setIsCheckingStorage(false);
           return;
         }
         
         // Check if images bucket exists
-        const hasImagesBucket = buckets?.some(bucket => bucket.id === 'images');
+        const imagesBucket = buckets?.find(bucket => bucket.id === 'images');
         
-        if (!hasImagesBucket) {
+        if (!imagesBucket) {
           console.warn("Images bucket not available");
           setStorageAvailable(false);
           setImageError("Image uploads are disabled. Storage not configured.");
+          setIsCheckingStorage(false);
           return;
         }
         
-        // Check if parts directory exists and create it if needed
-        try {
-          const { data: files, error: dirError } = await supabase.storage
-            .from("images")
-            .list('parts');
-            
-          if (dirError || !files || files.length === 0) {
-            console.log("Creating parts directory");
-            const created = await createPartsDirectory();
-            if (!created) {
-              setStorageAvailable(false);
-              setImageError("Could not create the upload directory");
-              return;
-            }
-          }
-        } catch (dirError) {
-          console.error("Error checking parts directory:", dirError);
-          const created = await createPartsDirectory();
-          if (!created) {
-            setStorageAvailable(false);
-            setImageError("Could not create the upload directory");
-            return;
-          }
+        // Ensure the parts directory exists
+        const dirCreated = await createPartsDirectory();
+        if (!dirCreated) {
+          console.error("Failed to create or verify parts directory");
+          setStorageAvailable(false);
+          setImageError("Could not access the upload directory");
+          setIsCheckingStorage(false);
+          return;
         }
         
         // If we reach here, storage is fully configured
@@ -119,7 +106,7 @@ export const ImageUpload = ({
           setImageError("Could not load the existing image");
           toast({
             title: "Image loading error",
-            description: "Could not load the existing image. The storage bucket might not be properly configured.",
+            description: "Could not load the existing image.",
             variant: "destructive",
           });
         } finally {
