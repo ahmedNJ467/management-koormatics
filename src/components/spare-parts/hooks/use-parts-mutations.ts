@@ -88,7 +88,7 @@ export const usePartsMutations = () => {
             toast({
               title: "Image upload skipped",
               description: "The part was saved but the database doesn't support image uploads",
-              variant: "warning",
+              variant: "default", // Changed from "warning" to "default"
             });
             return insertedPart;
           }
@@ -236,7 +236,7 @@ export const usePartsMutations = () => {
             toast({
               title: "Image upload skipped",
               description: "The part was updated but the database doesn't support image uploads",
-              variant: "warning",
+              variant: "default", // Changed from "warning" to "default"
             });
             return data;
           }
