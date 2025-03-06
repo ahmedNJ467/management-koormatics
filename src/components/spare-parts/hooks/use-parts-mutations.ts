@@ -54,11 +54,12 @@ export const usePartsMutations = () => {
       if (newPart.notes) {
         try {
           // Use our custom RPC function to update the notes field if it exists
+          // Use explicit any casting for the function call to bypass TypeScript checking
           const { error: notesError } = await supabase
-            .rpc('update_part_notes', { 
+            .rpc('update_part_notes' as any, { 
               part_id: insertedPart.id, 
               notes_value: newPart.notes 
-            } as any); // Use type assertion to bypass TypeScript checking
+            } as any);
             
           if (notesError) {
             console.log("Could not update notes:", notesError);
@@ -181,11 +182,12 @@ export const usePartsMutations = () => {
       if (updatedPart.notes !== undefined) {
         try {
           // Use our custom RPC function to update the notes field if it exists
+          // Use explicit any casting for the function call to bypass TypeScript checking
           const { error: notesError } = await supabase
-            .rpc('update_part_notes', { 
+            .rpc('update_part_notes' as any, { 
               part_id: partId, 
               notes_value: updatedPart.notes 
-            } as any); // Use type assertion to bypass TypeScript checking
+            } as any);
             
           if (notesError) {
             console.log("Could not update notes:", notesError);
