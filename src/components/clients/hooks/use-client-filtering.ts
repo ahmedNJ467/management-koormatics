@@ -9,9 +9,6 @@ export function useClientFiltering(clients: Client[] = []) {
   
   const activeClients = clients?.filter(client => !client.is_archived) || [];
   const archivedClients = clients?.filter(client => client.is_archived) || [];
-  const activeContractClients = clients?.filter(client => 
-    !client.is_archived && client.has_active_contract
-  ) || [];
 
   const getFilteredClients = (clientList: Client[]) => {
     return clientList.filter((client) => {
@@ -27,7 +24,6 @@ export function useClientFiltering(clients: Client[] = []) {
 
   const filteredActiveClients = getFilteredClients(activeClients);
   const filteredArchivedClients = getFilteredClients(archivedClients);
-  const filteredActiveContractClients = getFilteredClients(activeContractClients);
 
   return {
     searchTerm,
@@ -38,9 +34,7 @@ export function useClientFiltering(clients: Client[] = []) {
     setActiveTab,
     activeClients,
     archivedClients,
-    activeContractClients,
     filteredActiveClients,
-    filteredArchivedClients,
-    filteredActiveContractClients
+    filteredArchivedClients
   };
 }

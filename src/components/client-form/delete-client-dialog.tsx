@@ -18,6 +18,8 @@ interface DeleteClientDialogProps {
   onConfirm: () => void;
   error?: string | null;
   archiveMode?: boolean;
+  permanentDelete?: boolean;
+  isSubmitting?: boolean;
 }
 
 export function DeleteClientDialog({
@@ -26,17 +28,33 @@ export function DeleteClientDialog({
   onOpenChange,
   onConfirm,
   error,
-  archiveMode = false
+  archiveMode = false,
+  permanentDelete = false,
+  isSubmitting = false
 }: DeleteClientDialogProps) {
-  const title = archiveMode
-    ? `Are you sure you want to archive this client?`
-    : `Are you sure you want to delete this client?`;
+  const title = permanentDelete
+    ? `Permanently delete this client?`
+    : archiveMode
+      ? `Are you sure you want to archive this client?`
+      : `Are you sure you want to delete this client?`;
     
-  const description = archiveMode
-    ? `This will move ${clientName} to the archive. You can restore it later if needed.`
-    : `This will permanently delete ${clientName} and all of their data. This action cannot be undone.`;
+  const description = permanentDelete
+    ? `This will permanently delete ${clientName} and all associated data. This action CANNOT be undone.`
+    : archiveMode
+      ? `This will move ${clientName} to the archive. You can restore it later if needed.`
+      : `This will delete ${clientName} and all of their data. This action cannot be undone.`;
     
-  const confirmButtonText = archiveMode ? "Archive" : "Delete";
+  const confirmButtonText = permanentDelete 
+    ? "Delete Permanently" 
+    : archiveMode 
+      ? "Archive" 
+      : "Delete";
+  
+  const buttonClass = permanentDelete
+    ? "bg-red-600 text-white hover:bg-red-700"
+    : archiveMode 
+      ? "bg-amber-600 text-white hover:bg-amber-700" 
+      : "bg-destructive text-destructive-foreground hover:bg-destructive/90";
   
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
@@ -57,15 +75,14 @@ export function DeleteClientDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
           {!error && (
             <AlertDialogAction 
               onClick={onConfirm} 
-              className={archiveMode 
-                ? "bg-amber-600 text-white hover:bg-amber-700" 
-                : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+              className={buttonClass}
+              disabled={isSubmitting}
             >
-              {confirmButtonText}
+              {isSubmitting ? "Processing..." : confirmButtonText}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

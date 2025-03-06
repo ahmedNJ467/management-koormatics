@@ -25,10 +25,8 @@ export function useClientData() {
     setActiveTab,
     activeClients,
     archivedClients,
-    activeContractClients,
     filteredActiveClients,
-    filteredArchivedClients,
-    filteredActiveContractClients
+    filteredArchivedClients
   } = useClientFiltering(clients);
 
   return {
@@ -44,10 +42,8 @@ export function useClientData() {
     setActiveTab,
     activeClients,
     archivedClients,
-    activeContractClients,
     filteredActiveClients,
-    filteredArchivedClients,
-    filteredActiveContractClients
+    filteredArchivedClients
   };
 }
 

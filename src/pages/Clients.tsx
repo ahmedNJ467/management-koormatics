@@ -8,12 +8,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ClientFilters } from "@/components/clients/client-filters";
 import { ClientTabs } from "@/components/clients/client-tabs";
 import { useClientData, type Client } from "@/components/clients/hooks/use-client-data";
+import { DeleteClientDialog } from "@/components/client-form/delete-client-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Clients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   
   const {
     clientsLoading,
@@ -25,10 +31,8 @@ export default function Clients() {
     setActiveTab,
     activeClients,
     archivedClients,
-    activeContractClients,
     filteredActiveClients,
     filteredArchivedClients,
-    filteredActiveContractClients,
     contactCounts,
     memberCounts
   } = useClientData();
@@ -56,6 +60,79 @@ export default function Clients() {
       queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
       queryClient.invalidateQueries({ queryKey: ['client_members_count'] });
       setSelectedClient(null);
+    }
+  };
+
+  const handleClientRestore = async (client: Client) => {
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({ is_archived: false })
+        .eq("id", client.id);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast({
+        title: "Client restored",
+        description: `${client.name} has been restored.`,
+      });
+    } catch (error) {
+      console.error("Error restoring client:", error);
+      toast({
+        title: "Error",
+        description: "Failed to restore client. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClientDeleteClick = (client: Client) => {
+    setClientToDelete(client);
+    setDeleteDialogOpen(true);
+    setDeleteError(null);
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!clientToDelete) return;
+    
+    setIsDeleting(true);
+    setDeleteError(null);
+    
+    try {
+      // First delete related contacts
+      await supabase
+        .from("client_contacts")
+        .delete()
+        .eq("client_id", clientToDelete.id);
+      
+      // Then delete related members
+      await supabase
+        .from("client_members")
+        .delete()
+        .eq("client_id", clientToDelete.id);
+      
+      // Finally delete the client
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", clientToDelete.id);
+      
+      if (error) throw error;
+      
+      setDeleteDialogOpen(false);
+      setClientToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      
+      toast({
+        title: "Client deleted",
+        description: "The client has been permanently deleted.",
+      });
+    } catch (error: any) {
+      console.error("Error deleting client:", error);
+      setDeleteError(error.message || "Failed to delete client. It might be referenced in other records.");
+    } finally {
+      setIsDeleting(false);
     }
   };
   
@@ -99,13 +176,15 @@ export default function Clients() {
         setActiveTab={setActiveTab}
         activeClients={activeClients}
         archivedClients={archivedClients}
-        activeContractClients={activeContractClients}
+        activeContractClients={[]}
         filteredActiveClients={filteredActiveClients}
         filteredArchivedClients={filteredArchivedClients}
-        filteredActiveContractClients={filteredActiveContractClients}
+        filteredActiveContractClients={[]}
         contactCounts={contactCounts}
         memberCounts={memberCounts}
         onClientClick={handleClientClick}
+        onClientRestore={handleClientRestore}
+        onClientDelete={handleClientDeleteClick}
       />
 
       {formOpen && (
@@ -114,6 +193,18 @@ export default function Clients() {
           onOpenChange={handleFormClose}
           client={selectedClient}
           onClientDeleted={handleClientDeleted}
+        />
+      )}
+
+      {deleteDialogOpen && (
+        <DeleteClientDialog
+          clientName={clientToDelete?.name}
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handlePermanentDelete}
+          error={deleteError}
+          isSubmitting={isDeleting}
+          permanentDelete={true}
         />
       )}
     </div>
