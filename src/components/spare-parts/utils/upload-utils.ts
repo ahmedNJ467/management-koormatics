@@ -18,6 +18,35 @@ export const uploadPartImage = async (
       return null;
     }
 
+    // Create parts directory if it doesn't exist
+    try {
+      // First check if the directory exists by listing objects with this prefix
+      const { data: existingFiles } = await supabase.storage
+        .from("images")
+        .list('parts');
+      
+      // If we can't list files, the directory might not exist
+      if (existingFiles === null) {
+        // Create an empty file to initialize the directory
+        await supabase.storage
+          .from("images")
+          .upload('parts/.gitkeep', new Blob(['']));
+        
+        console.log("Created parts directory in images bucket");
+      }
+    } catch (dirError) {
+      console.log("Directory check error, attempting to create:", dirError);
+      // Try to create the directory anyway
+      try {
+        await supabase.storage
+          .from("images")
+          .upload('parts/.gitkeep', new Blob(['']));
+      } catch (createDirError) {
+        console.error("Failed to create parts directory:", createDirError);
+        // Continue anyway, the upload might still work
+      }
+    }
+
     // If bucket exists, proceed with upload
     const fileExt = imageFile.name.split(".").pop();
     const fileName = `${partId}.${fileExt}`;
@@ -25,7 +54,7 @@ export const uploadPartImage = async (
 
     console.log("Uploading image:", filePath);
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError, data } = await supabase.storage
       .from("images")
       .upload(filePath, imageFile, { upsert: true });
 
@@ -35,7 +64,7 @@ export const uploadPartImage = async (
       return null;
     }
 
-    console.log("Image uploaded successfully");
+    console.log("Image uploaded successfully:", data);
     return filePath;
   } catch (error) {
     console.error("Image upload error:", error);

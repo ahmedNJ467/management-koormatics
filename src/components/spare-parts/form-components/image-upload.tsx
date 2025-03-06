@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ImageUploadProps {
   imageInputRef: any;
@@ -23,12 +24,18 @@ export const ImageUpload = ({
   handleImageChange,
   form
 }: ImageUploadProps) => {
+  const { toast } = useToast();
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   
   // Fetch existing image preview using useEffect
   useEffect(() => {
     const fetchImage = async () => {
       if (existingImage) {
         try {
+          setIsLoadingImage(true);
+          setImageError(null);
+          
           const { data } = await supabase.storage
             .from("images")
             .getPublicUrl(existingImage);
@@ -38,12 +45,20 @@ export const ImageUpload = ({
           }
         } catch (error) {
           console.error("Error fetching image:", error);
+          setImageError("Could not load the existing image");
+          toast({
+            title: "Image loading error",
+            description: "Could not load the existing image",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoadingImage(false);
         }
       }
     };
     
     fetchImage();
-  }, [existingImage, setPreviewUrl]);
+  }, [existingImage, setPreviewUrl, toast]);
 
   return (
     <div className="md:col-span-2">
@@ -57,6 +72,28 @@ export const ImageUpload = ({
             handleImageChange(e);
             const file = e.target.files?.[0];
             if (file) {
+              // Validate file size (max 5MB)
+              if (file.size > 5 * 1024 * 1024) {
+                toast({
+                  title: "File too large",
+                  description: "Image must be less than 5MB",
+                  variant: "destructive",
+                });
+                e.target.value = '';
+                return;
+              }
+              
+              // Validate file type
+              if (!file.type.startsWith('image/')) {
+                toast({
+                  title: "Invalid file type",
+                  description: "Please select an image file",
+                  variant: "destructive",
+                });
+                e.target.value = '';
+                return;
+              }
+              
               // Set the file value in the form
               form.setValue("part_image", file);
             }
@@ -67,12 +104,28 @@ export const ImageUpload = ({
           className="flex-1"
         />
         
-        {previewUrl && (
+        {isLoadingImage && (
+          <div className="h-24 w-24 flex items-center justify-center bg-slate-100 rounded-md">
+            <p className="text-xs text-slate-500">Loading...</p>
+          </div>
+        )}
+        
+        {imageError && !isLoadingImage && (
+          <div className="h-24 w-24 flex items-center justify-center bg-red-50 rounded-md">
+            <p className="text-xs text-red-500">Failed to load</p>
+          </div>
+        )}
+        
+        {previewUrl && !imageError && !isLoadingImage && (
           <div className="relative h-24 w-24 rounded-md overflow-hidden border">
             <img 
               src={previewUrl} 
               alt="Preview" 
               className="h-full w-full object-cover" 
+              onError={() => {
+                setImageError("Image failed to load");
+                setPreviewUrl(null);
+              }}
             />
             <Button
               type="button"
@@ -89,6 +142,9 @@ export const ImageUpload = ({
           </div>
         )}
       </div>
+      {imageError && (
+        <p className="text-xs text-red-500 mt-1">{imageError}</p>
+      )}
     </div>
   );
 };
