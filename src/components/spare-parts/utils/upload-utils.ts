@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,48 +35,51 @@ export const uploadPartImage = async (
       return null;
     }
     
-    // If we reach here, the bucket appears to exist, try to upload
+    // Upload the file
+    const fileExt = imageFile.name.split(".").pop() || 'jpeg';
+    const fileName = `${partId}.${fileExt}`;
+    const filePath = `parts/${fileName}`;
+    
+    console.log("Uploading image to path:", filePath);
+    
+    // Make sure parts directory exists
     try {
-      // Check if parts directory exists
+      // Try to list the 'parts' directory
+      const { data: partsDir } = await supabase.storage
+        .from("images")
+        .list('parts');
+        
+      // If 'parts' directory doesn't exist, create it
+      if (!partsDir || partsDir.length === 0) {
+        console.log("Parts directory doesn't exist, creating it");
+        await supabase.storage
+          .from("images")
+          .upload('parts/.placeholder', new Blob(['']));
+      }
+    } catch (dirError) {
+      console.log("Error checking parts directory, attempting to create it:", dirError);
       try {
         await supabase.storage
           .from("images")
-          .list('parts');
-      } catch (listError) {
-        // Try to create parts directory
-        try {
-          await supabase.storage
-            .from("images")
-            .upload('parts/.placeholder', new Blob(['']));
-        } catch (createDirError) {
-          console.error("Failed to create parts directory:", createDirError);
-        }
+          .upload('parts/.placeholder', new Blob(['']));
+      } catch (createDirError) {
+        console.error("Failed to create parts directory:", createDirError);
       }
-      
-      // Upload the file
-      const fileExt = imageFile.name.split(".").pop() || 'jpeg';
-      const fileName = `${partId}.${fileExt}`;
-      const filePath = `parts/${fileName}`;
-      
-      console.log("Uploading image to path:", filePath);
-      
-      const { error: uploadError, data } = await supabase.storage
-        .from("images")
-        .upload(filePath, imageFile, { upsert: true });
-      
-      if (uploadError) {
-        console.error("Error uploading image:", uploadError);
-        onError(`Upload failed: ${uploadError.message}`);
-        return null;
-      }
-      
-      console.log("Image uploaded successfully:", data);
-      return filePath;
-    } catch (uploadProcessError) {
-      console.error("Image upload process error:", uploadProcessError);
-      onError("We couldn't upload the image due to a storage service error");
+    }
+    
+    // Upload the actual image file
+    const { error: uploadError, data } = await supabase.storage
+      .from("images")
+      .upload(filePath, imageFile, { upsert: true });
+    
+    if (uploadError) {
+      console.error("Error uploading image:", uploadError);
+      onError(`Upload failed: ${uploadError.message}`);
       return null;
     }
+    
+    console.log("Image uploaded successfully:", data);
+    return filePath;
   } catch (error) {
     console.error("Image upload process error:", error);
     onError("We couldn't upload the image due to an unexpected error");

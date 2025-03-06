@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { SparePart } from "@/components/spare-parts/types";
@@ -45,8 +46,10 @@ const SpareParts = () => {
         
         const hasImagesBucket = buckets?.some(bucket => bucket.id === 'images');
         if (!hasImagesBucket) {
+          console.log("Images bucket not available");
           setStorageAlert("Image uploads are disabled because the 'images' storage bucket is not configured.");
         } else {
+          console.log("Images bucket found and available");
           setStorageAlert(null);
         }
       } catch (error) {
