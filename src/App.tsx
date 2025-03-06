@@ -23,6 +23,7 @@ import SpareParts from "./pages/SpareParts";
 import Alerts from "./pages/Alerts";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import TripAnalytics from "./pages/TripAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="clients" element={<Clients />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="trips" element={<Trips />} />
+              <Route path="trip-analytics" element={<TripAnalytics />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="contracts" element={<Contracts />} />
               <Route path="spare-parts" element={<SpareParts />} />
