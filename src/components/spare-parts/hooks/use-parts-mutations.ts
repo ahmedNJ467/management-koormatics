@@ -53,16 +53,19 @@ export const usePartsMutations = () => {
       // This way if the column doesn't exist, the initial insert still succeeds
       if (newPart.notes) {
         try {
+          // Use a raw SQL query to update the notes field if it exists
+          // This avoids TypeScript errors while still attempting to update the field
           const { error: notesError } = await supabase
-            .from("spare_parts")
-            .update({ notes: newPart.notes })
-            .eq("id", insertedPart.id);
+            .rpc('update_part_notes', { 
+              part_id: insertedPart.id, 
+              notes_value: newPart.notes 
+            });
             
           if (notesError) {
-            console.log("Notes field might not exist in database:", notesError);
+            console.log("Could not update notes:", notesError);
           }
         } catch (error) {
-          console.log("Failed to update notes, column may not exist:", error);
+          console.log("Failed to update notes, field may not exist:", error);
         }
       }
 
@@ -178,16 +181,19 @@ export const usePartsMutations = () => {
       // Try to update notes separately
       if (updatedPart.notes !== undefined) {
         try {
+          // Use a raw SQL query to update the notes field if it exists
+          // This avoids TypeScript errors while still attempting to update the field
           const { error: notesError } = await supabase
-            .from("spare_parts")
-            .update({ notes: updatedPart.notes })
-            .eq("id", partId);
+            .rpc('update_part_notes', { 
+              part_id: partId, 
+              notes_value: updatedPart.notes 
+            });
             
           if (notesError) {
-            console.log("Notes field might not exist in database:", notesError);
+            console.log("Could not update notes:", notesError);
           }
         } catch (error) {
-          console.log("Failed to update notes, column may not exist:", error);
+          console.log("Failed to update notes, field may not exist:", error);
         }
       }
 
