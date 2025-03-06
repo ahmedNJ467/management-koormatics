@@ -36,52 +36,66 @@ export const usePartsMutations = () => {
 
       console.log("Inserting part data:", partToInsert);
 
-      const { data, error } = await supabase
+      // First insert the part
+      const { data: insertedPart, error: insertError } = await supabase
         .from("spare_parts")
         .insert(partToInsert)
         .select()
         .single();
 
-      if (error) {
-        console.error("Error inserting part:", error);
-        throw error;
+      if (insertError) {
+        console.error("Error inserting part:", insertError);
+        throw insertError;
       }
-
-      console.log("Part inserted successfully:", data);
 
       // Only try to upload if we have an actual File object
       if (newPart.part_image instanceof File) {
         try {
           const fileExt = newPart.part_image.name.split(".").pop();
-          const fileName = `${data.id}.${fileExt}`;
+          const fileName = `${insertedPart.id}.${fileExt}`;
           const filePath = `parts/${fileName}`;
-
-          console.log("Uploading image:", filePath);
 
           const { error: uploadError } = await supabase.storage
             .from("images")
-            .upload(filePath, newPart.part_image);
+            .upload(filePath, newPart.part_image, {
+              cacheControl: "3600",
+              upsert: true
+            });
 
           if (uploadError) {
             console.error("Error uploading image:", uploadError);
-            throw uploadError;
+            // Don't throw here, just show a toast
+            toast({
+              title: "Image upload failed",
+              description: "The part was saved but we couldn't upload the image",
+              variant: "destructive",
+            });
+            return insertedPart;
           }
 
-          console.log("Image uploaded successfully");
+          // Get the public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from("images")
+            .getPublicUrl(filePath);
 
           // Update the part with the image path
           const { error: updateError } = await supabase
             .from("spare_parts")
             .update({ part_image: filePath })
-            .eq("id", data.id);
+            .eq("id", insertedPart.id);
 
           if (updateError) {
             console.error("Error updating part with image path:", updateError);
-            throw updateError;
+            // Don't throw here, just show a toast
+            toast({
+              title: "Image path update failed",
+              description: "The part and image were saved but the link wasn't updated",
+              variant: "destructive",
+            });
           }
         } catch (uploadError) {
           console.error("Image upload error:", uploadError);
-          // We don't want to fail the entire operation if just the image upload fails
+          // Don't throw here, just show a toast
           toast({
             title: "Image upload failed",
             description: "The part was saved but we couldn't upload the image",
@@ -90,7 +104,7 @@ export const usePartsMutations = () => {
         }
       }
 
-      return data;
+      return insertedPart;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spare_parts"] });
