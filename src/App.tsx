@@ -1,63 +1,141 @@
+import { useState, useEffect } from "react";
+import { useLocation, Routes, Route, useNavigate } from "react-router-dom";
+import { MainLayout } from "@/layouts/MainLayout";
+import { AuthLayout } from "@/layouts/AuthLayout";
+import { useAuth } from "@/hooks/use-auth";
+import { ScrollToTop } from "@/components/scroll-to-top";
+import {
+  Home,
+  Login,
+  Register,
+  ForgotPassword,
+  ResetPassword,
+  Vehicles,
+  Drivers,
+  Clients,
+  Alerts,
+  Reports,
+  Settings,
+  Trips,
+} from "@/pages";
+import TripAnalytics from "./pages/TripAnalytics";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
-import Layout from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import Vehicles from "./pages/Vehicles";
-import Drivers from "./pages/Drivers";
-import Maintenance from "./pages/Maintenance";
-import FuelLogs from "./pages/FuelLogs";
-import Clients from "./pages/Clients";
-import Quotations from "./pages/Quotations";
-import Trips from "./pages/Trips";
-import Invoices from "./pages/Invoices";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import CostAnalytics from "./pages/CostAnalytics";
-import Contracts from "./pages/Contracts";
-import SpareParts from "./pages/SpareParts";
-import Alerts from "./pages/Alerts";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
+const App = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-const queryClient = new QueryClient();
+  useEffect(() => {
+    // Redirect to /login if not authenticated and not already on an auth page
+    const publicPages = ['/login', '/register', '/forgot-password', '/reset-password'];
+    const authRequired = !publicPages.includes(location.pathname);
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="vehicles" element={<Vehicles />} />
-              <Route path="drivers" element={<Drivers />} />
-              <Route path="maintenance" element={<Maintenance />} />
-              <Route path="fuel-logs" element={<FuelLogs />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="quotations" element={<Quotations />} />
-              <Route path="trips" element={<Trips />} />
-              <Route path="invoices" element={<Invoices />} />
-              <Route path="contracts" element={<Contracts />} />
-              <Route path="spare-parts" element={<SpareParts />} />
-              <Route path="alerts" element={<Alerts />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="cost-analytics" element={<CostAnalytics />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+    if (isLoading) {
+      // Do nothing while loading
+      return;
+    }
+
+    if (!isAuthenticated && authRequired) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, location, navigate, isLoading]);
+
+  // Define routes accessible to both authenticated and unauthenticated users
+  const routes = [
+    {
+      path: "/login",
+      element: <Login />,
+    },
+    {
+      path: "/register",
+      element: <Register />,
+    },
+    {
+      path: "/forgot-password",
+      element: <ForgotPassword />,
+    },
+    {
+      path: "/reset-password",
+      element: <ResetPassword />,
+    },
+    {
+      path: "/",
+      element: <Home />,
+    },
+    {
+      path: "/vehicles",
+      element: <Vehicles />,
+    },
+    {
+      path: "/drivers",
+      element: <Drivers />,
+    },
+    {
+      path: "/clients",
+      element: <Clients />,
+    },
+    {
+      path: "/alerts",
+      element: <Alerts />,
+    },
+    {
+      path: "/reports",
+      element: <Reports />,
+    },
+    {
+      path: "/settings",
+      element: <Settings />,
+    },
+    {
+      path: "/trips",
+      element: <Trips />,
+    },
+    {
+      path: "/trip-analytics",
+      element: <TripAnalytics />,
+    },
+  ];
+
+  return (
+    <>
+      <ScrollToTop />
+      <Routes>
+        {/* Auth Layout */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+        </Route>
+
+        {/* Main Layout */}
+        <Route
+          element={
+            <MainLayout
+              sidebarOpen={isSidebarOpen}
+              setSidebarOpen={setIsSidebarOpen}
+            />
+          }
+        >
+          {routes.map((route, index) => {
+            // Skip auth routes as they are already defined in AuthLayout
+            if (["/login", "/register", "/forgot-password", "/reset-password"].includes(route.path)) {
+              return null;
+            }
+
+            return (
+              <Route
+                key={index}
+                path={route.path}
+                element={route.element}
+              />
+            );
+          })}
+        </Route>
+      </Routes>
+    </>
+  );
+};
 
 export default App;
