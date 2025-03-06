@@ -8,34 +8,52 @@ export const uploadPartImage = async (
   onError: (message: string) => void
 ): Promise<string | null> => {
   try {
-    // Check if the storage bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const imagesBucketExists = buckets?.some(bucket => bucket.name === 'images');
+    console.log("Starting image upload process for part:", partId);
     
-    if (!imagesBucketExists) {
-      console.error("The 'images' storage bucket does not exist");
-      onError("The storage bucket doesn't exist. Please contact your administrator.");
+    // First, try to get the bucket info to verify if it exists and is accessible
+    const { data: bucketInfo, error: bucketInfoError } = await supabase.storage
+      .getBucket('images');
+    
+    if (bucketInfoError) {
+      console.error("Error accessing images bucket:", bucketInfoError);
+      onError(`Cannot access the storage bucket: ${bucketInfoError.message}. Please contact your administrator.`);
       return null;
     }
+    
+    if (!bucketInfo) {
+      console.error("The 'images' storage bucket is not accessible");
+      onError("The storage bucket is not accessible. Please check your Supabase storage configuration.");
+      return null;
+    }
+    
+    console.log("Images bucket exists and is accessible:", bucketInfo);
 
-    // Create parts directory if it doesn't exist
+    // Proceed with the upload
     try {
-      // First check if the directory exists by listing objects with this prefix
-      const { data: existingFiles } = await supabase.storage
+      // First check if the parts directory exists by trying to list files
+      const { data: existingFiles, error: listError } = await supabase.storage
         .from("images")
         .list('parts');
       
-      // If we can't list files, the directory might not exist
-      if (existingFiles === null) {
-        // Create an empty file to initialize the directory
-        await supabase.storage
-          .from("images")
-          .upload('parts/.gitkeep', new Blob(['']));
-        
-        console.log("Created parts directory in images bucket");
+      if (listError) {
+        console.error("Error checking parts directory:", listError);
+        // Create the directory if we can't list it (might not exist)
+        try {
+          console.log("Attempting to create parts directory...");
+          await supabase.storage
+            .from("images")
+            .upload('parts/.gitkeep', new Blob(['']));
+          
+          console.log("Created parts directory in images bucket");
+        } catch (createDirError) {
+          console.error("Failed to create parts directory:", createDirError);
+          // Continue anyway as the upload might still work
+        }
+      } else {
+        console.log("Parts directory exists with files:", existingFiles?.length || 0);
       }
     } catch (dirError) {
-      console.log("Directory check error, attempting to create:", dirError);
+      console.error("Directory check error:", dirError);
       // Try to create the directory anyway
       try {
         await supabase.storage
@@ -48,11 +66,11 @@ export const uploadPartImage = async (
     }
 
     // If bucket exists, proceed with upload
-    const fileExt = imageFile.name.split(".").pop();
+    const fileExt = imageFile.name.split(".").pop() || 'jpeg';
     const fileName = `${partId}.${fileExt}`;
     const filePath = `parts/${fileName}`;
 
-    console.log("Uploading image:", filePath);
+    console.log("Uploading image to path:", filePath);
 
     const { error: uploadError, data } = await supabase.storage
       .from("images")
@@ -60,15 +78,36 @@ export const uploadPartImage = async (
 
     if (uploadError) {
       console.error("Error uploading image:", uploadError);
-      onError("We couldn't upload the image: " + uploadError.message);
+      onError(`Upload failed: ${uploadError.message}`);
       return null;
     }
 
     console.log("Image uploaded successfully:", data);
     return filePath;
   } catch (error) {
-    console.error("Image upload error:", error);
-    onError("We couldn't upload the image");
+    console.error("Image upload process error:", error);
+    onError("We couldn't upload the image due to an unexpected error");
+    return null;
+  }
+};
+
+export const getPublicImageUrl = async (imagePath: string): Promise<string | null> => {
+  try {
+    if (!imagePath) return null;
+    
+    console.log("Getting public URL for image:", imagePath);
+    const { data } = await supabase.storage
+      .from("images")
+      .getPublicUrl(imagePath);
+    
+    if (data?.publicUrl) {
+      console.log("Public URL retrieved:", data.publicUrl);
+      return data.publicUrl;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error getting public URL:", error);
     return null;
   }
 };

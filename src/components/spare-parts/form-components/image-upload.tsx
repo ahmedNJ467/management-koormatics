@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getPublicImageUrl } from "../utils/upload-utils";
 
 interface ImageUploadProps {
   imageInputRef: any;
@@ -36,19 +37,21 @@ export const ImageUpload = ({
           setIsLoadingImage(true);
           setImageError(null);
           
-          const { data } = await supabase.storage
-            .from("images")
-            .getPublicUrl(existingImage);
+          console.log("Fetching existing image:", existingImage);
+          const publicUrl = await getPublicImageUrl(existingImage);
           
-          if (data) {
-            setPreviewUrl(data.publicUrl);
+          if (publicUrl) {
+            console.log("Setting preview URL to:", publicUrl);
+            setPreviewUrl(publicUrl);
+          } else {
+            throw new Error("Could not get public URL");
           }
         } catch (error) {
           console.error("Error fetching image:", error);
           setImageError("Could not load the existing image");
           toast({
             title: "Image loading error",
-            description: "Could not load the existing image",
+            description: "Could not load the existing image. The storage bucket might not be properly configured.",
             variant: "destructive",
           });
         } finally {
