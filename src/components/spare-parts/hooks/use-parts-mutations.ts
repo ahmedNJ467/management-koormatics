@@ -32,7 +32,6 @@ export const usePartsMutations = () => {
         status: getStatusFromQuantity(newPart.quantity, newPart.min_stock_level),
         min_stock_level: newPart.min_stock_level,
         compatibility: newPart.compatibility || []
-        // Note: We're removing part_image and notes from initial insert since they might not exist in the DB schema
       };
 
       console.log("Inserting part data:", partToInsert);
@@ -50,11 +49,9 @@ export const usePartsMutations = () => {
       }
 
       // Try to update with notes separately if it exists in the form data
-      // This way if the column doesn't exist, the initial insert still succeeds
       if (newPart.notes) {
         try {
           // Use our custom RPC function to update the notes field if it exists
-          // Use explicit any casting for the function call to bypass TypeScript checking
           const { error: notesError } = await supabase
             .rpc('update_part_notes' as any, { 
               part_id: insertedPart.id, 
@@ -70,7 +67,6 @@ export const usePartsMutations = () => {
       }
 
       // Only try to upload and update part_image if we have an actual File object
-      // and after verifying the column exists
       if (newPart.part_image instanceof File) {
         try {
           // First check if the part_image column exists
@@ -88,7 +84,7 @@ export const usePartsMutations = () => {
             toast({
               title: "Image upload skipped",
               description: "The part was saved but the database doesn't support image uploads",
-              variant: "default", // Changed from "warning" to "default"
+              variant: "default",
             });
             return insertedPart;
           }
@@ -97,6 +93,20 @@ export const usePartsMutations = () => {
           const fileExt = newPart.part_image.name.split(".").pop();
           const fileName = `${insertedPart.id}.${fileExt}`;
           const filePath = `parts/${fileName}`;
+
+          // Check if the storage bucket exists
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const imagesBucketExists = buckets?.some(bucket => bucket.name === 'images');
+          
+          if (!imagesBucketExists) {
+            console.error("The 'images' storage bucket does not exist");
+            toast({
+              title: "Image upload failed",
+              description: "The storage bucket doesn't exist. Please contact your administrator.",
+              variant: "destructive",
+            });
+            return insertedPart;
+          }
 
           const { error: uploadError } = await supabase.storage
             .from("images")
@@ -109,7 +119,7 @@ export const usePartsMutations = () => {
             console.error("Error uploading image:", uploadError);
             toast({
               title: "Image upload failed",
-              description: "The part was saved but we couldn't upload the image",
+              description: "The part was saved but we couldn't upload the image: " + uploadError.message,
               variant: "destructive",
             });
             return insertedPart;
@@ -180,7 +190,6 @@ export const usePartsMutations = () => {
         status: getStatusFromQuantity(updatedPart.quantity, updatedPart.min_stock_level),
         min_stock_level: updatedPart.min_stock_level,
         compatibility: updatedPart.compatibility || []
-        // Removed part_image and notes from initial update to prevent errors if columns don't exist
       };
 
       console.log("Updating part data:", partToUpdate);
@@ -201,7 +210,6 @@ export const usePartsMutations = () => {
       if (updatedPart.notes !== undefined) {
         try {
           // Use our custom RPC function to update the notes field if it exists
-          // Use explicit any casting for the function call to bypass TypeScript checking
           const { error: notesError } = await supabase
             .rpc('update_part_notes' as any, { 
               part_id: partId, 
@@ -236,7 +244,21 @@ export const usePartsMutations = () => {
             toast({
               title: "Image upload skipped",
               description: "The part was updated but the database doesn't support image uploads",
-              variant: "default", // Changed from "warning" to "default"
+              variant: "default",
+            });
+            return data;
+          }
+          
+          // Check if the storage bucket exists
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const imagesBucketExists = buckets?.some(bucket => bucket.name === 'images');
+          
+          if (!imagesBucketExists) {
+            console.error("The 'images' storage bucket does not exist");
+            toast({
+              title: "Image upload failed",
+              description: "The storage bucket doesn't exist. Please contact your administrator.",
+              variant: "destructive",
             });
             return data;
           }
@@ -254,7 +276,12 @@ export const usePartsMutations = () => {
 
           if (uploadError) {
             console.error("Error uploading image:", uploadError);
-            throw uploadError;
+            toast({
+              title: "Image upload failed",
+              description: "The part was updated but we couldn't upload the image: " + uploadError.message,
+              variant: "destructive",
+            });
+            return data;
           }
 
           console.log("Image uploaded successfully");
@@ -266,7 +293,11 @@ export const usePartsMutations = () => {
 
           if (updateError) {
             console.error("Error updating part with image path:", updateError);
-            throw updateError;
+            toast({
+              title: "Image path update failed",
+              description: "The part was updated but we couldn't update the image path",
+              variant: "destructive",
+            });
           }
         } catch (uploadError) {
           console.error("Image upload error:", uploadError);
@@ -301,6 +332,30 @@ export const usePartsMutations = () => {
   const deletePartMutation = useMutation({
     mutationFn: async (id: string) => {
       console.log("Deleting part with ID:", id);
+      
+      // Try to get the part image path first to delete the image if it exists
+      const { data: part } = await supabase
+        .from("spare_parts")
+        .select("part_image")
+        .eq("id", id)
+        .single();
+      
+      if (part?.part_image) {
+        try {
+          // Try to delete the associated image
+          const { error: deleteImageError } = await supabase.storage
+            .from("images")
+            .remove([part.part_image]);
+          
+          if (deleteImageError) {
+            console.error("Error deleting image:", deleteImageError);
+            // Continue with part deletion even if image deletion fails
+          }
+        } catch (error) {
+          console.error("Failed to delete image:", error);
+          // Continue with part deletion even if image deletion fails
+        }
+      }
       
       const { error } = await supabase
         .from("spare_parts")
