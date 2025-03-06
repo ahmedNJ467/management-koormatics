@@ -49,7 +49,7 @@ export const usePartsMutations = () => {
 
       console.log("Part inserted successfully:", data);
 
-      if (newPart.part_image && data.id) {
+      if (newPart.part_image instanceof File) {
         const fileExt = newPart.part_image.name.split(".").pop();
         const fileName = `${data.id}.${fileExt}`;
         const filePath = `parts/${fileName}`;
@@ -100,6 +100,8 @@ export const usePartsMutations = () => {
   const updatePartMutation = useMutation({
     mutationFn: async ({ updatedPart, partId }: { updatedPart: z.infer<typeof PartFormSchema>, partId: string }) => {
       if (!partId) throw new Error("No part selected");
+      
+      console.log("Updating part:", updatedPart, "for ID:", partId);
 
       const partToUpdate = {
         name: updatedPart.name,
@@ -115,6 +117,8 @@ export const usePartsMutations = () => {
         notes: updatedPart.notes || ""
       };
 
+      console.log("Updating part data:", partToUpdate);
+
       const { data, error } = await supabase
         .from("spare_parts")
         .update(partToUpdate)
@@ -122,25 +126,40 @@ export const usePartsMutations = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating part:", error);
+        throw error;
+      }
+
+      console.log("Part updated successfully:", data);
 
       if (updatedPart.part_image instanceof File) {
         const fileExt = updatedPart.part_image.name.split(".").pop();
         const fileName = `${partId}.${fileExt}`;
         const filePath = `parts/${fileName}`;
 
+        console.log("Uploading image:", filePath);
+
         const { error: uploadError } = await supabase.storage
           .from("images")
           .upload(filePath, updatedPart.part_image, { upsert: true });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          throw uploadError;
+        }
+
+        console.log("Image uploaded successfully");
 
         const { error: updateError } = await supabase
           .from("spare_parts")
           .update({ part_image: filePath })
           .eq("id", partId);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Error updating part with image path:", updateError);
+          throw updateError;
+        }
       }
 
       return data;
@@ -164,13 +183,20 @@ export const usePartsMutations = () => {
 
   const deletePartMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log("Deleting part with ID:", id);
+      
       const { error } = await supabase
         .from("spare_parts")
         .delete()
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error deleting part:", error);
+        throw error;
+      }
 
+      console.log("Part deleted successfully");
+      
       return id;
     },
     onSuccess: (id) => {

@@ -53,12 +53,11 @@ export const ImageUpload = ({
           id="part_image"
           type="file"
           onChange={(e) => {
-            imageInputRef.onChange(e);
             handleImageChange(e);
           }}
+          name={imageInputRef.name}
           ref={imageInputRef.ref}
           onBlur={imageInputRef.onBlur}
-          name={imageInputRef.name}
           accept="image/*"
           className="flex-1"
         />

@@ -12,6 +12,7 @@ import { CompatibilitySection } from "./form-components/compatibility-section";
 import { NotesSection } from "./form-components/notes-section";
 import { FormActions } from "./form-components/form-header";
 import { useImagePreview } from "./form-components/use-image-preview";
+import { useEffect } from "react";
 
 interface PartFormProps {
   onSubmit: (data: z.infer<typeof PartFormSchema>) => void;
