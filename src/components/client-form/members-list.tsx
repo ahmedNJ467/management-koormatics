@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Pencil, Trash, Download } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Download } from "lucide-react";
 import { MemberFormValues } from "./types";
 
 interface MembersListProps {
@@ -27,6 +27,10 @@ export function MembersList({ members, onEdit, onDelete, onView }: MembersListPr
     }
   };
 
+  const handleRowClick = (index: number) => {
+    onView(index);
+  };
+
   return (
     <>
       <div className="rounded-md border">
@@ -38,19 +42,22 @@ export function MembersList({ members, onEdit, onDelete, onView }: MembersListPr
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Document</TableHead>
-              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {members.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                   No members added yet
                 </TableCell>
               </TableRow>
             ) : (
               members.map((member, index) => (
-                <TableRow key={index}>
+                <TableRow 
+                  key={index} 
+                  className="cursor-pointer hover:bg-muted/60"
+                  onClick={() => handleRowClick(index)}
+                >
                   <TableCell>{member.name}</TableCell>
                   <TableCell>{member.role || "-"}</TableCell>
                   <TableCell>{member.email || "-"}</TableCell>
@@ -62,6 +69,7 @@ export function MembersList({ members, onEdit, onDelete, onView }: MembersListPr
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+                        onClick={(e) => e.stopPropagation()} // Prevent row click when clicking on document link
                       >
                         <Download className="h-4 w-4" />
                         <span className="text-xs truncate max-w-[100px]">
@@ -71,19 +79,6 @@ export function MembersList({ members, onEdit, onDelete, onView }: MembersListPr
                     ) : (
                       "-"
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => onView(index)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => onEdit(index)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(index)}>
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
                   </TableCell>
                 </TableRow>
               ))

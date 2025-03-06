@@ -15,7 +15,7 @@ interface MembersTabProps {
 export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
   const {
     memberFormState,
-    setMemberFormState,  // Make sure we're destructuring this from useMembers
+    setMemberFormState,
     editingMemberIndex,
     isViewingMember,
     viewingMemberIndex,
@@ -49,7 +49,7 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
           isEditing={editingMemberIndex !== null}
           member={memberFormState}
           clientId={clientId}
-          onMemberChange={setMemberFormState}  // Use the destructured function directly
+          onMemberChange={setMemberFormState}
           onCancel={cancelMemberEdit}
           onSave={saveMember}
           onDocumentUploaded={handleMemberDocumentUpload}
@@ -68,6 +68,12 @@ export function MembersTab({ members, setMembers, clientId }: MembersTabProps) {
           handleCloseViewDialog();
           if (viewingMemberIndex !== null) {
             editMember(viewingMemberIndex);
+          }
+        }}
+        onDelete={() => {
+          handleCloseViewDialog();
+          if (viewingMemberIndex !== null) {
+            deleteMember(viewingMemberIndex);
           }
         }}
       />
