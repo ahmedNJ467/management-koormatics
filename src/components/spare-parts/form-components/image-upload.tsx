@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicImageUrl } from "../utils/upload-utils";
@@ -28,11 +28,41 @@ export const ImageUpload = ({
   const { toast } = useToast();
   const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [storageAvailable, setStorageAvailable] = useState<boolean | null>(null);
+  
+  // Check if storage is available
+  useEffect(() => {
+    const checkStorageAvailability = async () => {
+      try {
+        const { data: buckets, error } = await supabase.storage.listBuckets();
+        
+        if (error) {
+          console.error("Storage availability check failed:", error);
+          setStorageAvailable(false);
+          return;
+        }
+        
+        const hasImagesBucket = buckets?.some(bucket => bucket.id === 'images');
+        setStorageAvailable(hasImagesBucket);
+        
+        if (!hasImagesBucket) {
+          console.warn("Images bucket not available");
+          setImageError("Image uploads are disabled. Storage not configured.");
+        }
+      } catch (error) {
+        console.error("Error checking storage:", error);
+        setStorageAvailable(false);
+        setImageError("Storage service not available");
+      }
+    };
+    
+    checkStorageAvailability();
+  }, []);
   
   // Fetch existing image preview using useEffect
   useEffect(() => {
     const fetchImage = async () => {
-      if (existingImage) {
+      if (existingImage && storageAvailable) {
         try {
           setIsLoadingImage(true);
           setImageError(null);
@@ -57,11 +87,28 @@ export const ImageUpload = ({
         } finally {
           setIsLoadingImage(false);
         }
+      } else if (existingImage && !storageAvailable) {
+        setImageError("Storage is not available");
+        setIsLoadingImage(false);
       }
     };
     
     fetchImage();
-  }, [existingImage, setPreviewUrl, toast]);
+  }, [existingImage, setPreviewUrl, toast, storageAvailable]);
+
+  if (storageAvailable === false) {
+    return (
+      <div className="md:col-span-2">
+        <FormLabel htmlFor="part_image">Part Image</FormLabel>
+        <div className="mt-1.5 p-4 bg-amber-50 border border-amber-200 rounded-md flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          <p className="text-sm text-amber-700">
+            Image uploads are currently unavailable. The storage service is not properly configured.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="md:col-span-2">

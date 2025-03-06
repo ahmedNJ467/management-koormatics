@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { SparePart } from "@/components/spare-parts/types";
 import { PartFormSchema } from "@/components/spare-parts/schemas/spare-part-schema";
@@ -16,18 +16,49 @@ import { EditPartDialog } from "@/components/spare-parts/dialogs/edit-part-dialo
 import { DeletePartDialog } from "@/components/spare-parts/dialogs/delete-part-dialog";
 import { exportToCSV } from "@/components/reports/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SpareParts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
+  const [storageAlert, setStorageAlert] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { sortConfig, handleSort } = usePartsSorting();
   const { data: spareParts = [], isLoading } = useSparePartsQuery(sortConfig);
-  const { addPartMutation, updatePartMutation, deletePartMutation } = usePartsMutations();
+  const { addPartMutation, updatePartMutation, deletePartMutation, isStorageAvailable } = usePartsMutations();
   const { searchQuery, setSearchQuery, filteredParts, inStockParts, lowStockParts, outOfStockParts } = usePartsFilter(spareParts);
+
+  // Check storage availability
+  useEffect(() => {
+    const checkStorage = async () => {
+      try {
+        const { data: buckets, error } = await supabase.storage.listBuckets();
+        
+        if (error) {
+          console.error("Storage check error:", error);
+          setStorageAlert("Image uploads are disabled because the storage service is not available.");
+          return;
+        }
+        
+        const hasImagesBucket = buckets?.some(bucket => bucket.id === 'images');
+        if (!hasImagesBucket) {
+          setStorageAlert("Image uploads are disabled because the 'images' storage bucket is not configured.");
+        } else {
+          setStorageAlert(null);
+        }
+      } catch (error) {
+        console.error("Storage availability check error:", error);
+        setStorageAlert("Image uploads are disabled due to storage service configuration issues.");
+      }
+    };
+    
+    checkStorage();
+  }, []);
 
   const openEditDialog = (part: SparePart) => {
     setSelectedPart(part);
@@ -62,6 +93,16 @@ const SpareParts = () => {
         onAddClick={() => setIsAddDialogOpen(true)} 
         onExportClick={handleExportCSV} 
       />
+
+      {storageAlert && (
+        <Alert variant="warning" className="bg-amber-50 border-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTitle>Storage Service Issue</AlertTitle>
+          <AlertDescription>
+            {storageAlert}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <StatusCards 
         inStockParts={inStockParts} 
