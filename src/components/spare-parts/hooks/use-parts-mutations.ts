@@ -53,13 +53,12 @@ export const usePartsMutations = () => {
       // This way if the column doesn't exist, the initial insert still succeeds
       if (newPart.notes) {
         try {
-          // Use a raw SQL query to update the notes field if it exists
-          // This avoids TypeScript errors while still attempting to update the field
+          // Use our custom RPC function to update the notes field if it exists
           const { error: notesError } = await supabase
             .rpc('update_part_notes', { 
               part_id: insertedPart.id, 
               notes_value: newPart.notes 
-            });
+            } as any); // Use type assertion to bypass TypeScript checking
             
           if (notesError) {
             console.log("Could not update notes:", notesError);
@@ -181,13 +180,12 @@ export const usePartsMutations = () => {
       // Try to update notes separately
       if (updatedPart.notes !== undefined) {
         try {
-          // Use a raw SQL query to update the notes field if it exists
-          // This avoids TypeScript errors while still attempting to update the field
+          // Use our custom RPC function to update the notes field if it exists
           const { error: notesError } = await supabase
             .rpc('update_part_notes', { 
               part_id: partId, 
               notes_value: updatedPart.notes 
-            });
+            } as any); // Use type assertion to bypass TypeScript checking
             
           if (notesError) {
             console.log("Could not update notes:", notesError);

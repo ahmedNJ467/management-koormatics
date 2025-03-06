@@ -862,6 +862,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      update_part_notes: {
+        Args: {
+          part_id: string
+          notes_value: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       client_type: "organization" | "individual"
