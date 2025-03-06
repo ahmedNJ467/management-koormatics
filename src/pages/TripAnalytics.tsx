@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useTripsData } from "@/hooks/use-trips-data";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TripHeader } from "@/components/trips/TripHeader";
 import { TripSummaryCards } from "@/components/trip-analytics/TripSummaryCards";
 import { TripsByStatusChart } from "@/components/trip-analytics/TripsByStatusChart";
 import { TripsByTypeChart } from "@/components/trip-analytics/TripsByTypeChart";
@@ -23,12 +24,13 @@ export default function TripAnalytics() {
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Trip Analytics</h2>
-            <p className="text-muted-foreground">Loading trip data...</p>
-          </div>
-        </div>
+        <TripHeader 
+          calendarView={false} 
+          setCalendarView={() => {}} 
+          setBookingOpen={() => {}}
+          isAnalyticsView={true}
+        />
+        <p className="text-muted-foreground">Loading trip data...</p>
       </div>
     );
   }
@@ -36,24 +38,25 @@ export default function TripAnalytics() {
   if (!trips || trips.length === 0) {
     return (
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Trip Analytics</h2>
-            <p className="text-muted-foreground">No trip data available for analysis.</p>
-          </div>
-        </div>
+        <TripHeader 
+          calendarView={false} 
+          setCalendarView={() => {}} 
+          setBookingOpen={() => {}}
+          isAnalyticsView={true}
+        />
+        <p className="text-muted-foreground">No trip data available for analysis.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Trip Analytics</h2>
-          <p className="text-muted-foreground">Analyze trends and performance across {trips.length} trips</p>
-        </div>
-      </div>
+      <TripHeader 
+        calendarView={false} 
+        setCalendarView={() => {}} 
+        setBookingOpen={() => {}}
+        isAnalyticsView={true}
+      />
 
       <TripSummaryCards trips={trips} />
 
