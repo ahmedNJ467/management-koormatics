@@ -176,10 +176,8 @@ export default function Clients() {
         setActiveTab={setActiveTab}
         activeClients={activeClients}
         archivedClients={archivedClients}
-        activeContractClients={[]}
         filteredActiveClients={filteredActiveClients}
         filteredArchivedClients={filteredArchivedClients}
-        filteredActiveContractClients={[]}
         contactCounts={contactCounts}
         memberCounts={memberCounts}
         onClientClick={handleClientClick}

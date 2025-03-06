@@ -1,12 +1,13 @@
 
 import { Button } from "@/components/ui/button";
-import { Archive, ArchiveRestore } from "lucide-react";
+import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 
 interface ClientFormFooterProps {
   isSubmitting: boolean;
   onCancel: () => void;
   onDelete?: () => void;
   onRestore?: () => void;
+  onPermanentDelete?: () => void;
   isEditing: boolean;
   isArchived?: boolean;
 }
@@ -16,6 +17,7 @@ export function ClientFormFooter({
   onCancel,
   onDelete,
   onRestore,
+  onPermanentDelete,
   isEditing,
   isArchived = false,
 }: ClientFormFooterProps) {
@@ -37,16 +39,32 @@ export function ClientFormFooter({
         </Button>
       )}
       
-      {isArchived && onRestore && (
-        <Button 
-          type="button"
-          variant="outline"
-          className="text-green-600 border-green-600 hover:bg-green-50"
-          onClick={onRestore}
-        >
-          <ArchiveRestore className="h-4 w-4 mr-2" />
-          Restore
-        </Button>
+      {isArchived && (
+        <>
+          {onRestore && (
+            <Button 
+              type="button"
+              variant="outline"
+              className="text-green-600 border-green-600 hover:bg-green-50"
+              onClick={onRestore}
+            >
+              <ArchiveRestore className="h-4 w-4 mr-2" />
+              Restore
+            </Button>
+          )}
+          
+          {onPermanentDelete && (
+            <Button 
+              type="button"
+              variant="outline"
+              className="text-red-600 border-red-600 hover:bg-red-50"
+              onClick={onPermanentDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          )}
+        </>
       )}
       
       {!isArchived && (

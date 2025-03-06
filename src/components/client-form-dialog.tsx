@@ -24,7 +24,14 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
     setActiveTab,
     deletionError,
     handleDelete,
-    handleRestore
+    handleRestore,
+    showPermanentDeleteConfirm,
+    setShowPermanentDeleteConfirm,
+    permanentDeletionError,
+    setPermanentDeletionError,
+    isPerformingAction,
+    setIsPerformingAction,
+    handlePermanentDelete
   } = useClientDialog(client, onOpenChange, onClientDeleted);
   
   const {
@@ -145,8 +152,8 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
 
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
-      // Only allow dialog to close if we're not in the middle of confirming a delete
-      if (!showDeleteConfirm && !isSubmitting) {
+      // Only allow dialog to close if we're not in the middle of confirming a delete or performing an action
+      if (!showDeleteConfirm && !showPermanentDeleteConfirm && !isSubmitting && !isPerformingAction) {
         onOpenChange(newOpen);
       }
     }}>
@@ -172,9 +179,35 @@ export function ClientFormDialog({ open, onOpenChange, client, onClientDeleted }
           setShowDeleteConfirm(true);
         }}
         onRestore={handleRestore}
+        onPermanentDelete={() => {
+          setShowPermanentDeleteConfirm(true);
+        }}
         handleFormSubmit={handleFormSubmit}
         isArchived={!!(client?.archived || client?.is_archived)}
       />
+      
+      {showDeleteConfirm && (
+        <DeleteClientDialog
+          clientName={client?.name}
+          isOpen={showDeleteConfirm}
+          onOpenChange={setShowDeleteConfirm}
+          onConfirm={handleDelete}
+          error={deletionError}
+          archiveMode={true}
+        />
+      )}
+      
+      {showPermanentDeleteConfirm && (
+        <DeleteClientDialog
+          clientName={client?.name}
+          isOpen={showPermanentDeleteConfirm}
+          onOpenChange={setShowPermanentDeleteConfirm}
+          onConfirm={handlePermanentDelete}
+          error={permanentDeletionError}
+          permanentDelete={true}
+          isSubmitting={isPerformingAction}
+        />
+      )}
     </Dialog>
   );
 }

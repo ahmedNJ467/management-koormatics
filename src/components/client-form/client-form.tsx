@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { ClientTabs } from "./client-tabs";
 import { ClientFormFooter } from "./client-form-footer";
@@ -24,6 +23,7 @@ interface ClientFormProps {
   onCancel: () => void;
   onDelete: () => void;
   onRestore?: () => void;
+  onPermanentDelete?: () => void;
   handleSubmitForm: (values: any) => Promise<boolean>;
   isArchived?: boolean;
 }
@@ -47,6 +47,7 @@ export function ClientForm({
   onCancel,
   onDelete,
   onRestore,
+  onPermanentDelete,
   handleSubmitForm,
   isArchived = false
 }: ClientFormProps) {
@@ -98,6 +99,7 @@ export function ClientForm({
         onCancel={onCancel}
         onDelete={onDelete}
         onRestore={onRestore}
+        onPermanentDelete={onPermanentDelete}
         isEditing={!!client}
         isArchived={isArchived}
       />

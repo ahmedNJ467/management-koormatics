@@ -25,10 +25,8 @@ interface ClientTabsProps {
   setActiveTab: (tab: string) => void;
   activeClients: Client[];
   archivedClients: Client[];
-  activeContractClients: Client[];
   filteredActiveClients: Client[];
   filteredArchivedClients: Client[];
-  filteredActiveContractClients: Client[];
   contactCounts?: Record<string, number>;
   memberCounts?: Record<string, number>;
   onClientClick: (client: Client) => void;
