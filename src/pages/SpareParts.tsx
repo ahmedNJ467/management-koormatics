@@ -89,7 +89,10 @@ const SpareParts = () => {
       <AddPartDialog 
         isOpen={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onSubmit={(data) => addPartMutation.mutate(data)}
+        onSubmit={(data) => {
+          addPartMutation.mutate(data);
+          setIsAddDialogOpen(false);
+        }}
         isSubmitting={addPartMutation.isPending}
       />
 
@@ -102,6 +105,7 @@ const SpareParts = () => {
               updatedPart: data, 
               partId: selectedPart.id 
             });
+            setIsEditDialogOpen(false);
           }
         }}
         isSubmitting={updatePartMutation.isPending}
@@ -114,6 +118,7 @@ const SpareParts = () => {
         onConfirm={() => {
           if (selectedPart) {
             deletePartMutation.mutate(selectedPart.id);
+            setIsDeleteDialogOpen(false);
           }
         }}
         isDeleting={deletePartMutation.isPending}

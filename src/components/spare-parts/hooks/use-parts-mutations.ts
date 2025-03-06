@@ -124,7 +124,7 @@ export const usePartsMutations = () => {
 
       if (error) throw error;
 
-      if (updatedPart.part_image) {
+      if (updatedPart.part_image instanceof File) {
         const fileExt = updatedPart.part_image.name.split(".").pop();
         const fileName = `${partId}.${fileExt}`;
         const filePath = `parts/${fileName}`;

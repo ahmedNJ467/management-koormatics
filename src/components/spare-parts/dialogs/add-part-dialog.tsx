@@ -28,10 +28,7 @@ export const AddPartDialog = ({
         </DialogHeader>
         
         <PartForm 
-          onSubmit={(data) => {
-            console.log("Add form submitted with data:", data);
-            onSubmit(data);
-          }}
+          onSubmit={onSubmit}
           onCancel={() => onOpenChange(false)}
           isSubmitting={isSubmitting}
         />

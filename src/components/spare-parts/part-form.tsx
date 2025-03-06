@@ -46,8 +46,6 @@ export const PartForm = ({
     }
   });
 
-  const imageInputRef = form.register("part_image");
-
   const handleFormSubmit = (data: z.infer<typeof PartFormSchema>) => {
     console.log("Form submitted with data:", data);
     onSubmit(data);
@@ -63,7 +61,7 @@ export const PartForm = ({
             <InventoryDetails form={form} />
             
             <ImageUpload 
-              imageInputRef={imageInputRef}
+              imageInputRef={form.register("part_image")}
               existingImage={existingImage}
               previewUrl={previewUrl}
               setPreviewUrl={setPreviewUrl}

@@ -33,10 +33,7 @@ export const EditPartDialog = ({
         </DialogHeader>
         
         <PartForm 
-          onSubmit={(data) => {
-            console.log("Edit form submitted with data:", data);
-            onSubmit(data);
-          }}
+          onSubmit={onSubmit}
           onCancel={() => onOpenChange(false)}
           isSubmitting={isSubmitting}
           defaultValues={{
