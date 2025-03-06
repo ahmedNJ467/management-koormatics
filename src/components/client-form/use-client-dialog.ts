@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -98,32 +97,30 @@ export function useClientDialog(
       setIsPerformingAction(true);
       setPermanentDeletionError(null);
       
-      // Check if there are any ACTIVE trips associated with this client
-      // Only count trips that haven't been cancelled
-      const { data: relatedTrips, error: tripsCheckError } = await supabase
+      // First, update all related trips to null their client_id
+      // This is a safer approach than checking for trips first
+      const { error: tripUpdateError } = await supabase
         .from("trips")
-        .select("id")
-        .eq("client_id", client.id)
-        .neq("status", "cancelled");
+        .update({ client_id: null })
+        .eq("client_id", client.id);
       
-      if (tripsCheckError) throw tripsCheckError;
+      if (tripUpdateError) throw tripUpdateError;
       
-      // If there are active related trips, we can't delete the client
-      if (relatedTrips && relatedTrips.length > 0) {
-        throw new Error(`Cannot delete client because it has ${relatedTrips.length} active trips. Please delete or cancel these trips first, or assign them to a different client.`);
-      }
-      
-      // First delete related contacts
-      await supabase
+      // Delete related contacts
+      const { error: contactsError } = await supabase
         .from("client_contacts")
         .delete()
         .eq("client_id", client.id);
       
-      // Then delete related members
-      await supabase
+      if (contactsError) throw contactsError;
+      
+      // Delete related members
+      const { error: membersError } = await supabase
         .from("client_members")
         .delete()
         .eq("client_id", client.id);
+      
+      if (membersError) throw membersError;
       
       // Finally delete the client
       const { error } = await supabase

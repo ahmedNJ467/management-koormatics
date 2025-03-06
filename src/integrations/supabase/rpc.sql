@@ -72,3 +72,29 @@ BEGIN
 END;
 $$;
 
+-- Function to modify client_id to be nullable in trips table
+CREATE OR REPLACE FUNCTION public.modify_trips_client_id_nullable()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Check if the constraint exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'trips_client_id_fkey'
+  ) THEN
+    -- Drop the existing foreign key constraint
+    ALTER TABLE public.trips DROP CONSTRAINT trips_client_id_fkey;
+  END IF;
+  
+  -- Alter the column to be nullable
+  ALTER TABLE public.trips ALTER COLUMN client_id DROP NOT NULL;
+  
+  -- Add the foreign key constraint back, but with ON DELETE SET NULL
+  ALTER TABLE public.trips 
+  ADD CONSTRAINT trips_client_id_fkey
+  FOREIGN KEY (client_id)
+  REFERENCES public.clients(id)
+  ON DELETE SET NULL;
+END;
+$$;
