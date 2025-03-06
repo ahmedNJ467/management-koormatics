@@ -1,10 +1,11 @@
 
 import { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   id: string;
-  email: string;
+  email: string | undefined;
 }
 
 interface AuthContextProps {
@@ -23,6 +24,16 @@ const AuthContext = createContext<AuthContextProps>({
   signOut: async () => {},
 });
 
+// Helper function to convert Supabase user to our User type
+const formatUser = (supabaseUser: SupabaseUser | null): User | null => {
+  if (!supabaseUser) return null;
+  
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email,
+  };
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const fetchSession = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        setUser(data.session?.user || null);
+        setUser(formatUser(data.session?.user || null));
       } catch (error) {
         console.error("Error fetching session:", error);
         setUser(null);
@@ -44,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user || null);
+        setUser(formatUser(session?.user || null));
         setIsLoading(false);
       }
     );

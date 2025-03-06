@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, Routes, Route, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/layouts/MainLayout";
@@ -17,8 +18,8 @@ import {
   Reports,
   Settings,
   Trips,
+  TripAnalytics
 } from "@/pages";
-import TripAnalytics from "./pages/TripAnalytics";
 
 const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -45,55 +46,55 @@ const App = () => {
   const routes = [
     {
       path: "/login",
-      element: <Login />,
+      element: <Login />
     },
     {
       path: "/register",
-      element: <Register />,
+      element: <Register />
     },
     {
       path: "/forgot-password",
-      element: <ForgotPassword />,
+      element: <ForgotPassword />
     },
     {
       path: "/reset-password",
-      element: <ResetPassword />,
+      element: <ResetPassword />
     },
     {
       path: "/",
-      element: <Home />,
+      element: <Home />
     },
     {
       path: "/vehicles",
-      element: <Vehicles />,
+      element: <Vehicles />
     },
     {
       path: "/drivers",
-      element: <Drivers />,
+      element: <Drivers />
     },
     {
       path: "/clients",
-      element: <Clients />,
+      element: <Clients />
     },
     {
       path: "/alerts",
-      element: <Alerts />,
+      element: <Alerts />
     },
     {
       path: "/reports",
-      element: <Reports />,
+      element: <Reports />
     },
     {
       path: "/settings",
-      element: <Settings />,
+      element: <Settings />
     },
     {
       path: "/trips",
-      element: <Trips />,
+      element: <Trips />
     },
     {
       path: "/trip-analytics",
-      element: <TripAnalytics />,
+      element: <TripAnalytics />
     },
   ];
 
