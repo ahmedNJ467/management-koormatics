@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ClientCard } from "./client-card";
@@ -82,44 +81,13 @@ export function ClientTabs({
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredArchivedClients.length > 0 ? (
             filteredArchivedClients.map((client) => (
-              <div key={client.id} className="relative">
-                <ClientCard
-                  client={client}
-                  contactsCount={client.type === "organization" ? contactCounts?.[client.id] : undefined}
-                  membersCount={client.type === "organization" ? memberCounts?.[client.id] : undefined}
-                  onClick={onClientClick}
-                />
-                <div className="absolute bottom-4 right-4 flex gap-2">
-                  {onClientRestore && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="bg-white text-green-600 border-green-600 hover:bg-green-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClientRestore(client);
-                      }}
-                    >
-                      <ArchiveRestore className="h-4 w-4 mr-1" />
-                      Restore
-                    </Button>
-                  )}
-                  {onClientDelete && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="bg-white text-red-600 border-red-600 hover:bg-red-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClientDelete(client);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <ClientCard
+                key={client.id}
+                client={client}
+                contactsCount={client.type === "organization" ? contactCounts?.[client.id] : undefined}
+                membersCount={client.type === "organization" ? memberCounts?.[client.id] : undefined}
+                onClick={onClientClick}
+              />
             ))
           ) : (
             <div className="col-span-3 text-center py-10">
