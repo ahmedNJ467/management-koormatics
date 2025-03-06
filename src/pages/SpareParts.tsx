@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { SparePart } from "@/components/spare-parts/types";
@@ -33,7 +32,6 @@ const SpareParts = () => {
   const { addPartMutation, updatePartMutation, deletePartMutation, isStorageAvailable } = usePartsMutations();
   const { searchQuery, setSearchQuery, filteredParts, inStockParts, lowStockParts, outOfStockParts } = usePartsFilter(spareParts);
 
-  // Check storage availability
   useEffect(() => {
     const checkStorage = async () => {
       try {
@@ -95,7 +93,7 @@ const SpareParts = () => {
       />
 
       {storageAlert && (
-        <Alert variant="warning" className="bg-amber-50 border-amber-200">
+        <Alert variant="destructive" className="bg-amber-50 border-amber-200">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
           <AlertTitle>Storage Service Issue</AlertTitle>
           <AlertDescription>
