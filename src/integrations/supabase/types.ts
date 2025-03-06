@@ -676,7 +676,7 @@ export type Database = {
         Row: {
           airline: string | null
           amount: number
-          client_id: string
+          client_id: string | null
           created_at: string | null
           date: string
           driver_id: string
@@ -699,7 +699,7 @@ export type Database = {
         Insert: {
           airline?: string | null
           amount?: number
-          client_id: string
+          client_id?: string | null
           created_at?: string | null
           date: string
           driver_id: string
@@ -722,7 +722,7 @@ export type Database = {
         Update: {
           airline?: string | null
           amount?: number
-          client_id?: string
+          client_id?: string | null
           created_at?: string | null
           date?: string
           driver_id?: string
@@ -859,6 +859,10 @@ export type Database = {
     }
     Functions: {
       create_client_members_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      modify_trips_client_id_nullable: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

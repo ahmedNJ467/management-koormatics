@@ -97,14 +97,8 @@ export function useClientDialog(
       setIsPerformingAction(true);
       setPermanentDeletionError(null);
       
-      // First, update all related trips to null their client_id
-      // This is a safer approach than checking for trips first
-      const { error: tripUpdateError } = await supabase
-        .from("trips")
-        .update({ client_id: null })
-        .eq("client_id", client.id);
-      
-      if (tripUpdateError) throw tripUpdateError;
+      // With our updated database constraint, we can just delete the client directly
+      // The ON DELETE SET NULL constraint will handle setting client_id to NULL in trips
       
       // Delete related contacts
       const { error: contactsError } = await supabase
