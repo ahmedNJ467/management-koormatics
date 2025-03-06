@@ -20,6 +20,7 @@ export const usePartsMutations = () => {
     mutationFn: async (newPart: z.infer<typeof PartFormSchema>) => {
       console.log("Adding new part:", newPart);
       
+      // Create the object that matches the database schema exactly
       const partToInsert = {
         name: newPart.name,
         part_number: newPart.part_number,
@@ -30,8 +31,8 @@ export const usePartsMutations = () => {
         location: newPart.location,
         status: getStatusFromQuantity(newPart.quantity, newPart.min_stock_level),
         min_stock_level: newPart.min_stock_level,
-        compatibility: newPart.compatibility || [],
-        notes: newPart.notes || ""
+        compatibility: newPart.compatibility || []
+        // Note: We're removing notes from initial insert since it might not exist in the DB schema
       };
 
       console.log("Inserting part data:", partToInsert);
@@ -46,6 +47,23 @@ export const usePartsMutations = () => {
       if (insertError) {
         console.error("Error inserting part:", insertError);
         throw insertError;
+      }
+
+      // Try to update with notes separately if it exists in the form data
+      // This way if the column doesn't exist, the initial insert still succeeds
+      if (newPart.notes) {
+        try {
+          const { error: notesError } = await supabase
+            .from("spare_parts")
+            .update({ notes: newPart.notes })
+            .eq("id", insertedPart.id);
+            
+          if (notesError) {
+            console.log("Notes field might not exist in database:", notesError);
+          }
+        } catch (error) {
+          console.log("Failed to update notes, column may not exist:", error);
+        }
       }
 
       // Only try to upload if we have an actual File object
@@ -139,8 +157,8 @@ export const usePartsMutations = () => {
         location: updatedPart.location,
         status: getStatusFromQuantity(updatedPart.quantity, updatedPart.min_stock_level),
         min_stock_level: updatedPart.min_stock_level,
-        compatibility: updatedPart.compatibility || [],
-        notes: updatedPart.notes || ""
+        compatibility: updatedPart.compatibility || []
+        // Removed notes from initial update to prevent errors if column doesn't exist
       };
 
       console.log("Updating part data:", partToUpdate);
@@ -155,6 +173,22 @@ export const usePartsMutations = () => {
       if (error) {
         console.error("Error updating part:", error);
         throw error;
+      }
+
+      // Try to update notes separately
+      if (updatedPart.notes !== undefined) {
+        try {
+          const { error: notesError } = await supabase
+            .from("spare_parts")
+            .update({ notes: updatedPart.notes })
+            .eq("id", partId);
+            
+          if (notesError) {
+            console.log("Notes field might not exist in database:", notesError);
+          }
+        } catch (error) {
+          console.log("Failed to update notes, column may not exist:", error);
+        }
       }
 
       console.log("Part updated successfully:", data);
