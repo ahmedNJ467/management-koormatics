@@ -1,4 +1,5 @@
 
-import { useToast as useShadcnToast } from "@/components/ui/use-toast";
+// Re-export the useToast hook from the UI component
+import { useToast, toast } from "@/components/ui/use-toast";
 
-export const useToast = useShadcnToast;
+export { useToast, toast };
