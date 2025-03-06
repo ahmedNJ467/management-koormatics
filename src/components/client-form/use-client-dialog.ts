@@ -98,17 +98,19 @@ export function useClientDialog(
       setIsPerformingAction(true);
       setPermanentDeletionError(null);
       
-      // Check if there are any trips associated with this client
+      // Check if there are any ACTIVE trips associated with this client
+      // Only count trips that haven't been cancelled
       const { data: relatedTrips, error: tripsCheckError } = await supabase
         .from("trips")
         .select("id")
-        .eq("client_id", client.id);
+        .eq("client_id", client.id)
+        .neq("status", "cancelled");
       
       if (tripsCheckError) throw tripsCheckError;
       
-      // If there are related trips, we can't delete the client
+      // If there are active related trips, we can't delete the client
       if (relatedTrips && relatedTrips.length > 0) {
-        throw new Error(`Cannot delete client because it has ${relatedTrips.length} associated trips. Please delete the trips first or assign them to a different client.`);
+        throw new Error(`Cannot delete client because it has ${relatedTrips.length} active trips. Please delete or cancel these trips first, or assign them to a different client.`);
       }
       
       // First delete related contacts
