@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useTripsData } from "@/hooks/use-trips-data";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -10,6 +9,7 @@ import { TripsByTypeChart } from "@/components/trip-analytics/TripsByTypeChart";
 import { MonthlyTripChart } from "@/components/trip-analytics/MonthlyTripChart";
 import { DriverPerformance } from "@/components/trip-analytics/DriverPerformance";
 import { PopularRoutes } from "@/components/trip-analytics/PopularRoutes";
+import { TopClientsChart } from "@/components/trip-analytics/TopClientsChart";
 import { toast } from "@/components/ui/use-toast";
 
 export default function TripAnalytics() {
@@ -61,11 +61,12 @@ export default function TripAnalytics() {
       <TripSummaryCards trips={trips} />
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="monthly">Monthly Trends</TabsTrigger>
           <TabsTrigger value="drivers">Driver Performance</TabsTrigger>
           <TabsTrigger value="routes">Popular Routes</TabsTrigger>
+          <TabsTrigger value="clients">Top Clients</TabsTrigger>
           <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
         </TabsList>
         
@@ -111,6 +112,18 @@ export default function TripAnalytics() {
         
         <TabsContent value="routes" className="pt-4">
           <PopularRoutes trips={trips} />
+        </TabsContent>
+        
+        <TabsContent value="clients" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Clients by Trip Volume</CardTitle>
+              <CardDescription>Clients who book the most trips</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TopClientsChart trips={trips} />
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="revenue" className="space-y-6 pt-4">
