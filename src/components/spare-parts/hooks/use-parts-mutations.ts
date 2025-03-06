@@ -32,7 +32,7 @@ export const usePartsMutations = () => {
         status: getStatusFromQuantity(newPart.quantity, newPart.min_stock_level),
         min_stock_level: newPart.min_stock_level,
         compatibility: newPart.compatibility || []
-        // Note: We're removing notes from initial insert since it might not exist in the DB schema
+        // Note: We're removing part_image and notes from initial insert since they might not exist in the DB schema
       };
 
       console.log("Inserting part data:", partToInsert);
@@ -69,9 +69,31 @@ export const usePartsMutations = () => {
         }
       }
 
-      // Only try to upload if we have an actual File object
+      // Only try to upload and update part_image if we have an actual File object
+      // and after verifying the column exists
       if (newPart.part_image instanceof File) {
         try {
+          // First check if the part_image column exists
+          const { data: columnCheck } = await supabase
+            .from('spare_parts')
+            .select('part_image')
+            .limit(1);
+          
+          const hasPartImageColumn = columnCheck && 
+                                     columnCheck.length > 0 && 
+                                     'part_image' in columnCheck[0];
+          
+          if (!hasPartImageColumn) {
+            console.log("part_image column does not exist in the database");
+            toast({
+              title: "Image upload skipped",
+              description: "The part was saved but the database doesn't support image uploads",
+              variant: "warning",
+            });
+            return insertedPart;
+          }
+          
+          // If column exists, proceed with upload
           const fileExt = newPart.part_image.name.split(".").pop();
           const fileName = `${insertedPart.id}.${fileExt}`;
           const filePath = `parts/${fileName}`;
@@ -85,7 +107,6 @@ export const usePartsMutations = () => {
 
           if (uploadError) {
             console.error("Error uploading image:", uploadError);
-            // Don't throw here, just show a toast
             toast({
               title: "Image upload failed",
               description: "The part was saved but we couldn't upload the image",
@@ -107,7 +128,6 @@ export const usePartsMutations = () => {
 
           if (updateError) {
             console.error("Error updating part with image path:", updateError);
-            // Don't throw here, just show a toast
             toast({
               title: "Image path update failed",
               description: "The part and image were saved but the link wasn't updated",
@@ -116,7 +136,6 @@ export const usePartsMutations = () => {
           }
         } catch (uploadError) {
           console.error("Image upload error:", uploadError);
-          // Don't throw here, just show a toast
           toast({
             title: "Image upload failed",
             description: "The part was saved but we couldn't upload the image",
@@ -161,7 +180,7 @@ export const usePartsMutations = () => {
         status: getStatusFromQuantity(updatedPart.quantity, updatedPart.min_stock_level),
         min_stock_level: updatedPart.min_stock_level,
         compatibility: updatedPart.compatibility || []
-        // Removed notes from initial update to prevent errors if column doesn't exist
+        // Removed part_image and notes from initial update to prevent errors if columns don't exist
       };
 
       console.log("Updating part data:", partToUpdate);
@@ -202,6 +221,27 @@ export const usePartsMutations = () => {
       // Handle image upload for update if a new file was selected
       if (updatedPart.part_image instanceof File) {
         try {
+          // First check if the part_image column exists
+          const { data: columnCheck } = await supabase
+            .from('spare_parts')
+            .select('part_image')
+            .limit(1);
+          
+          const hasPartImageColumn = columnCheck && 
+                                     columnCheck.length > 0 && 
+                                     'part_image' in columnCheck[0];
+          
+          if (!hasPartImageColumn) {
+            console.log("part_image column does not exist in the database");
+            toast({
+              title: "Image upload skipped",
+              description: "The part was updated but the database doesn't support image uploads",
+              variant: "warning",
+            });
+            return data;
+          }
+          
+          // If column exists, proceed with upload
           const fileExt = updatedPart.part_image.name.split(".").pop();
           const fileName = `${partId}.${fileExt}`;
           const filePath = `parts/${fileName}`;
