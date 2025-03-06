@@ -142,8 +142,8 @@ export function useMembers(initialMembers: MemberFormValues[], onMembersChange: 
   const clearMemberDocument = () => {
     setMemberFormState({
       ...memberFormState,
-      document_url: "",
-      document_name: "",
+      document_url: undefined,
+      document_name: undefined,
       tempFile: undefined
     });
   };

@@ -1,10 +1,10 @@
 
 import React from "react";
 import { useForm } from "react-hook-form";
-import { MemberFormHeader } from "./member-form-fields/form-header";
-import { MemberBasicInfoFields } from "./member-form-fields/basic-info-fields";
-import { MemberNotesField } from "./member-form-fields/notes-field";
-import { MemberFormActions } from "./member-form-fields/form-actions";
+import { FormHeader } from "./member-form-fields/form-header";
+import { BasicInfoFields } from "./member-form-fields/basic-info-fields";
+import { NotesField } from "./member-form-fields/notes-field";
+import { FormActions } from "./member-form-fields/form-actions";
 import { MemberFormValues } from "./types";
 import { MemberDocumentUpload } from "./member-document-upload";
 
@@ -40,12 +40,40 @@ export function MemberForm({
     return () => subscription.unsubscribe();
   }, [form, onMemberChange]);
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({ ...member, name: e.target.value });
+  };
+
+  const handleRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({ ...member, role: e.target.value });
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({ ...member, email: e.target.value });
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onMemberChange({ ...member, phone: e.target.value });
+  };
+  
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onMemberChange({ ...member, notes: e.target.value });
+  };
+
   return (
     <form onSubmit={form.handleSubmit(onSave)} className="space-y-6">
-      <MemberFormHeader isEditing={isEditing} />
+      <FormHeader isEditing={isEditing} onCancel={onCancel} />
       
       <div className="grid gap-6">
-        <MemberBasicInfoFields form={form} />
+        <BasicInfoFields 
+          member={member} 
+          onChange={{
+            handleNameChange,
+            handleRoleChange,
+            handleEmailChange,
+            handlePhoneChange
+          }} 
+        />
         
         <MemberDocumentUpload
           documentUrl={member.document_url}
@@ -54,13 +82,16 @@ export function MemberForm({
           onDocumentCleared={onDocumentClear}
         />
         
-        <MemberNotesField form={form} />
+        <NotesField 
+          value={member.notes || ""} 
+          onChange={handleNotesChange} 
+        />
       </div>
       
-      <MemberFormActions
-        onCancel={onCancel}
+      <FormActions
         isEditing={isEditing}
-        isSubmitting={form.formState.isSubmitting}
+        onCancel={onCancel}
+        onSave={onSave}
       />
     </form>
   );

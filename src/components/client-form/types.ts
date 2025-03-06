@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 
 export const contactSchema = z.object({
@@ -33,7 +34,9 @@ export const clientSchema = z.object({
 });
 
 export type ContactFormValues = z.infer<typeof contactSchema>;
-export type MemberFormValues = z.infer<typeof memberSchema>;
+export type MemberFormValues = z.infer<typeof memberSchema> & {
+  tempFile?: File; // Add tempFile property
+};
 export type ClientFormValues = z.infer<typeof clientSchema>;
 export type ClientDocument = {
   id: string;
@@ -64,17 +67,5 @@ export type ClientMember = {
   document_name?: string;
   tempId?: string;
   client_id?: string;
+  tempFile?: File;
 };
-
-export interface MemberFormValues {
-  id?: string;
-  name: string;
-  role?: string;
-  email?: string;
-  phone?: string;
-  notes?: string;
-  document_url?: string;
-  document_name?: string;
-  tempId?: string; // Temporary ID for document handling
-  tempFile?: File; // Temporary file for upload
-}
