@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,32 +45,40 @@ export default function Contracts() {
   });
   const [contractFile, setContractFile] = useState<File | null>(null);
   const [isStorageAvailable, setIsStorageAvailable] = useState<boolean>(true);
+  const [storageError, setStorageError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query to fetch contracts
   const { data: contracts = [], isLoading, isError } = useQuery({
     queryKey: ["contracts"],
     queryFn: fetchContracts,
   });
 
-  // Check if storage is available
   useEffect(() => {
     const checkStorage = async () => {
       try {
-        // Try to get bucket info as a simple check
-        const { error } = await supabase.storage.getBucket("documents");
-        setIsStorageAvailable(!error);
+        console.log("Checking storage availability...");
+        const { data, error } = await supabase.storage.from('documents').list();
+        
+        if (error) {
+          console.error("Storage check error:", error);
+          setIsStorageAvailable(false);
+          setStorageError(error.message);
+        } else {
+          console.log("Storage is available, found", data?.length, "files");
+          setIsStorageAvailable(true);
+          setStorageError(null);
+        }
       } catch (error) {
-        console.error("Storage check error:", error);
+        console.error("Storage check exception:", error);
         setIsStorageAvailable(false);
+        setStorageError(error instanceof Error ? error.message : "Unknown error");
       }
     };
     
     checkStorage();
   }, []);
 
-  // Mutation to add a new contract
   const addContractMutation = useMutation({
     mutationFn: async (newContract: Partial<Contract>) => {
       return addContract(newContract, contractFile);
@@ -95,7 +102,6 @@ export default function Contracts() {
     },
   });
 
-  // Mutation to update an existing contract
   const updateContractMutation = useMutation({
     mutationFn: async (updatedContract: Partial<Contract>) => {
       if (!selectedContract?.id) throw new Error("No contract selected");
@@ -120,7 +126,6 @@ export default function Contracts() {
     },
   });
 
-  // Mutation to delete a contract
   const deleteContractMutation = useMutation({
     mutationFn: deleteContract,
     onSuccess: () => {
@@ -140,12 +145,10 @@ export default function Contracts() {
     },
   });
 
-  // Function to download contract file
   const handleDownloadContract = async (contract: Contract) => {
     try {
       const data = await downloadContractFile(contract);
       
-      // Create download link
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
       a.href = url;
@@ -223,13 +226,11 @@ export default function Contracts() {
     }
   };
 
-  // Filter contracts based on search query
   const filteredContracts = contracts.filter((contract) =>
     contract.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     contract.client_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group contracts by status
   const activeContracts = filteredContracts.filter((c) => c.status === "active");
   const pendingContracts = filteredContracts.filter((c) => c.status === "pending");
   const expiredContracts = filteredContracts.filter((c) => c.status === "expired");
@@ -258,12 +259,15 @@ export default function Contracts() {
       </div>
 
       {!isStorageAvailable && (
-        <Alert variant="warning">
+        <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Storage Service Issue</AlertTitle>
           <AlertDescription>
-            Document uploads and downloads are disabled because the storage service is not properly configured.
-            Contracts can still be managed, but without document attachments.
+            Document uploads and downloads are currently unavailable. 
+            {storageError && <div className="mt-2 text-sm">Error: {storageError}</div>}
+            <div className="mt-2">
+              Contracts can still be managed, but without document attachments.
+            </div>
           </AlertDescription>
         </Alert>
       )}
@@ -329,7 +333,6 @@ export default function Contracts() {
         </CardContent>
       </Card>
 
-      {/* Add Contract Dialog */}
       <AddContractDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
@@ -341,7 +344,6 @@ export default function Contracts() {
         isStorageAvailable={isStorageAvailable}
       />
 
-      {/* Edit Contract Dialog */}
       <EditContractDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
