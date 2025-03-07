@@ -111,7 +111,7 @@ export default function Clients() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       
       toast({
-        title: "Client permanently deleted",
+        title: "Client deleted",
         description: "The client has been completely removed from the system.",
         variant: "destructive", // Use destructive variant for deletion toast
       });
