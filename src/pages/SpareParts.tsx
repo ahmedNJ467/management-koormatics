@@ -14,6 +14,8 @@ import { EditPartDialog } from "@/components/spare-parts/dialogs/edit-part-dialo
 import { DeletePartDialog } from "@/components/spare-parts/dialogs/delete-part-dialog";
 import { exportToCSV } from "@/components/reports/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const SpareParts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -24,7 +26,7 @@ const SpareParts = () => {
   const { toast } = useToast();
   const { sortConfig, handleSort } = usePartsSorting();
   const { data: spareParts = [], isLoading, isError } = useSparePartsQuery(sortConfig);
-  const { addPartMutation, updatePartMutation, deletePartMutation } = usePartsMutations();
+  const { addPartMutation, updatePartMutation, deletePartMutation, isStorageAvailable } = usePartsMutations();
   const { searchQuery, setSearchQuery, filteredParts, inStockParts, lowStockParts, outOfStockParts } = usePartsFilter(spareParts);
 
   const openEditDialog = (part: SparePart) => {
@@ -54,12 +56,37 @@ const SpareParts = () => {
     }
   };
 
+  if (isError) {
+    return (
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Failed to load spare parts data. Please try refreshing the page.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <HeaderActions 
         onAddClick={() => setIsAddDialogOpen(true)} 
         onExportClick={handleExportCSV} 
       />
+
+      {isStorageAvailable === false && (
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Storage Service Issue</AlertTitle>
+          <AlertDescription>
+            Image uploads are disabled because the storage service is not properly configured.
+            Parts can still be added and edited, but without images.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <StatusCards 
         inStockParts={inStockParts} 
