@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,10 +37,11 @@ export function useClientDialog(
       setShowDeleteConfirm(false);
       onOpenChange(false);
       
-      // Show success message
+      // Show success message with correct wording for archiving
       toast({
         title: "Client archived",
-        description: "The client has been moved to the archive.",
+        description: `${client.name} has been moved to the archive.`,
+        variant: "default",
       });
       
       // Refresh the client list
@@ -74,7 +76,7 @@ export function useClientDialog(
       // Show success message
       toast({
         title: "Client restored",
-        description: "The client has been restored from the archive.",
+        description: `${client.name} has been restored from the archive.`,
       });
       
       // Refresh the client list
@@ -113,7 +115,7 @@ export function useClientDialog(
       // Show success message with different styling and wording for permanent deletion
       toast({
         title: "Client deleted",
-        description: "The client has been completely removed from the system.",
+        description: `${client.name} has been completely removed from the system.`,
         variant: "destructive", // Use destructive variant for deletion toast
       });
       
