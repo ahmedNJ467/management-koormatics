@@ -39,7 +39,7 @@ export function useClientDialog(
       
       // Show success message with correct wording for archiving
       toast({
-        title: "Client archived",
+        title: "Client archived", // Correct title for archiving
         description: `${client.name} has been moved to the archive.`,
         variant: "default",
       });
