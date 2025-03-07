@@ -7,13 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { AlertsListProps } from "./types";
 
-export const AlertsList = () => {
+export const AlertsList = ({ filterPriority }: AlertsListProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
     resolved: false,
-    priority: "",
+    priority: filterPriority || "",
     type: "",
   });
 
