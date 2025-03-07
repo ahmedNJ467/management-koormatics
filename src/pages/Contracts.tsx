@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import {
 } from "@/components/contracts/ContractService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Contract {
   id: string;
@@ -55,7 +56,7 @@ export default function Contracts() {
   });
 
   // Check if storage is available
-  useState(() => {
+  useEffect(() => {
     const checkStorage = async () => {
       try {
         // Try to get bucket info as a simple check
