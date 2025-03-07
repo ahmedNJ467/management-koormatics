@@ -1,8 +1,6 @@
 
-import { useState, useEffect } from "react";
-import { z } from "zod";
+import { useState } from "react";
 import { SparePart } from "@/components/spare-parts/types";
-import { PartFormSchema } from "@/components/spare-parts/schemas/spare-part-schema";
 import { usePartsFilter } from "@/components/spare-parts/hooks/use-parts-filter";
 import { usePartsMutations } from "@/components/spare-parts/hooks/use-parts-mutations";
 import { usePartsSorting } from "@/components/spare-parts/hooks/use-parts-sorting";
@@ -16,8 +14,6 @@ import { EditPartDialog } from "@/components/spare-parts/dialogs/edit-part-dialo
 import { DeletePartDialog } from "@/components/spare-parts/dialogs/delete-part-dialog";
 import { exportToCSV } from "@/components/reports/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
 
 const SpareParts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -27,8 +23,8 @@ const SpareParts = () => {
   
   const { toast } = useToast();
   const { sortConfig, handleSort } = usePartsSorting();
-  const { data: spareParts = [], isLoading, isError, error } = useSparePartsQuery(sortConfig);
-  const { addPartMutation, updatePartMutation, deletePartMutation, isStorageAvailable } = usePartsMutations();
+  const { data: spareParts = [], isLoading, isError } = useSparePartsQuery(sortConfig);
+  const { addPartMutation, updatePartMutation, deletePartMutation } = usePartsMutations();
   const { searchQuery, setSearchQuery, filteredParts, inStockParts, lowStockParts, outOfStockParts } = usePartsFilter(spareParts);
 
   const openEditDialog = (part: SparePart) => {
@@ -58,36 +54,12 @@ const SpareParts = () => {
     }
   };
 
-  if (isError) {
-    return (
-      <div className="container mx-auto py-6">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {error instanceof Error ? error.message : "Failed to load spare parts data"}
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto py-6 space-y-6">
       <HeaderActions 
         onAddClick={() => setIsAddDialogOpen(true)} 
         onExportClick={handleExportCSV} 
       />
-
-      {isStorageAvailable === false && (
-        <Alert variant="warning" className="bg-amber-50 border-amber-200">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <AlertTitle>Storage Service Issue</AlertTitle>
-          <AlertDescription>
-            Image uploads are disabled because the storage service is not properly configured.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <StatusCards 
         inStockParts={inStockParts} 
