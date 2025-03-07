@@ -49,27 +49,45 @@ export const addContract = async (
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error inserting contract:", error);
+    throw error;
+  }
 
   // Upload contract file if provided
   if (contractFile && data.id) {
-    const fileExt = contractFile.name.split(".").pop();
-    const fileName = `${data.id}.${fileExt}`;
-    const filePath = `contracts/${fileName}`;
+    try {
+      const fileExt = contractFile.name.split(".").pop();
+      const fileName = `${data.id}.${fileExt}`;
+      const filePath = `contracts/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(filePath, contractFile);
+      console.log("Uploading file:", filePath);
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from("documents")
+        .upload(filePath, contractFile);
 
-    if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("File upload error:", uploadError);
+        throw uploadError;
+      }
 
-    // Update contract with file path
-    const { error: updateError } = await supabase
-      .from("contracts")
-      .update({ contract_file: filePath })
-      .eq("id", data.id);
+      console.log("File uploaded successfully:", uploadData);
 
-    if (updateError) throw updateError;
+      // Update contract with file path
+      const { error: updateError } = await supabase
+        .from("contracts")
+        .update({ contract_file: filePath })
+        .eq("id", data.id);
+
+      if (updateError) {
+        console.error("Error updating contract with file path:", updateError);
+        throw updateError;
+      }
+    } catch (uploadError) {
+      console.error("Exception during file upload:", uploadError);
+      // We don't rethrow here to avoid losing the contract data
+      // if only the file upload fails
+    }
   }
 
   return data as Contract;
@@ -81,6 +99,8 @@ export const updateContract = async (
   contractFile: File | null
 ): Promise<Contract> => {
   if (!contractId) throw new Error("No contract selected");
+
+  console.log("Updating contract:", contractId, updatedContract);
 
   // Cast to proper type to ensure type safety
   if (updatedContract.status) {
@@ -94,27 +114,58 @@ export const updateContract = async (
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error updating contract data:", error);
+    throw error;
+  }
 
   // Upload new contract file if provided
   if (contractFile) {
-    const fileExt = contractFile.name.split(".").pop();
-    const fileName = `${contractId}.${fileExt}`;
-    const filePath = `contracts/${fileName}`;
+    try {
+      const fileExt = contractFile.name.split(".").pop();
+      const fileName = `${contractId}.${fileExt}`;
+      const filePath = `contracts/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(filePath, contractFile, { upsert: true });
+      console.log("Uploading new file for contract:", filePath);
+      
+      // First check if file exists to determine if we need upsert
+      const { data: existingFile } = await supabase.storage
+        .from("documents")
+        .list(`contracts`, {
+          search: fileName
+        });
+      
+      const fileExists = existingFile && existingFile.length > 0;
+      console.log("File exists check:", fileExists, existingFile);
 
-    if (uploadError) throw uploadError;
+      // Upload the new file (with upsert if file exists)
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from("documents")
+        .upload(filePath, contractFile, { upsert: fileExists });
 
-    // Update contract with file path
-    const { error: updateError } = await supabase
-      .from("contracts")
-      .update({ contract_file: filePath })
-      .eq("id", contractId);
+      if (uploadError) {
+        console.error("File upload error during update:", uploadError);
+        throw uploadError;
+      }
 
-    if (updateError) throw updateError;
+      console.log("File uploaded successfully during update:", uploadData);
+
+      // Update contract with file path if needed
+      if (data.contract_file !== filePath) {
+        const { error: updateError } = await supabase
+          .from("contracts")
+          .update({ contract_file: filePath })
+          .eq("id", contractId);
+
+        if (updateError) {
+          console.error("Error updating contract with new file path:", updateError);
+          throw updateError;
+        }
+      }
+    } catch (uploadError) {
+      console.error("Exception during file update:", uploadError);
+      throw uploadError;
+    }
   }
 
   return data as Contract;
@@ -128,20 +179,34 @@ export const deleteContract = async (id: string): Promise<string> => {
     .eq("id", id)
     .single();
 
-  if (fetchError) throw fetchError;
+  if (fetchError) {
+    console.error("Error fetching contract for deletion:", fetchError);
+    throw fetchError;
+  }
 
   // Delete the contract
   const { error } = await supabase.from("contracts").delete().eq("id", id);
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error deleting contract:", error);
+    throw error;
+  }
 
   // Also delete the file from storage if it exists
   if (contract?.contract_file) {
-    const { error: deleteFileError } = await supabase.storage
-      .from("documents")
-      .remove([contract.contract_file]);
+    try {
+      const { error: deleteFileError } = await supabase.storage
+        .from("documents")
+        .remove([contract.contract_file]);
 
-    if (deleteFileError) console.error("Error deleting file:", deleteFileError);
+      if (deleteFileError) {
+        console.error("Error deleting file:", deleteFileError);
+        // Don't throw here to allow contract deletion to succeed
+      }
+    } catch (deleteError) {
+      console.error("Exception during file deletion:", deleteError);
+      // Don't throw here to allow contract deletion to succeed
+    }
   }
 
   return id;
@@ -154,11 +219,15 @@ export const downloadContractFile = async (
     throw new Error("No file available");
   }
 
+  console.log("Downloading file:", contract.contract_file);
   const { data, error } = await supabase.storage
     .from("documents")
     .download(contract.contract_file);
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error downloading file:", error);
+    throw error;
+  }
 
   return data;
 };
