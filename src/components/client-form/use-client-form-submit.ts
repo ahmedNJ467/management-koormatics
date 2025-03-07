@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -93,8 +94,8 @@ export function useClientFormSubmit() {
         });
       }
 
-      // Update contacts
-      if (contacts.length > 0) {
+      // Update contacts for organization clients
+      if (values.type === 'organization' && contacts && contacts.length > 0) {
         // Delete existing contacts for this client
         if (clientId) {
           const { error } = await supabase
@@ -104,23 +105,30 @@ export function useClientFormSubmit() {
           
           if (error) {
             console.error("Error deleting contacts:", error);
+            throw error;
           }
         }
         
         // Insert new contacts
         const contactsWithClientId = contacts.map(contact => ({
-          ...contact,
-          client_id: clientId,
-          id: undefined // Let Supabase generate new IDs
+          name: contact.name,
+          position: contact.position || null,
+          email: contact.email || null,
+          phone: contact.phone || null,
+          is_primary: contact.is_primary || false,
+          client_id: clientId
         }));
         
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('client_contacts')
           .insert(contactsWithClientId);
         
-        if (error) {
-          console.error("Error inserting contacts:", error);
+        if (insertError) {
+          console.error("Error inserting contacts:", insertError);
+          throw insertError;
         }
+        
+        console.info("Saved client contacts:", contactsWithClientId.length);
       }
 
       // Update members

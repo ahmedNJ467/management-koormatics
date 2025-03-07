@@ -42,8 +42,9 @@ export default function Clients() {
     setFormOpen(false);
     setSelectedClient(null);
     toast({
-      title: "Client archived",
-      description: "The client has been moved to the archive.",
+      title: "Client deleted",
+      description: "The client has been completely removed from the system.",
+      variant: "destructive",
     });
   };
   
