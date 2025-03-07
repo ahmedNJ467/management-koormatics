@@ -17,6 +17,8 @@ import {
   deleteContract,
   downloadContractFile,
 } from "@/components/contracts/ContractService";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 export interface Contract {
   id: string;
@@ -42,14 +44,31 @@ export default function Contracts() {
     end_date: "",
   });
   const [contractFile, setContractFile] = useState<File | null>(null);
+  const [isStorageAvailable, setIsStorageAvailable] = useState<boolean>(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Query to fetch contracts
-  const { data: contracts = [], isLoading } = useQuery({
+  const { data: contracts = [], isLoading, isError } = useQuery({
     queryKey: ["contracts"],
     queryFn: fetchContracts,
   });
+
+  // Check if storage is available
+  useState(() => {
+    const checkStorage = async () => {
+      try {
+        // Try to get bucket info as a simple check
+        const { error } = await supabase.storage.getBucket("documents");
+        setIsStorageAvailable(!error);
+      } catch (error) {
+        console.error("Storage check error:", error);
+        setIsStorageAvailable(false);
+      }
+    };
+    
+    checkStorage();
+  }, []);
 
   // Mutation to add a new contract
   const addContractMutation = useMutation({
@@ -214,6 +233,20 @@ export default function Contracts() {
   const pendingContracts = filteredContracts.filter((c) => c.status === "pending");
   const expiredContracts = filteredContracts.filter((c) => c.status === "expired");
 
+  if (isError) {
+    return (
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Failed to load contracts data. Please try refreshing the page.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -222,6 +255,17 @@ export default function Contracts() {
           <Plus className="mr-2 h-4 w-4" /> Add Contract
         </Button>
       </div>
+
+      {!isStorageAvailable && (
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Storage Service Issue</AlertTitle>
+          <AlertDescription>
+            Document uploads and downloads are disabled because the storage service is not properly configured.
+            Contracts can still be managed, but without document attachments.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex items-center space-x-4">
         <Input
@@ -293,6 +337,7 @@ export default function Contracts() {
         handleFileChange={handleFileChange}
         handleSubmit={handleAddSubmit}
         isPending={addContractMutation.isPending}
+        isStorageAvailable={isStorageAvailable}
       />
 
       {/* Edit Contract Dialog */}
@@ -305,6 +350,7 @@ export default function Contracts() {
         handleFileChange={handleFileChange}
         handleSubmit={handleEditSubmit}
         isPending={updateContractMutation.isPending}
+        isStorageAvailable={isStorageAvailable}
       />
     </div>
   );

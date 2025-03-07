@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Contract } from "@/pages/Contracts";
+import { AlertTriangle, FileText } from "lucide-react";
 
 interface EditContractDialogProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface EditContractDialogProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   isPending: boolean;
+  isStorageAvailable?: boolean;
 }
 
 const EditContractDialog = ({
@@ -26,6 +28,7 @@ const EditContractDialog = ({
   handleFileChange,
   handleSubmit,
   isPending,
+  isStorageAvailable = true,
 }: EditContractDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,20 +113,32 @@ const EditContractDialog = ({
               <Label htmlFor="edit-contract_file" className="text-right">
                 Upload New File
               </Label>
-              <Input
-                id="edit-contract_file"
-                name="contract_file"
-                type="file"
-                onChange={handleFileChange}
-                className="col-span-3"
-                accept=".pdf,.doc,.docx"
-              />
+              <div className="col-span-3">
+                {isStorageAvailable ? (
+                  <Input
+                    id="edit-contract_file"
+                    name="contract_file"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="w-full"
+                    accept=".pdf,.doc,.docx"
+                  />
+                ) : (
+                  <div className="flex items-center text-amber-500 text-sm">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    File upload is currently unavailable
+                  </div>
+                )}
+              </div>
             </div>
             {selectedContract?.contract_file && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="text-right">Current File</div>
-                <div className="col-span-3 text-sm text-muted-foreground">
-                  A file is already attached
+                <div className="col-span-3 flex items-center text-sm">
+                  <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                  <span className="text-muted-foreground">
+                    A file is already attached
+                  </span>
                 </div>
               </div>
             )}

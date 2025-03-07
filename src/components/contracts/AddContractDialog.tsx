@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AlertTriangle } from "lucide-react";
 
 interface AddContractDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface AddContractDialogProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   isPending: boolean;
+  isStorageAvailable?: boolean;
 }
 
 const AddContractDialog = ({
@@ -29,6 +31,7 @@ const AddContractDialog = ({
   handleFileChange,
   handleSubmit,
   isPending,
+  isStorageAvailable = true,
 }: AddContractDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,14 +116,23 @@ const AddContractDialog = ({
               <Label htmlFor="contract_file" className="text-right">
                 Upload File
               </Label>
-              <Input
-                id="contract_file"
-                name="contract_file"
-                type="file"
-                onChange={handleFileChange}
-                className="col-span-3"
-                accept=".pdf,.doc,.docx"
-              />
+              <div className="col-span-3">
+                {isStorageAvailable ? (
+                  <Input
+                    id="contract_file"
+                    name="contract_file"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="w-full"
+                    accept=".pdf,.doc,.docx"
+                  />
+                ) : (
+                  <div className="flex items-center text-amber-500 text-sm">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    File upload is currently unavailable
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>
