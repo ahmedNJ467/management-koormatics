@@ -95,7 +95,9 @@ export function useClientFormSubmit() {
       }
 
       // Update contacts for organization clients
-      if (values.type === 'organization' && contacts && contacts.length > 0) {
+      if (values.type === 'organization') {
+        console.log("Processing organization contacts:", contacts);
+        
         // Delete existing contacts for this client
         if (clientId) {
           const { error } = await supabase
@@ -109,30 +111,35 @@ export function useClientFormSubmit() {
           }
         }
         
-        // Insert new contacts
-        const contactsWithClientId = contacts.map(contact => ({
-          name: contact.name,
-          position: contact.position || null,
-          email: contact.email || null,
-          phone: contact.phone || null,
-          is_primary: contact.is_primary || false,
-          client_id: clientId
-        }));
-        
-        const { error: insertError } = await supabase
-          .from('client_contacts')
-          .insert(contactsWithClientId);
-        
-        if (insertError) {
-          console.error("Error inserting contacts:", insertError);
-          throw insertError;
+        // Only insert contacts if there are any
+        if (contacts && contacts.length > 0) {
+          // Insert new contacts
+          const contactsWithClientId = contacts.map(contact => ({
+            name: contact.name,
+            position: contact.position || null,
+            email: contact.email || null,
+            phone: contact.phone || null,
+            is_primary: contact.is_primary || false,
+            client_id: clientId
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('client_contacts')
+            .insert(contactsWithClientId);
+          
+          if (insertError) {
+            console.error("Error inserting contacts:", insertError);
+            throw insertError;
+          }
+          
+          console.info("Saved client contacts:", contactsWithClientId.length);
         }
-        
-        console.info("Saved client contacts:", contactsWithClientId.length);
       }
 
       // Update members
-      if (members.length > 0) {
+      if (members && members.length > 0) {
+        console.log("Processing client members:", members);
+        
         // Delete existing members for this client first
         if (clientId) {
           const { error } = await supabase

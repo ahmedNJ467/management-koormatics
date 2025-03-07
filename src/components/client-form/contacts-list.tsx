@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, User } from "lucide-react";
 import { ContactFormValues } from "./types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ContactsListProps {
   contacts: ContactFormValues[];
@@ -71,29 +72,31 @@ export function ContactsList({ contacts, addContact, updateContact, removeContac
               />
             </div>
             <div className="col-span-2">
-              <label className="flex items-center space-x-2">
-                <input 
-                  type="checkbox" 
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`primary-contact-${index}`}
                   checked={contact.is_primary || false}
-                  onChange={(e) => {
-                    // Create a copy of contacts array to work with
-                    const updatedContacts = [...contacts];
-                    
-                    // If this contact is being set as primary
-                    if (e.target.checked) {
-                      // Set all contacts as non-primary first
-                      updatedContacts.forEach((c, i) => {
-                        updateContact(i, { is_primary: i === index });
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      // If this contact is being checked, uncheck all others
+                      contacts.forEach((c, i) => {
+                        if (i !== index && c.is_primary) {
+                          updateContact(i, { is_primary: false });
+                        }
                       });
-                    } else {
-                      // Just update this contact
-                      updateContact(index, { is_primary: false });
                     }
+                    
+                    // Update this contact's primary status
+                    updateContact(index, { is_primary: !!checked });
                   }}
-                  className="rounded border-gray-300"
                 />
-                <span className="text-sm font-medium">Primary Contact</span>
-              </label>
+                <label 
+                  htmlFor={`primary-contact-${index}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Primary Contact
+                </label>
+              </div>
             </div>
           </div>
         ))
