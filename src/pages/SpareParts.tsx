@@ -18,73 +18,18 @@ import { exportToCSV } from "@/components/reports/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { createPartsDirectory } from "@/components/spare-parts/utils/upload-utils";
 
 const SpareParts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
-  const [storageAlert, setStorageAlert] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { sortConfig, handleSort } = usePartsSorting();
-  const { data: spareParts = [], isLoading } = useSparePartsQuery(sortConfig);
+  const { data: spareParts = [], isLoading, isError, error } = useSparePartsQuery(sortConfig);
   const { addPartMutation, updatePartMutation, deletePartMutation, isStorageAvailable } = usePartsMutations();
   const { searchQuery, setSearchQuery, filteredParts, inStockParts, lowStockParts, outOfStockParts } = usePartsFilter(spareParts);
-
-  useEffect(() => {
-    const checkStorage = async () => {
-      try {
-        // First check if the storage service is available
-        const { data: buckets, error } = await supabase.storage.listBuckets();
-        
-        if (error) {
-          console.error("Storage check error:", error);
-          setStorageAlert("Image uploads are disabled because the storage service is not available.");
-          return;
-        }
-        
-        // Check if the images bucket exists
-        const hasImagesBucket = buckets?.some(bucket => bucket.id === 'images');
-        if (!hasImagesBucket) {
-          console.log("Images bucket not available");
-          setStorageAlert("Image uploads are disabled because the 'images' storage bucket is not configured.");
-          return;
-        }
-        
-        // Check if the parts directory exists and create it if needed
-        try {
-          const { data: files, error: dirError } = await supabase.storage
-            .from("images")
-            .list('parts');
-            
-          if (dirError) {
-            console.error("Error checking parts directory:", dirError);
-            // Try to create the parts directory
-            const created = await createPartsDirectory();
-            if (!created) {
-              setStorageAlert("Image uploads are disabled because the 'parts' directory could not be created.");
-              return;
-            }
-          }
-          
-          // If we get here, everything is properly configured
-          console.log("Images bucket and parts directory available");
-          setStorageAlert(null);
-        } catch (dirCheckError) {
-          console.error("Error checking parts directory:", dirCheckError);
-          setStorageAlert("Image uploads are disabled because the storage directory could not be accessed.");
-        }
-      } catch (error) {
-        console.error("Storage availability check error:", error);
-        setStorageAlert("Image uploads are disabled due to storage service configuration issues.");
-      }
-    };
-    
-    checkStorage();
-  }, []);
 
   const openEditDialog = (part: SparePart) => {
     setSelectedPart(part);
@@ -113,6 +58,20 @@ const SpareParts = () => {
     }
   };
 
+  if (isError) {
+    return (
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error ? error.message : "Failed to load spare parts data"}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <HeaderActions 
@@ -120,12 +79,12 @@ const SpareParts = () => {
         onExportClick={handleExportCSV} 
       />
 
-      {storageAlert && (
-        <Alert variant="destructive" className="bg-amber-50 border-amber-200">
+      {isStorageAvailable === false && (
+        <Alert variant="warning" className="bg-amber-50 border-amber-200">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
           <AlertTitle>Storage Service Issue</AlertTitle>
           <AlertDescription>
-            {storageAlert}
+            Image uploads are disabled because the storage service is not properly configured.
           </AlertDescription>
         </Alert>
       )}

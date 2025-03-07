@@ -10,22 +10,22 @@ export const useSparePartsQuery = (sortConfig: {column: string, direction: 'asc'
   return useQuery({
     queryKey: ["spare_parts", sortConfig],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("spare_parts")
-        .select("*")
-        .order(sortConfig.column, { ascending: sortConfig.direction === 'asc' });
+      try {
+        const { data, error } = await supabase
+          .from("spare_parts")
+          .select("*")
+          .order(sortConfig.column, { ascending: sortConfig.direction === 'asc' });
 
-      if (error) {
-        console.error("Error fetching spare parts:", error);
-        toast({
-          title: "Error loading spare parts",
-          description: error.message,
-          variant: "destructive",
-        });
-        return [];
+        if (error) {
+          console.error("Error fetching spare parts:", error);
+          throw new Error(error.message);
+        }
+
+        return data as SparePart[];
+      } catch (error) {
+        console.error("Error in spare parts query:", error);
+        throw error;
       }
-
-      return data as SparePart[];
     },
   });
 };

@@ -32,17 +32,21 @@ export const usePartsMutations = () => {
           return;
         }
         
-        // Ensure the parts directory exists
-        const dirCreated = await createPartsDirectory();
-        if (!dirCreated) {
-          console.error("Failed to create or verify parts directory");
+        try {
+          // Ensure the parts directory exists
+          const dirCreated = await createPartsDirectory();
+          if (!dirCreated) {
+            console.error("Failed to create or verify parts directory");
+            setIsStorageAvailable(false);
+            return;
+          }
+          
+          // If we reach here, storage is fully configured
+          setIsStorageAvailable(true);
+        } catch (innerError) {
+          console.error("Error creating parts directory:", innerError);
           setIsStorageAvailable(false);
-          return;
         }
-        
-        // If we reach here, storage is fully configured
-        setIsStorageAvailable(true);
-        
       } catch (error) {
         console.error("Error checking storage:", error);
         setIsStorageAvailable(false);
