@@ -133,16 +133,33 @@ export function useClientFormSubmit() {
 
       // Update members
       if (members.length > 0) {
+        // Delete existing members for this client first
+        if (clientId) {
+          const { error } = await supabase
+            .from('client_members')
+            .delete()
+            .eq('client_id', clientId);
+          
+          if (error) {
+            console.error("Error deleting existing members:", error);
+            throw error;
+          }
+        }
+        
         // Process member documents if any
         const processedMembers = await Promise.all(
           members.map(async (member) => {
             // Skip document processing if no temp file is present
             if (!member.tempId || !documentFiles[member.tempId]) {
               return {
-                ...member,
-                client_id: clientId,
-                // If updating existing member, keep its ID
-                id: member.id || undefined
+                name: member.name,
+                role: member.role || null,
+                email: member.email || null,
+                phone: member.phone || null,
+                notes: member.notes || null,
+                document_url: member.document_url || null,
+                document_name: member.document_name || null,
+                client_id: clientId
               };
             }
             
@@ -152,49 +169,28 @@ export function useClientFormSubmit() {
             const documentUrl = await uploadDocumentFn(file, documentName);
             
             return {
-              ...member,
-              client_id: clientId,
+              name: member.name,
+              role: member.role || null,
+              email: member.email || null,
+              phone: member.phone || null,
+              notes: member.notes || null,
               document_url: documentUrl,
               document_name: documentName,
-              tempId: undefined,
-              // If updating existing member, keep its ID
-              id: member.id || undefined
+              client_id: clientId
             };
           })
         );
         
         console.info("Inserting members:", processedMembers);
         
-        // If there are any existing members to update
-        const existingMembers = processedMembers.filter(m => m.id);
-        if (existingMembers.length > 0) {
-          for (const member of existingMembers) {
-            const memberData = { ...member, id: undefined }; // Remove id for update
-            const { error } = await supabase
-              .from('client_members')
-              .update(memberData)
-              .eq('id', member.id);
-            
-            if (error) {
-              console.error("Error updating member:", error, member);
-            }
-          }
-        }
+        // Insert all members as new entries
+        const { error } = await supabase
+          .from('client_members')
+          .insert(processedMembers);
         
-        // Insert new members
-        const newMembers = processedMembers.filter(m => !m.id).map(m => ({
-          ...m,
-          id: undefined // Let Supabase generate new IDs
-        }));
-        
-        if (newMembers.length > 0) {
-          const { error } = await supabase
-            .from('client_members')
-            .insert(newMembers);
-          
-          if (error) {
-            console.error("Error inserting members:", error);
-          }
+        if (error) {
+          console.error("Error inserting members:", error);
+          throw error;
         }
       }
       

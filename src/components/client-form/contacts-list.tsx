@@ -51,7 +51,7 @@ export function ContactsList({ contacts, addContact, updateContact, removeContac
             <div className="space-y-2">
               <Label>Position</Label>
               <Input
-                value={contact.position}
+                value={contact.position || ""}
                 onChange={(e) => updateContact(index, { position: e.target.value })}
               />
             </div>
@@ -59,14 +59,14 @@ export function ContactsList({ contacts, addContact, updateContact, removeContac
               <Label>Email</Label>
               <Input
                 type="email"
-                value={contact.email}
+                value={contact.email || ""}
                 onChange={(e) => updateContact(index, { email: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
               <Input
-                value={contact.phone}
+                value={contact.phone || ""}
                 onChange={(e) => updateContact(index, { phone: e.target.value })}
               />
             </div>
@@ -74,21 +74,19 @@ export function ContactsList({ contacts, addContact, updateContact, removeContac
               <label className="flex items-center space-x-2">
                 <input 
                   type="checkbox" 
-                  checked={contact.is_primary}
+                  checked={contact.is_primary || false}
                   onChange={(e) => {
-                    // Uncheck all others when this is checked
+                    // Create a copy of contacts array to work with
+                    const updatedContacts = [...contacts];
+                    
+                    // If this contact is being set as primary
                     if (e.target.checked) {
-                      const updatedContacts = contacts.map((c, i) => ({
-                        ...c,
-                        is_primary: i === index
-                      }));
-                      updateContact(index, { is_primary: true });
-                      contacts.forEach((_, i) => {
-                        if (i !== index) {
-                          updateContact(i, { is_primary: false });
-                        }
+                      // Set all contacts as non-primary first
+                      updatedContacts.forEach((c, i) => {
+                        updateContact(i, { is_primary: i === index });
                       });
                     } else {
+                      // Just update this contact
                       updateContact(index, { is_primary: false });
                     }
                   }}
