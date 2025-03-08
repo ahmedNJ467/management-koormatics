@@ -354,6 +354,7 @@ export default function Contracts() {
         handleSubmit={handleEditSubmit}
         isPending={updateContractMutation.isPending}
         isStorageAvailable={isStorageAvailable}
+        onDownload={handleDownloadContract}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Contract } from "@/pages/Contracts";
-import { AlertTriangle, FileText } from "lucide-react";
+import { AlertTriangle, FileText, Download } from "lucide-react";
 
 interface EditContractDialogProps {
   open: boolean;
@@ -17,6 +17,7 @@ interface EditContractDialogProps {
   handleSubmit: (e: React.FormEvent) => void;
   isPending: boolean;
   isStorageAvailable?: boolean;
+  onDownload?: (contract: Contract) => void;
 }
 
 const EditContractDialog = ({
@@ -29,6 +30,7 @@ const EditContractDialog = ({
   handleSubmit,
   isPending,
   isStorageAvailable = true,
+  onDownload,
 }: EditContractDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,9 +141,26 @@ const EditContractDialog = ({
                 <div className="text-right">Current File</div>
                 <div className="col-span-3 flex items-center text-sm">
                   <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground mr-2">
                     A file is already attached
                   </span>
+                  {onDownload && isStorageAvailable && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        if (selectedContract && onDownload) {
+                          onDownload(selectedContract);
+                        }
+                      }}
+                      className="ml-2"
+                      title="Download contract file"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
