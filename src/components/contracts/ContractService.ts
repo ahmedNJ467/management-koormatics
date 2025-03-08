@@ -107,6 +107,7 @@ export const updateContract = async (
     updatedContract.status = updatedContract.status as "active" | "pending" | "expired";
   }
 
+  // Update the contract data first
   const { data, error } = await supabase
     .from("contracts")
     .update(updatedContract)
@@ -122,26 +123,45 @@ export const updateContract = async (
   // Upload new contract file if provided
   if (contractFile) {
     try {
-      const fileExt = contractFile.name.split(".").pop();
+      // Validate file before upload
+      if (contractFile.size > 5 * 1024 * 1024) {
+        throw new Error("File size exceeds 5MB limit");
+      }
+
+      const validFileTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!validFileTypes.includes(contractFile.type)) {
+        console.warn("File type may not be supported:", contractFile.type);
+      }
+
+      const fileExt = contractFile.name.split(".").pop() || "";
       const fileName = `${contractId}.${fileExt}`;
       const filePath = `contracts/${fileName}`;
 
-      console.log("Uploading new file for contract:", filePath);
+      console.log("Uploading new file for contract:", filePath, "File type:", contractFile.type, "Size:", contractFile.size);
       
-      // First check if file exists to determine if we need upsert
-      const { data: existingFile } = await supabase.storage
-        .from("documents")
-        .list(`contracts`, {
-          search: fileName
-        });
+      // First check if storage bucket exists
+      try {
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        if (bucketError) {
+          console.error("Error checking storage buckets:", bucketError);
+          throw new Error(`Storage service error: ${bucketError.message}`);
+        }
+        const documentsBucketExists = buckets.some(bucket => bucket.name === 'documents');
+        if (!documentsBucketExists) {
+          throw new Error("Documents storage bucket does not exist");
+        }
+      } catch (bucketCheckError) {
+        console.error("Error checking buckets:", bucketCheckError);
+        throw bucketCheckError;
+      }
       
-      const fileExists = existingFile && existingFile.length > 0;
-      console.log("File exists check:", fileExists, existingFile);
-
-      // Upload the new file (with upsert if file exists)
+      // Direct upload with upsert true, no need to check if file exists
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("documents")
-        .upload(filePath, contractFile, { upsert: fileExists });
+        .upload(filePath, contractFile, { 
+          upsert: true,
+          contentType: contractFile.type 
+        });
 
       if (uploadError) {
         console.error("File upload error during update:", uploadError);
