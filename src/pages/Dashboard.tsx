@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,19 +9,21 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApiErrorHandler } from "@/lib/api-error-handler";
-import { useAlertsData } from "@/hooks/use-alerts-data";
-import { useActivitiesData } from "@/hooks/use-activities-data";
+import { useContractAlertsData } from "@/hooks/use-contract-alerts-data";
+import { useContractActivitiesData } from "@/hooks/use-contract-activities-data";
 import { formatDistanceToNow } from 'date-fns';
 import { ActivityItemProps } from "@/types/dashboard";
-import { AlertTriangle, Bell, Car, TrendingUp, UserPlus, Calendar, BarChart } from "lucide-react";
+import { AlertTriangle, Bell, Car, TrendingUp, UserPlus, Calendar, BarChart, FileContract } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
   const { handleError } = useApiErrorHandler();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fleetStatsChannel = supabase
@@ -37,30 +40,36 @@ export default function Dashboard() {
         () => {
           queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
         })
-      .subscribe();
-    
-    const alertsChannel = supabase
-      .channel('alerts-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' }, 
         () => {
-          queryClient.invalidateQueries({ queryKey: ["alerts"] });
+          queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
+          
+          // Create a new activity for contract changes
+          createContractActivity();
         })
       .subscribe();
     
-    const activitiesChannel = supabase
-      .channel('activities-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, 
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["activities"] });
-        })
-      .subscribe();
-
     return () => {
       supabase.removeChannel(fleetStatsChannel);
-      supabase.removeChannel(alertsChannel);
-      supabase.removeChannel(activitiesChannel);
     };
   }, [queryClient]);
+
+  // Function to create a new activity when contracts are modified
+  const createContractActivity = async () => {
+    try {
+      const { error } = await supabase
+        .from("activities")
+        .insert({
+          title: "Contract updated",
+          type: "contract",
+          timestamp: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error creating contract activity:", error);
+    }
+  };
 
   const { data: fleetStats, isLoading: isFleetStatsLoading } = useQuery({
     queryKey: ["fleet-stats"],
@@ -83,17 +92,25 @@ export default function Dashboard() {
 
       if (maintenanceError) throw maintenanceError;
 
+      const { data: contracts, error: contractsError } = await supabase
+        .from("contracts")
+        .select("status");
+
+      if (contractsError) throw contractsError;
+
       return {
         totalVehicles: vehicles.length,
         activeVehicles: vehicles.filter((v) => v.status === "active").length,
         totalDrivers: drivers.length,
         activeDrivers: drivers.filter((d) => d.status === "active").length,
         pendingMaintenance: maintenance.filter((m) => m.status === "scheduled").length,
+        activeContracts: contracts.filter((c) => c.status === "active").length,
+        totalContracts: contracts.length,
       };
     },
   });
 
-  const { data: activitiesData, isLoading: isActivitiesLoading } = useActivitiesData(5);
+  const { data: activitiesData, isLoading: isActivitiesLoading } = useContractActivitiesData(5);
   
   const recentActivities: ActivityItemProps[] = activitiesData ? activitiesData.map((activity) => {
     const formattedTimestamp = formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true });
@@ -106,6 +123,7 @@ export default function Dashboard() {
         case "driver": return "user";
         case "client": return "briefcase";
         case "fuel": return "fuel";
+        case "contract": return "contract";
         default: return "activity";
       }
     };
@@ -119,7 +137,7 @@ export default function Dashboard() {
     };
   }) : [];
 
-  const { data: alertsData, isLoading: isAlertsLoading } = useAlertsData({ resolved: false });
+  const { data: alertsData, isLoading: isAlertsLoading } = useContractAlertsData({ resolved: false });
   
   const alerts = alertsData ? alertsData.map((alert) => ({
     id: Number(alert.id),
@@ -132,7 +150,7 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold mb-2">Fleet Dashboard</h1>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
@@ -203,6 +221,30 @@ export default function Dashboard() {
                     <span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-1"></span>
                   )}
                   Tasks requiring attention
+                </span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Contracts</CardTitle>
+            <FileContract className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          </CardHeader>
+          <CardContent>
+            {isFleetStatsLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">{fleetStats?.activeContracts || 0}</div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {isFleetStatsLoading ? (
+                <Skeleton className="h-4 w-28" />
+              ) : (
+                <span className="flex items-center">
+                  <span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-1"></span>
+                  {fleetStats?.totalContracts || 0} total contracts
                 </span>
               )}
             </p>

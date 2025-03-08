@@ -3,7 +3,7 @@ import { Alert } from "@/types/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Calendar, Car, Users, Fuel, Check, Wrench } from "lucide-react";
+import { AlertTriangle, Calendar, Car, Users, Fuel, Check, Wrench, FileContract } from "lucide-react";
 import { format } from "date-fns";
 
 interface AlertItemProps {
@@ -24,6 +24,8 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
         return <Users className="h-5 w-5 text-green-500" />;
       case "fuel":
         return <Fuel className="h-5 w-5 text-red-500" />;
+      case "contract":
+        return <FileContract className="h-5 w-5 text-indigo-500" />;
       default:
         return <AlertTriangle className="h-5 w-5 text-gray-500" />;
     }

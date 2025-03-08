@@ -8,7 +8,8 @@ import {
   Building, 
   CheckCircle,
   FileText,
-  Clock 
+  Clock,
+  FileContract
 } from "lucide-react";
 import { ActivityItemProps } from "@/types/dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +40,8 @@ export const RecentActivity = ({
         return <Building className="h-5 w-5 text-indigo-500" />;
       case "fuel":
         return <Fuel className="h-5 w-5 text-red-500" />;
+      case "contract":
+        return <FileContract className="h-5 w-5 text-blue-600" />;
       default:
         return <CheckCircle className="h-5 w-5 text-gray-500" />;
     }

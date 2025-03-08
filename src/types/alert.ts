@@ -7,7 +7,7 @@ export interface Alert {
   created_at: string;
   updated_at: string;
   resolved: boolean;
-  type: 'maintenance' | 'driver' | 'fuel' | 'vehicle' | 'trip';
+  type: 'maintenance' | 'driver' | 'fuel' | 'vehicle' | 'trip' | 'contract';
   description?: string;
   related_id?: string;
   related_type?: string;
@@ -17,7 +17,7 @@ export interface Activity {
   id: string;
   title: string;
   timestamp: string;
-  type: 'trip' | 'maintenance' | 'vehicle' | 'driver' | 'client' | 'fuel';
+  type: 'trip' | 'maintenance' | 'vehicle' | 'driver' | 'client' | 'fuel' | 'contract';
   related_id?: string;
   created_at: string;
   updated_at: string;

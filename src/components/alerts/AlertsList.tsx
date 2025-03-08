@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { AlertItem } from "./AlertItem";
 import { AlertFilters } from "./AlertFilters";
-import { useAlertsData } from "@/hooks/use-alerts-data";
+import { useContractAlertsData } from "@/hooks/use-contract-alerts-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,12 +18,12 @@ export const AlertsList = ({ filterPriority }: AlertsListProps) => {
     type: "",
   });
 
-  const { data: alerts, isLoading, isError } = useAlertsData(filters);
+  const { data: alerts, isLoading, isError } = useContractAlertsData(filters);
 
   // Set up real-time listener for alerts table changes
   useEffect(() => {
     const alertsChannel = supabase
-      .channel('alerts-changes')
+      .channel('alerts-realtime-changes')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -31,13 +31,18 @@ export const AlertsList = ({ filterPriority }: AlertsListProps) => {
       }, () => {
         // Invalidate and refetch the alerts query when any change happens
         queryClient.invalidateQueries({ queryKey: ["alerts"] });
+        
+        toast({
+          title: "Alerts updated",
+          description: "The alerts list has been updated with new data.",
+        });
       })
       .subscribe();
     
     return () => {
       supabase.removeChannel(alertsChannel);
     };
-  }, [queryClient]);
+  }, [queryClient, toast]);
 
   const handleResolveAlert = async (id: string) => {
     try {

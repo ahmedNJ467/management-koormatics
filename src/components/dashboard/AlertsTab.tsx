@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Clock, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useAlertsData } from "@/hooks/use-alerts-data";
+import { useContractAlertsData } from "@/hooks/use-contract-alerts-data";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,7 @@ export const AlertsTab = () => {
   const queryClient = useQueryClient();
   
   // Fetch only active (unresolved) alerts and limit to 5
-  const { data: alerts, isLoading, error } = useAlertsData({ 
+  const { data: alerts, isLoading, error } = useContractAlertsData({ 
     resolved: false,
     limit: 5
   });
