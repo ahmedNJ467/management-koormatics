@@ -28,6 +28,7 @@ interface TripDialogsProps {
   clients?: Client[];
   vehicles?: Vehicle[];
   drivers?: Driver[];
+  trips?: DisplayTrip[];
   messages: TripMessage[];
   assignments: TripAssignment[];
   setViewTrip: (trip: DisplayTrip | null) => void;
@@ -66,6 +67,7 @@ export function TripDialogs({
   clients,
   vehicles,
   drivers,
+  trips,
   messages,
   assignments,
   setViewTrip,
@@ -124,6 +126,7 @@ export function TripDialogs({
             clients={clients}
             vehicles={vehicles}
             drivers={drivers}
+            trips={trips}
             onClose={() => {
               setEditTrip(null);
               setBookingOpen(false);

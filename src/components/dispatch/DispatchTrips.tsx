@@ -1,8 +1,10 @@
 
 import { Button } from "@/components/ui/button";
 import { DisplayTrip } from "@/lib/types/trip";
-import { MapPin, User, MessageCircle, Clock } from "lucide-react";
+import { MapPin, User, MessageCircle, Clock, AlertTriangle } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DispatchTripsProps {
   trips: DisplayTrip[];
@@ -23,12 +25,97 @@ export function DispatchTrips({
     );
   }
 
+  // Check for scheduling conflicts where the same driver is assigned to multiple trips at the same time
+  const conflictedDrivers = new Map<string, DisplayTrip[]>();
+  const conflictedTrips = new Set<string>();
+
+  // Group trips by date
+  const tripsByDate = new Map<string, DisplayTrip[]>();
+  trips.forEach(trip => {
+    if (!tripsByDate.has(trip.date)) {
+      tripsByDate.set(trip.date, []);
+    }
+    tripsByDate.get(trip.date)?.push(trip);
+  });
+
+  // Check for conflicts within each date
+  tripsByDate.forEach(dateTrips => {
+    // Check each trip against other trips on the same date
+    for (let i = 0; i < dateTrips.length; i++) {
+      const trip1 = dateTrips[i];
+      
+      // Skip if no driver assigned or already identified as conflicted
+      if (!trip1.driver_id) continue;
+      
+      for (let j = i + 1; j < dateTrips.length; j++) {
+        const trip2 = dateTrips[j];
+        
+        // Skip if no driver assigned or different drivers
+        if (!trip2.driver_id || trip1.driver_id !== trip2.driver_id) continue;
+        
+        // Check if the times overlap (within 1 hour)
+        const time1 = convertTimeToMinutes(trip1.time || "00:00");
+        const time2 = convertTimeToMinutes(trip2.time || "00:00");
+        
+        if (Math.abs(time1 - time2) < 60) {
+          // Add both trips to the conflicted set
+          conflictedTrips.add(trip1.id);
+          conflictedTrips.add(trip2.id);
+          
+          // Group conflicts by driver
+          if (!conflictedDrivers.has(trip1.driver_id)) {
+            conflictedDrivers.set(trip1.driver_id, []);
+          }
+          
+          if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip1.id)) {
+            conflictedDrivers.get(trip1.driver_id)?.push(trip1);
+          }
+          
+          if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip2.id)) {
+            conflictedDrivers.get(trip1.driver_id)?.push(trip2);
+          }
+        }
+      }
+    }
+  });
+
   return (
     <div className="space-y-4">
+      {/* Display a warning if there are conflicts */}
+      {conflictedDrivers.size > 0 && (
+        <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-500/50 p-4 rounded-lg mb-4">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-medium mb-2">
+            <AlertTriangle className="h-5 w-5" />
+            <h3>Scheduling Conflicts Detected</h3>
+          </div>
+          <div className="text-sm text-amber-700 dark:text-amber-200">
+            {Array.from(conflictedDrivers.entries()).map(([driverId, trips]) => {
+              const driverName = trips[0]?.driver_name || 'Unknown Driver';
+              return (
+                <div key={driverId} className="mb-2">
+                  <p>
+                    <span className="font-medium">{driverName}</span> is assigned to {trips.length} trips at the same time:
+                  </p>
+                  <ul className="list-disc list-inside pl-2">
+                    {trips.map(trip => (
+                      <li key={trip.id}>
+                        {formatDate(trip.date)} at {formatTime(trip.time || "")} - {trip.pickup_location} to {trip.dropoff_location}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {trips.map(trip => (
         <div 
           key={trip.id} 
-          className="border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow"
+          className={`border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow ${
+            conflictedTrips.has(trip.id) ? 'border-amber-500 dark:border-amber-500/70' : ''
+          }`}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
             <div className="font-medium text-lg">
@@ -38,6 +125,23 @@ export function DispatchTrips({
                   <Clock className="h-3 w-3 inline mr-1" />
                   {formatTime(trip.time)}
                 </span>
+              )}
+              
+              {/* Conflict indicator */}
+              {conflictedTrips.has(trip.id) && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="ml-2 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Conflict
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p>This driver is scheduled for multiple trips at the same time</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             <div className="text-sm text-muted-foreground">
@@ -104,4 +208,12 @@ export function DispatchTrips({
       ))}
     </div>
   );
+}
+
+// Helper function to convert time string (HH:MM) to minutes for easier comparison
+function convertTimeToMinutes(timeString: string): number {
+  if (!timeString) return 0;
+  
+  const [hours, minutes] = timeString.split(':').map(Number);
+  return (hours * 60) + minutes;
 }

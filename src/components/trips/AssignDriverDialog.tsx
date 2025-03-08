@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
-import { UserCheck } from "lucide-react";
+import { UserCheck, AlertCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface AssignDriverDialogProps {
   open: boolean;
@@ -29,6 +30,24 @@ export function AssignDriverDialog({
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [assignmentNote, setAssignmentNote] = useState("");
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+
+  // Load all trips to check for driver availability conflicts
+  const { data: allTrips } = useQuery({
+    queryKey: ["trips"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trips")
+        .select(`
+          id, date, time, driver_id
+        `)
+        .neq('id', tripToAssign?.id || '');
+      
+      if (error) throw error;
+      return data as DisplayTrip[];
+    },
+    enabled: open && !!tripToAssign,
+  });
 
   // Load available drivers
   useEffect(() => {
@@ -45,8 +64,37 @@ export function AssignDriverDialog({
 
     if (open) {
       fetchDrivers();
+      setSelectedDriver("");
+      setAssignmentNote("");
+      setConflictWarning(null);
     }
   }, [open]);
+
+  // Check for scheduling conflicts when driver is selected
+  useEffect(() => {
+    if (selectedDriver && tripToAssign && allTrips) {
+      // Check if driver is already assigned to another trip on the same day/time
+      const conflicts = allTrips.filter(trip => {
+        if (trip.driver_id !== selectedDriver) return false;
+        if (trip.date !== tripToAssign.date) return false;
+        
+        // Convert time strings to minutes
+        const selectedTripTime = convertTimeToMinutes(tripToAssign.time || "");
+        const existingTripTime = convertTimeToMinutes(trip.time || "");
+        
+        // Consider a trip within 1 hour as a conflict
+        return Math.abs(selectedTripTime - existingTripTime) < 60;
+      });
+
+      if (conflicts.length > 0) {
+        setConflictWarning(`Warning: This driver is already assigned to ${conflicts.length} other trip(s) at a similar time.`);
+      } else {
+        setConflictWarning(null);
+      }
+    } else {
+      setConflictWarning(null);
+    }
+  }, [selectedDriver, tripToAssign, allTrips]);
 
   const handleAssign = async () => {
     if (!tripToAssign || !selectedDriver) return;
@@ -102,6 +150,14 @@ export function AssignDriverDialog({
     return id.substring(0, 8).toUpperCase();
   };
 
+  // Helper function to convert time string (HH:MM) to minutes for easier comparison
+  function convertTimeToMinutes(timeString: string): number {
+    if (!timeString) return 0;
+    
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bg-slate-900 border border-slate-800 shadow-lg rounded-lg">
@@ -131,6 +187,13 @@ export function AssignDriverDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {conflictWarning && (
+            <div className="bg-amber-900/30 border border-amber-500/50 text-amber-200 p-3 rounded-md flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm">{conflictWarning}</p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="notes" className="text-slate-300">Assignment Notes</Label>

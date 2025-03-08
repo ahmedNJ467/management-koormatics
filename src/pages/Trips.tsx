@@ -162,6 +162,7 @@ export default function Trips() {
         clients={clients}
         vehicles={vehicles}
         drivers={drivers}
+        trips={trips}
         messages={messages}
         assignments={assignments}
         setViewTrip={setViewTrip}

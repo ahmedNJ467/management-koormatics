@@ -7,9 +7,16 @@ import { UIServiceType } from "./types";
 interface DateTimeFieldsProps {
   editTrip: DisplayTrip | null;
   serviceType: UIServiceType;
+  onDateTimeChange?: (field: 'date' | 'time', value: string) => void;
 }
 
-export function DateTimeFields({ editTrip, serviceType }: DateTimeFieldsProps) {
+export function DateTimeFields({ editTrip, serviceType, onDateTimeChange }: DateTimeFieldsProps) {
+  const handleChange = (field: 'date' | 'time', e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onDateTimeChange) {
+      onDateTimeChange(field, e.target.value);
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -20,6 +27,7 @@ export function DateTimeFields({ editTrip, serviceType }: DateTimeFieldsProps) {
             name="date"
             type="date"
             defaultValue={editTrip?.date}
+            onChange={(e) => handleChange('date', e)}
             required
           />
         </div>
@@ -31,6 +39,7 @@ export function DateTimeFields({ editTrip, serviceType }: DateTimeFieldsProps) {
             name="time"
             type="time"
             defaultValue={editTrip?.time || editTrip?.start_time}
+            onChange={(e) => handleChange('time', e)}
             required
           />
         </div>

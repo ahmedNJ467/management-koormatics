@@ -19,6 +19,7 @@ export function TripForm({
   clients,
   vehicles,
   drivers,
+  trips,
   onClose,
   onSubmit
 }: TripFormProps) {
@@ -29,11 +30,15 @@ export function TripForm({
   const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [passengers, setPassengers] = useState<string[]>([""]);
   const [newPassenger, setNewPassenger] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(editTrip?.date || "");
+  const [selectedTime, setSelectedTime] = useState<string>(editTrip?.time || "");
 
   useEffect(() => {
     if (editTrip) {
       setServiceType(editTrip.ui_service_type as UIServiceType || formatUIServiceType(editTrip));
       setSelectedClientId(editTrip.client_id);
+      setSelectedDate(editTrip.date);
+      setSelectedTime(editTrip.time);
       
       if (editTrip.client_type === "organization") {
         setSelectedClientType("organization");
@@ -72,6 +77,14 @@ export function TripForm({
       setSelectedClientType(selectedClient.type || "individual");
       // Reset passengers when client changes
       setPassengers([""]);
+    }
+  };
+
+  const handleDateTimeChange = (field: 'date' | 'time', value: string) => {
+    if (field === 'date') {
+      setSelectedDate(value);
+    } else {
+      setSelectedTime(value);
     }
   };
 
@@ -126,6 +139,9 @@ export function TripForm({
           serviceType={serviceType}
           handleClientChange={handleClientChange}
           setServiceType={setServiceType}
+          selectedDate={selectedDate}
+          selectedTime={selectedTime}
+          allTrips={trips}
         />
 
         {selectedClientType === "organization" && (
@@ -148,13 +164,17 @@ export function TripForm({
 
         <DateTimeFields 
           editTrip={editTrip} 
-          serviceType={serviceType} 
+          serviceType={serviceType}
+          onDateTimeChange={handleDateTimeChange}
         />
 
         <VehicleDriverSelects 
           vehicles={vehicles} 
           drivers={drivers} 
-          editTrip={editTrip} 
+          editTrip={editTrip}
+          selectedDate={selectedDate}
+          selectedTime={selectedTime}
+          allTrips={trips}
         />
 
         <LocationFields editTrip={editTrip} />
