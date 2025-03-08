@@ -1,3 +1,4 @@
+
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Dispatch() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { trips, isLoading, drivers } = useTripsData();
+  const { trips, isLoading, drivers, vehicles } = useTripsData();
   
   // State for dialogs
   const [assignOpen, setAssignOpen] = useState(false);
@@ -94,6 +95,7 @@ export default function Dispatch() {
       <DispatchBoard 
         trips={dispatchTrips || []}
         drivers={drivers || []}
+        vehicles={vehicles || []}
         onAssignDriver={(trip) => {
           setTripToAssign(trip);
           setAssignOpen(true);

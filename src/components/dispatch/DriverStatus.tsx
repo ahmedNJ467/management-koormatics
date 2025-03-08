@@ -4,13 +4,17 @@ import { DisplayTrip } from "@/lib/types/trip";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/utils/string-utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Car, UserCheck } from "lucide-react";
+import { Vehicle } from "@/lib/types/vehicle";
 
 interface DriverStatusProps {
   drivers: Driver[];
+  vehicles: Vehicle[];
   trips: DisplayTrip[];
 }
 
-export function DriverStatus({ drivers, trips }: DriverStatusProps) {
+export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
   // Determine which drivers are assigned to trips today
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -30,51 +34,118 @@ export function DriverStatus({ drivers, trips }: DriverStatusProps) {
     }
   });
 
-  if (drivers.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        No drivers available
-      </div>
-    );
-  }
+  // Get assigned vehicle IDs and their trip counts
+  const assignedVehicles = new Map<string, number>();
+  todayTrips.forEach(trip => {
+    if (trip.vehicle_id) {
+      const count = assignedVehicles.get(trip.vehicle_id) || 0;
+      assignedVehicles.set(trip.vehicle_id, count + 1);
+    }
+  });
 
   return (
-    <div className="space-y-4">
-      {drivers.map(driver => {
-        const tripCount = assignedDrivers.get(driver.id) || 0;
-        const status = tripCount > 0 ? "assigned" : "available";
-        
-        return (
-          <div
-            key={driver.id}
-            className="flex items-center gap-3 border-b last:border-b-0 pb-3 last:pb-0 pt-2 first:pt-0"
-          >
-            <Avatar>
-              <AvatarImage src={driver.avatar_url || undefined} />
-              <AvatarFallback>{getInitials(driver.name)}</AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1">
-              <div className="font-medium">{driver.name}</div>
-              <div className="text-sm text-muted-foreground">{driver.contact || "No contact"}</div>
-            </div>
-            
-            <div className="flex flex-col items-end gap-1">
-              <Badge
-                className={status === "assigned" ? "bg-blue-500" : "bg-green-500"}
-              >
-                {status === "assigned" ? "Assigned" : "Available"}
-              </Badge>
-              
-              {tripCount > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  {tripCount} trip{tripCount !== 1 ? "s" : ""} today
-                </div>
-              )}
-            </div>
+    <Tabs defaultValue="drivers" className="w-full">
+      <TabsList className="w-full mb-4">
+        <TabsTrigger value="drivers" className="flex-1">
+          <UserCheck className="h-4 w-4 mr-2" />
+          Drivers
+        </TabsTrigger>
+        <TabsTrigger value="vehicles" className="flex-1">
+          <Car className="h-4 w-4 mr-2" />
+          Vehicles
+        </TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="drivers">
+        {drivers.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No drivers available
           </div>
-        );
-      })}
-    </div>
+        ) : (
+          <div className="space-y-4">
+            {drivers.map(driver => {
+              const tripCount = assignedDrivers.get(driver.id) || 0;
+              const status = tripCount > 0 ? "assigned" : "available";
+              
+              return (
+                <div
+                  key={driver.id}
+                  className="flex items-center gap-3 border-b last:border-b-0 pb-3 last:pb-0 pt-2 first:pt-0"
+                >
+                  <Avatar>
+                    <AvatarImage src={driver.avatar_url || undefined} />
+                    <AvatarFallback>{getInitials(driver.name)}</AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1">
+                    <div className="font-medium">{driver.name}</div>
+                    <div className="text-sm text-muted-foreground">{driver.contact || "No contact"}</div>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge
+                      className={status === "assigned" ? "bg-blue-500" : "bg-green-500"}
+                    >
+                      {status === "assigned" ? "Assigned" : "Available"}
+                    </Badge>
+                    
+                    {tripCount > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        {tripCount} trip{tripCount !== 1 ? "s" : ""} today
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </TabsContent>
+      
+      <TabsContent value="vehicles">
+        {vehicles.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No vehicles available
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {vehicles.map(vehicle => {
+              const tripCount = assignedVehicles.get(vehicle.id) || 0;
+              const status = tripCount > 0 ? "assigned" : "available";
+              
+              return (
+                <div
+                  key={vehicle.id}
+                  className="flex items-center gap-3 border-b last:border-b-0 pb-3 last:pb-0 pt-2 first:pt-0"
+                >
+                  <div className="bg-gray-200 dark:bg-gray-700 h-10 w-10 rounded-full flex items-center justify-center">
+                    <Car className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <div className="font-medium">{vehicle.make} {vehicle.model}</div>
+                    <div className="text-sm text-muted-foreground">{vehicle.registration}</div>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge
+                      className={status === "assigned" ? "bg-blue-500" : "bg-green-500"}
+                    >
+                      {status === "assigned" ? "Assigned" : "Available"}
+                    </Badge>
+                    
+                    {tripCount > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        {tripCount} trip{tripCount !== 1 ? "s" : ""} today
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }

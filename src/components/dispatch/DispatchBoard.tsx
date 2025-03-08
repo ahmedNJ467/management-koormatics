@@ -6,10 +6,12 @@ import { DispatchTrips } from "./DispatchTrips";
 import { DriverStatus } from "./DriverStatus";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
+import { Vehicle } from "@/lib/types/vehicle";
 
 interface DispatchBoardProps {
   trips: DisplayTrip[];
   drivers: Driver[];
+  vehicles: Vehicle[];
   onAssignDriver: (trip: DisplayTrip) => void;
   onSendMessage: (trip: DisplayTrip) => void;
 }
@@ -17,6 +19,7 @@ interface DispatchBoardProps {
 export function DispatchBoard({
   trips,
   drivers,
+  vehicles,
   onAssignDriver,
   onSendMessage
 }: DispatchBoardProps) {
@@ -97,11 +100,12 @@ export function DispatchBoard({
       <div>
         <Card>
           <CardHeader>
-            <CardTitle>Driver Status</CardTitle>
+            <CardTitle>Resource Availability</CardTitle>
           </CardHeader>
           <CardContent>
             <DriverStatus 
               drivers={drivers} 
+              vehicles={vehicles}
               trips={trips}
             />
           </CardContent>
