@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
 
 interface AddContractDialogProps {
   open: boolean;
@@ -35,17 +35,17 @@ const AddContractDialog = ({
 }: AddContractDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add New Contract</DialogTitle>
+          <DialogTitle className="text-xl">Add New Contract</DialogTitle>
           <DialogDescription>
             Enter contract details and upload a document file.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="name" className="text-right text-base font-medium">
                 Contract Name
               </Label>
               <Input
@@ -53,12 +53,13 @@ const AddContractDialog = ({
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="col-span-3"
+                className="col-span-4 h-11"
                 required
+                placeholder="Enter contract name"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="client_name" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="client_name" className="text-right text-base font-medium">
                 Client
               </Label>
               <Input
@@ -66,12 +67,13 @@ const AddContractDialog = ({
                 name="client_name"
                 value={formData.client_name}
                 onChange={handleInputChange}
-                className="col-span-3"
+                className="col-span-4 h-11"
                 required
+                placeholder="Enter client name"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="status" className="text-right text-base font-medium">
                 Status
               </Label>
               <select
@@ -79,7 +81,7 @@ const AddContractDialog = ({
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="col-span-4 flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               >
                 <option value="active">Active</option>
@@ -87,8 +89,8 @@ const AddContractDialog = ({
                 <option value="expired">Expired</option>
               </select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="start_date" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="start_date" className="text-right text-base font-medium">
                 Start Date
               </Label>
               <Input
@@ -97,12 +99,12 @@ const AddContractDialog = ({
                 type="date"
                 value={formData.start_date}
                 onChange={handleInputChange}
-                className="col-span-3"
+                className="col-span-4 h-11"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="end_date" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="end_date" className="text-right text-base font-medium">
                 End Date
               </Label>
               <Input
@@ -111,22 +113,22 @@ const AddContractDialog = ({
                 type="date"
                 value={formData.end_date}
                 onChange={handleInputChange}
-                className="col-span-3"
+                className="col-span-4 h-11"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="contract_file" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="contract_file" className="text-right text-base font-medium">
                 Upload File
               </Label>
-              <div className="col-span-3">
+              <div className="col-span-4">
                 {isStorageAvailable ? (
                   <Input
                     id="contract_file"
                     name="contract_file"
                     type="file"
                     onChange={handleFileChange}
-                    className="w-full"
+                    className="w-full h-11"
                     accept=".pdf,.doc,.docx"
                   />
                 ) : (
@@ -138,11 +140,11 @@ const AddContractDialog = ({
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" type="button" onClick={() => onOpenChange(false)} className="h-11">
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending} className="h-11">
               {isPending ? "Saving..." : "Save Contract"}
             </Button>
           </DialogFooter>
