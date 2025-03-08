@@ -3,8 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert } from "@/types/alert";
 import { useApiErrorHandler } from "@/lib/api-error-handler";
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 
 export const useContractAlertsData = (filter?: {
   resolved?: boolean;
@@ -13,31 +11,12 @@ export const useContractAlertsData = (filter?: {
   limit?: number;
 }) => {
   const { handleError } = useApiErrorHandler();
-  const queryClient = useQueryClient();
-
-  // Set up real-time listener for alerts table
-  useEffect(() => {
-    const alertsChannel = supabase
-      .channel('contract-alerts-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'alerts' 
-      }, () => {
-        // Invalidate and refetch the alerts query when any change happens
-        queryClient.invalidateQueries({ queryKey: ["alerts"] });
-      })
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(alertsChannel);
-    };
-  }, [queryClient]);
 
   return useQuery({
     queryKey: ["alerts", filter],
     queryFn: async () => {
       try {
+        console.log("Fetching alerts with filters:", filter);
         let query = supabase.from("alerts").select("*");
 
         // Apply filters if provided
@@ -61,10 +40,15 @@ export const useContractAlertsData = (filter?: {
 
         const { data, error } = await query;
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase error fetching alerts:", error);
+          throw error;
+        }
 
+        console.log("Fetched alerts data:", data);
         return data as Alert[];
       } catch (error) {
+        console.error("Error in useContractAlertsData:", error);
         throw handleError(error, "Failed to fetch alerts");
       }
     },

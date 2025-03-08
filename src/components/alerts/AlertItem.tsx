@@ -31,6 +31,16 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
     }
   };
 
+  // Format date with fallback to current date if date is invalid
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "PP");
+    } catch (error) {
+      console.error("Invalid date format:", dateString);
+      return format(new Date(), "PP");
+    }
+  };
+
   return (
     <Card className={`border-l-4 ${
       alert.priority === "high" 
@@ -63,7 +73,7 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
                 {alert.priority}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {format(new Date(alert.date), "PP")}
+                {formatDate(alert.date)}
               </span>
             </div>
           </div>

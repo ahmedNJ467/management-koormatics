@@ -15,6 +15,10 @@ import { ActivityItemProps } from "@/types/dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export const RecentActivity = ({ 
   activities, 
@@ -24,6 +28,39 @@ export const RecentActivity = ({
   isLoading?: boolean;
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Set up real-time listener for activities table
+  useEffect(() => {
+    // Create a unique channel name to avoid conflicts
+    const channelName = 'activities-realtime-' + Math.random().toString(36).substring(7);
+
+    const activitiesChannel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'activities' 
+      }, (payload) => {
+        console.log('Real-time activity update received:', payload);
+        // Invalidate and refetch the activities query
+        queryClient.invalidateQueries({ queryKey: ["activities"] });
+        
+        toast({
+          title: "Activities updated",
+          description: "The activities list has been updated with new data.",
+        });
+      })
+      .subscribe();
+    
+    console.log('Activities real-time subscription activated');
+    
+    return () => {
+      console.log('Cleaning up activities real-time subscription');
+      supabase.removeChannel(activitiesChannel);
+    };
+  }, [queryClient, toast]);
 
   // Function to get the appropriate icon for each activity type
   const getIcon = (type: string) => {

@@ -22,13 +22,17 @@ export const AlertsList = ({ filterPriority }: AlertsListProps) => {
 
   // Set up real-time listener for alerts table changes
   useEffect(() => {
+    // Create a unique channel name to avoid conflicts
+    const channelName = 'alerts-list-realtime-' + Math.random().toString(36).substring(7);
+    
     const alertsChannel = supabase
-      .channel('alerts-realtime-changes')
+      .channel(channelName)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'alerts' 
-      }, () => {
+      }, (payload) => {
+        console.log('Real-time alert update received:', payload);
         // Invalidate and refetch the alerts query when any change happens
         queryClient.invalidateQueries({ queryKey: ["alerts"] });
         
@@ -39,7 +43,10 @@ export const AlertsList = ({ filterPriority }: AlertsListProps) => {
       })
       .subscribe();
     
+    console.log('Alerts real-time subscription activated');
+    
     return () => {
+      console.log('Cleaning up alerts real-time subscription');
       supabase.removeChannel(alertsChannel);
     };
   }, [queryClient, toast]);

@@ -24,13 +24,18 @@ export const AlertsTab = () => {
   
   // Set up real-time listener for alerts table
   useEffect(() => {
+    // Create a unique channel name to avoid conflicts
+    const channelName = 'alerts-tab-realtime-' + Math.random().toString(36).substring(7);
+    
     const alertsChannel = supabase
-      .channel('alerts-dashboard-changes')
+      .channel(channelName)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'alerts' 
-      }, () => {
+      }, (payload) => {
+        console.log('Dashboard alerts real-time update received:', payload);
+        // Invalidate and refetch the alerts query when any change happens
         queryClient.invalidateQueries({ queryKey: ["alerts"] });
         
         toast({
@@ -40,7 +45,10 @@ export const AlertsTab = () => {
       })
       .subscribe();
     
+    console.log('Dashboard alerts real-time subscription activated');
+    
     return () => {
+      console.log('Cleaning up dashboard alerts real-time subscription');
       supabase.removeChannel(alertsChannel);
     };
   }, [queryClient, toast]);
