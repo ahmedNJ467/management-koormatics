@@ -2,32 +2,64 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Helper function to ensure the images bucket exists
+const ensureImagesBucketExists = async (): Promise<boolean> => {
+  try {
+    // Check if bucket exists
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error("Error checking buckets:", bucketsError);
+      return false;
+    }
+    
+    const imagesBucket = buckets?.find(bucket => bucket.name === 'images');
+    
+    if (!imagesBucket) {
+      console.warn("Images bucket does not exist - attempting to create it");
+      
+      // Try to create the bucket
+      const { error: createError } = await supabase.storage.createBucket('images', {
+        public: true, // Make it public to allow direct URL access
+        fileSizeLimit: 5242880 // 5MB limit
+      });
+      
+      if (createError) {
+        console.error("Error creating images bucket:", createError);
+        return false;
+      }
+      
+      console.log("Images bucket created successfully");
+      return true;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Exception checking/creating bucket:", error);
+    return false;
+  }
+};
+
 export const createPartsDirectory = async (): Promise<boolean> => {
   try {
     console.log("Creating parts directory in images bucket");
     
-    // First verify the images bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    if (bucketsError) {
-      console.error("Error listing buckets:", bucketsError);
-      return false;
-    }
-    
-    const imagesBucket = buckets?.find(bucket => bucket.id === 'images');
-    if (!imagesBucket) {
-      console.error("Images bucket not found");
+    // First ensure the images bucket exists
+    const bucketExists = await ensureImagesBucketExists();
+    if (!bucketExists) {
+      console.error("Cannot create parts directory - images bucket not available");
       return false;
     }
     
     // Try to create the parts directory by uploading a placeholder file
     const { error } = await supabase.storage
       .from("images")
-      .upload('parts/.placeholder', new Blob(['placeholder']), {
+      .upload('parts/.placeholder', new Blob(['placeholder'], { type: 'text/plain' }), {
         contentType: 'text/plain',
         upsert: true
       });
       
-    if (error) {
+    if (error && !error.message.includes('already exists')) {
       console.error("Failed to create parts directory:", error);
       return false;
     }
@@ -49,17 +81,9 @@ export const uploadPartImage = async (
     console.log("Starting image upload process for part:", partId);
     
     // First, ensure storage is properly configured
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error("Error checking storage buckets:", bucketsError);
-      onError(`Storage service error: ${bucketsError.message}`);
-      return null;
-    }
-    
-    const imagesBucket = buckets?.find(bucket => bucket.id === 'images');
-    if (!imagesBucket) {
-      console.error("Images bucket not found");
+    const bucketExists = await ensureImagesBucketExists();
+    if (!bucketExists) {
+      console.error("Images bucket not available");
       onError("The required storage bucket is not configured.");
       return null;
     }
@@ -73,6 +97,17 @@ export const uploadPartImage = async (
       return null;
     }
     
+    // Validate file before upload
+    if (imageFile.size > 5 * 1024 * 1024) {
+      onError("Image size exceeds 5MB limit.");
+      return null;
+    }
+    
+    if (!imageFile.type.startsWith('image/')) {
+      onError("Selected file is not a valid image format.");
+      return null;
+    }
+    
     // Upload the actual image file
     const fileExt = imageFile.name.split(".").pop() || 'jpeg';
     const fileName = `${partId}.${fileExt}`;
@@ -82,7 +117,10 @@ export const uploadPartImage = async (
     
     const { error: uploadError, data } = await supabase.storage
       .from("images")
-      .upload(filePath, imageFile, { upsert: true });
+      .upload(filePath, imageFile, { 
+        upsert: true,
+        contentType: imageFile.type 
+      });
     
     if (uploadError) {
       console.error("Error uploading image:", uploadError);
