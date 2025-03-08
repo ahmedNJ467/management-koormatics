@@ -2,54 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Helper function to ensure the images bucket exists
-const ensureImagesBucketExists = async (): Promise<boolean> => {
-  try {
-    // Check if bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error("Error checking buckets:", bucketsError);
-      return false;
-    }
-    
-    const imagesBucket = buckets?.find(bucket => bucket.name === 'images');
-    
-    if (!imagesBucket) {
-      console.warn("Images bucket does not exist - attempting to create it");
-      
-      // Try to create the bucket
-      const { error: createError } = await supabase.storage.createBucket('images', {
-        public: true, // Make it public to allow direct URL access
-        fileSizeLimit: 5242880 // 5MB limit
-      });
-      
-      if (createError) {
-        console.error("Error creating images bucket:", createError);
-        return false;
-      }
-      
-      console.log("Images bucket created successfully");
-      return true;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Exception checking/creating bucket:", error);
-    return false;
-  }
-};
-
+// Helper function to ensure the parts directory exists in the images bucket
 export const createPartsDirectory = async (): Promise<boolean> => {
   try {
     console.log("Creating parts directory in images bucket");
-    
-    // First ensure the images bucket exists
-    const bucketExists = await ensureImagesBucketExists();
-    if (!bucketExists) {
-      console.error("Cannot create parts directory - images bucket not available");
-      return false;
-    }
     
     // Try to create the parts directory by uploading a placeholder file
     const { error } = await supabase.storage
@@ -80,23 +36,6 @@ export const uploadPartImage = async (
   try {
     console.log("Starting image upload process for part:", partId);
     
-    // First, ensure storage is properly configured
-    const bucketExists = await ensureImagesBucketExists();
-    if (!bucketExists) {
-      console.error("Images bucket not available");
-      onError("The required storage bucket is not configured.");
-      return null;
-    }
-    
-    console.log("Found storage bucket: images");
-    
-    // Make sure parts directory exists
-    const dirCreated = await createPartsDirectory();
-    if (!dirCreated) {
-      onError("Could not create or access the upload directory.");
-      return null;
-    }
-    
     // Validate file before upload
     if (imageFile.size > 5 * 1024 * 1024) {
       onError("Image size exceeds 5MB limit.");
@@ -105,6 +44,13 @@ export const uploadPartImage = async (
     
     if (!imageFile.type.startsWith('image/')) {
       onError("Selected file is not a valid image format.");
+      return null;
+    }
+    
+    // Make sure parts directory exists
+    const dirCreated = await createPartsDirectory();
+    if (!dirCreated) {
+      onError("Could not create or access the upload directory.");
       return null;
     }
     

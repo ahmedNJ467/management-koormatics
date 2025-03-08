@@ -14,20 +14,11 @@ export const usePartsMutations = () => {
   useEffect(() => {
     const checkStorageAvailability = async () => {
       try {
-        // Check if buckets are accessible
-        const { data: buckets, error } = await supabase.storage.listBuckets();
+        // Check if images bucket is accessible
+        const { data, error } = await supabase.storage.from('images').list();
         
         if (error) {
           console.error("Storage availability check failed:", error);
-          setIsStorageAvailable(false);
-          return;
-        }
-        
-        // Check if images bucket exists
-        const imagesBucket = buckets?.find(bucket => bucket.id === 'images');
-        
-        if (!imagesBucket) {
-          console.warn("Images bucket not available");
           setIsStorageAvailable(false);
           return;
         }

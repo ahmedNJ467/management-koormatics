@@ -36,68 +36,30 @@ export const ImageUpload = ({
     const checkStorageAvailability = async () => {
       setIsCheckingStorage(true);
       try {
-        // First, check if buckets API is accessible
-        try {
-          const { data: buckets, error } = await supabase.storage.listBuckets();
-          
-          if (error) {
-            console.error("Storage availability check failed:", error);
-            setStorageAvailable(false);
-            setImageError(`Storage service not available: ${error.message}`);
-            setIsCheckingStorage(false);
-            return;
-          }
-          
-          // Check if images bucket exists
-          const imagesBucket = buckets?.find(bucket => bucket.id === 'images' || bucket.name === 'images');
-          
-          if (!imagesBucket) {
-            console.warn("Images bucket not available - attempting to create it");
-            try {
-              // Try to create the bucket
-              const { error: createError } = await supabase.storage.createBucket('images', {
-                public: true,
-                fileSizeLimit: 5242880 // 5MB limit
-              });
-              
-              if (createError) {
-                console.error("Error creating images bucket:", createError);
-                setStorageAvailable(false);
-                setImageError(`Could not create storage bucket: ${createError.message}`);
-                setIsCheckingStorage(false);
-                return;
-              }
-              
-              console.log("Images bucket created successfully");
-            } catch (createError) {
-              console.error("Error creating bucket:", createError);
-              setStorageAvailable(false);
-              setImageError("Could not create the required storage bucket");
-              setIsCheckingStorage(false);
-              return;
-            }
-          }
-          
-          // Try to create/verify the parts directory
-          const dirCreated = await createPartsDirectory();
-          if (!dirCreated) {
-            console.error("Failed to create or verify parts directory");
-            setStorageAvailable(false);
-            setImageError("Could not access the upload directory");
-            setIsCheckingStorage(false);
-            return;
-          }
-          
-          // If we reach here, storage is fully configured
-          setStorageAvailable(true);
-          setImageError(null);
-        } catch (bucketError) {
-          console.error("Bucket check error:", bucketError);
+        // Check if bucket is accessible
+        const { data, error } = await supabase.storage.from('images').list();
+        
+        if (error) {
+          console.error("Storage availability check failed:", error);
           setStorageAvailable(false);
-          setImageError("Storage service configuration error");
+          setImageError(`Storage service not available: ${error.message}`);
           setIsCheckingStorage(false);
           return;
         }
+        
+        // Try to create/verify the parts directory
+        const dirCreated = await createPartsDirectory();
+        if (!dirCreated) {
+          console.error("Failed to create or verify parts directory");
+          setStorageAvailable(false);
+          setImageError("Could not access the upload directory");
+          setIsCheckingStorage(false);
+          return;
+        }
+        
+        // If we reach here, storage is fully configured
+        setStorageAvailable(true);
+        setImageError(null);
       } catch (error) {
         console.error("Error checking storage:", error);
         setStorageAvailable(false);

@@ -1,40 +1,29 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Contract } from "@/pages/Contracts";
 
-// Helper function to ensure storage bucket exists
-const ensureDocumentsBucketExists = async (): Promise<boolean> => {
+// Helper function to ensure the contracts directory exists
+export const createContractsDirectory = async (): Promise<boolean> => {
   try {
-    // Check if bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    console.log("Creating contracts directory in documents bucket");
     
-    if (bucketsError) {
-      console.error("Error checking buckets:", bucketsError);
+    // Try to create the contracts folder by uploading a placeholder file
+    const { error } = await supabase.storage
+      .from("documents")
+      .upload('contracts/.folder', new Blob([''], { type: 'text/plain' }), {
+        contentType: 'text/plain',
+        upsert: true
+      });
+      
+    if (error && !error.message.includes('already exists')) {
+      console.warn("Could not create contracts folder:", error);
       return false;
     }
     
-    const documentsBucket = buckets?.find(bucket => bucket.name === 'documents');
-    
-    if (!documentsBucket) {
-      console.warn("Documents bucket does not exist - attempting to create it");
-      
-      // Try to create the bucket
-      const { error: createError } = await supabase.storage.createBucket('documents', {
-        public: false,
-        fileSizeLimit: 10485760 // 10MB limit
-      });
-      
-      if (createError) {
-        console.error("Error creating documents bucket:", createError);
-        return false;
-      }
-      
-      console.log("Documents bucket created successfully");
-      return true;
-    }
-    
+    console.log("Contracts directory created or verified successfully");
     return true;
   } catch (error) {
-    console.error("Exception checking/creating bucket:", error);
+    console.error("Failed to create contracts directory:", error);
     return false;
   }
 };
@@ -96,15 +85,15 @@ export const addContract = async (
   // Upload contract file if provided
   if (contractFile && data.id) {
     try {
-      // Ensure storage is available
-      const bucketExists = await ensureDocumentsBucketExists();
-      if (!bucketExists) {
-        throw new Error("Storage service is not properly configured");
-      }
-      
       // Validate file
       if (contractFile.size > 10 * 1024 * 1024) { // 10MB limit
         throw new Error("File size exceeds 10MB limit");
+      }
+
+      // Create the contracts folder if it doesn't exist
+      const dirCreated = await createContractsDirectory();
+      if (!dirCreated) {
+        console.warn("Could not create contracts directory, will attempt upload anyway");
       }
 
       const fileExt = contractFile.name.split(".").pop() || "pdf";
@@ -112,21 +101,6 @@ export const addContract = async (
       const filePath = `contracts/${fileName}`;
 
       console.log("Uploading file:", filePath, "Type:", contractFile.type, "Size:", contractFile.size);
-      
-      // Create the contracts folder if it doesn't exist (by uploading a placeholder file)
-      try {
-        const { error: folderError } = await supabase.storage
-          .from("documents")
-          .upload('contracts/.folder', new Blob([''], { type: 'text/plain' }), {
-            upsert: true
-          });
-          
-        if (folderError && !folderError.message.includes('already exists')) {
-          console.warn("Could not create contracts folder:", folderError);
-        }
-      } catch (folderError) {
-        console.warn("Error creating contracts folder:", folderError);
-      }
 
       // Upload the actual file
       const { error: uploadError, data: uploadData } = await supabase.storage
@@ -193,30 +167,15 @@ export const updateContract = async (
   // Upload new contract file if provided
   if (contractFile) {
     try {
-      // Ensure storage is available
-      const bucketExists = await ensureDocumentsBucketExists();
-      if (!bucketExists) {
-        throw new Error("Storage service is not properly configured");
-      }
-      
       // Validate file
       if (contractFile.size > 10 * 1024 * 1024) { // 10MB limit
         throw new Error("File size exceeds 10MB limit");
       }
 
-      // Create the contracts folder if it doesn't exist (by uploading a placeholder file)
-      try {
-        const { error: folderError } = await supabase.storage
-          .from("documents")
-          .upload('contracts/.folder', new Blob([''], { type: 'text/plain' }), {
-            upsert: true
-          });
-          
-        if (folderError && !folderError.message.includes('already exists')) {
-          console.warn("Could not create contracts folder:", folderError);
-        }
-      } catch (folderError) {
-        console.warn("Error creating contracts folder:", folderError);
+      // Create the contracts folder if it doesn't exist
+      const dirCreated = await createContractsDirectory();
+      if (!dirCreated) {
+        console.warn("Could not create contracts directory, will attempt upload anyway");
       }
 
       const fileExt = contractFile.name.split(".").pop() || "pdf";
