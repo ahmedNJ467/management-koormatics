@@ -20,7 +20,8 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
-  Bell
+  Bell,
+  Navigation
 } from "lucide-react";
 import { useState } from "react";
 
@@ -43,13 +44,14 @@ const navigationGroups = [
     ]
   },
   {
-    category: "Business",
+    category: "Operations",
     items: [
+      { name: "Dispatch", href: "/dispatch", icon: Navigation },
+      { name: "Trips", href: "/trips", icon: Calendar },
       { name: "Clients", href: "/clients", icon: Users2 },
       { name: "Contracts", href: "/contracts", icon: File },
       { name: "Quotations", href: "/quotations", icon: FileText },
       { name: "Invoices", href: "/invoices", icon: Receipt },
-      { name: "Trips", href: "/trips", icon: Calendar },
     ]
   },
   {

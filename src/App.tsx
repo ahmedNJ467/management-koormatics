@@ -21,9 +21,9 @@ import CostAnalytics from "./pages/CostAnalytics";
 import Contracts from "./pages/Contracts";
 import SpareParts from "./pages/SpareParts";
 import Alerts from "./pages/Alerts";
-import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import TripAnalytics from "./pages/TripAnalytics";
+import Dispatch from "./pages/Dispatch";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +52,7 @@ const App = () => (
               <Route path="alerts" element={<Alerts />} />
               <Route path="reports" element={<Reports />} />
               <Route path="cost-analytics" element={<CostAnalytics />} />
+              <Route path="dispatch" element={<Dispatch />} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
