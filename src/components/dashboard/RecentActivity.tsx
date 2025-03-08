@@ -1,4 +1,3 @@
-
 import { 
   Car, 
   Calendar, 
@@ -9,7 +8,7 @@ import {
   CheckCircle,
   FileText,
   Clock,
-  FileContract
+  FileBadge
 } from "lucide-react";
 import { ActivityItemProps } from "@/types/dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +40,7 @@ export const RecentActivity = ({
       case "fuel":
         return <Fuel className="h-5 w-5 text-red-500" />;
       case "contract":
-        return <FileContract className="h-5 w-5 text-blue-600" />;
+        return <FileBadge className="h-5 w-5 text-blue-600" />;
       default:
         return <CheckCircle className="h-5 w-5 text-gray-500" />;
     }

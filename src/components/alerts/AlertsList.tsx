@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AlertItem } from "./AlertItem";
 import { AlertFilters } from "./AlertFilters";

@@ -39,6 +39,6 @@ export interface ActivityItemProps {
   id: number | string; // Update to accept both string and number
   title: string;
   timestamp: string;
-  type: "trip" | "maintenance" | "vehicle" | "driver" | "client" | "fuel";
+  type: "trip" | "maintenance" | "vehicle" | "driver" | "client" | "fuel" | "contract";
   icon: string;
 }

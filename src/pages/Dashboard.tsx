@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +12,7 @@ import { useContractAlertsData } from "@/hooks/use-contract-alerts-data";
 import { useContractActivitiesData } from "@/hooks/use-contract-activities-data";
 import { formatDistanceToNow } from 'date-fns';
 import { ActivityItemProps } from "@/types/dashboard";
-import { AlertTriangle, Bell, Car, TrendingUp, UserPlus, Calendar, BarChart, FileContract } from "lucide-react";
+import { AlertTriangle, Bell, Car, TrendingUp, UserPlus, Calendar, BarChart, FileBadge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -129,7 +128,7 @@ export default function Dashboard() {
     };
     
     return {
-      id: Number(activity.id),
+      id: activity.id,
       title: activity.title,
       timestamp: formattedTimestamp,
       type: activity.type,
@@ -140,7 +139,7 @@ export default function Dashboard() {
   const { data: alertsData, isLoading: isAlertsLoading } = useContractAlertsData({ resolved: false });
   
   const alerts = alertsData ? alertsData.map((alert) => ({
-    id: Number(alert.id),
+    id: alert.id,
     title: alert.title,
     priority: alert.priority,
     date: formatDistanceToNow(new Date(alert.date), { addSuffix: true }),
@@ -230,7 +229,7 @@ export default function Dashboard() {
         <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Contracts</CardTitle>
-            <FileContract className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <FileBadge className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           </CardHeader>
           <CardContent>
             {isFleetStatsLoading ? (

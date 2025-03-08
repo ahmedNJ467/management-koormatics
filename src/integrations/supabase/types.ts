@@ -9,6 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      activities: {
+        Row: {
+          created_at: string
+          id: string
+          related_id: string | null
+          timestamp: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          related_id?: string | null
+          timestamp?: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          related_id?: string | null
+          timestamp?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      alerts: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          priority: string
+          related_id: string | null
+          related_type: string | null
+          resolved: boolean
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          priority: string
+          related_id?: string | null
+          related_type?: string | null
+          resolved?: boolean
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          related_id?: string | null
+          related_type?: string | null
+          resolved?: boolean
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_contacts: {
         Row: {
           client_id: string | null
