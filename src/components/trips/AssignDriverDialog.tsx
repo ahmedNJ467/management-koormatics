@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
-import { UserCheck, AlertCircle } from "lucide-react";
+import { UserCheck, AlertCircle, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 
 interface AssignDriverDialogProps {
   open: boolean;
@@ -27,7 +28,7 @@ export function AssignDriverDialog({
 }: AssignDriverDialogProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [drivers, setDrivers] = useState<(Driver & { isAvailable: boolean })[]>([]);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [assignmentNote, setAssignmentNote] = useState("");
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export function AssignDriverDialog({
     enabled: open && !!tripToAssign,
   });
 
-  // Load available drivers
+  // Load available drivers and check their availability
   useEffect(() => {
     const fetchDrivers = async () => {
       const { data, error } = await supabase
@@ -57,8 +58,31 @@ export function AssignDriverDialog({
         .select("*")
         .eq("status", "active");
       
-      if (!error && data) {
-        setDrivers(data);
+      if (!error && data && allTrips && tripToAssign) {
+        // Check each driver's availability
+        const driversWithAvailability = data.map(driver => {
+          // Check if driver is already assigned to another trip on the same day/time
+          const conflicts = allTrips.filter(trip => {
+            if (trip.driver_id !== driver.id) return false;
+            if (trip.date !== tripToAssign.date) return false;
+            
+            // Convert time strings to minutes
+            const selectedTripTime = convertTimeToMinutes(tripToAssign.time || "");
+            const existingTripTime = convertTimeToMinutes(trip.time || "");
+            
+            // Consider a trip within 1 hour as a conflict
+            return Math.abs(selectedTripTime - existingTripTime) < 60;
+          });
+
+          return {
+            ...driver,
+            isAvailable: conflicts.length === 0
+          };
+        });
+
+        setDrivers(driversWithAvailability);
+      } else {
+        setDrivers([]);
       }
     };
 
@@ -68,7 +92,7 @@ export function AssignDriverDialog({
       setAssignmentNote("");
       setConflictWarning(null);
     }
-  }, [open]);
+  }, [open, allTrips, tripToAssign]);
 
   // Check for scheduling conflicts when driver is selected
   useEffect(() => {
@@ -180,8 +204,23 @@ export function AssignDriverDialog({
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 {drivers.map((driver) => (
-                  <SelectItem key={driver.id} value={driver.id} className="text-slate-300 hover:bg-slate-700 focus:bg-slate-700">
-                    {driver.name}
+                  <SelectItem 
+                    key={driver.id} 
+                    value={driver.id} 
+                    className="text-slate-300 hover:bg-slate-700 focus:bg-slate-700"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span>{driver.name}</span>
+                      <Badge
+                        className={`ml-2 ${
+                          driver.isAvailable 
+                            ? "bg-green-500 hover:bg-green-600" 
+                            : "bg-amber-500 hover:bg-amber-600"
+                        } text-white text-xs`}
+                      >
+                        {driver.isAvailable ? "Available" : "Busy"}
+                      </Badge>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -54,20 +54,20 @@ export function DispatchBoard({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Trip Management</CardTitle>
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader className="border-b border-slate-800">
+            <CardTitle className="text-white">Trip Management</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full">
-                <TabsTrigger value="upcoming" className="flex-1">
+              <TabsList className="w-full bg-slate-800 border border-slate-700">
+                <TabsTrigger value="upcoming" className="flex-1 data-[state=active]:bg-slate-700">
                   Upcoming ({upcomingTrips.length})
                 </TabsTrigger>
-                <TabsTrigger value="in-progress" className="flex-1">
+                <TabsTrigger value="in-progress" className="flex-1 data-[state=active]:bg-slate-700">
                   In Progress ({inProgressTrips.length})
                 </TabsTrigger>
-                <TabsTrigger value="scheduled" className="flex-1">
+                <TabsTrigger value="scheduled" className="flex-1 data-[state=active]:bg-slate-700">
                   Scheduled ({laterTrips.length})
                 </TabsTrigger>
               </TabsList>
@@ -98,11 +98,11 @@ export function DispatchBoard({
       </div>
       
       <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Resource Availability</CardTitle>
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader className="border-b border-slate-800">
+            <CardTitle className="text-white">Resource Availability</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <DriverStatus 
               drivers={drivers} 
               vehicles={vehicles}
