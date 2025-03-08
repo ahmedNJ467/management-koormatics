@@ -24,6 +24,7 @@ import Alerts from "./pages/Alerts";
 import Auth from "./pages/Auth";
 import TripAnalytics from "./pages/TripAnalytics";
 import Dispatch from "./pages/Dispatch";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
