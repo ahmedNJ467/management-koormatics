@@ -1,8 +1,10 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip, TripStatus, TripType, DbServiceType } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
 import { serviceTypeMap, mapTripTypeToDbServiceType } from "./service-type-mapping";
 import { createRecurringTrips } from "./recurring-operations";
+import { logActivity } from "@/utils/activity-logger";
 
 export const handleSaveTrip = async (
   event: React.FormEvent<HTMLFormElement>,
@@ -89,6 +91,13 @@ export const handleSaveTrip = async (
       
       if (error) throw error;
 
+      // Log the activity after successful update
+      await logActivity({
+        title: `Trip updated: ${formData.get("pickup_location") || ""} to ${formData.get("dropoff_location") || ""}`,
+        type: "trip",
+        relatedId: editTrip.id
+      });
+
       toast({
         title: "Trip updated",
         description: "Trip details have been updated successfully",
@@ -110,11 +119,21 @@ export const handleSaveTrip = async (
         trip.amount = amount;
       });
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("trips")
-        .insert(trips);
+        .insert(trips)
+        .select('id');
       
       if (error) throw error;
+
+      // Log activity for recurring trips
+      if (data && data.length > 0) {
+        await logActivity({
+          title: `${trips.length} recurring trips created`,
+          type: "trip",
+          relatedId: data[0].id
+        });
+      }
 
       toast({
         title: "Recurring trips created",
@@ -125,30 +144,43 @@ export const handleSaveTrip = async (
     } else {
       const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(uiServiceType);
       
-      const { error } = await supabase
+      const tripData = {
+        client_id: formData.get("client_id") as string,
+        vehicle_id: formData.get("vehicle_id") as string,
+        driver_id: formData.get("driver_id") as string,
+        date: formData.get("date") as string,
+        time: formData.get("time") as string,
+        return_time: needsReturnTime ? (formData.get("return_time") as string) : null,
+        service_type: dbServiceType,
+        amount: amount,
+        pickup_location: formData.get("pickup_location") as string || null,
+        dropoff_location: formData.get("dropoff_location") as string || null,
+        notes: notes || null,
+        status: "scheduled",
+        flight_number: flightNumber,
+        airline: airline,
+        terminal: terminal,
+        passengers: clientType === "organization" ? passengers : null
+      };
+      
+      const { data, error } = await supabase
         .from("trips")
-        .insert({
-          client_id: formData.get("client_id") as string,
-          vehicle_id: formData.get("vehicle_id") as string,
-          driver_id: formData.get("driver_id") as string,
-          date: formData.get("date") as string,
-          time: formData.get("time") as string,
-          return_time: needsReturnTime ? (formData.get("return_time") as string) : null,
-          service_type: dbServiceType,
-          amount: amount,
-          pickup_location: formData.get("pickup_location") as string || null,
-          dropoff_location: formData.get("dropoff_location") as string || null,
-          notes: notes || null,
-          status: "scheduled",
-          flight_number: flightNumber,
-          airline: airline,
-          terminal: terminal,
-          passengers: clientType === "organization" ? passengers : null
-        });
+        .insert(tripData)
+        .select('id')
+        .single();
       
       if (error) {
         console.error("Error creating trip:", error);
         throw error;
+      }
+
+      // Log activity for new trip
+      if (data) {
+        await logActivity({
+          title: `New trip created: ${formData.get("pickup_location") || ""} to ${formData.get("dropoff_location") || ""}`,
+          type: "trip",
+          relatedId: data.id
+        });
       }
 
       toast({

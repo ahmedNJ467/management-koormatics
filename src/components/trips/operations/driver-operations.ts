@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
+import { logActivity } from "@/utils/activity-logger";
 
 // Function for the AssignDriverDialog component
 export const assignDriverToTrip = async (tripId: string, driverId: string) => {
@@ -22,6 +23,13 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
     .eq("id", tripId);
   
   if (updateError) throw updateError;
+  
+  // Log the driver assignment activity
+  await logActivity({
+    title: `Driver assigned to trip`,
+    type: "trip",
+    relatedId: tripId
+  });
   
   return true;
 };
@@ -63,6 +71,13 @@ export const handleAssignDriver = async (
       .eq("id", tripToAssign.id);
     
     if (updateError) throw updateError;
+    
+    // Log the driver assignment activity
+    await logActivity({
+      title: `Driver assigned to trip from ${tripToAssign.pickup_location || ""} to ${tripToAssign.dropoff_location || ""}`,
+      type: "driver",
+      relatedId: tripToAssign.id
+    });
     
     toast({
       title: "Driver assigned",

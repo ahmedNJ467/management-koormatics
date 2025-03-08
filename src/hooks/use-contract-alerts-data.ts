@@ -52,5 +52,7 @@ export const useContractAlertsData = (filter?: {
         throw handleError(error, "Failed to fetch alerts");
       }
     },
+    refetchOnWindowFocus: true,
+    staleTime: 30000 // Consider data stale after 30 seconds
   });
 };

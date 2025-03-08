@@ -29,6 +29,8 @@ export const useContractActivitiesData = (limit: number = 5) => {
         console.error("Error in useContractActivitiesData:", error);
         throw handleError(error, "Failed to fetch activities");
       }
-    }
+    },
+    refetchOnWindowFocus: true,
+    staleTime: 30000 // Consider data stale after 30 seconds
   });
 };

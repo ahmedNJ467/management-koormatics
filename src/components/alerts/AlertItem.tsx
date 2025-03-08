@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Calendar, Car, Users, Fuel, Check, Wrench, FileBadge } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface AlertItemProps {
   alert: Alert;
@@ -34,7 +34,7 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
   // Format date with fallback to current date if date is invalid
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "PP");
+      return format(parseISO(dateString), "PP");
     } catch (error) {
       console.error("Invalid date format:", dateString);
       return format(new Date(), "PP");
