@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, FileText } from "lucide-react";
+import { AlertTriangle, FileText, Calendar } from "lucide-react";
 
 interface AddContractDialogProps {
   open: boolean;
@@ -42,10 +42,10 @@ const AddContractDialog = ({
             Enter contract details and upload a document file.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-6 py-4">
-            <div className="grid grid-cols-5 items-center gap-4">
-              <Label htmlFor="name" className="text-right text-base font-medium">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name" className="text-base font-medium">
                 Contract Name
               </Label>
               <Input
@@ -53,13 +53,14 @@ const AddContractDialog = ({
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="col-span-4 h-11"
+                className="h-11"
                 required
                 placeholder="Enter contract name"
               />
             </div>
-            <div className="grid grid-cols-5 items-center gap-4">
-              <Label htmlFor="client_name" className="text-right text-base font-medium">
+            
+            <div className="grid gap-2">
+              <Label htmlFor="client_name" className="text-base font-medium">
                 Client
               </Label>
               <Input
@@ -67,13 +68,14 @@ const AddContractDialog = ({
                 name="client_name"
                 value={formData.client_name}
                 onChange={handleInputChange}
-                className="col-span-4 h-11"
+                className="h-11"
                 required
                 placeholder="Enter client name"
               />
             </div>
-            <div className="grid grid-cols-5 items-center gap-4">
-              <Label htmlFor="status" className="text-right text-base font-medium">
+            
+            <div className="grid gap-2">
+              <Label htmlFor="status" className="text-base font-medium">
                 Status
               </Label>
               <select
@@ -81,66 +83,81 @@ const AddContractDialog = ({
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="col-span-4 flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               >
                 <option value="active">Active</option>
                 <option value="pending">Pending</option>
                 <option value="expired">Expired</option>
+                <option value="terminated">Terminated</option>
               </select>
             </div>
-            <div className="grid grid-cols-5 items-center gap-4">
-              <Label htmlFor="start_date" className="text-right text-base font-medium">
+            
+            <div className="grid gap-2">
+              <Label htmlFor="start_date" className="text-base font-medium">
                 Start Date
               </Label>
-              <Input
-                id="start_date"
-                name="start_date"
-                type="date"
-                value={formData.start_date}
-                onChange={handleInputChange}
-                className="col-span-4 h-11"
-                required
-              />
+              <div className="relative">
+                <Calendar className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="start_date"
+                  name="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={handleInputChange}
+                  className="h-11 pl-10"
+                  required
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-5 items-center gap-4">
-              <Label htmlFor="end_date" className="text-right text-base font-medium">
+            
+            <div className="grid gap-2">
+              <Label htmlFor="end_date" className="text-base font-medium">
                 End Date
               </Label>
-              <Input
-                id="end_date"
-                name="end_date"
-                type="date"
-                value={formData.end_date}
-                onChange={handleInputChange}
-                className="col-span-4 h-11"
-                required
-              />
+              <div className="relative">
+                <Calendar className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="end_date"
+                  name="end_date"
+                  type="date"
+                  value={formData.end_date}
+                  onChange={handleInputChange}
+                  className="h-11 pl-10"
+                  required
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-5 items-center gap-4">
-              <Label htmlFor="contract_file" className="text-right text-base font-medium">
+            
+            <div className="grid gap-2">
+              <Label htmlFor="contract_file" className="text-base font-medium">
                 Upload File
               </Label>
-              <div className="col-span-4">
-                {isStorageAvailable ? (
+              {isStorageAvailable ? (
+                <div className="border border-input rounded-md p-2">
                   <Input
                     id="contract_file"
                     name="contract_file"
                     type="file"
                     onChange={handleFileChange}
-                    className="w-full h-11"
+                    className="w-full h-11 border-0"
                     accept=".pdf,.doc,.docx"
                   />
-                ) : (
-                  <div className="flex items-center text-amber-500 text-sm">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    File upload is currently unavailable
-                  </div>
-                )}
-              </div>
+                  <p className="text-xs text-muted-foreground mt-1 ml-1">
+                    <FileText className="inline h-3 w-3 mr-1" />
+                    Accepted formats: PDF, DOC, DOCX (Max 10MB)
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center text-amber-500 text-sm p-3 bg-amber-50 rounded-md">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  File upload is currently unavailable
+                </div>
+              )}
             </div>
           </div>
-          <DialogFooter className="mt-4 gap-2">
+          
+          <DialogFooter className="pt-2 gap-2">
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)} className="h-11">
               Cancel
             </Button>

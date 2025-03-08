@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ export interface Contract {
   id: string;
   name: string;
   client_name: string;
-  status: "active" | "expired" | "pending";
+  status: "active" | "expired" | "pending" | "terminated";
   start_date: string;
   end_date: string;
   created_at: string;
@@ -239,6 +240,7 @@ export default function Contracts() {
   const activeContracts = filteredContracts.filter((c) => c.status === "active");
   const pendingContracts = filteredContracts.filter((c) => c.status === "pending");
   const expiredContracts = filteredContracts.filter((c) => c.status === "expired");
+  const terminatedContracts = filteredContracts.filter((c) => c.status === "terminated");
 
   if (isError) {
     return (
@@ -297,6 +299,7 @@ export default function Contracts() {
               <TabsTrigger value="active">Active ({activeContracts.length})</TabsTrigger>
               <TabsTrigger value="pending">Pending ({pendingContracts.length})</TabsTrigger>
               <TabsTrigger value="expired">Expired ({expiredContracts.length})</TabsTrigger>
+              <TabsTrigger value="terminated">Terminated ({terminatedContracts.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all">
@@ -329,6 +332,15 @@ export default function Contracts() {
             <TabsContent value="expired">
               <ContractTable
                 contracts={expiredContracts}
+                onEdit={openEditDialog}
+                onDelete={confirmDelete}
+                onDownload={handleDownloadContract}
+              />
+            </TabsContent>
+            
+            <TabsContent value="terminated">
+              <ContractTable
+                contracts={terminatedContracts}
                 onEdit={openEditDialog}
                 onDelete={confirmDelete}
                 onDownload={handleDownloadContract}
