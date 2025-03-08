@@ -120,8 +120,3 @@ export const seedData = async () => {
   await seedAlertData();
   await seedActivityData();
 };
-
-// Auto-run seed data in development
-if (import.meta.env.DEV) {
-  seedData();
-}
