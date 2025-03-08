@@ -8,7 +8,7 @@ export interface StatCardProps {
 }
 
 export interface TripItemProps {
-  id: string | number; // Update to accept both string and number
+  id: string | number;
   client: string;
   destination: string;
   date: string;
@@ -16,7 +16,7 @@ export interface TripItemProps {
 }
 
 export interface AlertItemProps {
-  id: number | string; // Update to accept both string and number
+  id: number | string;
   title: string;
   priority: "high" | "medium" | "low";
   date: string;
@@ -36,7 +36,7 @@ export interface CostsBreakdownProps {
 }
 
 export interface ActivityItemProps {
-  id: number | string; // Update to accept both string and number
+  id: number | string;
   title: string;
   timestamp: string;
   type: "trip" | "maintenance" | "vehicle" | "driver" | "client" | "fuel" | "contract";

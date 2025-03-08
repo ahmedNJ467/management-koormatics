@@ -32,13 +32,18 @@ export const AlertsTab = () => {
         table: 'alerts' 
       }, () => {
         queryClient.invalidateQueries({ queryKey: ["alerts"] });
+        
+        toast({
+          title: "New alert",
+          description: "A new alert has been added to the system.",
+        });
       })
       .subscribe();
     
     return () => {
       supabase.removeChannel(alertsChannel);
     };
-  }, [queryClient]);
+  }, [queryClient, toast]);
 
   // Transform alerts data for the component
   const formattedAlerts = (alerts || []).map((alert) => ({
