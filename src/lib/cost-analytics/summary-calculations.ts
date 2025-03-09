@@ -20,9 +20,18 @@ export function calculateSummaryCosts(
   
   // Calculate spare parts costs (only for parts that have been used)
   const sparePartsCosts = safeSparePartsData.reduce((sum, part) => {
+    // Check if the part has been used
     const quantityUsed = Number(part?.quantity_used || 0);
-    const costPerUnit = Number(part?.cost_per_unit || 0);
-    return sum + (quantityUsed * costPerUnit);
+    if (quantityUsed <= 0) return sum;
+    
+    const costPerUnit = Number(part?.cost_per_unit || part?.unit_price || 0);
+    const totalCost = quantityUsed * costPerUnit;
+    
+    console.log(`Spare part ${part.name}: ${quantityUsed} x $${costPerUnit} = $${totalCost}`);
+    
+    // Only count parts not already included in maintenance to avoid double counting
+    const isIncludedInMaintenance = part.maintenance_id != null;
+    return isIncludedInMaintenance ? sum : sum + totalCost;
   }, 0);
   
   const costs: CostData = {

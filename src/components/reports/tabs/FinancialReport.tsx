@@ -40,7 +40,23 @@ export function FinancialReport({
   const filteredTrips = filterDataByDate(tripsData, timeRange, dateRange);
   const filteredMaintenance = filterDataByDate(maintenanceData, timeRange, dateRange);
   const filteredFuel = filterDataByDate(fuelData, timeRange, dateRange);
-  const filteredSpareparts = filterDataByDate(sparePartsData, timeRange, dateRange);
+  
+  // For spare parts, we need to filter differently, as they might not have a direct date field to filter on
+  // Instead, we'll check purchase_date OR last_used_date
+  const filteredSpareparts = Array.isArray(sparePartsData) 
+    ? sparePartsData.filter(part => {
+        if (!part) return false;
+        
+        const partDate = part.last_used_date || part.purchase_date;
+        if (!partDate) return false;
+        
+        // Only include spare parts with quantity_used > 0
+        if (!part.quantity_used || Number(part.quantity_used) <= 0) return false;
+        
+        // Now apply the date filtering
+        return filterDataByDate([{date: partDate}], timeRange, dateRange).length > 0;
+      })
+    : [];
   
   console.log('Financial Report - Maintenance data before filter:', maintenanceData);
   console.log('Financial Report - Filtered maintenance data:', filteredMaintenance);
@@ -59,7 +75,7 @@ export function FinancialReport({
     filteredTrips || [],
     completedMaintenance || [], // Pass only completed maintenance
     filteredFuel || [],
-    filteredSpareparts || []
+    sparePartsData || [] // Use all spare parts data, the filter will be applied inside the calculation
   );
   
   const isLoading = isLoadingTrips || isLoadingMaintenance || isLoadingFuel || isLoadingSpareparts;

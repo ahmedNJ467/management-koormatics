@@ -59,10 +59,18 @@ export function calculateFinancialData(
   const sparePartsCosts = Array.isArray(sparePartsData)
     ? sparePartsData.reduce((sum, part) => {
         const quantityUsed = Number(part.quantity_used || 0);
-        const costPerUnit = Number(part.unit_price || 0);
+        const costPerUnit = Number(part.unit_price || part.cost_per_unit || 0);
+        
         // Only count spare parts that weren't already calculated in maintenance costs
         // Check if the part has a maintenance_id associated with it
         const isIncludedInMaintenance = part.maintenance_id != null;
+        
+        // Log to debug
+        if (quantityUsed > 0) {
+          console.log('Part used:', part.name, 'Quantity:', quantityUsed, 'Cost:', costPerUnit, 'Total:', quantityUsed * costPerUnit);
+          console.log('Included in maintenance:', isIncludedInMaintenance);
+        }
+        
         return isIncludedInMaintenance ? sum : sum + (quantityUsed * costPerUnit);
       }, 0)
     : 0;
