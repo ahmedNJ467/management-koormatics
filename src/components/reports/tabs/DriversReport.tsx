@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { exportToPDF, exportToCSV } from "../utils/exportUtils";
+import { DateRange } from "react-day-picker";
+import { filterDataByDate } from "../utils/dateFilters";
 
 interface DriversReportProps {
   driversData: any[] | undefined;
   isLoading: boolean;
+  timeRange: string;
+  dateRange: DateRange | undefined;
 }
 
-export function DriversReport({ driversData, isLoading }: DriversReportProps) {
+export function DriversReport({ driversData, isLoading, timeRange, dateRange }: DriversReportProps) {
+  const filteredData = filterDataByDate(driversData, timeRange, dateRange);
+  
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">

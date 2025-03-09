@@ -6,17 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { exportToPDF, exportToCSV } from "../utils/exportUtils";
+import { DateRange } from "react-day-picker";
+import { filterDataByDate } from "../utils/dateFilters";
 
 interface VehiclesReportProps {
   vehiclesData: any[] | undefined;
   isLoading: boolean;
+  timeRange: string;
+  dateRange: DateRange | undefined;
 }
 
-export function VehiclesReport({ vehiclesData, isLoading }: VehiclesReportProps) {
+export function VehiclesReport({ vehiclesData, isLoading, timeRange, dateRange }: VehiclesReportProps) {
+  const filteredData = filterDataByDate(vehiclesData, timeRange, dateRange);
+  
   const getVehicleMaintenanceCosts = (vehicleId: string) => {
-    if (!vehiclesData) return 0;
+    if (!filteredData) return 0;
     
-    const vehicle = vehiclesData.find(v => v.id === vehicleId);
+    const vehicle = filteredData.find(v => v.id === vehicleId);
     if (!vehicle || !vehicle.maintenance) return 0;
     
     return Array.isArray(vehicle.maintenance)

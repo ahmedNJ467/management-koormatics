@@ -1,3 +1,4 @@
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FinancialReport } from "@/components/reports/tabs/FinancialReport";
 import { TripsReport } from "@/components/reports/tabs/TripsReport";
@@ -73,7 +74,7 @@ export function ReportsTabs({
       <TabsContent value="trips">
         <TripsReport 
           tripsData={tripsData}
-          isLoadingTrips={isLoadingTrips}
+          isLoading={isLoadingTrips}
           timeRange={timeRange}
           dateRange={dateRange}
         />
@@ -82,7 +83,7 @@ export function ReportsTabs({
       <TabsContent value="vehicles">
         <VehiclesReport 
           vehiclesData={vehiclesData}
-          isLoadingVehicles={isLoadingVehicles}
+          isLoading={isLoadingVehicles}
           timeRange={timeRange}
           dateRange={dateRange}
         />
@@ -91,7 +92,7 @@ export function ReportsTabs({
       <TabsContent value="maintenance">
         <MaintenanceReport 
           maintenanceData={maintenanceData}
-          isLoadingMaintenance={isLoadingMaintenance}
+          isLoading={isLoadingMaintenance}
           timeRange={timeRange}
           dateRange={dateRange}
         />
@@ -100,7 +101,7 @@ export function ReportsTabs({
       <TabsContent value="fuel">
         <FuelReport 
           fuelData={fuelData}
-          isLoadingFuel={isLoadingFuel}
+          isLoading={isLoadingFuel}
           timeRange={timeRange}
           dateRange={dateRange}
         />
@@ -109,7 +110,7 @@ export function ReportsTabs({
       <TabsContent value="drivers">
         <DriversReport 
           driversData={driversData}
-          isLoadingDrivers={isLoadingDrivers}
+          isLoading={isLoadingDrivers}
           timeRange={timeRange}
           dateRange={dateRange}
         />
