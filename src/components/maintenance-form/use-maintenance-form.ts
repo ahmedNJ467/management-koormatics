@@ -108,7 +108,7 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
             // Get current part data
             const { data: currentPart } = await supabase
               .from("spare_parts")
-              .select("quantity, quantity_used")
+              .select("quantity, quantity_used, min_stock_level")
               .eq("id", part.id)
               .single();
 
