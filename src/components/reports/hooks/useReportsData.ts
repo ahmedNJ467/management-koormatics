@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SparePart } from "@/components/spare-parts/types";
@@ -88,28 +89,25 @@ export function useReportsData() {
       // Then fetch all maintenance records for lookup
       const { data: maintenanceRecords, error: maintenanceError } = await supabase
         .from("maintenance")
-        .select("id, description, vehicle_id");
+        .select("id, description, vehicle_id, vehicles(make, model, registration)");
         
       if (maintenanceError) throw maintenanceError;
       
       // Create a maintenance lookup map
-      const maintenanceMap = maintenanceRecords.reduce((acc, record) => {
-        acc[record.id] = record;
-        return acc;
-      }, {});
+      const maintenanceMap = {};
+      if (maintenanceRecords) {
+        maintenanceRecords.forEach(record => {
+          maintenanceMap[record.id] = record;
+        });
+      }
 
-      // Then fetch all vehicles to use for lookup
-      const { data: vehiclesData, error: vehiclesError } = await supabase
-        .from("vehicles")
-        .select("id, make, model, registration");
-        
-      if (vehiclesError) throw vehiclesError;
-      
-      // Create a vehicles lookup map for faster access
-      const vehiclesMap = vehiclesData.reduce((acc, vehicle) => {
-        acc[vehicle.id] = vehicle;
-        return acc;
-      }, {});
+      // Manual lookup for vehicle data
+      const vehiclesMap = {};
+      if (vehicles) {
+        vehicles.forEach(vehicle => {
+          vehiclesMap[vehicle.id] = vehicle;
+        });
+      }
 
       // Combine spare parts with vehicle and maintenance data
       const partsWithRelationships = (parts as SparePart[]).map(part => {
@@ -126,12 +124,8 @@ export function useReportsData() {
         // If no direct vehicle_id, try to get it from the associated maintenance record
         else if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
           const maintenanceRecord = maintenanceMap[part.maintenance_id];
-          if (maintenanceRecord.vehicle_id && vehiclesMap[maintenanceRecord.vehicle_id]) {
-            vehicleInfo = {
-              make: vehiclesMap[maintenanceRecord.vehicle_id].make,
-              model: vehiclesMap[maintenanceRecord.vehicle_id].model,
-              registration: vehiclesMap[maintenanceRecord.vehicle_id].registration
-            };
+          if (maintenanceRecord.vehicles) {
+            vehicleInfo = maintenanceRecord.vehicles;
           }
         }
         
