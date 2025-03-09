@@ -10,9 +10,6 @@ interface ActivityLogParams {
   relatedId?: string;
 }
 
-// In-memory storage for activities as a fallback
-const activities: ActivityItemProps[] = [];
-
 // Format timestamps in a human-readable format
 const formatTimestamp = (date: Date): string => {
   const now = new Date();
@@ -32,7 +29,7 @@ const formatTimestamp = (date: Date): string => {
   }
 };
 
-// Add a new activity to the database and in-memory store
+// Add a new activity to the database
 export const logActivity = async ({ title, type, relatedId }: ActivityLogParams): Promise<ActivityItemProps> => {
   const id = Date.now().toString();
   const timestamp = new Date();
@@ -55,14 +52,6 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
     timestamp: formatTimestamp(timestamp),
     icon: iconMap[type] || 'activity'
   };
-  
-  // Add to the front of the in-memory array
-  activities.unshift(newActivity);
-  
-  // Keep only the last 50 activities
-  if (activities.length > 50) {
-    activities.length = 50;
-  }
   
   // Save to the database
   try {
@@ -96,83 +85,83 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
   return newActivity;
 };
 
-// Get all logged activities from in-memory store (fallback)
-export const getActivities = (limit?: number): ActivityItemProps[] => {
-  return limit ? activities.slice(0, limit) : [...activities];
-};
-
-// Clear all activities (useful for testing)
-export const clearActivities = (): void => {
-  activities.length = 0;
-};
-
-// Generate sample activities
-export const generateSampleActivities = async (): Promise<void> => {
-  const now = new Date();
-  
-  const sampleActivities: ActivityLogParams[] = [
-    {
-      title: "Trip completed: Airport pickup #T-2023-112",
-      type: "trip"
-    },
-    {
-      title: "Vehicle maintenance completed for TRUCK-002",
-      type: "maintenance"
-    },
-    {
-      title: "New driver onboarded: Sarah Johnson",
-      type: "driver"
-    },
-    {
-      title: "Fuel refill: 45 gallons for SUV-001",
-      type: "fuel"
-    },
-    {
-      title: "New contract signed with Client XYZ Corp",
-      type: "contract"
-    },
-    {
-      title: "Vehicle VAN-003 added to the fleet",
-      type: "vehicle"
-    },
-    {
-      title: "New client onboarded: ABC Industries",
-      type: "client"
+// Get activities from the database
+export const getActivities = async (limit?: number): Promise<ActivityItemProps[]> => {
+  try {
+    const query = supabase
+      .from('activities')
+      .select('*')
+      .order('timestamp', { ascending: false });
+    
+    if (limit) {
+      query.limit(limit);
     }
-  ];
-  
-  // Clear existing in-memory activities
-  clearActivities();
-  
-  // Check if we have activities in the database
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error("Error fetching activities:", error);
+      return [];
+    }
+    
+    return data.map(item => ({
+      id: item.id,
+      title: item.title,
+      timestamp: formatTimestamp(new Date(item.timestamp)),
+      type: item.type,
+      icon: item.type
+    }));
+  } catch (err) {
+    console.error("Failed to fetch activities:", err);
+    return [];
+  }
+};
+
+// Generate sample activities if needed (for development/testing)
+export const generateSampleActivities = async (): Promise<void> => {
   const { data, error } = await supabase
     .from('activities')
-    .select('*')
-    .limit(1);
+    .select('count')
+    .single();
     
   // Only seed if there are no activities
-  if (error || (data && data.length === 0)) {
+  if (!error && data && data.count === 0) {
+    const sampleActivities: ActivityLogParams[] = [
+      {
+        title: "Trip completed: Airport pickup #T-2023-112",
+        type: "trip"
+      },
+      {
+        title: "Vehicle maintenance completed for TRUCK-002",
+        type: "maintenance"
+      },
+      {
+        title: "New driver onboarded: Sarah Johnson",
+        type: "driver"
+      },
+      {
+        title: "Fuel refill: 45 gallons for SUV-001",
+        type: "fuel"
+      },
+      {
+        title: "New contract signed with Client XYZ Corp",
+        type: "contract"
+      },
+      {
+        title: "Vehicle VAN-003 added to the fleet",
+        type: "vehicle"
+      },
+      {
+        title: "New client onboarded: ABC Industries",
+        type: "client"
+      }
+    ];
+    
     // Add sample activities to database
     for (const activity of sampleActivities) {
       await logActivity(activity);
     }
-  }
-  
-  // Add sample activities to in-memory cache with different timestamps
-  sampleActivities.forEach((activity, index) => {
-    // Create the activity with a timestamp offset based on index
-    const timestamp = new Date(now.getTime() - (index * 2 + 1) * 3600000);
-    const formattedTimestamp = formatTimestamp(timestamp);
     
-    activities.push({
-      id: (Date.now() - index * 1000).toString(),
-      title: activity.title,
-      type: activity.type,
-      timestamp: formattedTimestamp,
-      icon: activity.type
-    });
-  });
+    console.log("Sample activities generated");
+  }
 };
-
-// Initialize with sample data
-generateSampleActivities();

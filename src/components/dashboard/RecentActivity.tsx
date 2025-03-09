@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ActivityItemProps } from "@/types/dashboard";
 import { Calendar, Clock, User, Car, FileText, Activity, Clock3, Fuel, FileCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react";
 
 interface RecentActivityProps {
   isLoading?: boolean;
@@ -11,7 +12,9 @@ interface RecentActivityProps {
 }
 
 export const RecentActivity = ({ activities: propActivities, isLoading: propIsLoading }: RecentActivityProps) => {
-  const { data: activities, isLoading } = useQuery({
+  const [realtimeActivities, setRealtimeActivities] = useState<ActivityItemProps[]>([]);
+
+  const { data: fetchedActivities, isLoading } = useQuery({
     queryKey: ["dashboard-activities"],
     queryFn: async () => {
       if (propActivities) return propActivities;
@@ -35,7 +38,48 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
     enabled: !propActivities,
   });
 
+  // Set up realtime subscription
+  useEffect(() => {
+    const activities = fetchedActivities || [];
+    setRealtimeActivities(activities);
+
+    const channel = supabase
+      .channel('public:activities')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'activities'
+      }, async (payload) => {
+        console.log('Realtime activity update:', payload);
+        
+        // Refresh activities when there's a change
+        const { data, error } = await supabase
+          .from("activities")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .limit(5);
+        
+        if (!error && data) {
+          const formattedActivities = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            timestamp: new Date(item.timestamp).toLocaleString(),
+            type: item.type,
+            icon: item.type
+          })) as ActivityItemProps[];
+          
+          setRealtimeActivities(formattedActivities);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchedActivities]);
+
   const loadingState = propIsLoading !== undefined ? propIsLoading : isLoading;
+  const displayActivities = propActivities || realtimeActivities;
 
   if (loadingState) {
     return (
@@ -53,7 +97,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
     );
   }
 
-  if (!activities || activities.length === 0) {
+  if (!displayActivities || displayActivities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
         <Activity className="h-8 w-8 mb-2 opacity-50" />
@@ -84,7 +128,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
 
   return (
     <div className="space-y-3">
-      {activities.map((activity) => (
+      {displayActivities.map((activity) => (
         <div
           key={activity.id}
           className="flex items-start gap-3 p-3 border rounded-lg bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors"

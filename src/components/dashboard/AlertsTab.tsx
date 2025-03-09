@@ -4,13 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Bell, BellRing, Clock, Calendar, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert } from "@/types/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { logActivity } from "@/utils/activity-logger";
 
 export const AlertsTab = () => {
   const { toast } = useToast();
   const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
+  const [realtimeAlerts, setRealtimeAlerts] = useState<Alert[]>([]);
   
   // Query for active alerts
   const { data: alerts, isLoading, error, refetch } = useQuery({
@@ -28,6 +30,40 @@ export const AlertsTab = () => {
     }
   });
 
+  // Set up realtime subscription
+  useEffect(() => {
+    if (alerts) {
+      setRealtimeAlerts(alerts);
+    }
+
+    const channel = supabase
+      .channel('public:alerts')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'alerts'
+      }, async (payload) => {
+        console.log('Realtime alert update:', payload);
+        
+        // Refresh alerts when there's a change
+        const { data, error } = await supabase
+          .from("alerts")
+          .select("*")
+          .eq("resolved", false)
+          .order("date", { ascending: false })
+          .limit(5);
+        
+        if (!error && data) {
+          setRealtimeAlerts(data as Alert[]);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [alerts]);
+
   const handleResolveAlert = async (alertId: string) => {
     try {
       const { error } = await supabase
@@ -37,11 +73,22 @@ export const AlertsTab = () => {
       
       if (error) throw error;
       
+      // Log activity when alert is resolved
+      await logActivity({
+        title: "Alert marked as resolved",
+        type: "maintenance", // Assuming most alerts are maintenance-related
+        relatedId: alertId
+      });
+      
       toast({
         title: "Alert resolved",
         description: "The alert has been marked as resolved.",
       });
       
+      // Remove the resolved alert from the local state for immediate UI update
+      setRealtimeAlerts(prevAlerts => prevAlerts.filter(alert => alert.id !== alertId));
+      
+      // Also refetch to ensure consistency
       refetch();
     } catch (err) {
       console.error("Failed to resolve alert:", err);
@@ -55,10 +102,8 @@ export const AlertsTab = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-6 space-y-4">
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted animate-pulse">
-          <BellRing className="w-4 h-4 text-muted-foreground" />
-        </div>
+      <div className="flex flex-col space-y-4">
+        <div className="w-full h-20 rounded-md bg-muted animate-pulse"></div>
         <div className="w-full h-20 rounded-md bg-muted animate-pulse"></div>
       </div>
     );
@@ -73,7 +118,7 @@ export const AlertsTab = () => {
     );
   }
 
-  if (!alerts || alerts.length === 0) {
+  if (!realtimeAlerts || realtimeAlerts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
         <Bell className="w-8 h-8 mb-2 text-muted-foreground" />
@@ -111,7 +156,7 @@ export const AlertsTab = () => {
 
   return (
     <div className="space-y-3">
-      {alerts.map((alert) => (
+      {realtimeAlerts.map((alert) => (
         <div 
           key={alert.id} 
           className="border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md bg-white dark:bg-gray-800/50"
