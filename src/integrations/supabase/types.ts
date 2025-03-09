@@ -878,9 +878,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_table_to_publication: {
+        Args: {
+          table_name: string
+        }
+        Returns: undefined
+      }
+      check_replica_identity: {
+        Args: {
+          table_name: string
+        }
+        Returns: boolean
+      }
       create_client_members_table: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      enable_realtime_for_table: {
+        Args: {
+          table_name: string
+        }
+        Returns: boolean
       }
       modify_invoices_client_id_nullable: {
         Args: Record<PropertyKey, never>
@@ -888,6 +906,12 @@ export type Database = {
       }
       modify_trips_client_id_nullable: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      set_replica_identity_full: {
+        Args: {
+          table_name: string
+        }
         Returns: undefined
       }
       update_part_notes: {

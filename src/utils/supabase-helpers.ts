@@ -1,13 +1,16 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 // Enable realtime for a table by setting REPLICA IDENTITY FULL and adding to publication
 export const enableRealtimeForTable = async (tableName: string): Promise<boolean> => {
   try {
     // Call our custom function to enable realtime for the table
-    await supabase.rpc('enable_realtime_for_table', { 
+    const { data, error } = await supabase.rpc('enable_realtime_for_table', { 
       table_name: tableName 
     });
+    
+    if (error) throw error;
     
     console.log(`Realtime enabled for table: ${tableName}`);
     return true;
@@ -18,8 +21,14 @@ export const enableRealtimeForTable = async (tableName: string): Promise<boolean
 };
 
 // Helper hook for initializing realtime on multiple tables
-export const initializeRealtime = async (tableNames: string[]): Promise<void> => {
-  for (const tableName of tableNames) {
-    await enableRealtimeForTable(tableName);
-  }
+export const useInitializeRealtime = (tableNames: string[]) => {
+  useEffect(() => {
+    const initTables = async () => {
+      for (const tableName of tableNames) {
+        await enableRealtimeForTable(tableName);
+      }
+    };
+    
+    initTables();
+  }, [tableNames]);
 };
