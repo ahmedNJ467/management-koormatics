@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityItemProps } from "@/types/dashboard";
-import { Calendar, Clock, User, Car, FileText, Activity, Clock3, Fuel, FileCheck } from "lucide-react";
+import { Calendar, Clock, User, Car, Building, Activity, Clock3, Fuel, FileCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { enableRealtimeForTable } from "@/utils/supabase-helpers";
@@ -125,33 +125,37 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
   const getActivityIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case 'trip':
-        return <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/20"><Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" /></div>;
+        return <Calendar className="h-5 w-5 text-blue-500" />;
       case 'maintenance':
-        return <div className="rounded-full bg-indigo-100 p-2 dark:bg-indigo-900/20"><Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /></div>;
+        return <Clock className="h-5 w-5 text-indigo-500" />;
       case 'driver':
-        return <div className="rounded-full bg-green-100 p-2 dark:bg-green-900/20"><User className="h-4 w-4 text-green-600 dark:text-green-400" /></div>;
+        return <User className="h-5 w-5 text-green-500" />;
       case 'vehicle':
-        return <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900/20"><Car className="h-4 w-4 text-amber-600 dark:text-amber-400" /></div>;
+        return <Car className="h-5 w-5 text-amber-500" />;
       case 'fuel':
-        return <div className="rounded-full bg-red-100 p-2 dark:bg-red-900/20"><Fuel className="h-4 w-4 text-red-600 dark:text-red-400" /></div>;
+        return <Fuel className="h-5 w-5 text-red-500" />;
       case 'contract':
-        return <div className="rounded-full bg-purple-100 p-2 dark:bg-purple-900/20"><FileCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" /></div>;
+        return <FileCheck className="h-5 w-5 text-purple-500" />;
+      case 'client':
+        return <Building className="h-5 w-5 text-pink-500" />;
       default:
-        return <div className="rounded-full bg-gray-100 p-2 dark:bg-gray-900/20"><FileText className="h-4 w-4 text-gray-600 dark:text-gray-400" /></div>;
+        return <Activity className="h-5 w-5 text-gray-500" />;
     }
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {displayActivities.map((activity) => (
         <div
           key={activity.id}
-          className="flex items-start gap-3 p-3 border rounded-lg bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors"
+          className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/40 border border-gray-700 hover:bg-gray-800/60 transition-colors"
         >
-          {getActivityIcon(activity.type)}
-          <div>
-            <p className="text-sm font-medium">{activity.title}</p>
-            <p className="text-xs text-muted-foreground mt-1">
+          <div className="text-blue-400 mt-1">
+            {getActivityIcon(activity.type)}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-white">{activity.title}</p>
+            <p className="text-xs flex items-center mt-1 text-gray-400">
               <Clock3 className="inline-block h-3 w-3 mr-1 opacity-70" />
               {activity.timestamp}
             </p>

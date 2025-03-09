@@ -108,8 +108,8 @@ export const getActivities = async (limit?: number): Promise<ActivityItemProps[]
       id: item.id,
       title: item.title,
       timestamp: formatTimestamp(new Date(item.timestamp)),
-      type: item.type as ActivityType, // Explicitly cast to ensure type safety
-      icon: item.type as ActivityType // Type safety for icon
+      type: item.type as ActivityType, 
+      icon: item.type as ActivityType
     }));
   } catch (err) {
     console.error("Failed to fetch activities:", err);
