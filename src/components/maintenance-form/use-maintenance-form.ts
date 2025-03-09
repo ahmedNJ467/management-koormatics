@@ -6,6 +6,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import type { Maintenance } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const maintenanceSchema = z.object({
   vehicle_id: z.string().min(1, "Vehicle is required"),
@@ -18,10 +19,13 @@ const maintenanceSchema = z.object({
   service_provider: z.string().optional(),
 });
 
-type MaintenanceFormValues = z.infer<typeof maintenanceSchema>;
+type MaintenanceFormValues = z.infer<typeof maintenanceSchema> & {
+  spare_parts?: { id: string, quantity: number }[];
+};
 
 export function useMaintenanceForm(maintenance?: Maintenance) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -72,6 +76,8 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
         service_provider: values.service_provider || null,
       };
 
+      let maintenanceId = maintenance?.id;
+
       if (maintenance) {
         const { error: updateError } = await supabase
           .from("maintenance")
@@ -80,24 +86,62 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
           .single();
 
         if (updateError) throw updateError;
-
-        toast({
-          title: "Maintenance record updated",
-          description: "The maintenance record has been updated successfully.",
-        });
       } else {
-        const { error: insertError } = await supabase
+        const { data: newMaintenance, error: insertError } = await supabase
           .from("maintenance")
           .insert(formattedValues)
+          .select()
           .single();
 
         if (insertError) throw insertError;
-
-        toast({
-          title: "Maintenance record created",
-          description: "A new maintenance record has been created successfully.",
-        });
+        maintenanceId = newMaintenance.id;
       }
+
+      // Handle spare parts if any were selected
+      if (values.spare_parts && values.spare_parts.length > 0 && maintenanceId) {
+        // Only process spare parts if maintenance is completed
+        if (values.status === 'completed') {
+          const today = new Date().toISOString().split('T')[0];
+
+          // Update each selected spare part
+          for (const part of values.spare_parts) {
+            // Get current part data
+            const { data: currentPart } = await supabase
+              .from("spare_parts")
+              .select("quantity, quantity_used")
+              .eq("id", part.id)
+              .single();
+
+            if (currentPart) {
+              const newQuantity = Math.max(0, currentPart.quantity - part.quantity);
+              const newQuantityUsed = (currentPart.quantity_used || 0) + part.quantity;
+
+              // Update the spare part
+              await supabase
+                .from("spare_parts")
+                .update({
+                  quantity: newQuantity,
+                  quantity_used: newQuantityUsed,
+                  last_used_date: today,
+                  maintenance_id: maintenanceId,
+                  status: newQuantity === 0 ? "out_of_stock" : newQuantity <= currentPart.min_stock_level ? "low_stock" : "in_stock"
+                })
+                .eq("id", part.id);
+            }
+          }
+        }
+      }
+
+      // Invalidate relevant queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["maintenance"] });
+      queryClient.invalidateQueries({ queryKey: ["spare-parts"] });
+
+      toast({
+        title: maintenance ? "Maintenance record updated" : "Maintenance record created",
+        description: maintenance 
+          ? "The maintenance record has been updated successfully."
+          : "A new maintenance record has been created successfully.",
+      });
 
       form.reset();
     } catch (error) {

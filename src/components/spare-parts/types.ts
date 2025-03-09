@@ -16,4 +16,8 @@ export interface SparePart {
   notes?: string;
   created_at: string;
   updated_at: string;
+  purchase_date?: string;
+  quantity_used?: number;
+  maintenance_id?: string;
+  last_used_date?: string;
 }

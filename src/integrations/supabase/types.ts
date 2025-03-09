@@ -527,13 +527,17 @@ export type Database = {
           created_at: string
           id: string
           last_ordered: string | null
+          last_used_date: string | null
           location: string
+          maintenance_id: string | null
           manufacturer: string
           min_stock_level: number
           name: string
           part_image: string | null
           part_number: string
+          purchase_date: string | null
           quantity: number
+          quantity_used: number | null
           status: string
           unit_price: number
           updated_at: string
@@ -544,13 +548,17 @@ export type Database = {
           created_at?: string
           id?: string
           last_ordered?: string | null
+          last_used_date?: string | null
           location: string
+          maintenance_id?: string | null
           manufacturer: string
           min_stock_level?: number
           name: string
           part_image?: string | null
           part_number: string
+          purchase_date?: string | null
           quantity?: number
+          quantity_used?: number | null
           status: string
           unit_price?: number
           updated_at?: string
@@ -561,18 +569,30 @@ export type Database = {
           created_at?: string
           id?: string
           last_ordered?: string | null
+          last_used_date?: string | null
           location?: string
+          maintenance_id?: string | null
           manufacturer?: string
           min_stock_level?: number
           name?: string
           part_image?: string | null
           part_number?: string
+          purchase_date?: string | null
           quantity?: number
+          quantity_used?: number | null
           status?: string
           unit_price?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spare_parts_maintenance_id_fkey"
+            columns: ["maintenance_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trip_assignments: {
         Row: {

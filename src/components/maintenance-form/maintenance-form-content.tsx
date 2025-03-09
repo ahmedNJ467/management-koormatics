@@ -9,6 +9,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { UseFormReturn } from "react-hook-form";
 import type { Maintenance, Vehicle } from "@/lib/types";
+import { SparePart } from "@/components/spare-parts/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
+import { X } from "lucide-react";
 
 interface MaintenanceFormContentProps {
   form: UseFormReturn<any>;
@@ -27,6 +32,10 @@ export function MaintenanceFormContent({
   onDelete,
   onSubmit,
 }: MaintenanceFormContentProps) {
+  const [selectedParts, setSelectedParts] = useState<{id: string, quantity: number}[]>(
+    maintenance?.spare_parts || []
+  );
+
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
@@ -40,9 +49,49 @@ export function MaintenanceFormContent({
     },
   });
 
+  const { data: spareParts } = useQuery({
+    queryKey: ["spare-parts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("spare_parts")
+        .select("*")
+        .gt("quantity", 0)
+        .eq("status", "in_stock")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      return data as SparePart[];
+    },
+  });
+
+  const handlePartSelection = (partId: string) => {
+    const isSelected = selectedParts.some(p => p.id === partId);
+    
+    if (isSelected) {
+      setSelectedParts(selectedParts.filter(p => p.id !== partId));
+    } else {
+      setSelectedParts([...selectedParts, { id: partId, quantity: 1 }]);
+    }
+  };
+
+  const handlePartQuantityChange = (partId: string, quantity: number) => {
+    setSelectedParts(selectedParts.map(p => 
+      p.id === partId ? { ...p, quantity } : p
+    ));
+  };
+
+  const handleFormSubmit = (values: any) => {
+    // Add selected parts to the form values
+    const formValues = {
+      ...values,
+      spare_parts: selectedParts
+    };
+    onSubmit(formValues);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="vehicle_id"
@@ -118,7 +167,7 @@ export function MaintenanceFormContent({
             name="expense"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Expense (USD)*</FormLabel>
+                <FormLabel>External Expense (USD)*</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
@@ -171,6 +220,60 @@ export function MaintenanceFormContent({
             </FormItem>
           )}
         />
+
+        {/* Spare Parts Selection */}
+        <div className="space-y-3">
+          <h3 className="text-lg font-medium">Use Spare Parts</h3>
+          <div className="grid grid-cols-1 gap-3 max-h-[200px] overflow-y-auto">
+            {spareParts?.length ? (
+              spareParts.map((part) => (
+                <Card key={part.id} className={`border ${selectedParts.some(p => p.id === part.id) ? 'border-primary' : ''}`}>
+                  <CardHeader className="p-3 pb-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`part-${part.id}`}
+                          checked={selectedParts.some(p => p.id === part.id)}
+                          onCheckedChange={() => handlePartSelection(part.id)}
+                        />
+                        <label htmlFor={`part-${part.id}`} className="font-medium cursor-pointer">
+                          {part.name}
+                        </label>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        Available: {part.quantity}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        {part.part_number} - {part.category}
+                      </div>
+                      {selectedParts.some(p => p.id === part.id) && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">Quantity:</span>
+                          <Input
+                            type="number"
+                            min="1"
+                            max={part.quantity}
+                            className="w-20 h-8"
+                            value={selectedParts.find(p => p.id === part.id)?.quantity || 1}
+                            onChange={(e) => handlePartQuantityChange(part.id, parseInt(e.target.value))}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-muted-foreground text-center py-6">
+                No spare parts available in inventory
+              </div>
+            )}
+          </div>
+        </div>
 
         <FormField
           control={form.control}

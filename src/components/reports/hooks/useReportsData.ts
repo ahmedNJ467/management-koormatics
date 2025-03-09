@@ -51,7 +51,7 @@ export function useReportsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        .select("*, vehicles(make, model, registration), drivers(first_name, last_name), clients(company_name)")
+        .select("*, vehicles(make, model, registration), drivers(name), clients(name)")
         .order("date", { ascending: false });
         
       if (error) throw error;
@@ -73,13 +73,13 @@ export function useReportsData() {
     }
   });
 
-  // Fetch spare parts data
+  // Fetch spare parts data with new fields
   const { data: sparePartsData, isLoading: isLoadingSpareparts } = useQuery({
     queryKey: ["spare-parts"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("spare_parts")
-        .select("*")
+        .select("*, vehicles(make, model, registration)")
         .order("created_at", { ascending: false });
         
       if (error) throw error;

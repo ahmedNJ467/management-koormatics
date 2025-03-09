@@ -19,4 +19,8 @@ export interface Maintenance {
     model: string;
     registration: string;
   };
+  spare_parts?: Array<{
+    id: string;
+    quantity: number;
+  }>;
 }
