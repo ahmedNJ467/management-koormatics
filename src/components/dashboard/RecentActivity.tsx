@@ -82,21 +82,31 @@ const formatTimestamp = (date: Date): string => {
   }
 };
 
-export const RecentActivity = ({ isLoading = false }: { isLoading?: boolean }) => {
+interface RecentActivityProps {
+  isLoading?: boolean;
+  activities?: ActivityItemProps[];
+}
+
+export const RecentActivity = ({ isLoading = false, activities }: RecentActivityProps) => {
   const navigate = useNavigate();
-  const [activities, setActivities] = useState<ActivityItemProps[]>([]);
+  const [activityItems, setActivityItems] = useState<ActivityItemProps[]>([]);
   
   useEffect(() => {
-    // On initial load, set the activities
-    setActivities(generateDynamicActivities());
-    
-    // Periodically update timestamps
-    const intervalId = setInterval(() => {
-      setActivities(generateDynamicActivities());
-    }, 60000); // Update every minute
-    
-    return () => clearInterval(intervalId);
-  }, []);
+    // If activities are provided, use them; otherwise, generate dynamic ones
+    if (activities && activities.length > 0) {
+      setActivityItems(activities);
+    } else {
+      // On initial load, set the activities
+      setActivityItems(generateDynamicActivities());
+      
+      // Periodically update timestamps
+      const intervalId = setInterval(() => {
+        setActivityItems(generateDynamicActivities());
+      }, 60000); // Update every minute
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [activities]);
 
   // Function to get the appropriate icon for each activity type
   const getIcon = (type: string) => {
@@ -138,9 +148,9 @@ export const RecentActivity = ({ isLoading = false }: { isLoading?: boolean }) =
 
   return (
     <div className="space-y-4">
-      {activities.length > 0 ? (
+      {activityItems.length > 0 ? (
         <>
-          {activities.map((activity) => (
+          {activityItems.map((activity) => (
             <div key={activity.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors duration-150">
               <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/30 p-2 rounded-full shadow-sm">
                 {getIcon(activity.type)}
