@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -182,7 +181,14 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Combine spare parts with vehicle and maintenance data
-        const partsWithRelationships = (parts || []).map((part: SparePart) => {
+        const partsWithRelationships = (parts || []).map((partData: any) => {
+          // Cast the database part to match our TypeScript interface
+          const part: SparePart = {
+            ...partData,
+            status: (partData.status as string) as "in_stock" | "low_stock" | "out_of_stock",
+            vehicles: null
+          };
+          
           let vehicleInfo = null;
           
           // If we have a maintenance_id, try to get vehicle info from the associated maintenance record
@@ -383,7 +389,14 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Combine spare parts with vehicle and maintenance data
-        const partsWithRelationships = (parts || []).map((part: SparePart) => {
+        const partsWithRelationships = (parts || []).map((partData: any) => {
+          // Cast the database part to match our TypeScript interface
+          const part: SparePart = {
+            ...partData,
+            status: (partData.status as string) as "in_stock" | "low_stock" | "out_of_stock",
+            vehicles: null
+          };
+          
           let vehicleInfo = null;
           
           // If we have a maintenance_id, try to get vehicle info from the associated maintenance record
