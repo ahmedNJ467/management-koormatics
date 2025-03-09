@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutGrid, Send } from "lucide-react";
+import { Calendar, LayoutGrid } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function DispatchHeader() {
@@ -20,12 +20,18 @@ export function DispatchHeader() {
             <span className="hidden sm:inline">View Trips</span>
           </Button>
         </Link>
-        <Link to="/drivers">
-          <Button variant="outline" size="sm" className="h-9 gap-1">
-            <LayoutGrid className="h-4 w-4" />
-            <span className="hidden sm:inline">Manage Drivers</span>
-          </Button>
-        </Link>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-9 gap-1"
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = "/drivers";
+          }}
+        >
+          <LayoutGrid className="h-4 w-4" />
+          <span className="hidden sm:inline">Manage Drivers</span>
+        </Button>
       </div>
     </div>
   );

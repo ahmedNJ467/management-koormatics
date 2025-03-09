@@ -17,7 +17,10 @@ export function DispatchTrips({
   onAssignDriver,
   onSendMessage
 }: DispatchTripsProps) {
-  if (trips.length === 0) {
+  // Ensure we have an array to work with
+  const safeTrips = Array.isArray(trips) ? trips.filter(Boolean) : [];
+  
+  if (safeTrips.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         No trips in this category
@@ -29,15 +32,16 @@ export function DispatchTrips({
   const conflictedDrivers = new Map<string, DisplayTrip[]>();
   const conflictedTrips = new Set<string>();
 
-  // Group trips by date
+  // Group trips by date - SAFELY
   const tripsByDate = new Map<string, DisplayTrip[]>();
-  trips.forEach(trip => {
-    if (!trip.date) return; // Skip trips without dates
+  safeTrips.forEach(trip => {
+    if (!trip || !trip.date) return; // Skip trips without dates
     
-    if (!tripsByDate.has(trip.date)) {
-      tripsByDate.set(trip.date, []);
+    const dateKey = trip.date.toString();
+    if (!tripsByDate.has(dateKey)) {
+      tripsByDate.set(dateKey, []);
     }
-    tripsByDate.get(trip.date)?.push(trip);
+    tripsByDate.get(dateKey)?.push(trip);
   });
 
   // Check for conflicts within each date
@@ -55,31 +59,65 @@ export function DispatchTrips({
         // Skip if no driver assigned or different drivers
         if (!trip2.driver_id || trip1.driver_id !== trip2.driver_id) continue;
         
-        // Check if the times overlap (within 1 hour)
-        const time1 = convertTimeToMinutes(trip1.time || "00:00");
-        const time2 = convertTimeToMinutes(trip2.time || "00:00");
+        // Check if the times overlap (within 1 hour) - SAFELY
+        const time1 = convertTimeToMinutes(trip1.time);
+        const time2 = convertTimeToMinutes(trip2.time);
         
         if (Math.abs(time1 - time2) < 60) {
-          // Add both trips to the conflicted set
-          conflictedTrips.add(trip1.id);
-          conflictedTrips.add(trip2.id);
+          // Add both trips to the conflicted set if they have valid IDs
+          if (trip1.id) conflictedTrips.add(trip1.id);
+          if (trip2.id) conflictedTrips.add(trip2.id);
           
           // Group conflicts by driver
-          if (!conflictedDrivers.has(trip1.driver_id)) {
-            conflictedDrivers.set(trip1.driver_id, []);
-          }
-          
-          if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip1.id)) {
-            conflictedDrivers.get(trip1.driver_id)?.push(trip1);
-          }
-          
-          if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip2.id)) {
-            conflictedDrivers.get(trip1.driver_id)?.push(trip2);
+          if (trip1.driver_id) {
+            if (!conflictedDrivers.has(trip1.driver_id)) {
+              conflictedDrivers.set(trip1.driver_id, []);
+            }
+            
+            if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip1.id)) {
+              conflictedDrivers.get(trip1.driver_id)?.push(trip1);
+            }
+            
+            if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip2.id)) {
+              conflictedDrivers.get(trip1.driver_id)?.push(trip2);
+            }
           }
         }
       }
     }
   });
+
+  // Safe formatters that don't throw errors
+  const safeFormatDate = (dateStr: string | undefined | null): string => {
+    if (!dateStr) return "No date";
+    try {
+      return formatDate(dateStr);
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
+  };
+
+  const safeFormatTime = (timeStr: string | undefined | null): string => {
+    if (!timeStr) return "No time";
+    try {
+      return formatTime(timeStr);
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "Invalid time";
+    }
+  };
+
+  // Safe ID formatter
+  const safeFormatId = (id: string | undefined | null): string => {
+    if (!id) return "N/A";
+    try {
+      return id.substring(0, 8).toUpperCase();
+    } catch (error) {
+      console.error("Error formatting ID:", error);
+      return "Invalid ID";
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -100,8 +138,8 @@ export function DispatchTrips({
                   </p>
                   <ul className="list-disc list-inside pl-2">
                     {trips.map(trip => (
-                      <li key={trip.id}>
-                        {formatDate(trip.date || "")} at {formatTime(trip.time || "")} - {trip.pickup_location || "No pickup"} to {trip.dropoff_location || "No dropoff"}
+                      <li key={trip.id || "unknown"}>
+                        {safeFormatDate(trip.date)} at {safeFormatTime(trip.time)} - {trip.pickup_location || "No pickup"} to {trip.dropoff_location || "No dropoff"}
                       </li>
                     ))}
                   </ul>
@@ -112,25 +150,25 @@ export function DispatchTrips({
         </div>
       )}
 
-      {trips.map(trip => (
+      {safeTrips.map(trip => (
         <div 
-          key={trip.id} 
+          key={trip.id || "trip-" + Math.random().toString(36).substring(2, 9)} 
           className={`border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow ${
-            conflictedTrips.has(trip.id) ? 'border-amber-500 dark:border-amber-500/70' : ''
+            trip.id && conflictedTrips.has(trip.id) ? 'border-amber-500 dark:border-amber-500/70' : ''
           }`}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
             <div className="font-medium text-lg">
-              {formatDate(trip.date || "")} 
+              {safeFormatDate(trip.date)} 
               {trip.time && (
                 <span className="text-muted-foreground ml-2 text-sm">
                   <Clock className="h-3 w-3 inline mr-1" />
-                  {formatTime(trip.time)}
+                  {safeFormatTime(trip.time)}
                 </span>
               )}
               
               {/* Conflict indicator */}
-              {conflictedTrips.has(trip.id) && (
+              {trip.id && conflictedTrips.has(trip.id) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -147,7 +185,7 @@ export function DispatchTrips({
               )}
             </div>
             <div className="text-sm text-muted-foreground">
-              Trip ID: {trip.id ? trip.id.substring(0, 8).toUpperCase() : "N/A"}
+              Trip ID: {safeFormatId(trip.id)}
             </div>
           </div>
           
@@ -213,9 +251,14 @@ export function DispatchTrips({
 }
 
 // Helper function to convert time string (HH:MM) to minutes for easier comparison
-function convertTimeToMinutes(timeString: string): number {
+function convertTimeToMinutes(timeString: string | undefined | null): number {
   if (!timeString) return 0;
   
-  const [hours, minutes] = timeString.split(':').map(Number);
-  return (hours * 60) + (minutes || 0); // Handle potential undefined minutes
+  try {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return (isNaN(hours) ? 0 : hours * 60) + (isNaN(minutes) ? 0 : minutes);
+  } catch (error) {
+    console.error("Error converting time to minutes:", timeString, error);
+    return 0;
+  }
 }

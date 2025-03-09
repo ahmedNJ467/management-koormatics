@@ -16,11 +16,16 @@ interface DriverStatusProps {
 }
 
 export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
+  // Ensure we have arrays to work with
+  const safeDrivers = Array.isArray(drivers) ? drivers : [];
+  const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
+  const safeTrips = Array.isArray(trips) ? trips : [];
+  
   // Determine which drivers are assigned to trips today
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const todayTrips = trips.filter(trip => {
+  const todayTrips = safeTrips.filter(trip => {
     if (!trip || !trip.date) return false;
     
     try {
@@ -51,6 +56,17 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
     }
   });
 
+  // Safe way to get initials
+  const safeGetInitials = (name: string | null | undefined): string => {
+    if (!name) return '';
+    try {
+      return getInitials(name);
+    } catch (error) {
+      console.error("Error getting initials:", error);
+      return '';
+    }
+  };
+
   return (
     <Tabs defaultValue="drivers" className="w-full">
       <TabsList className="w-full mb-4 bg-slate-800 border border-slate-700">
@@ -65,13 +81,13 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
       </TabsList>
       
       <TabsContent value="drivers">
-        {!drivers || drivers.length === 0 ? (
+        {!safeDrivers.length ? (
           <div className="text-center py-8 text-muted-foreground">
             No drivers available
           </div>
         ) : (
           <div className="space-y-4">
-            {drivers.map(driver => {
+            {safeDrivers.map(driver => {
               if (!driver || !driver.id) return null;
               
               const tripCount = assignedDrivers.get(driver.id) || 0;
@@ -84,7 +100,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                 >
                   <Avatar>
                     <AvatarImage src={driver.avatar_url || undefined} />
-                    <AvatarFallback>{getInitials(driver.name || "")}</AvatarFallback>
+                    <AvatarFallback>{safeGetInitials(driver.name)}</AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1">
@@ -117,13 +133,13 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
       </TabsContent>
       
       <TabsContent value="vehicles">
-        {!vehicles || vehicles.length === 0 ? (
+        {!safeVehicles.length ? (
           <div className="text-center py-8 text-muted-foreground">
             No vehicles available
           </div>
         ) : (
           <div className="space-y-4">
-            {vehicles.map(vehicle => {
+            {safeVehicles.map(vehicle => {
               if (!vehicle || !vehicle.id) return null;
               
               const tripCount = assignedVehicles.get(vehicle.id) || 0;
@@ -139,7 +155,9 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                   </div>
                   
                   <div className="flex-1">
-                    <div className="font-medium">{vehicle.make || ""} {vehicle.model || ""}</div>
+                    <div className="font-medium">
+                      {(vehicle.make || "") + " " + (vehicle.model || "").trim() || "Unknown Vehicle"}
+                    </div>
                     <div className="text-sm text-muted-foreground">{vehicle.registration || "No registration"}</div>
                   </div>
                   

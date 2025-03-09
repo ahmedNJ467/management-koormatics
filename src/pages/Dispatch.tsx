@@ -25,9 +25,12 @@ export default function Dispatch() {
   const [newMessage, setNewMessage] = useState("");
   
   // Filter only scheduled and in_progress trips for dispatch
-  const dispatchTrips = trips.filter(trip => 
-    trip && (trip.status === "scheduled" || trip.status === "in_progress")
-  );
+  // Add safety check to ensure trips is an array and filter out any bad data
+  const dispatchTrips = Array.isArray(trips) 
+    ? trips
+        .filter(trip => trip && typeof trip === 'object')
+        .filter(trip => trip.status === "scheduled" || trip.status === "in_progress")
+    : [];
 
   // Handle sending a message to driver
   const handleSendMessage = async () => {
@@ -95,8 +98,8 @@ export default function Dispatch() {
       
       <DispatchBoard 
         trips={dispatchTrips}
-        drivers={drivers}
-        vehicles={vehicles}
+        drivers={drivers || []}
+        vehicles={vehicles || []}
         onAssignDriver={(trip) => {
           setTripToAssign(trip);
           setAssignOpen(true);
