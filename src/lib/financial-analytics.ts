@@ -44,11 +44,18 @@ export function calculateCombinedFinancialData(
   const vehicleCosts = calculateVehicleCosts(maintenanceData, fuelData);
   const maintenanceCategories = calculateMaintenanceCategories(maintenanceData);
   const fuelTypes = calculateFuelTypes(fuelData);
+  
+  // Add empty arrays for spare parts data in the comparison function
+  const sparePartsData: any[] = [];
+  const comparisonSparePartsData: any[] = [];
+  
   const yearComparison = calculateYearComparison(
     maintenanceData, 
-    fuelData, 
+    fuelData,
+    sparePartsData, // Add spare parts data
     comparisonMaintenanceData, 
-    comparisonFuelData, 
+    comparisonFuelData,
+    comparisonSparePartsData, // Add comparison spare parts data
     selectedYear, 
     comparisonYear
   );
