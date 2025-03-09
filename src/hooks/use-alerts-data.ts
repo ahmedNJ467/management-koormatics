@@ -2,49 +2,72 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert } from "@/types/alert";
-import { useApiErrorHandler } from "@/lib/api-error-handler";
 
-export const useAlertsData = (filter?: {
-  resolved?: boolean;
-  priority?: string;
-  type?: string;
+interface UseAlertsDataProps {
+  activeOnly?: boolean;
   limit?: number;
-}) => {
-  const { handleError } = useApiErrorHandler();
+  type?: string;
+  priority?: string;
+}
 
-  return useQuery({
-    queryKey: ["alerts", filter],
+export const useAlertsData = ({
+  activeOnly = true,
+  limit,
+  type,
+  priority
+}: UseAlertsDataProps = {}) => {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["alerts", activeOnly, limit, type, priority],
     queryFn: async () => {
       try {
         let query = supabase.from("alerts").select("*");
-
-        // Apply filters if provided
-        if (filter) {
-          if (filter.resolved !== undefined) {
-            query = query.eq("resolved", filter.resolved);
-          }
-          if (filter.priority && filter.priority !== "") {
-            query = query.eq("priority", filter.priority);
-          }
-          if (filter.type && filter.type !== "") {
-            query = query.eq("type", filter.type);
-          }
-          if (filter.limit) {
-            query = query.limit(filter.limit);
-          }
+        
+        if (activeOnly) {
+          query = query.eq("resolved", false);
         }
-
-        // Sort by date, with most recent first
+        
+        if (type) {
+          query = query.eq("type", type);
+        }
+        
+        if (priority) {
+          query = query.eq("priority", priority);
+        }
+        
+        if (limit) {
+          query = query.limit(limit);
+        }
+        
         query = query.order("date", { ascending: false });
-
+        
         const { data, error } = await query;
-
+        
         if (error) throw error;
-
-        return data as Alert[];
-      } catch (error) {
-        throw handleError(error, "Failed to fetch alerts");
+        
+        return data.map(alert => ({
+          id: alert.id,
+          title: alert.title,
+          priority: alert.priority,
+          date: alert.date,
+          created_at: alert.created_at,
+          updated_at: alert.updated_at,
+          resolved: alert.resolved,
+          type: alert.type,
+          description: alert.description,
+          related_id: alert.related_id,
+          related_type: alert.related_type
+        })) as Alert[];
+      } catch (err) {
+        console.error("Error fetching alerts:", err);
+        throw err;
       }
-    },
+    }
   });
+  
+  return {
+    alerts: data || [],
+    isLoading,
+    error,
+    refetch
+  };
 };

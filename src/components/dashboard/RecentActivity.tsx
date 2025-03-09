@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { getActivities, logActivity } from "@/utils/activity-logger";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RecentActivityProps {
   isLoading?: boolean;
@@ -26,23 +28,40 @@ interface RecentActivityProps {
 export const RecentActivity = ({ isLoading = false, activities }: RecentActivityProps) => {
   const navigate = useNavigate();
   const [activityItems, setActivityItems] = useState<ActivityItemProps[]>([]);
+
+  // Query for recent activities
+  const { data: databaseActivities, refetch } = useQuery({
+    queryKey: ["recent-activities"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activities")
+        .select("*")
+        .order("timestamp", { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      return data?.map(activity => ({
+        id: activity.id,
+        title: activity.title,
+        timestamp: formatTimestamp(new Date(activity.timestamp)),
+        type: activity.type,
+        icon: activity.type
+      })) as ActivityItemProps[];
+    },
+    enabled: !activities || activities.length === 0
+  });
   
   useEffect(() => {
     // If activities are provided, use them; otherwise get from activity logger
     if (activities && activities.length > 0) {
       setActivityItems(activities);
+    } else if (databaseActivities && databaseActivities.length > 0) {
+      setActivityItems(databaseActivities);
     } else {
-      // On initial load, set the activities from the activity logger
+      // As a fallback, use in-memory activities
       setActivityItems(getActivities(5));
-      
-      // Periodically refresh activities
-      const intervalId = setInterval(() => {
-        setActivityItems(getActivities(5));
-      }, 30000); // Refresh every 30 seconds
-      
-      return () => clearInterval(intervalId);
     }
-  }, [activities]);
+  }, [activities, databaseActivities]);
 
   // Function to get the appropriate icon for each activity type
   const getIcon = (type: string) => {
@@ -63,6 +82,25 @@ export const RecentActivity = ({ isLoading = false, activities }: RecentActivity
         return <FileBadge className="h-5 w-5 text-blue-600" />;
       default:
         return <CheckCircle className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  // Format timestamps in a human-readable format
+  const formatTimestamp = (date: Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) {
+      return 'just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days !== 1 ? 's' : ''} ago`;
     }
   };
 
@@ -105,7 +143,11 @@ export const RecentActivity = ({ isLoading = false, activities }: RecentActivity
             className="w-full mt-4 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
             onClick={() => {
               // Refresh activities on button click
-              setActivityItems(getActivities(5));
+              if (databaseActivities && databaseActivities.length > 0) {
+                refetch();
+              } else {
+                setActivityItems(getActivities(5));
+              }
             }}
           >
             Refresh activities

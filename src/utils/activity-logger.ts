@@ -1,4 +1,6 @@
+
 import { ActivityItemProps } from "@/types/dashboard";
+import { supabase } from "@/integrations/supabase/client";
 
 type ActivityType = 'trip' | 'maintenance' | 'vehicle' | 'driver' | 'client' | 'fuel' | 'contract';
 
@@ -8,7 +10,7 @@ interface ActivityLogParams {
   relatedId?: string;
 }
 
-// In-memory storage for activities
+// In-memory storage for activities as a fallback
 const activities: ActivityItemProps[] = [];
 
 // Format timestamps in a human-readable format
@@ -30,8 +32,8 @@ const formatTimestamp = (date: Date): string => {
   }
 };
 
-// Add a new activity to the in-memory store instead of database
-export const logActivity = ({ title, type, relatedId }: ActivityLogParams): ActivityItemProps => {
+// Add a new activity to the database and in-memory store
+export const logActivity = async ({ title, type, relatedId }: ActivityLogParams): Promise<ActivityItemProps> => {
   const id = Date.now().toString();
   const timestamp = new Date();
   
@@ -53,12 +55,32 @@ export const logActivity = ({ title, type, relatedId }: ActivityLogParams): Acti
     icon: iconMap[type] || 'activity'
   };
   
-  // Add to the front of the array
+  // Add to the front of the in-memory array
   activities.unshift(newActivity);
   
   // Keep only the last 50 activities
   if (activities.length > 50) {
     activities.length = 50;
+  }
+  
+  // Save to the database
+  try {
+    const { data, error } = await supabase
+      .from('activities')
+      .insert([
+        { 
+          title, 
+          type, 
+          related_id: relatedId,
+          timestamp: timestamp.toISOString()
+        }
+      ]);
+      
+    if (error) {
+      console.error("Error saving activity to database:", error);
+    }
+  } catch (err) {
+    console.error("Failed to log activity to database:", err);
   }
   
   // Log for debugging
@@ -73,7 +95,7 @@ export const logActivity = ({ title, type, relatedId }: ActivityLogParams): Acti
   return newActivity;
 };
 
-// Get all logged activities
+// Get all logged activities from in-memory store (fallback)
 export const getActivities = (limit?: number): ActivityItemProps[] => {
   return limit ? activities.slice(0, limit) : [...activities];
 };
@@ -84,7 +106,7 @@ export const clearActivities = (): void => {
 };
 
 // Generate sample activities
-export const generateSampleActivities = (): void => {
+export const generateSampleActivities = async (): Promise<void> => {
   const now = new Date();
   
   const sampleActivities: ActivityLogParams[] = [
@@ -118,10 +140,24 @@ export const generateSampleActivities = (): void => {
     }
   ];
   
-  // Clear existing activities
+  // Clear existing in-memory activities
   clearActivities();
   
-  // Add sample activities with different timestamps
+  // Check if we have activities in the database
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*')
+    .limit(1);
+    
+  // Only seed if there are no activities
+  if (error || (data && data.length === 0)) {
+    // Add sample activities to database
+    for (const activity of sampleActivities) {
+      await logActivity(activity);
+    }
+  }
+  
+  // Add sample activities to in-memory cache with different timestamps
   sampleActivities.forEach((activity, index) => {
     // Create the activity with a timestamp offset based on index
     const timestamp = new Date(now.getTime() - (index * 2 + 1) * 3600000);

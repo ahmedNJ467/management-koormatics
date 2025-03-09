@@ -2,27 +2,44 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Activity } from "@/types/alert";
-import { useApiErrorHandler } from "@/lib/api-error-handler";
 
-export const useActivitiesData = (limit: number = 5) => {
-  const { handleError } = useApiErrorHandler();
-
-  return useQuery({
+export const useActivitiesData = (limit?: number) => {
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["activities", limit],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from("activities")
-          .select("*")
-          .order("timestamp", { ascending: false })
-          .limit(limit);
-
+        const query = supabase.from("activities").select("*");
+        
+        if (limit) {
+          query.limit(limit);
+        }
+        
+        query.order("timestamp", { ascending: false });
+        
+        const { data, error } = await query;
+        
         if (error) throw error;
-
-        return data as Activity[];
-      } catch (error) {
-        throw handleError(error, "Failed to fetch activities");
+        
+        return data.map(activity => ({
+          id: activity.id,
+          title: activity.title,
+          timestamp: activity.timestamp,
+          type: activity.type,
+          related_id: activity.related_id,
+          created_at: activity.created_at,
+          updated_at: activity.updated_at
+        })) as Activity[];
+      } catch (err) {
+        console.error("Error fetching activities:", err);
+        throw err;
       }
     }
   });
+  
+  return {
+    activities: data || [],
+    isLoading,
+    error,
+    refetch
+  };
 };

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { getActivities, logActivity } from "@/utils/activity-logger";
+import { Alert } from "@/types/alert";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -116,6 +118,21 @@ export default function Dashboard() {
         totalContracts: contracts.length,
       };
     },
+  });
+
+  // Query for active alerts
+  const { data: alertsData, isLoading: isAlertsLoading } = useQuery({
+    queryKey: ["active-alerts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("alerts")
+        .select("*")
+        .eq("resolved", false)
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+      return data as Alert[];
+    }
   });
 
   return (
@@ -226,7 +243,7 @@ export default function Dashboard() {
         <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
-            {alerts && alerts.length > 0 && (
+            {alertsData && alertsData.length > 0 && (
               <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
             )}
             <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -235,12 +252,12 @@ export default function Dashboard() {
             {isAlertsLoading ? (
               <Skeleton className="h-7 w-20" />
             ) : (
-              <div className="text-2xl font-bold">{alerts?.length || 0}</div>
+              <div className="text-2xl font-bold">{alertsData?.length || 0}</div>
             )}
             <p className="text-xs text-muted-foreground mt-1">
               {isAlertsLoading ? (
                 <Skeleton className="h-4 w-28" />
-              ) : alerts && alerts.length > 0 ? (
+              ) : alertsData && alertsData.length > 0 ? (
                 <span className="flex items-center">
                   <span className="inline-block h-2 w-2 rounded-full bg-red-500 mr-1 animate-pulse"></span>
                   {alertsData?.filter((a) => a.priority === "high").length || 0} high priority
@@ -252,7 +269,7 @@ export default function Dashboard() {
                 </span>
               )}
             </p>
-            {alerts && alerts.length > 0 && (
+            {alertsData && alertsData.length > 0 && (
               <Button 
                 variant="link" 
                 size="sm" 
