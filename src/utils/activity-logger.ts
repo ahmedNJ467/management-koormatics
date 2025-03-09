@@ -1,6 +1,4 @@
 
-import { supabase } from "@/integrations/supabase/client";
-
 type ActivityType = 'trip' | 'maintenance' | 'vehicle' | 'driver' | 'client' | 'fuel' | 'contract';
 
 interface ActivityLogParams {
@@ -9,22 +7,18 @@ interface ActivityLogParams {
   relatedId?: string;
 }
 
+// Instead of storing in database, we'll just log the activity
 export const logActivity = async ({ title, type, relatedId }: ActivityLogParams): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('activities')
-      .insert({
-        title,
-        type,
-        related_id: relatedId,
-        timestamp: new Date().toISOString()
-      });
+    // Log the activity to console for debugging
+    console.log("Activity logged:", {
+      title,
+      type,
+      related_id: relatedId,
+      timestamp: new Date().toISOString()
+    });
     
-    if (error) {
-      console.error("Error logging activity:", error);
-      return false;
-    }
-    
+    // Return true to indicate successful logging
     return true;
   } catch (err) {
     console.error("Failed to log activity:", err);

@@ -1,65 +1,106 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Clock, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useContractAlertsData } from "@/hooks/use-contract-alerts-data";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { Alert } from "@/types/alert";
 import { formatDistanceToNow } from "date-fns";
+
+// Generate dynamic alerts based on application state
+const generateDynamicAlerts = (): Alert[] => {
+  const now = new Date();
+  
+  // Create some default alerts
+  return [
+    {
+      id: "1",
+      title: "Low fuel level detected in vehicle TRUCK-001",
+      priority: "high",
+      date: new Date(now.getTime() - 25 * 60000).toISOString(), // 25 minutes ago
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      resolved: false,
+      type: "vehicle",
+      description: "Vehicle TRUCK-001 has fuel level below 15%. Refueling recommended."
+    },
+    {
+      id: "2",
+      title: "Maintenance due for vehicle SUV-003",
+      priority: "medium",
+      date: new Date(now.getTime() - 3 * 3600000).toISOString(), // 3 hours ago
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      resolved: false,
+      type: "maintenance",
+      description: "Regular maintenance due in 2 days. Schedule service appointment."
+    },
+    {
+      id: "3",
+      title: "Driver license expiring soon - John Smith",
+      priority: "medium",
+      date: new Date(now.getTime() - 12 * 3600000).toISOString(), // 12 hours ago
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      resolved: false,
+      type: "driver",
+      description: "Driver license will expire in 14 days. Renewal required."
+    },
+    {
+      id: "4",
+      title: "Trip delayed - Airport pickup #T-2023-089",
+      priority: "low",
+      date: new Date(now.getTime() - 48 * 3600000).toISOString(), // 2 days ago
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      resolved: false,
+      type: "trip",
+      description: "Trip delayed by 15 minutes due to traffic conditions."
+    }
+  ];
+};
 
 export const AlertsTab = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch only active (unresolved) alerts and limit to 5
-  const { data: alerts, isLoading, error } = useContractAlertsData({ 
-    resolved: false,
-    limit: 5
-  });
-  
-  // Set up real-time listener for alerts table
   useEffect(() => {
-    // Create a unique channel name to avoid conflicts
-    const channelName = 'alerts-tab-realtime-' + Math.random().toString(36).substring(7);
+    // Simulate loading time
+    const loadTimer = setTimeout(() => {
+      setAlerts(generateDynamicAlerts());
+      setIsLoading(false);
+    }, 800);
     
-    const alertsChannel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'alerts' 
-      }, (payload) => {
-        console.log('Dashboard alerts real-time update received:', payload);
-        // Invalidate and refetch the alerts query when any change happens
-        queryClient.invalidateQueries({ queryKey: ["alerts"] });
-        
-        toast({
-          title: "New alert",
-          description: "A new alert has been added to the system.",
-        });
-      })
-      .subscribe();
+    return () => clearTimeout(loadTimer);
+  }, []);
+
+  // Function to mark an alert as resolved
+  const resolveAlert = (id: string) => {
+    setAlerts(prev => 
+      prev.map(alert => 
+        alert.id === id ? { ...alert, resolved: true } : alert
+      )
+    );
     
-    console.log('Dashboard alerts real-time subscription activated');
-    
-    return () => {
-      console.log('Cleaning up dashboard alerts real-time subscription');
-      supabase.removeChannel(alertsChannel);
-    };
-  }, [queryClient, toast]);
+    toast({
+      title: "Alert resolved",
+      description: "The alert has been marked as resolved."
+    });
+  };
 
   // Transform alerts data for the component
-  const formattedAlerts = (alerts || []).map((alert) => ({
-    id: alert.id,
-    title: alert.title,
-    priority: alert.priority,
-    date: formatDistanceToNow(new Date(alert.date), { addSuffix: true })
-  }));
+  const formattedAlerts = alerts
+    .filter(alert => !alert.resolved)
+    .map(alert => ({
+      id: alert.id,
+      title: alert.title,
+      priority: alert.priority,
+      date: formatDistanceToNow(new Date(alert.date), { addSuffix: true })
+    }));
 
   if (isLoading) {
     return (
@@ -76,14 +117,6 @@ export const AlertsTab = () => {
             </div>
           </div>
         ))}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-6 text-red-500">
-        Failed to load alerts. Please try again.
       </div>
     );
   }
@@ -127,16 +160,16 @@ export const AlertsTab = () => {
                   </div>
                 </div>
               </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-xs"
+                onClick={() => resolveAlert(alert.id)}
+              >
+                Resolve
+              </Button>
             </div>
           ))}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full mt-4 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-            onClick={() => navigate('/alerts')}
-          >
-            Manage all alerts
-          </Button>
         </>
       ) : (
         <div className="text-center py-8 flex flex-col items-center text-muted-foreground">

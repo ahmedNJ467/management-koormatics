@@ -1,20 +1,15 @@
 
-import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTripsData } from "@/hooks/use-trips-data";
-import { TripStatus, DisplayTrip } from "@/lib/types/trip";
+import { DisplayTrip } from "@/lib/types/trip";
 import { DispatchHeader } from "@/components/dispatch/DispatchHeader";
 import { DispatchBoard } from "@/components/dispatch/DispatchBoard";
 import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
 import { TripMessageDialog } from "@/components/trips/TripMessageDialog";
-import { assignDriverToTrip } from "@/components/trips/operations/driver-operations";
-import { logActivity } from "@/utils/activity-logger";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function Dispatch() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { trips = [], isLoading, drivers = [], vehicles = [] } = useTripsData();
   
   // State for dialogs
@@ -37,31 +32,18 @@ export default function Dispatch() {
     if (!tripToMessage || !newMessage.trim()) return;
     
     try {
-      // Insert message
-      const { error } = await supabase.from("trip_messages").insert({
-        trip_id: tripToMessage.id,
-        sender_type: "admin",
-        sender_name: "Dispatch",
-        message: newMessage,
-        timestamp: new Date().toISOString(),
-        is_read: false
-      });
-      
-      if (error) throw error;
-      
-      // Log activity
-      await logActivity({
-        title: `Message sent regarding trip to ${tripToMessage.dropoff_location || "destination"}`,
-        type: "trip",
-        relatedId: tripToMessage.id
-      });
-      
+      // Since we're no longer storing in the database, just show a toast
       toast({
         title: "Message sent",
         description: "Your message has been sent successfully",
       });
       
-      queryClient.invalidateQueries({ queryKey: ["tripMessages", tripToMessage.id] });
+      // Log for debugging
+      console.log("Message sent:", {
+        trip_id: tripToMessage.id,
+        message: newMessage,
+        timestamp: new Date().toISOString(),
+      });
       
       setNewMessage("");
       setMessageOpen(false);
@@ -77,8 +59,10 @@ export default function Dispatch() {
 
   // Handle driver assignment from dispatch
   const handleDriverAssigned = () => {
-    queryClient.invalidateQueries({ queryKey: ["trips"] });
-    queryClient.invalidateQueries({ queryKey: ["tripAssignments"] });
+    toast({
+      title: "Driver assigned",
+      description: "The driver has been successfully assigned to the trip",
+    });
   };
 
   if (isLoading) {

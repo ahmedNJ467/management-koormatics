@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -20,7 +19,6 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
-  Bell,
   Navigation
 } from "lucide-react";
 import { useState } from "react";
@@ -57,7 +55,6 @@ const navigationGroups = [
   {
     category: "Monitoring",
     items: [
-      { name: "Alerts", href: "/alerts", icon: Bell },
       { name: "Revenue & Cost Analytics", href: "/cost-analytics", icon: DollarSign },
       { name: "Reports", href: "/reports", icon: BarChart },
     ]

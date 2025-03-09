@@ -16,51 +16,87 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 
-export const RecentActivity = ({ 
-  activities, 
-  isLoading = false 
-}: { 
-  activities: ActivityItemProps[]; 
-  isLoading?: boolean;
-}) => {
+// Generate dynamic mock activities based on current time
+const generateDynamicActivities = (): ActivityItemProps[] => {
+  const now = new Date();
+  
+  return [
+    {
+      id: "1",
+      title: "Trip completed: Airport pickup #T-2023-112",
+      timestamp: new Date(now.getTime() - 35 * 60000).toISOString(), // 35 minutes ago
+      type: "trip",
+      icon: "calendar"
+    },
+    {
+      id: "2",
+      title: "Vehicle maintenance completed for TRUCK-002",
+      timestamp: new Date(now.getTime() - 3 * 3600000).toISOString(), // 3 hours ago
+      type: "maintenance",
+      icon: "wrench"
+    },
+    {
+      id: "3",
+      title: "New driver onboarded: Sarah Johnson",
+      timestamp: new Date(now.getTime() - 6 * 3600000).toISOString(), // 6 hours ago
+      type: "driver",
+      icon: "user"
+    },
+    {
+      id: "4",
+      title: "Fuel refill: 45 gallons for SUV-001",
+      timestamp: new Date(now.getTime() - 12 * 3600000).toISOString(), // 12 hours ago
+      type: "fuel",
+      icon: "fuel"
+    },
+    {
+      id: "5",
+      title: "New contract signed with Client XYZ Corp",
+      timestamp: new Date(now.getTime() - 24 * 3600000).toISOString(), // 24 hours ago
+      type: "contract",
+      icon: "contract"
+    }
+  ].map(activity => ({
+    ...activity,
+    timestamp: formatTimestamp(new Date(activity.timestamp))
+  }));
+};
+
+// Format timestamps in a human-readable format
+const formatTimestamp = (date: Date): string => {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) {
+    return 'just now';
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  } else {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  }
+};
+
+export const RecentActivity = ({ isLoading = false }: { isLoading?: boolean }) => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  // Set up real-time listener for activities table
+  const [activities, setActivities] = useState<ActivityItemProps[]>([]);
+  
   useEffect(() => {
-    // Create a unique channel name to avoid conflicts
-    const channelName = 'activities-realtime-' + Math.random().toString(36).substring(7);
-
-    const activitiesChannel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'activities' 
-      }, (payload) => {
-        console.log('Real-time activity update received:', payload);
-        // Invalidate and refetch the activities query
-        queryClient.invalidateQueries({ queryKey: ["activities"] });
-        
-        toast({
-          title: "Activities updated",
-          description: "The activities list has been updated with new data.",
-        });
-      })
-      .subscribe();
+    // On initial load, set the activities
+    setActivities(generateDynamicActivities());
     
-    console.log('Activities real-time subscription activated');
+    // Periodically update timestamps
+    const intervalId = setInterval(() => {
+      setActivities(generateDynamicActivities());
+    }, 60000); // Update every minute
     
-    return () => {
-      console.log('Cleaning up activities real-time subscription');
-      supabase.removeChannel(activitiesChannel);
-    };
-  }, [queryClient, toast]);
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Function to get the appropriate icon for each activity type
   const getIcon = (type: string) => {
@@ -121,9 +157,9 @@ export const RecentActivity = ({
             variant="outline" 
             size="sm" 
             className="w-full mt-4 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            onClick={() => navigate('/activities')}
+            onClick={() => navigate('/')}
           >
-            View all activities
+            Refresh activities
           </Button>
         </>
       ) : (
