@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,17 +8,14 @@ export function useCostAnalyticsData(selectedYear: string) {
   const currentYear = new Date().getFullYear();
   const [comparisonYear, setComparisonYear] = useState<string | null>(null);
   
-  // Generate year options (last 5 years)
   const yearOptions = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
-  // Reset comparison year if it's the same as selected year
   useEffect(() => {
     if (comparisonYear === selectedYear) {
       setComparisonYear(null);
     }
   }, [selectedYear, comparisonYear]);
 
-  // Fetch maintenance costs for selected year
   const { data: maintenanceData, isLoading: maintenanceLoading, error: maintenanceError } = useQuery({
     queryKey: ['maintenanceCosts', selectedYear],
     queryFn: async () => {
@@ -48,10 +44,9 @@ export function useCostAnalyticsData(selectedYear: string) {
       }
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch fuel costs for selected year
   const { data: fuelData, isLoading: fuelLoading, error: fuelError } = useQuery({
     queryKey: ['fuelCosts', selectedYear],
     queryFn: async () => {
@@ -79,10 +74,9 @@ export function useCostAnalyticsData(selectedYear: string) {
       }
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch trip data for revenue calculations
   const { data: tripsData, isLoading: tripsLoading, error: tripsError } = useQuery({
     queryKey: ['tripsRevenue', selectedYear],
     queryFn: async () => {
@@ -92,7 +86,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           .select('id, amount, date, status, vehicle_id, vehicles(make, model, registration)')
           .gte('date', `${selectedYear}-01-01`)
           .lte('date', `${selectedYear}-12-31`)
-          .in('status', ['completed', 'paid']); // Only count completed and paid trips for revenue
+          .in('status', ['completed', 'paid']);
         
         if (error) {
           console.error("Trips data fetch error:", error);
@@ -111,10 +105,40 @@ export function useCostAnalyticsData(selectedYear: string) {
       }
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch comparison year maintenance data when needed
+  const { data: sparePartsData, isLoading: sparePartsLoading, error: sparePartsError } = useQuery({
+    queryKey: ['sparePartsCosts', selectedYear],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('spare_parts')
+          .select('*')
+          .gt('quantity_used', 0)
+          .or(`purchase_date.gte.${selectedYear}-01-01,last_used_date.gte.${selectedYear}-01-01`)
+          .or(`purchase_date.lte.${selectedYear}-12-31,last_used_date.lte.${selectedYear}-12-31`);
+        
+        if (error) {
+          console.error("Spare parts data fetch error:", error);
+          toast({
+            title: "Error fetching spare parts data",
+            description: error.message,
+            variant: "destructive",
+          });
+          return [];
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching spare parts data:", error);
+        return [];
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { 
     data: comparisonMaintenanceData, 
     isLoading: comparisonMaintenanceLoading,
@@ -149,10 +173,9 @@ export function useCostAnalyticsData(selectedYear: string) {
     },
     enabled: !!comparisonYear,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch comparison year fuel data when needed
   const { 
     data: comparisonFuelData, 
     isLoading: comparisonFuelLoading,
@@ -187,10 +210,9 @@ export function useCostAnalyticsData(selectedYear: string) {
     },
     enabled: !!comparisonYear,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch comparison year trips data when needed
   const { 
     data: comparisonTripsData, 
     isLoading: comparisonTripsLoading,
@@ -206,7 +228,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           .select('id, amount, date, status, vehicle_id, vehicles(make, model, registration)')
           .gte('date', `${comparisonYear}-01-01`)
           .lte('date', `${comparisonYear}-12-31`)
-          .in('status', ['completed', 'paid']); // Only count completed and paid trips for revenue
+          .in('status', ['completed', 'paid']);
         
         if (error) {
           console.error("Comparison trips data fetch error:", error);
@@ -226,29 +248,70 @@ export function useCostAnalyticsData(selectedYear: string) {
     },
     enabled: !!comparisonYear,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Log any errors to help with debugging
+  const { 
+    data: comparisonSparePartsData, 
+    isLoading: comparisonSparePartsLoading,
+    error: comparisonSparePartsError 
+  } = useQuery({
+    queryKey: ['sparePartsCosts', comparisonYear],
+    queryFn: async () => {
+      if (!comparisonYear) return [];
+      
+      try {
+        const { data, error } = await supabase
+          .from('spare_parts')
+          .select('*')
+          .gt('quantity_used', 0)
+          .or(`purchase_date.gte.${comparisonYear}-01-01,last_used_date.gte.${comparisonYear}-01-01`)
+          .or(`purchase_date.lte.${comparisonYear}-12-31,last_used_date.lte.${comparisonYear}-12-31`);
+        
+        if (error) {
+          console.error("Comparison spare parts data fetch error:", error);
+          toast({
+            title: "Error fetching comparison spare parts data",
+            description: error.message,
+            variant: "destructive",
+          });
+          return [];
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching comparison spare parts data:", error);
+        return [];
+      }
+    },
+    enabled: !!comparisonYear,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
     if (maintenanceError) console.error("Maintenance query error:", maintenanceError);
     if (fuelError) console.error("Fuel query error:", fuelError);
     if (tripsError) console.error("Trips query error:", tripsError);
+    if (sparePartsError) console.error("Spare parts query error:", sparePartsError);
     if (comparisonMaintenanceError) console.error("Comparison maintenance query error:", comparisonMaintenanceError);
     if (comparisonFuelError) console.error("Comparison fuel query error:", comparisonFuelError);
     if (comparisonTripsError) console.error("Comparison trips query error:", comparisonTripsError);
-  }, [maintenanceError, fuelError, tripsError, comparisonMaintenanceError, comparisonFuelError, comparisonTripsError]);
+    if (comparisonSparePartsError) console.error("Comparison spare parts query error:", comparisonSparePartsError);
+  }, [maintenanceError, fuelError, tripsError, sparePartsError, comparisonMaintenanceError, comparisonFuelError, comparisonTripsError, comparisonSparePartsError]);
 
-  const isLoading = maintenanceLoading || fuelLoading || tripsLoading || 
-    (!!comparisonYear && (comparisonMaintenanceLoading || comparisonFuelLoading || comparisonTripsLoading));
+  const isLoading = maintenanceLoading || fuelLoading || tripsLoading || sparePartsLoading || 
+    (!!comparisonYear && (comparisonMaintenanceLoading || comparisonFuelLoading || comparisonTripsLoading || comparisonSparePartsLoading));
 
   return {
     maintenanceData: maintenanceData || [],
     fuelData: fuelData || [],
     tripsData: tripsData || [],
+    sparePartsData: sparePartsData || [],
     comparisonMaintenanceData: comparisonMaintenanceData || [],
     comparisonFuelData: comparisonFuelData || [],
     comparisonTripsData: comparisonTripsData || [],
+    comparisonSparePartsData: comparisonSparePartsData || [],
     isLoading,
     yearOptions,
     comparisonYear,

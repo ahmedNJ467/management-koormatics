@@ -1,7 +1,8 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileDown, Download, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { FileDown, Download, DollarSign, TrendingUp, TrendingDown, Wrench, Fuel, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FinancialData, MonthlyFinancialData } from "@/lib/financial-calculations";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -14,9 +15,11 @@ interface FinancialReportProps {
   tripsData: any[] | undefined;
   maintenanceData: any[] | undefined;
   fuelData: any[] | undefined;
+  sparePartsData?: any[] | undefined;
   isLoadingTrips: boolean;
   isLoadingMaintenance: boolean;
   isLoadingFuel: boolean;
+  isLoadingSpareparts?: boolean;
   timeRange: string;
   dateRange: DateRange | undefined;
 }
@@ -25,9 +28,11 @@ export function FinancialReport({
   tripsData = [],
   maintenanceData = [],
   fuelData = [],
+  sparePartsData = [],
   isLoadingTrips,
   isLoadingMaintenance,
   isLoadingFuel,
+  isLoadingSpareparts,
   timeRange,
   dateRange
 }: FinancialReportProps) {
@@ -35,9 +40,12 @@ export function FinancialReport({
   const filteredTrips = filterDataByDate(tripsData, timeRange, dateRange);
   const filteredMaintenance = filterDataByDate(maintenanceData, timeRange, dateRange);
   const filteredFuel = filterDataByDate(fuelData, timeRange, dateRange);
+  const filteredSpareparts = filterDataByDate(sparePartsData, timeRange, dateRange);
   
   console.log('Financial Report - Maintenance data before filter:', maintenanceData);
   console.log('Financial Report - Filtered maintenance data:', filteredMaintenance);
+  console.log('Financial Report - Spareparts data before filter:', sparePartsData);
+  console.log('Financial Report - Filtered spareparts data:', filteredSpareparts);
   
   // Only include completed maintenance for expense calculations
   const completedMaintenance = Array.isArray(filteredMaintenance) 
@@ -50,10 +58,11 @@ export function FinancialReport({
   const financialData = calculateFinancialData(
     filteredTrips || [],
     completedMaintenance || [], // Pass only completed maintenance
-    filteredFuel || []
+    filteredFuel || [],
+    filteredSpareparts || []
   );
   
-  const isLoading = isLoadingTrips || isLoadingMaintenance || isLoadingFuel;
+  const isLoading = isLoadingTrips || isLoadingMaintenance || isLoadingFuel || isLoadingSpareparts;
   
   // Format currency values
   const formatCurrency = (value: number) => {
@@ -81,11 +90,15 @@ export function FinancialReport({
   const expenseBreakdown = [
     { 
       name: 'Maintenance', 
-      value: completedMaintenance.reduce((sum, item) => sum + Number(item.cost || 0), 0) 
+      value: financialData.expenseBreakdown.maintenance
     },
     { 
       name: 'Fuel', 
-      value: Array.isArray(filteredFuel) ? filteredFuel.reduce((sum, item) => sum + Number(item.cost || 0), 0) : 0 
+      value: financialData.expenseBreakdown.fuel
+    },
+    { 
+      name: 'Spare Parts', 
+      value: financialData.expenseBreakdown.spareParts
     }
   ];
   
@@ -147,7 +160,7 @@ export function FinancialReport({
                   {formatCurrency(financialData.totalExpenses)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Maintenance & fuel expenses
+                  Maintenance, fuel, and spare parts expenses
                 </p>
               </CardContent>
             </Card>
@@ -201,7 +214,7 @@ export function FinancialReport({
             <Card>
               <CardHeader>
                 <CardTitle>Expense Breakdown</CardTitle>
-                <CardDescription>Maintenance vs. fuel expenses</CardDescription>
+                <CardDescription>Maintenance, fuel, and spare parts expenses</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -271,6 +284,54 @@ export function FinancialReport({
                     </TableBody>
                   </Table>
                 </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Expense Details Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm">Maintenance Expenses</CardTitle>
+                <Wrench className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {formatCurrency(financialData.expenseBreakdown.maintenance)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {((financialData.expenseBreakdown.maintenance / financialData.totalExpenses) * 100).toFixed(1)}% of total expenses
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm">Fuel Expenses</CardTitle>
+                <Fuel className="h-4 w-4 text-amber-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {formatCurrency(financialData.expenseBreakdown.fuel)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {((financialData.expenseBreakdown.fuel / financialData.totalExpenses) * 100).toFixed(1)}% of total expenses
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm">Spare Parts Expenses</CardTitle>
+                <Package className="h-4 w-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {formatCurrency(financialData.expenseBreakdown.spareParts)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {((financialData.expenseBreakdown.spareParts / financialData.totalExpenses) * 100).toFixed(1)}% of total expenses
+                </p>
               </CardContent>
             </Card>
           </div>

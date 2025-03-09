@@ -12,11 +12,13 @@ export default function Reports() {
     maintenanceData, 
     tripsData, 
     driversData,
+    sparePartsData,
     isLoadingVehicles, 
     isLoadingFuel, 
     isLoadingMaintenance, 
     isLoadingTrips, 
-    isLoadingDrivers 
+    isLoadingDrivers,
+    isLoadingSpareparts
   } = useReportsData();
 
   const {
@@ -48,11 +50,13 @@ export default function Reports() {
         maintenanceData={maintenanceData}
         tripsData={tripsData}
         driversData={driversData}
+        sparePartsData={sparePartsData}
         isLoadingVehicles={isLoadingVehicles}
         isLoadingFuel={isLoadingFuel}
         isLoadingMaintenance={isLoadingMaintenance}
         isLoadingTrips={isLoadingTrips}
         isLoadingDrivers={isLoadingDrivers}
+        isLoadingSpareparts={isLoadingSpareparts}
         timeRange={timeRange}
         dateRange={dateRange}
       />

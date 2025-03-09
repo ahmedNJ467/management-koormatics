@@ -1,105 +1,104 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { tripTypeDisplayMap, extractFlightInfo, TripType } from "@/lib/types/trip";
 
 export function useReportsData() {
-  const { toast } = useToast();
-
-  const { data: vehiclesData, isLoading: isLoadingVehicles } = useQuery({
-    queryKey: ["vehicles-report"],
+  // Fetch vehicles data
+  const { data: vehicles, isLoading: isLoadingVehicles } = useQuery({
+    queryKey: ["vehicles"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicles")
-        .select("*, maintenance(cost, date, description)");
-
+        .select("*")
+        .order("created_at", { ascending: false });
+        
       if (error) throw error;
       return data;
-    },
+    }
   });
 
+  // Fetch fuel logs data
   const { data: fuelData, isLoading: isLoadingFuel } = useQuery({
-    queryKey: ["fuel-report"],
+    queryKey: ["fuel-logs"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fuel_logs")
-        .select("*, vehicles(make, model)");
-      
+        .select("*, vehicles(make, model, registration)")
+        .order("date", { ascending: false });
+        
       if (error) throw error;
       return data;
-    },
+    }
   });
 
+  // Fetch maintenance data
   const { data: maintenanceData, isLoading: isLoadingMaintenance } = useQuery({
-    queryKey: ["maintenance-report"],
+    queryKey: ["maintenance"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance")
-        .select("*, vehicles(make, model)");
-
+        .select("*, vehicles(make, model, registration)")
+        .order("date", { ascending: false });
+        
       if (error) throw error;
       return data;
-    },
+    }
   });
 
+  // Fetch trips data
   const { data: tripsData, isLoading: isLoadingTrips } = useQuery({
-    queryKey: ["trips-report"],
+    queryKey: ["trips"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        .select(`
-          *,
-          vehicles(make, model),
-          drivers(name),
-          clients(name, type)
-        `);
-
+        .select("*, vehicles(make, model, registration), drivers(first_name, last_name), clients(company_name)")
+        .order("date", { ascending: false });
+        
       if (error) throw error;
-      
-      return data.map((trip: any) => {
-        const flightInfo = extractFlightInfo(trip.special_instructions || '');
-        
-        const displayType = trip.service_type ? 
-          tripTypeDisplayMap[trip.service_type as TripType] || trip.service_type : 
-          'Other';
-        
-        return {
-          ...trip,
-          flight_info: flightInfo,
-          display_type: displayType,
-          status: trip.status || 'scheduled',
-          type: trip.service_type || 'other',
-          notes: trip.special_instructions || '',
-          start_time: trip.time || '',
-          end_time: trip.return_time || ''
-        };
-      });
-    },
+      return data;
+    }
   });
 
+  // Fetch drivers data
   const { data: driversData, isLoading: isLoadingDrivers } = useQuery({
-    queryKey: ["drivers-report"],
+    queryKey: ["drivers"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
-        .select("*");
-
+        .select("*")
+        .order("created_at", { ascending: false });
+        
       if (error) throw error;
       return data;
-    },
+    }
+  });
+
+  // Fetch spare parts data
+  const { data: sparePartsData, isLoading: isLoadingSpareparts } = useQuery({
+    queryKey: ["spare-parts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("spare_parts")
+        .select("*")
+        .order("created_at", { ascending: false });
+        
+      if (error) throw error;
+      return data;
+    }
   });
 
   return {
-    vehicles: vehiclesData,
-    fuelData,
-    maintenanceData,
-    tripsData,
-    driversData,
+    vehicles: vehicles || [],
+    fuelData: fuelData || [],
+    maintenanceData: maintenanceData || [],
+    tripsData: tripsData || [],
+    driversData: driversData || [],
+    sparePartsData: sparePartsData || [],
     isLoadingVehicles,
     isLoadingFuel,
     isLoadingMaintenance,
     isLoadingTrips,
     isLoadingDrivers,
+    isLoadingSpareparts
   };
 }

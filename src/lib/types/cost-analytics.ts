@@ -3,6 +3,7 @@
 export type CostData = {
   maintenance: number;
   fuel: number;
+  spareParts: number;
   total: number;
 };
 
@@ -10,6 +11,7 @@ export type MonthlyData = {
   month: string;
   maintenance: number;
   fuel: number;
+  spareParts: number;
   total: number;
 };
 
@@ -18,6 +20,7 @@ export type VehicleCostData = {
   vehicle_name: string;
   maintenance: number;
   fuel: number;
+  spareParts: number;
   total: number;
 };
 
@@ -36,6 +39,11 @@ export type YearComparisonData = {
     percentChange: number;
   };
   fuel: {
+    current: number;
+    previous: number;
+    percentChange: number;
+  };
+  spareParts: {
     current: number;
     previous: number;
     percentChange: number;

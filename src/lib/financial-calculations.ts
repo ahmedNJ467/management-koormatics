@@ -9,6 +9,11 @@ export type FinancialData = {
   tripCount: number;
   averageTripRevenue: number;
   monthlyData: MonthlyFinancialData[];
+  expenseBreakdown: {
+    maintenance: number;
+    fuel: number;
+    spareParts: number;
+  };
 };
 
 export type MonthlyFinancialData = {
@@ -16,15 +21,19 @@ export type MonthlyFinancialData = {
   revenue: number;
   expenses: number;
   profit: number;
+  maintenance?: number;
+  fuel?: number;
+  spareParts?: number;
 };
 
 /**
- * Calculate financial overview data from trips, maintenance, and fuel logs
+ * Calculate financial overview data from trips, maintenance, fuel logs, and spare parts
  */
 export function calculateFinancialData(
   tripsData: any[] = [],
   maintenanceData: any[] = [],
-  fuelData: any[] = []
+  fuelData: any[] = [],
+  sparePartsData: any[] = []
 ): FinancialData {
   // Calculate total revenue from trips
   const totalRevenue = tripsData.reduce((sum, trip) => sum + Number(trip.amount || 0), 0);
@@ -36,16 +45,29 @@ export function calculateFinancialData(
   
   console.log('Financial Calcs - Completed maintenance items:', completedMaintenance);
   
-  // Calculate total expenses (maintenance + fuel)
+  // Calculate maintenance costs
   const maintenanceCosts = completedMaintenance.reduce((sum, record) => sum + Number(record.cost || 0), 0);
+  
+  // Calculate fuel costs
   const fuelCosts = Array.isArray(fuelData) 
     ? fuelData.reduce((sum, record) => sum + Number(record.cost || 0), 0)
     : 0;
   
-  const totalExpenses = maintenanceCosts + fuelCosts;
+  // Calculate spare parts costs - only count parts that have been used (quantity_used > 0)
+  const sparePartsCosts = Array.isArray(sparePartsData)
+    ? sparePartsData.reduce((sum, part) => {
+        const quantityUsed = Number(part.quantity_used || 0);
+        const costPerUnit = Number(part.cost_per_unit || 0);
+        return sum + (quantityUsed * costPerUnit);
+      }, 0)
+    : 0;
+  
+  // Calculate total expenses
+  const totalExpenses = maintenanceCosts + fuelCosts + sparePartsCosts;
   
   console.log('Financial Calcs - Maintenance costs:', maintenanceCosts);
   console.log('Financial Calcs - Fuel costs:', fuelCosts);
+  console.log('Financial Calcs - Spare parts costs:', sparePartsCosts);
   console.log('Financial Calcs - Total expenses:', totalExpenses);
   
   // Calculate profit and margin
@@ -57,7 +79,7 @@ export function calculateFinancialData(
   const averageTripRevenue = tripCount > 0 ? totalRevenue / tripCount : 0;
   
   // Calculate monthly data
-  const monthlyData = calculateMonthlyFinancialData(tripsData, completedMaintenance, fuelData);
+  const monthlyData = calculateMonthlyFinancialData(tripsData, completedMaintenance, fuelData, sparePartsData);
   
   return {
     totalRevenue,
@@ -66,7 +88,12 @@ export function calculateFinancialData(
     profitMargin,
     tripCount,
     averageTripRevenue,
-    monthlyData
+    monthlyData,
+    expenseBreakdown: {
+      maintenance: maintenanceCosts,
+      fuel: fuelCosts,
+      spareParts: sparePartsCosts
+    }
   };
 }
 
@@ -76,7 +103,8 @@ export function calculateFinancialData(
 function calculateMonthlyFinancialData(
   tripsData: any[] = [],
   maintenanceData: any[] = [],
-  fuelData: any[] = []
+  fuelData: any[] = [],
+  sparePartsData: any[] = []
 ): MonthlyFinancialData[] {
   const months: Record<string, MonthlyFinancialData> = {};
   
@@ -94,7 +122,10 @@ function calculateMonthlyFinancialData(
           month: monthName,
           revenue: 0,
           expenses: 0,
-          profit: 0
+          profit: 0,
+          maintenance: 0,
+          fuel: 0,
+          spareParts: 0
         };
       }
       
@@ -116,11 +147,16 @@ function calculateMonthlyFinancialData(
           month: monthName,
           revenue: 0,
           expenses: 0,
-          profit: 0
+          profit: 0,
+          maintenance: 0,
+          fuel: 0,
+          spareParts: 0
         };
       }
       
-      months[monthKey].expenses += Number(record.cost || 0);
+      const cost = Number(record.cost || 0);
+      months[monthKey].maintenance += cost;
+      months[monthKey].expenses += cost;
     });
   }
   
@@ -138,11 +174,49 @@ function calculateMonthlyFinancialData(
           month: monthName,
           revenue: 0,
           expenses: 0,
-          profit: 0
+          profit: 0,
+          maintenance: 0,
+          fuel: 0,
+          spareParts: 0
         };
       }
       
-      months[monthKey].expenses += Number(record.cost || 0);
+      const cost = Number(record.cost || 0);
+      months[monthKey].fuel += cost;
+      months[monthKey].expenses += cost;
+    });
+  }
+  
+  // Process spare parts expenses by month (based on purchase date or usage date)
+  if (Array.isArray(sparePartsData)) {
+    sparePartsData.forEach(part => {
+      // Use purchase_date or last_used_date (whichever is available)
+      const dateString = part.last_used_date || part.purchase_date;
+      if (!dateString) return;
+      
+      const date = new Date(dateString);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+      
+      if (!months[monthKey]) {
+        months[monthKey] = {
+          month: monthName,
+          revenue: 0,
+          expenses: 0,
+          profit: 0,
+          maintenance: 0,
+          fuel: 0,
+          spareParts: 0
+        };
+      }
+      
+      // Calculate cost based on quantity used and cost per unit
+      const quantityUsed = Number(part.quantity_used || 0);
+      const costPerUnit = Number(part.cost_per_unit || 0);
+      const cost = quantityUsed * costPerUnit;
+      
+      months[monthKey].spareParts += cost;
+      months[monthKey].expenses += cost;
     });
   }
   

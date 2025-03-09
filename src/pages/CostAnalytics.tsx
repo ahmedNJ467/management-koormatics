@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,21 +10,22 @@ import { ComparisonTab } from "@/components/cost-analytics/ComparisonTab";
 import { useCostAnalyticsData } from "@/hooks/use-cost-analytics-data";
 import { useCostDataCalculations } from "@/hooks/use-cost-data-calculations";
 import { calculateFinancialData } from "@/lib/financial-calculations";
-import { AlertCircle, Loader, TrendingDown, TrendingUp, DollarSign, Wrench, Fuel } from "lucide-react";
+import { AlertCircle, Loader, TrendingDown, TrendingUp, DollarSign, Wrench, Fuel, Package } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const CostAnalytics = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [activeTab, setActiveTab] = useState("overview");
   
-  // Use our custom hooks to fetch and process data
   const { 
     maintenanceData, 
     fuelData,
     tripsData,
+    sparePartsData,
     comparisonMaintenanceData, 
     comparisonFuelData,
     comparisonTripsData,
+    comparisonSparePartsData,
     isLoading, 
     yearOptions,
     comparisonYear,
@@ -48,26 +48,24 @@ const CostAnalytics = () => {
     comparisonYear
   );
 
-  // Calculate financial data (revenue, profit)
   const financialData = calculateFinancialData(
     tripsData || [],
     maintenanceData || [],
-    fuelData || []
+    fuelData || [],
+    sparePartsData || []
   );
 
-  // Calculate comparison financial data if needed
   const comparisonFinancialData = comparisonYear ? calculateFinancialData(
     comparisonTripsData || [],
     comparisonMaintenanceData || [],
-    comparisonFuelData || []
+    comparisonFuelData || [],
+    comparisonSparePartsData || []
   ) : null;
 
-  // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
 
-  // If comparison tab is active but comparison year is removed, switch to overview
   useEffect(() => {
     if (activeTab === "comparison" && !comparisonYear) {
       setActiveTab("overview");
@@ -78,17 +76,13 @@ const CostAnalytics = () => {
     setComparisonYear(value === "none" ? null : value);
   };
 
-  // Calculate profit trends compared to previous month/year
   const calculateProfitTrend = () => {
     if (!monthlyData || monthlyData.length < 2) return { trend: 0, isPositive: true };
     
-    // Get current and previous month with data
     let currentMonthIndex = new Date().getMonth();
     let previousMonthIndex = currentMonthIndex > 0 ? currentMonthIndex - 1 : 11;
     
-    // Ensure we have data for these months
     if (!monthlyData[currentMonthIndex].total && !monthlyData[previousMonthIndex].total) {
-      // Find the two most recent months with data
       const monthsWithData = monthlyData
         .map((data, index) => ({ index, total: data.total }))
         .filter(m => m.total > 0)
@@ -161,7 +155,6 @@ const CostAnalytics = () => {
         </div>
       </div>
 
-      {/* Loading state */}
       {isLoading && (
         <div className="flex items-center justify-center py-8">
           <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -169,10 +162,8 @@ const CostAnalytics = () => {
         </div>
       )}
 
-      {/* Revenue & Expense Summary */}
       {!isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Revenue Card */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-lg">
@@ -196,7 +187,6 @@ const CostAnalytics = () => {
             </CardContent>
           </Card>
           
-          {/* Expenses Card */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-lg">
@@ -209,7 +199,7 @@ const CostAnalytics = () => {
               <div className="text-2xl font-bold text-red-600">
                 ${financialData.totalExpenses.toFixed(2)}
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="grid grid-cols-3 gap-2 mt-2">
                 <div className="flex items-center">
                   <Wrench className="h-4 w-4 mr-1 text-blue-500" />
                   <span className="text-xs">
@@ -222,11 +212,16 @@ const CostAnalytics = () => {
                     Fuel: ${summaryCosts.fuel.toFixed(2)}
                   </span>
                 </div>
+                <div className="flex items-center">
+                  <Package className="h-4 w-4 mr-1 text-purple-500" />
+                  <span className="text-xs">
+                    Parts: ${financialData.expenseBreakdown.spareParts.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
           
-          {/* Profit Card */}
           <Card className={financialData.profit >= 0 ? "border-green-500" : "border-red-500"}>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center text-lg">
@@ -265,7 +260,6 @@ const CostAnalytics = () => {
         </div>
       )}
 
-      {/* Error state if no data available */}
       {!isLoading && (!vehicleCosts || vehicleCosts.length === 0) && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -276,7 +270,6 @@ const CostAnalytics = () => {
         </Alert>
       )}
 
-      {/* Expense data tabs */}
       {!isLoading && vehicleCosts && vehicleCosts.length > 0 && (
         <>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
@@ -288,7 +281,6 @@ const CostAnalytics = () => {
               {comparisonYear && <TabsTrigger value="comparison">Comparison</TabsTrigger>}
             </TabsList>
 
-            {/* Tab Contents */}
             {monthlyData && <OverviewTab monthlyData={monthlyData} />}
             {maintenanceCategories && fuelTypes && <CategoriesTab maintenanceCategories={maintenanceCategories} fuelTypes={fuelTypes} />}
             {vehicleCosts && <VehiclesTab vehicleCosts={vehicleCosts} />}
