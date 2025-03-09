@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Dispatch() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { trips, isLoading, drivers, vehicles } = useTripsData();
+  const { trips = [], isLoading, drivers = [], vehicles = [] } = useTripsData();
   
   // State for dialogs
   const [assignOpen, setAssignOpen] = useState(false);
@@ -25,8 +25,8 @@ export default function Dispatch() {
   const [newMessage, setNewMessage] = useState("");
   
   // Filter only scheduled and in_progress trips for dispatch
-  const dispatchTrips = trips?.filter(trip => 
-    trip.status === "scheduled" || trip.status === "in_progress"
+  const dispatchTrips = trips.filter(trip => 
+    trip && (trip.status === "scheduled" || trip.status === "in_progress")
   );
 
   // Handle sending a message to driver
@@ -48,7 +48,7 @@ export default function Dispatch() {
       
       // Log activity
       await logActivity({
-        title: `Message sent regarding trip to ${tripToMessage.dropoff_location || ""}`,
+        title: `Message sent regarding trip to ${tripToMessage.dropoff_location || "destination"}`,
         type: "trip",
         relatedId: tripToMessage.id
       });
@@ -94,9 +94,9 @@ export default function Dispatch() {
       <DispatchHeader />
       
       <DispatchBoard 
-        trips={dispatchTrips || []}
-        drivers={drivers || []}
-        vehicles={vehicles || []}
+        trips={dispatchTrips}
+        drivers={drivers}
+        vehicles={vehicles}
         onAssignDriver={(trip) => {
           setTripToAssign(trip);
           setAssignOpen(true);

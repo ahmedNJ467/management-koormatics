@@ -32,6 +32,8 @@ export function DispatchTrips({
   // Group trips by date
   const tripsByDate = new Map<string, DisplayTrip[]>();
   trips.forEach(trip => {
+    if (!trip.date) return; // Skip trips without dates
+    
     if (!tripsByDate.has(trip.date)) {
       tripsByDate.set(trip.date, []);
     }
@@ -99,7 +101,7 @@ export function DispatchTrips({
                   <ul className="list-disc list-inside pl-2">
                     {trips.map(trip => (
                       <li key={trip.id}>
-                        {formatDate(trip.date)} at {formatTime(trip.time || "")} - {trip.pickup_location} to {trip.dropoff_location}
+                        {formatDate(trip.date || "")} at {formatTime(trip.time || "")} - {trip.pickup_location || "No pickup"} to {trip.dropoff_location || "No dropoff"}
                       </li>
                     ))}
                   </ul>
@@ -119,7 +121,7 @@ export function DispatchTrips({
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
             <div className="font-medium text-lg">
-              {formatDate(trip.date)} 
+              {formatDate(trip.date || "")} 
               {trip.time && (
                 <span className="text-muted-foreground ml-2 text-sm">
                   <Clock className="h-3 w-3 inline mr-1" />
@@ -145,7 +147,7 @@ export function DispatchTrips({
               )}
             </div>
             <div className="text-sm text-muted-foreground">
-              Trip ID: {trip.id.substring(0, 8).toUpperCase()}
+              Trip ID: {trip.id ? trip.id.substring(0, 8).toUpperCase() : "N/A"}
             </div>
           </div>
           
@@ -170,7 +172,7 @@ export function DispatchTrips({
             
             <div>
               <div className="text-sm mb-1">
-                <span className="font-medium">Client:</span> {trip.client_name}
+                <span className="font-medium">Client:</span> {trip.client_name || "Not specified"}
               </div>
               
               <div className="text-sm">
@@ -215,5 +217,5 @@ function convertTimeToMinutes(timeString: string): number {
   if (!timeString) return 0;
   
   const [hours, minutes] = timeString.split(':').map(Number);
-  return (hours * 60) + minutes;
+  return (hours * 60) + (minutes || 0); // Handle potential undefined minutes
 }

@@ -17,16 +17,28 @@ import {
 import { TripItemActions } from "./TripItemActions";
 
 export const formatTripId = (id: string): string => {
+  if (!id) return "N/A";
   return id.substring(0, 8).toUpperCase();
 };
 
 export const formatDate = (dateStr: string): string => {
-  return format(new Date(dateStr), "MMM d, yyyy");
+  if (!dateStr) return "No date";
+  try {
+    return format(new Date(dateStr), "MMM d, yyyy");
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Invalid date";
+  }
 };
 
 export const formatTime = (timeStr?: string): string => {
   if (!timeStr) return "";
-  return format(new Date(`2000-01-01T${timeStr}`), "h:mm a");
+  try {
+    return format(new Date(`2000-01-01T${timeStr}`), "h:mm a");
+  } catch (error) {
+    console.error("Error formatting time:", error);
+    return timeStr; // Return the original string if formatting fails
+  }
 };
 
 export const getStatusColor = (status: TripStatus): string => {
@@ -45,6 +57,7 @@ export const getStatusColor = (status: TripStatus): string => {
 };
 
 export const formatStatus = (status: TripStatus): string => {
+  if (!status) return "Unknown";
   return status.replace(/_/g, " ")
     .split(" ")
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -53,6 +66,8 @@ export const formatStatus = (status: TripStatus): string => {
 
 // Format trip type for display
 export const formatTripType = (type: string, uiServiceType?: string): string => {
+  if (!type) return "Unknown";
+  
   if (uiServiceType) {
     // Custom labels for UI service types
     const labels: Record<string, string> = {

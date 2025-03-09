@@ -21,9 +21,16 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
   today.setHours(0, 0, 0, 0);
   
   const todayTrips = trips.filter(trip => {
-    const tripDate = new Date(trip.date);
-    tripDate.setHours(0, 0, 0, 0);
-    return tripDate.getTime() === today.getTime();
+    if (!trip || !trip.date) return false;
+    
+    try {
+      const tripDate = new Date(trip.date);
+      tripDate.setHours(0, 0, 0, 0);
+      return tripDate.getTime() === today.getTime();
+    } catch (error) {
+      console.error("Invalid date format:", trip.date);
+      return false;
+    }
   });
   
   // Get assigned driver IDs and their trip counts
@@ -58,13 +65,15 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
       </TabsList>
       
       <TabsContent value="drivers">
-        {drivers.length === 0 ? (
+        {!drivers || drivers.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No drivers available
           </div>
         ) : (
           <div className="space-y-4">
             {drivers.map(driver => {
+              if (!driver || !driver.id) return null;
+              
               const tripCount = assignedDrivers.get(driver.id) || 0;
               const isAvailable = tripCount === 0;
               
@@ -75,11 +84,11 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                 >
                   <Avatar>
                     <AvatarImage src={driver.avatar_url || undefined} />
-                    <AvatarFallback>{getInitials(driver.name)}</AvatarFallback>
+                    <AvatarFallback>{getInitials(driver.name || "")}</AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1">
-                    <div className="font-medium">{driver.name}</div>
+                    <div className="font-medium">{driver.name || "Unnamed Driver"}</div>
                     <div className="text-sm text-muted-foreground">{driver.contact || "No contact"}</div>
                   </div>
                   
@@ -108,13 +117,15 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
       </TabsContent>
       
       <TabsContent value="vehicles">
-        {vehicles.length === 0 ? (
+        {!vehicles || vehicles.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No vehicles available
           </div>
         ) : (
           <div className="space-y-4">
             {vehicles.map(vehicle => {
+              if (!vehicle || !vehicle.id) return null;
+              
               const tripCount = assignedVehicles.get(vehicle.id) || 0;
               const isAvailable = tripCount === 0;
               
@@ -128,8 +139,8 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                   </div>
                   
                   <div className="flex-1">
-                    <div className="font-medium">{vehicle.make} {vehicle.model}</div>
-                    <div className="text-sm text-muted-foreground">{vehicle.registration}</div>
+                    <div className="font-medium">{vehicle.make || ""} {vehicle.model || ""}</div>
+                    <div className="text-sm text-muted-foreground">{vehicle.registration || "No registration"}</div>
                   </div>
                   
                   <div className="flex flex-col items-end gap-1">
