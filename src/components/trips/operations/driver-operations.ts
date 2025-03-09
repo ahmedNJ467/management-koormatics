@@ -24,9 +24,18 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
   
   if (updateError) throw updateError;
   
-  // Log the driver assignment activity
+  // Get trip info for better context
+  const { data: tripData } = await supabase
+    .from("trips")
+    .select("trip_code")
+    .eq("id", tripId)
+    .single();
+    
+  // Log the driver assignment activity with a cleaner title
+  const tripCode = tripData?.trip_code || `Trip-${tripId.slice(0, 8)}`;
+  
   await logActivity({
-    title: `Driver assigned to trip`,
+    title: `Driver assigned to trip ${tripCode}`,
     type: "trip",
     relatedId: tripId
   });
@@ -72,9 +81,11 @@ export const handleAssignDriver = async (
     
     if (updateError) throw updateError;
     
-    // Log the driver assignment activity
+    // Log the driver assignment activity with cleaner format
+    const tripInfo = `${tripToAssign.pickup_location || ""} to ${tripToAssign.dropoff_location || ""}`;
+    
     await logActivity({
-      title: `Driver assigned to trip from ${tripToAssign.pickup_location || ""} to ${tripToAssign.dropoff_location || ""}`,
+      title: `Driver assigned to trip ${tripInfo}`,
       type: "driver",
       relatedId: tripToAssign.id
     });

@@ -143,6 +143,12 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
     }
   };
 
+  // Helper function to format the title to not include long IDs
+  const formatActivityTitle = (title: string) => {
+    // Remove long UUIDs if present
+    return title.replace(/\s+[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/gi, '');
+  };
+
   return (
     <div className="space-y-4">
       {displayActivities.map((activity) => (
@@ -154,7 +160,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
             {getActivityIcon(activity.type)}
           </div>
           <div className="flex-1">
-            <p className="text-sm text-white">{activity.title}</p>
+            <p className="text-sm text-white">{formatActivityTitle(activity.title)}</p>
             <p className="text-xs flex items-center mt-1 text-gray-400">
               <Clock3 className="inline-block h-3 w-3 mr-1 opacity-70" />
               {activity.timestamp}
