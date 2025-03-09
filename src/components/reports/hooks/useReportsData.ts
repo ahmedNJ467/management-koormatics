@@ -1,5 +1,7 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SparePart } from "@/components/spare-parts/types";
 
 export function useReportsData() {
   // Fetch vehicles data
@@ -83,8 +85,9 @@ export function useReportsData() {
         
       if (partsError) throw partsError;
 
+      // Explicitly type the parts array to include vehicle_id
       const partsWithVehicles = await Promise.all(
-        parts.map(async (part) => {
+        (parts as SparePart[]).map(async (part) => {
           if (part.vehicle_id) {
             const { data: vehicle } = await supabase
               .from("vehicles")
