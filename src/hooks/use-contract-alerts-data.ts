@@ -3,50 +3,50 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert } from "@/types/alert";
 
-export const useContractAlertsData = (limit?: number) => {
+interface AlertsFilters {
+  resolved?: boolean;
+  priority?: string;
+  type?: string;
+}
+
+export const useContractAlertsData = (filters?: AlertsFilters) => {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["contract-alerts", limit],
+    queryKey: ["alerts", filters],
     queryFn: async () => {
-      try {
-        const query = supabase
-          .from("alerts")
-          .select("*")
-          .eq("type", "contract")
-          .eq("resolved", false);
-        
-        if (limit) {
-          query.limit(limit);
+      let query = supabase
+        .from("alerts")
+        .select("*");
+      
+      // Apply filters if provided
+      if (filters) {
+        if (filters.resolved !== undefined) {
+          query = query.eq("resolved", filters.resolved);
         }
         
-        query.order("date", { ascending: false });
+        if (filters.priority && filters.priority !== "") {
+          query = query.eq("priority", filters.priority);
+        }
         
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        
-        return data.map(alert => ({
-          id: alert.id,
-          title: alert.title,
-          priority: alert.priority,
-          date: alert.date,
-          created_at: alert.created_at,
-          updated_at: alert.updated_at,
-          resolved: alert.resolved,
-          type: alert.type,
-          description: alert.description,
-          related_id: alert.related_id,
-          related_type: alert.related_type
-        })) as Alert[];
-      } catch (err) {
-        console.error("Error fetching contract alerts:", err);
-        throw err;
+        if (filters.type && filters.type !== "") {
+          query = query.eq("type", filters.type);
+        }
       }
+      
+      // Order by date descending
+      query = query.order("date", { ascending: false });
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      return data as Alert[];
     }
   });
-  
+
   return {
     alerts: data || [],
     isLoading,
+    isError: !!error,
     error,
     refetch
   };

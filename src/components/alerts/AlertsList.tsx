@@ -18,7 +18,7 @@ export const AlertsList = ({ filterPriority }: AlertsListProps) => {
     type: "",
   });
 
-  const { data: alerts, isLoading, isError } = useContractAlertsData(filters);
+  const { alerts, isLoading, isError, refetch } = useContractAlertsData(filters);
 
   // Set up real-time listener for alerts table changes
   useEffect(() => {
