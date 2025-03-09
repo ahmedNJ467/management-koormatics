@@ -27,15 +27,16 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
   // Get trip info for better context
   const { data: tripData } = await supabase
     .from("trips")
-    .select("trip_code")
+    .select("pickup_location, dropoff_location")
     .eq("id", tripId)
     .single();
     
   // Log the driver assignment activity with a cleaner title
-  const tripCode = tripData?.trip_code || `Trip-${tripId.slice(0, 8)}`;
+  // Use the trip ID's first 8 characters as a simple identifier
+  const tripIdentifier = `Trip-${tripId.slice(0, 8)}`;
   
   await logActivity({
-    title: `Driver assigned to trip ${tripCode}`,
+    title: `Driver assigned to ${tripIdentifier}`,
     type: "trip",
     relatedId: tripId
   });
@@ -82,10 +83,12 @@ export const handleAssignDriver = async (
     if (updateError) throw updateError;
     
     // Log the driver assignment activity with cleaner format
-    const tripInfo = `${tripToAssign.pickup_location || ""} to ${tripToAssign.dropoff_location || ""}`;
+    const tripInfo = tripToAssign.pickup_location && tripToAssign.dropoff_location 
+      ? `${tripToAssign.pickup_location} to ${tripToAssign.dropoff_location}`
+      : `Trip-${tripToAssign.id.slice(0, 8)}`;
     
     await logActivity({
-      title: `Driver assigned to trip ${tripInfo}`,
+      title: `Driver assigned to ${tripInfo}`,
       type: "driver",
       relatedId: tripToAssign.id
     });
