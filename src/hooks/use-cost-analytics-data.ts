@@ -114,7 +114,7 @@ export function useCostAnalyticsData(selectedYear: string) {
       try {
         const { data, error } = await supabase
           .from('spare_parts')
-          .select('*')
+          .select('*, vehicles(make, model, registration)')
           .gt('quantity_used', 0)
           .or(`purchase_date.gte.${selectedYear}-01-01,last_used_date.gte.${selectedYear}-01-01`)
           .or(`purchase_date.lte.${selectedYear}-12-31,last_used_date.lte.${selectedYear}-12-31`);
@@ -129,6 +129,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           return [];
         }
         
+        console.log("Fetched spare parts data:", data);
         return data || [];
       } catch (error) {
         console.error("Error fetching spare parts data:", error);
@@ -263,7 +264,7 @@ export function useCostAnalyticsData(selectedYear: string) {
       try {
         const { data, error } = await supabase
           .from('spare_parts')
-          .select('*')
+          .select('*, vehicles(make, model, registration)')
           .gt('quantity_used', 0)
           .or(`purchase_date.gte.${comparisonYear}-01-01,last_used_date.gte.${comparisonYear}-01-01`)
           .or(`purchase_date.lte.${comparisonYear}-12-31,last_used_date.lte.${comparisonYear}-12-31`);

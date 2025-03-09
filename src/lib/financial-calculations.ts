@@ -54,11 +54,16 @@ export function calculateFinancialData(
     : 0;
   
   // Calculate spare parts costs - only count parts that have been used (quantity_used > 0)
+  // For parts used in maintenance, we count them separately to avoid double-counting
+  // when calculating total expenses
   const sparePartsCosts = Array.isArray(sparePartsData)
     ? sparePartsData.reduce((sum, part) => {
         const quantityUsed = Number(part.quantity_used || 0);
         const costPerUnit = Number(part.cost_per_unit || 0);
-        return sum + (quantityUsed * costPerUnit);
+        // Only count spare parts that weren't already calculated in maintenance costs
+        // Check if the part has a maintenance_id associated with it
+        const isIncludedInMaintenance = part.maintenance_id != null;
+        return isIncludedInMaintenance ? sum : sum + (quantityUsed * costPerUnit);
       }, 0)
     : 0;
   
@@ -215,8 +220,12 @@ function calculateMonthlyFinancialData(
       const costPerUnit = Number(part.cost_per_unit || 0);
       const cost = quantityUsed * costPerUnit;
       
-      months[monthKey].spareParts += cost;
-      months[monthKey].expenses += cost;
+      // Only include costs for spare parts not already accounted for in maintenance
+      const isIncludedInMaintenance = part.maintenance_id != null;
+      if (!isIncludedInMaintenance) {
+        months[monthKey].spareParts += cost;
+        months[monthKey].expenses += cost;
+      }
     });
   }
   

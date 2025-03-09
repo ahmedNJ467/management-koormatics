@@ -11,7 +11,7 @@ import { filterDataByDate } from "../utils/dateFilters";
 
 interface DriversReportProps {
   driversData: any[] | undefined;
-  isLoading: boolean;
+  isLoading: boolean;  // Changed from isLoadingDrivers to isLoading
   timeRange: string;
   dateRange: DateRange | undefined;
 }
