@@ -37,14 +37,15 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
   const id = Date.now().toString();
   const timestamp = new Date();
   
+  // Updated icon mapping to align with our new design
   const iconMap: Record<ActivityType, string> = {
     trip: 'calendar',
-    maintenance: 'wrench',
+    maintenance: 'clock',
     vehicle: 'car',
     driver: 'user',
     client: 'building',
     fuel: 'fuel',
-    contract: 'contract'
+    contract: 'file-check'
   };
 
   const newActivity: ActivityItemProps = {
