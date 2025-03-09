@@ -1,25 +1,18 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { RecentActivity } from "./RecentActivity";
 import { AlertsTab } from "./AlertsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getActivities } from "@/utils/activity-logger";
 import { ActivityItemProps } from "@/types/dashboard"; 
 import { BellRing, Activity } from "lucide-react";
 
-export const RecentActivities = () => {
-  const [activeTab, setActiveTab] = useState("activity");
-  const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>([]);
+interface RecentActivitiesProps {
+  activities?: ActivityItemProps[];
+  isLoading?: boolean;
+}
 
-  useEffect(() => {
-    setRecentActivities(getActivities(5));
-    
-    const intervalId = setInterval(() => {
-      setRecentActivities(getActivities(5));
-    }, 15000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
+export const RecentActivities = ({ activities, isLoading }: RecentActivitiesProps) => {
+  const [activeTab, setActiveTab] = useState("activity");
 
   return (
     <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -34,7 +27,7 @@ export const RecentActivities = () => {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="activity" className="mt-0">
-        <RecentActivity activities={recentActivities} isLoading={false} />
+        <RecentActivity activities={activities} isLoading={isLoading} />
       </TabsContent>
       <TabsContent value="alerts" className="mt-0">
         <AlertsTab />
