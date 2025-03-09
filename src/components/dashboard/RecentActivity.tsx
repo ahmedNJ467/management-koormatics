@@ -12,11 +12,9 @@ import {
   FileBadge
 } from "lucide-react";
 import { ActivityItemProps } from "@/types/dashboard";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getActivities, logActivity } from "@/utils/activity-logger";
+import { getActivities } from "@/utils/activity-logger";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,7 +24,6 @@ interface RecentActivityProps {
 }
 
 export const RecentActivity = ({ isLoading = false, activities }: RecentActivityProps) => {
-  const navigate = useNavigate();
   const [activityItems, setActivityItems] = useState<ActivityItemProps[]>([]);
 
   // Query for recent activities
@@ -105,19 +102,7 @@ export const RecentActivity = ({ isLoading = false, activities }: RecentActivity
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-start space-x-4 animate-pulse">
-            <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
-            <div className="space-y-2">
-              <div className="h-4 w-[250px] bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="h-3 w-[120px] bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <div className="py-8 text-center text-muted-foreground">Loading activities...</div>;
   }
 
   return (
@@ -125,12 +110,12 @@ export const RecentActivity = ({ isLoading = false, activities }: RecentActivity
       {activityItems.length > 0 ? (
         <>
           {activityItems.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors duration-150">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/30 p-2 rounded-full shadow-sm">
+            <div key={activity.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors duration-150">
+              <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
                 {getIcon(activity.type)}
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium">{activity.title}</p>
+                <p className="text-sm">{activity.title}</p>
                 <div className="flex items-center text-xs text-muted-foreground">
                   <Clock className="mr-1 h-3 w-3" /> {activity.timestamp}
                 </div>
@@ -138,24 +123,17 @@ export const RecentActivity = ({ isLoading = false, activities }: RecentActivity
             </div>
           ))}
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
-            className="w-full mt-4 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            onClick={() => {
-              // Refresh activities on button click
-              if (databaseActivities && databaseActivities.length > 0) {
-                refetch();
-              } else {
-                setActivityItems(getActivities(5));
-              }
-            }}
+            className="w-full mt-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={() => refetch()}
           >
-            Refresh activities
+            Refresh
           </Button>
         </>
       ) : (
-        <div className="text-center py-8 flex flex-col items-center text-muted-foreground">
-          <FileText className="h-8 w-8 mb-2 text-muted-foreground/50" />
+        <div className="text-center py-6 text-muted-foreground">
+          <FileText className="h-6 w-6 mx-auto mb-2 opacity-50" />
           <p>No recent activities</p>
         </div>
       )}
