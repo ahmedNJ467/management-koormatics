@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SparePart } from "@/components/spare-parts/types";
 
 export function useCostAnalyticsData(selectedYear: string) {
   const { toast } = useToast();
@@ -165,7 +166,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
         
         // Create a maintenance lookup map
-        const maintenanceMap = {};
+        const maintenanceMap: Record<string, any> = {};
         if (maintenanceRecords) {
           maintenanceRecords.forEach(record => {
             maintenanceMap[record.id] = record;
@@ -173,7 +174,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Create vehicles lookup map
-        const vehiclesMap = {};
+        const vehiclesMap: Record<string, any> = {};
         if (vehiclesData) {
           vehiclesData.forEach(vehicle => {
             vehiclesMap[vehicle.id] = vehicle;
@@ -181,21 +182,19 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Combine spare parts with vehicle and maintenance data
-        const partsWithRelationships = (parts || []).map(part => {
+        const partsWithRelationships = (parts || []).map((part: SparePart) => {
           let vehicleInfo = null;
           
-          // Try to get vehicle info directly from part's vehicle_id
-          if (part.vehicle_id && vehiclesMap[part.vehicle_id]) {
-            vehicleInfo = {
-              make: vehiclesMap[part.vehicle_id].make,
-              model: vehiclesMap[part.vehicle_id].model,
-              registration: vehiclesMap[part.vehicle_id].registration
-            };
-          } 
-          // If no direct vehicle_id, try to get it from the associated maintenance record
-          else if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
+          // If we have a maintenance_id, try to get vehicle info from the associated maintenance record
+          if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
             const maintenanceRecord = maintenanceMap[part.maintenance_id];
-            if (maintenanceRecord.vehicles) {
+            if (maintenanceRecord.vehicle_id && vehiclesMap[maintenanceRecord.vehicle_id]) {
+              vehicleInfo = {
+                make: vehiclesMap[maintenanceRecord.vehicle_id].make,
+                model: vehiclesMap[maintenanceRecord.vehicle_id].model,
+                registration: vehiclesMap[maintenanceRecord.vehicle_id].registration
+              };
+            } else if (maintenanceRecord.vehicles) {
               vehicleInfo = maintenanceRecord.vehicles;
             }
           }
@@ -368,7 +367,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
         
         // Create a maintenance lookup map
-        const maintenanceMap = {};
+        const maintenanceMap: Record<string, any> = {};
         if (maintenanceRecords) {
           maintenanceRecords.forEach(record => {
             maintenanceMap[record.id] = record;
@@ -376,7 +375,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Create vehicles lookup map
-        const vehiclesMap = {};
+        const vehiclesMap: Record<string, any> = {};
         if (vehiclesData) {
           vehiclesData.forEach(vehicle => {
             vehiclesMap[vehicle.id] = vehicle;
@@ -384,21 +383,19 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Combine spare parts with vehicle and maintenance data
-        const partsWithRelationships = (parts || []).map(part => {
+        const partsWithRelationships = (parts || []).map((part: SparePart) => {
           let vehicleInfo = null;
           
-          // Try to get vehicle info directly from part's vehicle_id
-          if (part.vehicle_id && vehiclesMap[part.vehicle_id]) {
-            vehicleInfo = {
-              make: vehiclesMap[part.vehicle_id].make,
-              model: vehiclesMap[part.vehicle_id].model,
-              registration: vehiclesMap[part.vehicle_id].registration
-            };
-          } 
-          // If no direct vehicle_id, try to get it from the associated maintenance record
-          else if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
+          // If we have a maintenance_id, try to get vehicle info from the associated maintenance record
+          if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
             const maintenanceRecord = maintenanceMap[part.maintenance_id];
-            if (maintenanceRecord.vehicles) {
+            if (maintenanceRecord.vehicle_id && vehiclesMap[maintenanceRecord.vehicle_id]) {
+              vehicleInfo = {
+                make: vehiclesMap[maintenanceRecord.vehicle_id].make,
+                model: vehiclesMap[maintenanceRecord.vehicle_id].model,
+                registration: vehiclesMap[maintenanceRecord.vehicle_id].registration
+              };
+            } else if (maintenanceRecord.vehicles) {
               vehicleInfo = maintenanceRecord.vehicles;
             }
           }
