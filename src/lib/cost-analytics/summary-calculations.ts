@@ -18,7 +18,13 @@ export function calculateSummaryCosts(
 
   console.log('Completed maintenance items:', completedMaintenance);
   
-  // Calculate spare parts costs (only for parts that have been used)
+  // Calculate maintenance costs
+  const maintenanceCosts = completedMaintenance.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0);
+  
+  // Calculate fuel costs
+  const fuelCosts = safeFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0);
+  
+  // Calculate spare parts costs (only for parts that have been used and not included in maintenance)
   const sparePartsCosts = safeSparePartsData.reduce((sum, part) => {
     // Check if the part has been used
     const quantityUsed = Number(part?.quantity_used || 0);
@@ -31,12 +37,20 @@ export function calculateSummaryCosts(
     
     // Only count parts not already included in maintenance to avoid double counting
     const isIncludedInMaintenance = part.maintenance_id != null;
-    return isIncludedInMaintenance ? sum : sum + totalCost;
+    
+    // Add to sum only if not included in maintenance
+    if (!isIncludedInMaintenance) {
+      console.log(`Adding ${part.name} cost to total: $${totalCost} (not included in maintenance)`);
+      return sum + totalCost;
+    } else {
+      console.log(`Skipping ${part.name} cost: $${totalCost} (already included in maintenance)`);
+      return sum;
+    }
   }, 0);
   
   const costs: CostData = {
-    maintenance: completedMaintenance.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
-    fuel: safeFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0),
+    maintenance: maintenanceCosts,
+    fuel: fuelCosts,
     spareParts: sparePartsCosts,
     total: 0
   };

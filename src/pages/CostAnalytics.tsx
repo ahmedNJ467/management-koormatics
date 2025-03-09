@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -116,6 +115,9 @@ const CostAnalytics = () => {
 
   const profitTrend = calculateProfitTrend();
 
+  console.log('CostAnalytics - Summary Costs:', summaryCosts);
+  console.log('CostAnalytics - Financial Data:', financialData);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -218,7 +220,7 @@ const CostAnalytics = () => {
                 <div className="flex items-center">
                   <Package className="h-4 w-4 mr-1 text-purple-500" />
                   <span className="text-xs">
-                    Parts: ${financialData.expenseBreakdown.spareParts.toFixed(2)}
+                    Parts: ${summaryCosts.spareParts.toFixed(2)}
                   </span>
                 </div>
               </div>
