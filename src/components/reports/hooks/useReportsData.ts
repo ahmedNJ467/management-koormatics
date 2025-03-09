@@ -74,10 +74,11 @@ export function useReportsData() {
     }
   });
 
-  // Fetch spare parts data with new fields
+  // Fetch spare parts data with new fields - using a different approach
   const { data: sparePartsData, isLoading: isLoadingSpareparts } = useQuery({
     queryKey: ["spare-parts"],
     queryFn: async () => {
+      // First, fetch all spare parts
       const { data: parts, error: partsError } = await supabase
         .from("spare_parts")
         .select("*")
@@ -85,21 +86,33 @@ export function useReportsData() {
         
       if (partsError) throw partsError;
 
-      // Explicitly type the parts array to include vehicle_id
-      const partsWithVehicles = await Promise.all(
-        (parts as SparePart[]).map(async (part) => {
-          if (part.vehicle_id) {
-            const { data: vehicle } = await supabase
-              .from("vehicles")
-              .select("make, model, registration")
-              .eq("id", part.vehicle_id)
-              .single();
-            
-            return { ...part, vehicles: vehicle };
-          }
-          return { ...part, vehicles: null };
-        })
-      );
+      // Then fetch all vehicles to use for lookup
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from("vehicles")
+        .select("id, make, model, registration");
+        
+      if (vehiclesError) throw vehiclesError;
+      
+      // Create a vehicles lookup map for faster access
+      const vehiclesMap = vehiclesData.reduce((acc, vehicle) => {
+        acc[vehicle.id] = vehicle;
+        return acc;
+      }, {});
+
+      // Combine spare parts with vehicle data manually
+      const partsWithVehicles = (parts as SparePart[]).map(part => {
+        if (part.vehicle_id && vehiclesMap[part.vehicle_id]) {
+          return {
+            ...part,
+            vehicles: {
+              make: vehiclesMap[part.vehicle_id].make,
+              model: vehiclesMap[part.vehicle_id].model,
+              registration: vehiclesMap[part.vehicle_id].registration
+            }
+          };
+        }
+        return { ...part, vehicles: null };
+      });
       
       return partsWithVehicles;
     }
