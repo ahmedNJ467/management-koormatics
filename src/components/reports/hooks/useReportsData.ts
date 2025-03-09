@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -77,13 +76,29 @@ export function useReportsData() {
   const { data: sparePartsData, isLoading: isLoadingSpareparts } = useQuery({
     queryKey: ["spare-parts"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: parts, error: partsError } = await supabase
         .from("spare_parts")
-        .select("*, vehicles(make, model, registration)")
+        .select("*")
         .order("created_at", { ascending: false });
         
-      if (error) throw error;
-      return data;
+      if (partsError) throw partsError;
+
+      const partsWithVehicles = await Promise.all(
+        parts.map(async (part) => {
+          if (part.vehicle_id) {
+            const { data: vehicle } = await supabase
+              .from("vehicles")
+              .select("make, model, registration")
+              .eq("id", part.vehicle_id)
+              .single();
+            
+            return { ...part, vehicles: vehicle };
+          }
+          return { ...part, vehicles: null };
+        })
+      );
+      
+      return partsWithVehicles;
     }
   });
 

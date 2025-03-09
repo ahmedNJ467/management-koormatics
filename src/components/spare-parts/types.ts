@@ -20,4 +20,10 @@ export interface SparePart {
   quantity_used?: number;
   maintenance_id?: string;
   last_used_date?: string;
+  vehicle_id?: string;
+  vehicles?: {
+    make: string;
+    model: string;
+    registration: string;
+  } | null;
 }
