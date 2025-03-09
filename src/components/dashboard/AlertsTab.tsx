@@ -8,11 +8,25 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/utils/activity-logger";
+import { enableRealtimeForTable } from "@/utils/supabase-helpers";
 
 export const AlertsTab = () => {
   const { toast } = useToast();
   const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
   const [realtimeAlerts, setRealtimeAlerts] = useState<Alert[]>([]);
+  
+  // Setup realtime for alerts table
+  useEffect(() => {
+    const setupRealtime = async () => {
+      try {
+        await enableRealtimeForTable('alerts');
+      } catch (error) {
+        console.error("Failed to enable realtime for alerts:", error);
+      }
+    };
+    
+    setupRealtime();
+  }, []);
   
   // Query for active alerts
   const { data: alerts, isLoading, error, refetch } = useQuery({

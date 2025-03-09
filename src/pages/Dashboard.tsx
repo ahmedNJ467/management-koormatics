@@ -26,10 +26,18 @@ export default function Dashboard() {
   const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>([]);
 
   useEffect(() => {
-    setRecentActivities(getActivities(5));
+    // Initial load of activities
+    const loadActivities = async () => {
+      const activities = await getActivities(5);
+      setRecentActivities(activities);
+    };
     
-    const intervalId = setInterval(() => {
-      setRecentActivities(getActivities(5));
+    loadActivities();
+    
+    // Set up polling interval
+    const intervalId = setInterval(async () => {
+      const activities = await getActivities(5);
+      setRecentActivities(activities);
     }, 15000);
     
     return () => clearInterval(intervalId);
@@ -39,40 +47,44 @@ export default function Dashboard() {
     const fleetStatsChannel = supabase
       .channel('fleet-stats-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, 
-        () => {
+        async () => {
           queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-          logActivity({
+          await logActivity({
             title: "Vehicle status updated",
             type: "vehicle"
           });
-          setRecentActivities(getActivities(5));
+          const activities = await getActivities(5);
+          setRecentActivities(activities);
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, 
-        () => {
+        async () => {
           queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-          logActivity({
+          await logActivity({
             title: "Driver information updated",
             type: "driver"
           });
-          setRecentActivities(getActivities(5));
+          const activities = await getActivities(5);
+          setRecentActivities(activities);
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance' }, 
-        () => {
+        async () => {
           queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-          logActivity({
+          await logActivity({
             title: "Maintenance record updated",
             type: "maintenance"
           });
-          setRecentActivities(getActivities(5));
+          const activities = await getActivities(5);
+          setRecentActivities(activities);
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' }, 
-        () => {
+        async () => {
           queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
-          logActivity({
+          await logActivity({
             title: "Contract information updated",
             type: "contract"
           });
-          setRecentActivities(getActivities(5));
+          const activities = await getActivities(5);
+          setRecentActivities(activities);
         })
       .subscribe();
     

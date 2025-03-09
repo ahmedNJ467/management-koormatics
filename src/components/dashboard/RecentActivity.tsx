@@ -5,6 +5,7 @@ import { ActivityItemProps } from "@/types/dashboard";
 import { Calendar, Clock, User, Car, FileText, Activity, Clock3, Fuel, FileCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { enableRealtimeForTable } from "@/utils/supabase-helpers";
 
 interface RecentActivityProps {
   isLoading?: boolean;
@@ -13,6 +14,20 @@ interface RecentActivityProps {
 
 export const RecentActivity = ({ activities: propActivities, isLoading: propIsLoading }: RecentActivityProps) => {
   const [realtimeActivities, setRealtimeActivities] = useState<ActivityItemProps[]>([]);
+
+  // Setup realtime for activities table
+  useEffect(() => {
+    // Enable realtime for activities table
+    const setupRealtime = async () => {
+      try {
+        await enableRealtimeForTable('activities');
+      } catch (error) {
+        console.error("Failed to enable realtime for activities:", error);
+      }
+    };
+    
+    setupRealtime();
+  }, []);
 
   const { data: fetchedActivities, isLoading } = useQuery({
     queryKey: ["dashboard-activities"],
@@ -31,7 +46,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
         id: item.id,
         title: item.title,
         timestamp: new Date(item.timestamp).toLocaleString(),
-        type: item.type,
+        type: item.type as ActivityItemProps['type'],
         icon: item.type
       })) as ActivityItemProps[];
     },
@@ -64,7 +79,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
             id: item.id,
             title: item.title,
             timestamp: new Date(item.timestamp).toLocaleString(),
-            type: item.type,
+            type: item.type as ActivityItemProps['type'],
             icon: item.type
           })) as ActivityItemProps[];
           
