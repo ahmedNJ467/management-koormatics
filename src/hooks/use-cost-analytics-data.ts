@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,29 @@ export function useCostAnalyticsData(selectedYear: string) {
       setComparisonYear(null);
     }
   }, [selectedYear, comparisonYear]);
+
+  // Fetch vehicles data for lookup
+  const { data: vehiclesData } = useQuery({
+    queryKey: ['vehicles-for-cost-analytics'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('vehicles')
+          .select('id, make, model, registration');
+        
+        if (error) {
+          console.error("Vehicles lookup data fetch error:", error);
+          return [];
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching vehicles lookup data:", error);
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { data: maintenanceData, isLoading: maintenanceLoading, error: maintenanceError } = useQuery({
     queryKey: ['maintenanceCosts', selectedYear],
@@ -112,25 +136,78 @@ export function useCostAnalyticsData(selectedYear: string) {
     queryKey: ['sparePartsCosts', selectedYear],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        // First, fetch all spare parts
+        const { data: parts, error: partsError } = await supabase
           .from('spare_parts')
-          .select('*, vehicles(make, model, registration)')
+          .select('*')
           .gt('quantity_used', 0)
           .or(`purchase_date.gte.${selectedYear}-01-01,last_used_date.gte.${selectedYear}-01-01`)
           .or(`purchase_date.lte.${selectedYear}-12-31,last_used_date.lte.${selectedYear}-12-31`);
         
-        if (error) {
-          console.error("Spare parts data fetch error:", error);
+        if (partsError) {
+          console.error("Spare parts data fetch error:", partsError);
           toast({
             title: "Error fetching spare parts data",
-            description: error.message,
+            description: partsError.message,
             variant: "destructive",
           });
           return [];
         }
+
+        // Then fetch all maintenance records for lookup
+        const { data: maintenanceRecords, error: maintenanceError } = await supabase
+          .from('maintenance')
+          .select('id, description, vehicle_id, vehicles(make, model, registration)');
         
-        console.log("Fetched spare parts data:", data);
-        return data || [];
+        if (maintenanceError) {
+          console.error("Maintenance records fetch error:", maintenanceError);
+          return [];
+        }
+        
+        // Create a maintenance lookup map
+        const maintenanceMap = {};
+        if (maintenanceRecords) {
+          maintenanceRecords.forEach(record => {
+            maintenanceMap[record.id] = record;
+          });
+        }
+
+        // Create vehicles lookup map
+        const vehiclesMap = {};
+        if (vehiclesData) {
+          vehiclesData.forEach(vehicle => {
+            vehiclesMap[vehicle.id] = vehicle;
+          });
+        }
+
+        // Combine spare parts with vehicle and maintenance data
+        const partsWithRelationships = (parts || []).map(part => {
+          let vehicleInfo = null;
+          
+          // Try to get vehicle info directly from part's vehicle_id
+          if (part.vehicle_id && vehiclesMap[part.vehicle_id]) {
+            vehicleInfo = {
+              make: vehiclesMap[part.vehicle_id].make,
+              model: vehiclesMap[part.vehicle_id].model,
+              registration: vehiclesMap[part.vehicle_id].registration
+            };
+          } 
+          // If no direct vehicle_id, try to get it from the associated maintenance record
+          else if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
+            const maintenanceRecord = maintenanceMap[part.maintenance_id];
+            if (maintenanceRecord.vehicles) {
+              vehicleInfo = maintenanceRecord.vehicles;
+            }
+          }
+          
+          return { 
+            ...part, 
+            vehicles: vehicleInfo
+          };
+        });
+        
+        console.log("Processed spare parts data with vehicle relationships:", partsWithRelationships);
+        return partsWithRelationships;
       } catch (error) {
         console.error("Error fetching spare parts data:", error);
         return [];
@@ -262,24 +339,77 @@ export function useCostAnalyticsData(selectedYear: string) {
       if (!comparisonYear) return [];
       
       try {
-        const { data, error } = await supabase
+        // First, fetch all spare parts
+        const { data: parts, error: partsError } = await supabase
           .from('spare_parts')
-          .select('*, vehicles(make, model, registration)')
+          .select('*')
           .gt('quantity_used', 0)
           .or(`purchase_date.gte.${comparisonYear}-01-01,last_used_date.gte.${comparisonYear}-01-01`)
           .or(`purchase_date.lte.${comparisonYear}-12-31,last_used_date.lte.${comparisonYear}-12-31`);
         
-        if (error) {
-          console.error("Comparison spare parts data fetch error:", error);
+        if (partsError) {
+          console.error("Comparison spare parts data fetch error:", partsError);
           toast({
             title: "Error fetching comparison spare parts data",
-            description: error.message,
+            description: partsError.message,
             variant: "destructive",
           });
           return [];
         }
+
+        // Then fetch all maintenance records for lookup
+        const { data: maintenanceRecords, error: maintenanceError } = await supabase
+          .from('maintenance')
+          .select('id, description, vehicle_id, vehicles(make, model, registration)');
         
-        return data || [];
+        if (maintenanceError) {
+          console.error("Maintenance records fetch error for comparison:", maintenanceError);
+          return [];
+        }
+        
+        // Create a maintenance lookup map
+        const maintenanceMap = {};
+        if (maintenanceRecords) {
+          maintenanceRecords.forEach(record => {
+            maintenanceMap[record.id] = record;
+          });
+        }
+
+        // Create vehicles lookup map
+        const vehiclesMap = {};
+        if (vehiclesData) {
+          vehiclesData.forEach(vehicle => {
+            vehiclesMap[vehicle.id] = vehicle;
+          });
+        }
+
+        // Combine spare parts with vehicle and maintenance data
+        const partsWithRelationships = (parts || []).map(part => {
+          let vehicleInfo = null;
+          
+          // Try to get vehicle info directly from part's vehicle_id
+          if (part.vehicle_id && vehiclesMap[part.vehicle_id]) {
+            vehicleInfo = {
+              make: vehiclesMap[part.vehicle_id].make,
+              model: vehiclesMap[part.vehicle_id].model,
+              registration: vehiclesMap[part.vehicle_id].registration
+            };
+          } 
+          // If no direct vehicle_id, try to get it from the associated maintenance record
+          else if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
+            const maintenanceRecord = maintenanceMap[part.maintenance_id];
+            if (maintenanceRecord.vehicles) {
+              vehicleInfo = maintenanceRecord.vehicles;
+            }
+          }
+          
+          return { 
+            ...part, 
+            vehicles: vehicleInfo
+          };
+        });
+        
+        return partsWithRelationships;
       } catch (error) {
         console.error("Error fetching comparison spare parts data:", error);
         return [];
