@@ -8,21 +8,30 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApiErrorHandler } from "@/lib/api-error-handler";
-import { useContractAlertsData } from "@/hooks/use-contract-alerts-data";
-import { useContractActivitiesData } from "@/hooks/use-contract-activities-data";
-import { formatDistanceToNow } from 'date-fns';
 import { ActivityItemProps } from "@/types/dashboard";
 import { AlertTriangle, Bell, Car, TrendingUp, UserPlus, Calendar, BarChart, FileBadge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { getActivities, logActivity } from "@/utils/activity-logger";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("activity");
   const { handleError } = useApiErrorHandler();
   const { toast } = useToast();
+  const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>([]);
+
+  useEffect(() => {
+    setRecentActivities(getActivities(5));
+    
+    const intervalId = setInterval(() => {
+      setRecentActivities(getActivities(5));
+    }, 15000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const fleetStatsChannel = supabase
@@ -30,21 +39,38 @@ export default function Dashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, 
         () => {
           queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+          logActivity({
+            title: "Vehicle status updated",
+            type: "vehicle"
+          });
+          setRecentActivities(getActivities(5));
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, 
         () => {
           queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+          logActivity({
+            title: "Driver information updated",
+            type: "driver"
+          });
+          setRecentActivities(getActivities(5));
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance' }, 
         () => {
           queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+          logActivity({
+            title: "Maintenance record updated",
+            type: "maintenance"
+          });
+          setRecentActivities(getActivities(5));
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' }, 
         () => {
           queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
-          
-          // Create a new activity for contract changes
-          createContractActivity();
+          logActivity({
+            title: "Contract information updated",
+            type: "contract"
+          });
+          setRecentActivities(getActivities(5));
         })
       .subscribe();
     
@@ -52,23 +78,6 @@ export default function Dashboard() {
       supabase.removeChannel(fleetStatsChannel);
     };
   }, [queryClient]);
-
-  // Function to create a new activity when contracts are modified
-  const createContractActivity = async () => {
-    try {
-      const { error } = await supabase
-        .from("activities")
-        .insert({
-          title: "Contract updated",
-          type: "contract",
-          timestamp: new Date().toISOString(),
-        });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error creating contract activity:", error);
-    }
-  };
 
   const { data: fleetStats, isLoading: isFleetStatsLoading } = useQuery({
     queryKey: ["fleet-stats"],
@@ -108,42 +117,6 @@ export default function Dashboard() {
       };
     },
   });
-
-  const { data: activitiesData, isLoading: isActivitiesLoading } = useContractActivitiesData(5);
-  
-  const recentActivities: ActivityItemProps[] = activitiesData ? activitiesData.map((activity) => {
-    const formattedTimestamp = formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true });
-    
-    const getIconForType = (type: string) => {
-      switch (type) {
-        case "maintenance": return "wrench";
-        case "trip": return "car";
-        case "vehicle": return "truck";
-        case "driver": return "user";
-        case "client": return "briefcase";
-        case "fuel": return "fuel";
-        case "contract": return "contract";
-        default: return "activity";
-      }
-    };
-    
-    return {
-      id: activity.id,
-      title: activity.title,
-      timestamp: formattedTimestamp,
-      type: activity.type,
-      icon: getIconForType(activity.type),
-    };
-  }) : [];
-
-  const { data: alertsData, isLoading: isAlertsLoading } = useContractAlertsData({ resolved: false });
-  
-  const alerts = alertsData ? alertsData.map((alert) => ({
-    id: alert.id,
-    title: alert.title,
-    priority: alert.priority,
-    date: formatDistanceToNow(new Date(alert.date), { addSuffix: true }),
-  })) : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -324,14 +297,6 @@ export default function Dashboard() {
                 Recent system activities and important alerts
               </CardDescription>
             </div>
-            {(alerts && alerts.length > 0) && (
-              <div className="relative">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                  {alerts.length}
-                </span>
-              </div>
-            )}
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="mt-2">
@@ -339,15 +304,10 @@ export default function Dashboard() {
                 <TabsTrigger value="activity" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700">Activity</TabsTrigger>
                 <TabsTrigger value="alerts" className="relative data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700">
                   Alerts
-                  {(alerts && alerts.length > 0) && (
-                    <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                      {alerts.length}
-                    </span>
-                  )}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="activity" className="space-y-4 mt-4">
-                <RecentActivity activities={recentActivities || []} isLoading={isActivitiesLoading} />
+                <RecentActivity activities={recentActivities} isLoading={false} />
               </TabsContent>
               <TabsContent value="alerts" className="space-y-4 mt-4">
                 <AlertsTab />

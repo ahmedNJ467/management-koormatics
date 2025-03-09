@@ -16,71 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-
-// Generate dynamic mock activities based on current time
-const generateDynamicActivities = (): ActivityItemProps[] => {
-  const now = new Date();
-  
-  return [
-    {
-      id: "1",
-      title: "Trip completed: Airport pickup #T-2023-112",
-      timestamp: new Date(now.getTime() - 35 * 60000).toISOString(), // 35 minutes ago
-      type: "trip",
-      icon: "calendar"
-    },
-    {
-      id: "2",
-      title: "Vehicle maintenance completed for TRUCK-002",
-      timestamp: new Date(now.getTime() - 3 * 3600000).toISOString(), // 3 hours ago
-      type: "maintenance",
-      icon: "wrench"
-    },
-    {
-      id: "3",
-      title: "New driver onboarded: Sarah Johnson",
-      timestamp: new Date(now.getTime() - 6 * 3600000).toISOString(), // 6 hours ago
-      type: "driver",
-      icon: "user"
-    },
-    {
-      id: "4",
-      title: "Fuel refill: 45 gallons for SUV-001",
-      timestamp: new Date(now.getTime() - 12 * 3600000).toISOString(), // 12 hours ago
-      type: "fuel",
-      icon: "fuel"
-    },
-    {
-      id: "5",
-      title: "New contract signed with Client XYZ Corp",
-      timestamp: new Date(now.getTime() - 24 * 3600000).toISOString(), // 24 hours ago
-      type: "contract",
-      icon: "contract"
-    }
-  ].map(activity => ({
-    ...activity,
-    timestamp: formatTimestamp(new Date(activity.timestamp))
-  }));
-};
-
-// Format timestamps in a human-readable format
-const formatTimestamp = (date: Date): string => {
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
-  if (diffInSeconds < 60) {
-    return 'just now';
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} day${days !== 1 ? 's' : ''} ago`;
-  }
-};
+import { getActivities, logActivity } from "@/utils/activity-logger";
 
 interface RecentActivityProps {
   isLoading?: boolean;
@@ -92,17 +28,17 @@ export const RecentActivity = ({ isLoading = false, activities }: RecentActivity
   const [activityItems, setActivityItems] = useState<ActivityItemProps[]>([]);
   
   useEffect(() => {
-    // If activities are provided, use them; otherwise, generate dynamic ones
+    // If activities are provided, use them; otherwise get from activity logger
     if (activities && activities.length > 0) {
       setActivityItems(activities);
     } else {
-      // On initial load, set the activities
-      setActivityItems(generateDynamicActivities());
+      // On initial load, set the activities from the activity logger
+      setActivityItems(getActivities(5));
       
-      // Periodically update timestamps
+      // Periodically refresh activities
       const intervalId = setInterval(() => {
-        setActivityItems(generateDynamicActivities());
-      }, 60000); // Update every minute
+        setActivityItems(getActivities(5));
+      }, 30000); // Refresh every 30 seconds
       
       return () => clearInterval(intervalId);
     }
@@ -167,7 +103,10 @@ export const RecentActivity = ({ isLoading = false, activities }: RecentActivity
             variant="outline" 
             size="sm" 
             className="w-full mt-4 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              // Refresh activities on button click
+              setActivityItems(getActivities(5));
+            }}
           >
             Refresh activities
           </Button>

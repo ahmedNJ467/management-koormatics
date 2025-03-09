@@ -7,6 +7,7 @@ import { DispatchHeader } from "@/components/dispatch/DispatchHeader";
 import { DispatchBoard } from "@/components/dispatch/DispatchBoard";
 import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
 import { TripMessageDialog } from "@/components/trips/TripMessageDialog";
+import { logActivity } from "@/utils/activity-logger";
 
 export default function Dispatch() {
   const { toast } = useToast();
@@ -32,7 +33,13 @@ export default function Dispatch() {
     if (!tripToMessage || !newMessage.trim()) return;
     
     try {
-      // Since we're no longer storing in the database, just show a toast
+      // Log activity for the message sent
+      logActivity({
+        title: `Message sent to driver for trip ${tripToMessage.id}`,
+        type: "trip",
+        relatedId: tripToMessage.id.toString()
+      });
+      
       toast({
         title: "Message sent",
         description: "Your message has been sent successfully",
@@ -59,6 +66,15 @@ export default function Dispatch() {
 
   // Handle driver assignment from dispatch
   const handleDriverAssigned = () => {
+    if (tripToAssign) {
+      // Log activity for driver assignment
+      logActivity({
+        title: `Driver assigned to trip ${tripToAssign.id}`,
+        type: "trip",
+        relatedId: tripToAssign.id.toString()
+      });
+    }
+    
     toast({
       title: "Driver assigned",
       description: "The driver has been successfully assigned to the trip",
