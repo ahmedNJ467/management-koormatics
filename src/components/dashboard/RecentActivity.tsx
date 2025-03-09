@@ -43,7 +43,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
       if (error) throw error;
       
       return data.map(item => ({
-        id: item.id,
+        id: item.id.toString(), // Ensure ID is always a string
         title: item.title,
         timestamp: new Date(item.timestamp).toLocaleString(),
         type: item.type as ActivityItemProps['type'],
@@ -76,7 +76,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
         
         if (!error && data) {
           const formattedActivities = data.map(item => ({
-            id: item.id,
+            id: item.id.toString(), // Ensure ID is always a string
             title: item.title,
             timestamp: new Date(item.timestamp).toLocaleString(),
             type: item.type as ActivityItemProps['type'],

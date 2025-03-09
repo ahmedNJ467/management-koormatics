@@ -48,8 +48,8 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
   const newActivity: ActivityItemProps = {
     id,
     title,
-    type,
     timestamp: formatTimestamp(timestamp),
+    type,
     icon: iconMap[type] || 'activity'
   };
   
@@ -105,10 +105,10 @@ export const getActivities = async (limit?: number): Promise<ActivityItemProps[]
     }
     
     return data.map(item => ({
-      id: item.id,
+      id: item.id.toString(), // Ensure ID is always a string
       title: item.title,
       timestamp: formatTimestamp(new Date(item.timestamp)),
-      type: item.type as ActivityType, 
+      type: item.type as ActivityType,
       icon: item.type as ActivityType
     }));
   } catch (err) {
