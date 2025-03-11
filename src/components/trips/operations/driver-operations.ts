@@ -33,7 +33,9 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
     
   // Log the driver assignment activity with a cleaner title
   // Use the trip ID's first 8 characters as a simple identifier
-  const tripIdentifier = `Trip-${tripId.slice(0, 8)}`;
+  const tripIdentifier = tripData?.pickup_location && tripData?.dropoff_location
+    ? `${tripData.pickup_location} to ${tripData.dropoff_location}`
+    : `Trip-${tripId.slice(0, 8)}`;
   
   await logActivity({
     title: `Driver assigned to ${tripIdentifier}`,

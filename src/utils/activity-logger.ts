@@ -1,3 +1,4 @@
+
 import { ActivityItemProps } from "@/types/dashboard";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,19 +27,6 @@ const formatTimestamp = (date: Date): string => {
     const days = Math.floor(diffInSeconds / 86400);
     return `${days} day${days !== 1 ? 's' : ''} ago`;
   }
-};
-
-// Format IDs to be more user-friendly
-const formatId = (id?: string): string => {
-  if (!id) return '';
-  
-  // If it's a UUID, take just the first 8 characters
-  if (id.includes('-')) {
-    return id.split('-')[0];
-  }
-  
-  // Otherwise return a shorter version
-  return id.length > 8 ? id.substring(0, 8) : id;
 };
 
 // Add a new activity to the database
