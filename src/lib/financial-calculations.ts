@@ -1,4 +1,3 @@
-
 import { DisplayTrip } from "./types/trip";
 
 export type FinancialData = {
@@ -53,9 +52,7 @@ export function calculateFinancialData(
     ? fuelData.reduce((sum, record) => sum + Number(record.cost || 0), 0)
     : 0;
   
-  // Calculate spare parts costs - only count parts that have been used (quantity_used > 0)
-  // For parts used in maintenance, we count them separately to avoid double-counting
-  // when calculating total expenses
+  // Calculate spare parts costs - include ALL used parts regardless of maintenance association
   const sparePartsCosts = Array.isArray(sparePartsData)
     ? sparePartsData.reduce((sum, part) => {
         const quantityUsed = Number(part.quantity_used || 0);
@@ -64,14 +61,11 @@ export function calculateFinancialData(
         const costPerUnit = Number(part.unit_price || part.cost_per_unit || 0);
         const totalPartCost = quantityUsed * costPerUnit;
         
-        // Only include costs for spare parts not already accounted for in maintenance
-        const isIncludedInMaintenance = part.maintenance_id != null;
-        
         // Log to debug
         console.log('Part used:', part.name, 'Quantity:', quantityUsed, 'Cost:', costPerUnit, 'Total:', totalPartCost);
-        console.log('Included in maintenance:', isIncludedInMaintenance);
         
-        return isIncludedInMaintenance ? sum : sum + totalPartCost;
+        // Include all used parts in the calculation
+        return sum + totalPartCost;
       }, 0)
     : 0;
   
