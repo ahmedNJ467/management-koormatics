@@ -52,20 +52,18 @@ export function calculateFinancialData(
     ? fuelData.reduce((sum, record) => sum + Number(record.cost || 0), 0)
     : 0;
   
-  // Calculate spare parts costs - include ALL used parts regardless of maintenance association
+  // Calculate spare parts total inventory value (quantity × unit price)
   const sparePartsCosts = Array.isArray(sparePartsData)
     ? sparePartsData.reduce((sum, part) => {
-        const quantityUsed = Number(part.quantity_used || 0);
-        if (quantityUsed <= 0) return sum;
-        
+        const quantity = Number(part.quantity || 0);
         const costPerUnit = Number(part.unit_price || part.cost_per_unit || 0);
-        const totalPartCost = quantityUsed * costPerUnit;
+        const totalValue = quantity * costPerUnit;
         
         // Log to debug
-        console.log('Part used:', part.name, 'Quantity:', quantityUsed, 'Cost:', costPerUnit, 'Total:', totalPartCost);
+        console.log('Part inventory:', part.name, 'Quantity:', quantity, 'Cost per unit:', costPerUnit, 'Total value:', totalValue);
         
-        // Include all used parts in the calculation
-        return sum + totalPartCost;
+        // Add to total inventory value
+        return sum + totalValue;
       }, 0)
     : 0;
   

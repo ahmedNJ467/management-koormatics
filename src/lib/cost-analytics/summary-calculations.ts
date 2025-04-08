@@ -24,19 +24,17 @@ export function calculateSummaryCosts(
   // Calculate fuel costs
   const fuelCosts = safeFuelData.reduce((sum, item) => sum + (Number(item?.cost) || 0), 0);
   
-  // Calculate spare parts costs - count ALL used parts regardless of maintenance association
+  // Calculate spare parts costs - total value of inventory (quantity × unit price)
   const sparePartsCosts = safeSparePartsData.reduce((sum, part) => {
-    // Check if the part has been used
-    const quantityUsed = Number(part?.quantity_used || 0);
-    if (quantityUsed <= 0) return sum;
+    // Calculate the total value of this part in inventory
+    const quantity = Number(part?.quantity || 0);
+    const costPerUnit = Number(part?.unit_price || part?.cost_per_unit || 0);
+    const totalValue = quantity * costPerUnit;
     
-    const costPerUnit = Number(part?.cost_per_unit || part?.unit_price || 0);
-    const totalCost = quantityUsed * costPerUnit;
+    console.log(`Spare part ${part.name}: ${quantity} × $${costPerUnit} = $${totalValue}`);
     
-    console.log(`Spare part ${part.name}: ${quantityUsed} x $${costPerUnit} = $${totalCost}`);
-    
-    // Include all parts that have been used, regardless of whether they're in maintenance
-    return sum + totalCost;
+    // Add the total value to our sum
+    return sum + totalValue;
   }, 0);
   
   const costs: CostData = {
