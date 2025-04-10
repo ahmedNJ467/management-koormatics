@@ -1,13 +1,10 @@
 
 import { Driver } from "@/lib/types";
-import { DisplayTrip } from "@/lib/types/trip";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getInitials } from "@/utils/string-utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Car, UserCheck } from "lucide-react";
 import { Vehicle } from "@/lib/types/vehicle";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DisplayTrip } from "@/lib/types/trip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Phone } from "lucide-react";
 
 interface DriverStatusProps {
   drivers: Driver[];
@@ -16,174 +13,106 @@ interface DriverStatusProps {
 }
 
 export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
-  // Ensure we have arrays to work with
-  const safeDrivers = Array.isArray(drivers) ? drivers : [];
-  const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
-  const safeTrips = Array.isArray(trips) ? trips : [];
-  
-  // Determine which drivers are assigned to trips today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const todayTrips = safeTrips.filter(trip => {
-    if (!trip || !trip.date) return false;
+  // Determine driver availability based on assigned trips
+  const getDriverAvailability = (driverId: string) => {
+    const hasActiveTrip = trips.some(
+      trip => trip.driver_id === driverId && 
+      (trip.status === "in_progress" || trip.status === "scheduled")
+    );
+    return !hasActiveTrip;
+  };
+
+  // Format phone number for display
+  const formatPhoneNumber = (phone?: string) => {
+    if (!phone) return "No contact info";
     
-    try {
-      const tripDate = new Date(trip.date);
-      tripDate.setHours(0, 0, 0, 0);
-      return tripDate.getTime() === today.getTime();
-    } catch (error) {
-      console.error("Invalid date format:", trip.date);
-      return false;
+    // Try to format if it looks like a standard phone number
+    if (phone.length === 10 && /^\d+$/.test(phone)) {
+      return `(${phone.substring(0, 3)}) ${phone.substring(3, 6)}-${phone.substring(6)}`;
     }
-  });
-  
-  // Get assigned driver IDs and their trip counts
-  const assignedDrivers = new Map<string, number>();
-  todayTrips.forEach(trip => {
-    if (trip.driver_id) {
-      const count = assignedDrivers.get(trip.driver_id) || 0;
-      assignedDrivers.set(trip.driver_id, count + 1);
-    }
-  });
-
-  // Get assigned vehicle IDs and their trip counts
-  const assignedVehicles = new Map<string, number>();
-  todayTrips.forEach(trip => {
-    if (trip.vehicle_id) {
-      const count = assignedVehicles.get(trip.vehicle_id) || 0;
-      assignedVehicles.set(trip.vehicle_id, count + 1);
-    }
-  });
-
-  // Safe way to get initials
-  const safeGetInitials = (name: string | null | undefined): string => {
-    if (!name) return '';
-    try {
-      return getInitials(name);
-    } catch (error) {
-      console.error("Error getting initials:", error);
-      return '';
-    }
+    
+    return phone;
   };
 
   return (
-    <Tabs defaultValue="drivers" className="w-full">
-      <TabsList className="w-full mb-4 bg-slate-800 border border-slate-700">
-        <TabsTrigger value="drivers" className="flex-1 data-[state=active]:bg-slate-700">
-          <UserCheck className="h-4 w-4 mr-2" />
-          Drivers
-        </TabsTrigger>
-        <TabsTrigger value="vehicles" className="flex-1 data-[state=active]:bg-slate-700">
-          <Car className="h-4 w-4 mr-2" />
-          Vehicles
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium text-white mb-4">Drivers</h3>
       
-      <TabsContent value="drivers">
-        {!safeDrivers.length ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No drivers available
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {safeDrivers.map(driver => {
-              if (!driver || !driver.id) return null;
-              
-              const tripCount = assignedDrivers.get(driver.id) || 0;
-              const isAvailable = tripCount === 0;
-              
-              return (
-                <div
-                  key={driver.id}
-                  className="flex items-center gap-3 border-b border-slate-800 last:border-b-0 pb-3 last:pb-0 pt-2 first:pt-0"
-                >
-                  <Avatar>
-                    <AvatarImage src={driver.avatar_url || undefined} />
-                    <AvatarFallback>{safeGetInitials(driver.name)}</AvatarFallback>
+      {drivers.length === 0 ? (
+        <p className="text-slate-400">No drivers available</p>
+      ) : (
+        <div className="space-y-3">
+          {drivers.map(driver => {
+            const isAvailable = getDriverAvailability(driver.id);
+            
+            return (
+              <div 
+                key={driver.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border border-slate-600">
+                    <AvatarImage src={driver.avatar_url} alt={driver.name} />
+                    <AvatarFallback className="bg-slate-700 text-slate-300">
+                      {driver.name?.substring(0, 2).toUpperCase() || "DR"}
+                    </AvatarFallback>
                   </Avatar>
                   
-                  <div className="flex-1">
-                    <div className="font-medium">{driver.name || "Unnamed Driver"}</div>
-                    <div className="text-sm text-muted-foreground">{driver.contact || "No contact"}</div>
-                  </div>
-                  
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge
-                      className={`${
-                        isAvailable 
-                          ? "bg-green-500 hover:bg-green-600" 
-                          : "bg-blue-500 hover:bg-blue-600"
-                      } text-white`}
-                    >
-                      {isAvailable ? "Available" : "Assigned"}
-                    </Badge>
-                    
-                    {tripCount > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        {tripCount} trip{tripCount !== 1 ? "s" : ""} today
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </TabsContent>
-      
-      <TabsContent value="vehicles">
-        {!safeVehicles.length ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No vehicles available
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {safeVehicles.map(vehicle => {
-              if (!vehicle || !vehicle.id) return null;
-              
-              const tripCount = assignedVehicles.get(vehicle.id) || 0;
-              const isAvailable = tripCount === 0;
-              
-              return (
-                <div
-                  key={vehicle.id}
-                  className="flex items-center gap-3 border-b border-slate-800 last:border-b-0 pb-3 last:pb-0 pt-2 first:pt-0"
-                >
-                  <div className="bg-slate-700 h-10 w-10 rounded-full flex items-center justify-center">
-                    <Car className="h-5 w-5" />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="font-medium">
-                      {(vehicle.make || "") + " " + (vehicle.model || "").trim() || "Unknown Vehicle"}
+                  <div>
+                    <div className="font-medium text-white">{driver.name}</div>
+                    <div className="text-xs text-slate-400 flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {formatPhoneNumber(driver.contact)}
                     </div>
-                    <div className="text-sm text-muted-foreground">{vehicle.registration || "No registration"}</div>
-                  </div>
-                  
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge
-                      className={`${
-                        isAvailable 
-                          ? "bg-green-500 hover:bg-green-600" 
-                          : "bg-blue-500 hover:bg-blue-600"
-                      } text-white`}
-                    >
-                      {isAvailable ? "Available" : "Assigned"}
-                    </Badge>
-                    
-                    {tripCount > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        {tripCount} trip{tripCount !== 1 ? "s" : ""} today
-                      </div>
-                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </TabsContent>
-    </Tabs>
+                
+                <Badge 
+                  variant="outline" 
+                  className={`${
+                    isAvailable 
+                      ? "bg-green-900/30 text-green-400 border-green-500" 
+                      : "bg-amber-900/30 text-amber-400 border-amber-500"
+                  }`}
+                >
+                  {isAvailable ? "Available" : "Assigned"}
+                </Badge>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      
+      <h3 className="text-lg font-medium text-white mb-4 mt-6">Vehicles</h3>
+      
+      {vehicles.length === 0 ? (
+        <p className="text-slate-400">No vehicles available</p>
+      ) : (
+        <div className="space-y-3">
+          {vehicles.slice(0, 5).map(vehicle => (
+            <div 
+              key={vehicle.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700"
+            >
+              <div>
+                <div className="font-medium text-white">
+                  {vehicle.make} {vehicle.model}
+                </div>
+                <div className="text-xs text-slate-400">
+                  {vehicle.registration}
+                </div>
+              </div>
+              
+              <Badge 
+                variant="outline" 
+                className="bg-green-900/30 text-green-400 border-green-500"
+              >
+                Available
+              </Badge>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { DisplayTrip } from "@/lib/types/trip";
-import { MapPin, User, MessageCircle, Clock, AlertTriangle } from "lucide-react";
+import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,6 +27,18 @@ export function DispatchTrips({
       </div>
     );
   }
+
+  // Format phone number for display
+  const formatPhoneNumber = (phone?: string) => {
+    if (!phone) return "No contact info";
+    
+    // Try to format if it looks like a standard phone number
+    if (phone.length === 10 && /^\d+$/.test(phone)) {
+      return `(${phone.substring(0, 3)}) ${phone.substring(3, 6)}-${phone.substring(6)}`;
+    }
+    
+    return phone;
+  };
 
   // Check for scheduling conflicts where the same driver is assigned to multiple trips at the same time
   const conflictedDrivers = new Map<string, DisplayTrip[]>();
@@ -214,7 +226,17 @@ export function DispatchTrips({
               </div>
               
               <div className="text-sm">
-                <span className="font-medium">Driver:</span> {trip.driver_id ? trip.driver_name : "Unassigned"}
+                <span className="font-medium">Driver:</span> {trip.driver_id ? (
+                  <span>
+                    {trip.driver_name}
+                    {trip.driver_contact && (
+                      <span className="text-xs ml-2 text-muted-foreground">
+                        <Phone className="h-3 w-3 inline mr-1" />
+                        {formatPhoneNumber(trip.driver_contact)}
+                      </span>
+                    )}
+                  </span>
+                ) : "Unassigned"}
               </div>
               
               {trip.passengers && trip.passengers.length > 0 && (
