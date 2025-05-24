@@ -68,12 +68,17 @@ export const RecentActivities = ({ activities: propActivities, isLoading: propIs
         const isConnected = await checkSupabaseConnection();
         if (isConnected) {
           // Try to enable realtime, but don't fail if it doesn't work
-          await supabase.rpc('enable_realtime_for_table', { table_name: 'activities' }).catch(() => {
-            console.log("Realtime not available for activities table");
-          });
-          await supabase.rpc('enable_realtime_for_table', { table_name: 'alerts' }).catch(() => {
-            console.log("Realtime not available for alerts table");
-          });
+          try {
+            await supabase.rpc('enable_realtime_for_table', { table_name: 'activities' });
+          } catch (error) {
+            console.log("Realtime not available for activities table:", error);
+          }
+          
+          try {
+            await supabase.rpc('enable_realtime_for_table', { table_name: 'alerts' });
+          } catch (error) {
+            console.log("Realtime not available for alerts table:", error);
+          }
         }
       } catch (err) {
         console.log("Realtime setup failed, continuing without realtime features");
