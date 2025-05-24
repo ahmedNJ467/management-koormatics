@@ -1,10 +1,26 @@
 
 import React, { useState } from "react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, subMonths, eachMonthOfInterval, startOfMonth, endOfMonth } from "date-fns";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { format, eachMonthOfInterval, startOfMonth, endOfMonth } from "date-fns";
+
+const chartConfig = {
+  active: {
+    label: "Active Vehicles",
+    color: "hsl(var(--chart-1))",
+  },
+  maintenance: {
+    label: "In Maintenance",
+    color: "hsl(var(--chart-2))",
+  },
+  inactive: {
+    label: "Inactive",
+    color: "hsl(var(--chart-3))",
+  },
+};
 
 export const Overview = () => {
   const [year, setYear] = useState(new Date().getFullYear());
@@ -84,30 +100,46 @@ export const Overview = () => {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" />
+    <ChartContainer config={chartConfig} className="h-[350px] w-full">
+      <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
         <XAxis 
           dataKey="name" 
-          axisLine={{ stroke: '#e5e7eb' }}
-          tickLine={{ stroke: '#e5e7eb' }}
+          className="text-muted-foreground text-sm"
+          axisLine={false}
+          tickLine={false}
         />
         <YAxis 
-          axisLine={{ stroke: '#e5e7eb' }}
-          tickLine={{ stroke: '#e5e7eb' }}
+          className="text-muted-foreground text-sm"
+          axisLine={false}
+          tickLine={false}
         />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            borderRadius: '0.5rem',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            border: 'none'
-          }}
+        <ChartTooltip 
+          content={<ChartTooltipContent />}
+          cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
         />
-        <Bar dataKey="active" stackId="a" fill="#4ade80" name="Active Vehicles" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="maintenance" stackId="a" fill="#facc15" name="In Maintenance" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="inactive" stackId="a" fill="#f87171" name="Inactive" radius={[4, 4, 0, 0]} />
+        <Bar 
+          dataKey="active" 
+          stackId="a" 
+          fill="var(--color-active)"
+          name="Active Vehicles" 
+          radius={[0, 0, 0, 0]} 
+        />
+        <Bar 
+          dataKey="maintenance" 
+          stackId="a" 
+          fill="var(--color-maintenance)"
+          name="In Maintenance" 
+          radius={[0, 0, 0, 0]} 
+        />
+        <Bar 
+          dataKey="inactive" 
+          stackId="a" 
+          fill="var(--color-inactive)"
+          name="Inactive" 
+          radius={[4, 4, 0, 0]} 
+        />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 };
