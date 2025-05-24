@@ -5,7 +5,7 @@ import { ActivityItemProps } from "@/types/dashboard";
 import { Calendar, Clock, User, Car, Building, Activity, Clock3, Fuel, FileCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
-import { enableRealtimeForTable } from "@/utils/supabase-helpers";
+import { enableRealtimeForTable, checkSupabaseConnection } from "@/utils/supabase-helpers";
 
 interface RecentActivityProps {
   isLoading?: boolean;
@@ -14,47 +14,69 @@ interface RecentActivityProps {
 
 export const RecentActivity = ({ activities: propActivities, isLoading: propIsLoading }: RecentActivityProps) => {
   const [realtimeActivities, setRealtimeActivities] = useState<ActivityItemProps[]>([]);
+  const [connectionError, setConnectionError] = useState<boolean>(false);
 
   // Setup realtime for activities table
   useEffect(() => {
-    // Enable realtime for activities table
     const setupRealtime = async () => {
       try {
+        // Check connection health first
+        const isConnected = await checkSupabaseConnection();
+        if (!isConnected) {
+          setConnectionError(true);
+          return;
+        }
+        
         await enableRealtimeForTable('activities');
+        setConnectionError(false);
       } catch (error) {
         console.error("Failed to enable realtime for activities:", error);
+        setConnectionError(true);
       }
     };
     
     setupRealtime();
   }, []);
 
-  const { data: fetchedActivities, isLoading } = useQuery({
+  const { data: fetchedActivities, isLoading, error } = useQuery({
     queryKey: ["dashboard-activities"],
     queryFn: async () => {
       if (propActivities) return propActivities;
       
-      const { data, error } = await supabase
-        .from("activities")
-        .select("*")
-        .order("timestamp", { ascending: false })
-        .limit(5);
+      try {
+        const { data, error } = await supabase
+          .from("activities")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .limit(5);
 
-      if (error) throw error;
-      
-      return data.map(item => ({
-        id: item.id.toString(), // Ensure ID is always a string
-        title: item.title,
-        timestamp: new Date(item.timestamp).toLocaleString(),
-        type: item.type as ActivityItemProps['type'],
-        icon: item.type
-      })) as ActivityItemProps[];
+        if (error) {
+          console.error("Error fetching activities:", error);
+          throw error;
+        }
+        
+        return data.map(item => ({
+          id: item.id.toString(),
+          title: item.title,
+          timestamp: new Date(item.timestamp).toLocaleString(),
+          type: item.type as ActivityItemProps['type'],
+          icon: item.type
+        })) as ActivityItemProps[];
+      } catch (err) {
+        console.error("Database connection error:", err);
+        setConnectionError(true);
+        return [];
+      }
     },
     enabled: !propActivities,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Set up realtime subscription
   useEffect(() => {
+    if (connectionError) return;
+    
     const activities = fetchedActivities || [];
     setRealtimeActivities(activities);
 
@@ -67,23 +89,27 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
       }, async (payload) => {
         console.log('Realtime activity update:', payload);
         
-        // Refresh activities when there's a change
-        const { data, error } = await supabase
-          .from("activities")
-          .select("*")
-          .order("timestamp", { ascending: false })
-          .limit(5);
-        
-        if (!error && data) {
-          const formattedActivities = data.map(item => ({
-            id: item.id.toString(), // Ensure ID is always a string
-            title: item.title,
-            timestamp: new Date(item.timestamp).toLocaleString(),
-            type: item.type as ActivityItemProps['type'],
-            icon: item.type
-          })) as ActivityItemProps[];
+        try {
+          // Refresh activities when there's a change
+          const { data, error } = await supabase
+            .from("activities")
+            .select("*")
+            .order("timestamp", { ascending: false })
+            .limit(5);
           
-          setRealtimeActivities(formattedActivities);
+          if (!error && data) {
+            const formattedActivities = data.map(item => ({
+              id: item.id.toString(),
+              title: item.title,
+              timestamp: new Date(item.timestamp).toLocaleString(),
+              type: item.type as ActivityItemProps['type'],
+              icon: item.type
+            })) as ActivityItemProps[];
+            
+            setRealtimeActivities(formattedActivities);
+          }
+        } catch (err) {
+          console.error("Error refreshing activities:", err);
         }
       })
       .subscribe();
@@ -91,7 +117,7 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchedActivities]);
+  }, [fetchedActivities, connectionError]);
 
   const loadingState = propIsLoading !== undefined ? propIsLoading : isLoading;
   const displayActivities = propActivities || realtimeActivities;
@@ -108,6 +134,26 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
             </div>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (connectionError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
+        <Activity className="h-8 w-8 mb-2 opacity-50 text-red-500" />
+        <p className="text-red-500 font-medium">Connection Error</p>
+        <p className="text-xs mt-1 text-center">Unable to connect to the database. Please check your connection.</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
+        <Activity className="h-8 w-8 mb-2 opacity-50 text-amber-500" />
+        <p className="text-amber-500 font-medium">Failed to load activities</p>
+        <p className="text-xs mt-1">Please try refreshing the page</p>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 
 import { ActivityItemProps } from "@/types/dashboard";
 import { supabase } from "@/integrations/supabase/client";
+import { checkSupabaseConnection } from "./supabase-helpers";
 
 type ActivityType = 'trip' | 'maintenance' | 'vehicle' | 'driver' | 'client' | 'fuel' | 'contract';
 
@@ -53,8 +54,15 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
     icon: iconMap[type] || 'activity'
   };
   
-  // Save to the database
+  // Save to the database with better error handling
   try {
+    // Check if connection is healthy before attempting to save
+    const isConnected = await checkSupabaseConnection();
+    if (!isConnected) {
+      console.warn("Database connection not available, activity not saved:", title);
+      return newActivity;
+    }
+
     const { data, error } = await supabase
       .from('activities')
       .insert([
@@ -68,19 +76,14 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
       
     if (error) {
       console.error("Error saving activity to database:", error);
+      // Still return the activity object for local use
+    } else {
+      console.log("Activity logged successfully:", title);
     }
   } catch (err) {
     console.error("Failed to log activity to database:", err);
+    // Continue execution even if database save fails
   }
-  
-  // Log for debugging
-  console.log("Activity logged:", {
-    id,
-    title,
-    type,
-    related_id: relatedId,
-    timestamp: timestamp.toISOString()
-  });
   
   return newActivity;
 };
@@ -88,6 +91,13 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
 // Get activities from the database
 export const getActivities = async (limit?: number): Promise<ActivityItemProps[]> => {
   try {
+    // Check connection health first
+    const isConnected = await checkSupabaseConnection();
+    if (!isConnected) {
+      console.warn("Database connection not available for fetching activities");
+      return [];
+    }
+
     const query = supabase
       .from('activities')
       .select('*')
@@ -105,7 +115,7 @@ export const getActivities = async (limit?: number): Promise<ActivityItemProps[]
     }
     
     return data.map(item => ({
-      id: item.id.toString(), // Ensure ID is always a string
+      id: item.id.toString(),
       title: item.title,
       timestamp: formatTimestamp(new Date(item.timestamp)),
       type: item.type as ActivityType,
@@ -119,49 +129,60 @@ export const getActivities = async (limit?: number): Promise<ActivityItemProps[]
 
 // Generate sample activities if needed (for development/testing)
 export const generateSampleActivities = async (): Promise<void> => {
-  const { data, error } = await supabase
-    .from('activities')
-    .select('count')
-    .single();
-    
-  // Only seed if there are no activities
-  if (!error && data && data.count === 0) {
-    const sampleActivities: ActivityLogParams[] = [
-      {
-        title: "Trip completed: Airport pickup",
-        type: "trip"
-      },
-      {
-        title: "Vehicle maintenance completed for TRUCK-002",
-        type: "maintenance"
-      },
-      {
-        title: "New driver onboarded: Sarah Johnson",
-        type: "driver"
-      },
-      {
-        title: "Fuel refill: 45 gallons for SUV-001",
-        type: "fuel"
-      },
-      {
-        title: "New contract signed with Client XYZ Corp",
-        type: "contract"
-      },
-      {
-        title: "Vehicle VAN-003 added to the fleet",
-        type: "vehicle"
-      },
-      {
-        title: "New client onboarded: ABC Industries",
-        type: "client"
-      }
-    ];
-    
-    // Add sample activities to database
-    for (const activity of sampleActivities) {
-      await logActivity(activity);
+  try {
+    // Check connection first
+    const isConnected = await checkSupabaseConnection();
+    if (!isConnected) {
+      console.warn("Database connection not available for generating sample activities");
+      return;
     }
-    
-    console.log("Sample activities generated");
+
+    const { data, error } = await supabase
+      .from('activities')
+      .select('count')
+      .single();
+      
+    // Only seed if there are no activities and no error occurred
+    if (!error && data && data.count === 0) {
+      const sampleActivities: ActivityLogParams[] = [
+        {
+          title: "Trip completed: Airport pickup",
+          type: "trip"
+        },
+        {
+          title: "Vehicle maintenance completed for TRUCK-002",
+          type: "maintenance"
+        },
+        {
+          title: "New driver onboarded: Sarah Johnson",
+          type: "driver"
+        },
+        {
+          title: "Fuel refill: 45 gallons for SUV-001",
+          type: "fuel"
+        },
+        {
+          title: "New contract signed with Client XYZ Corp",
+          type: "contract"
+        },
+        {
+          title: "Vehicle VAN-003 added to the fleet",
+          type: "vehicle"
+        },
+        {
+          title: "New client onboarded: ABC Industries",
+          type: "client"
+        }
+      ];
+      
+      // Add sample activities to database
+      for (const activity of sampleActivities) {
+        await logActivity(activity);
+      }
+      
+      console.log("Sample activities generated");
+    }
+  } catch (err) {
+    console.error("Failed to generate sample activities:", err);
   }
 };

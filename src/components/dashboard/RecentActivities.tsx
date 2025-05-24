@@ -7,6 +7,7 @@ import { ActivityItemProps } from "@/types/dashboard";
 import { BellRing, Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { checkSupabaseConnection } from "@/utils/supabase-helpers";
 
 interface RecentActivitiesProps {
   activities?: ActivityItemProps[];
@@ -15,42 +16,75 @@ interface RecentActivitiesProps {
 
 export const RecentActivities = ({ activities: propActivities, isLoading: propIsLoading }: RecentActivitiesProps) => {
   const [activeTab, setActiveTab] = useState("activity");
+  const [connectionError, setConnectionError] = useState<boolean>(false);
   
   const { data: activities, isLoading } = useQuery({
     queryKey: ["recent-activities"],
     queryFn: async () => {
       if (propActivities) return propActivities;
       
-      const { data, error } = await supabase
-        .from("activities")
-        .select("*")
-        .order("timestamp", { ascending: false })
-        .limit(5);
+      try {
+        // Check connection health first
+        const isConnected = await checkSupabaseConnection();
+        if (!isConnected) {
+          setConnectionError(true);
+          return [];
+        }
+        
+        const { data, error } = await supabase
+          .from("activities")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .limit(5);
 
-      if (error) throw error;
-      
-      return data.map(item => ({
-        id: item.id,
-        title: item.title,
-        timestamp: new Date(item.timestamp).toLocaleString(),
-        type: item.type,
-        icon: item.type
-      })) as ActivityItemProps[];
+        if (error) {
+          console.error("Error fetching recent activities:", error);
+          throw error;
+        }
+        
+        setConnectionError(false);
+        return data.map(item => ({
+          id: item.id,
+          title: item.title,
+          timestamp: new Date(item.timestamp).toLocaleString(),
+          type: item.type,
+          icon: item.type
+        })) as ActivityItemProps[];
+      } catch (err) {
+        console.error("Failed to fetch activities:", err);
+        setConnectionError(true);
+        return [];
+      }
     },
     enabled: !propActivities,
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  // Enable realtime for this table if it hasn't been already
+  // Enable realtime for tables if connection is healthy
   useEffect(() => {
-    const enableRealtimeSql = async () => {
-      await supabase.rpc('enable_realtime_for_table', { table_name: 'activities' });
-      await supabase.rpc('enable_realtime_for_table', { table_name: 'alerts' });
+    const enableRealtimeTables = async () => {
+      try {
+        const isConnected = await checkSupabaseConnection();
+        if (isConnected) {
+          // Try to enable realtime, but don't fail if it doesn't work
+          await supabase.rpc('enable_realtime_for_table', { table_name: 'activities' }).catch(() => {
+            console.log("Realtime not available for activities table");
+          });
+          await supabase.rpc('enable_realtime_for_table', { table_name: 'alerts' }).catch(() => {
+            console.log("Realtime not available for alerts table");
+          });
+        }
+      } catch (err) {
+        console.log("Realtime setup failed, continuing without realtime features");
+      }
     };
     
-    enableRealtimeSql().catch(err => {
-      console.error("Error enabling realtime:", err);
-    });
+    enableRealtimeTables();
   }, []);
+
+  const displayActivities = propActivities || activities;
+  const loadingState = propIsLoading !== undefined ? propIsLoading : isLoading;
 
   return (
     <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -66,8 +100,8 @@ export const RecentActivities = ({ activities: propActivities, isLoading: propIs
       </TabsList>
       <TabsContent value="activity" className="mt-0">
         <RecentActivity 
-          activities={activities} 
-          isLoading={propIsLoading !== undefined ? propIsLoading : isLoading} 
+          activities={displayActivities} 
+          isLoading={loadingState} 
         />
       </TabsContent>
       <TabsContent value="alerts" className="mt-0">

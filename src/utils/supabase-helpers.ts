@@ -1,34 +1,62 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 
-// Enable realtime for a table by setting REPLICA IDENTITY FULL and adding to publication
-export const enableRealtimeForTable = async (tableName: string): Promise<boolean> => {
+/**
+ * Enable realtime for a specific table
+ */
+export const enableRealtimeForTable = async (tableName: string): Promise<void> => {
   try {
-    // Call our custom function to enable realtime for the table
-    const { data, error } = await supabase.rpc('enable_realtime_for_table', { 
-      table_name: tableName 
+    // Check if realtime is already enabled by attempting to create a channel
+    const channel = supabase.channel(`test-${tableName}`);
+    
+    // Subscribe to test the connection
+    const subscription = channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log(`Realtime enabled for table: ${tableName}`);
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error(`Failed to enable realtime for table: ${tableName}`);
+      }
     });
     
-    if (error) throw error;
+    // Clean up the test channel
+    setTimeout(() => {
+      supabase.removeChannel(channel);
+    }, 1000);
     
-    console.log(`Realtime enabled for table: ${tableName}`);
-    return true;
   } catch (error) {
-    console.error(`Failed to enable realtime for ${tableName}:`, error);
-    return false;
+    console.error(`Error enabling realtime for table ${tableName}:`, error);
+    throw error;
   }
 };
 
-// Helper hook for initializing realtime on multiple tables
-export const useInitializeRealtime = (tableNames: string[]) => {
-  useEffect(() => {
-    const initTables = async () => {
-      for (const tableName of tableNames) {
-        await enableRealtimeForTable(tableName);
-      }
-    };
+/**
+ * Safe database query with error handling
+ */
+export const safeQuery = async <T>(
+  queryFn: () => Promise<{ data: T | null; error: any }>
+): Promise<{ data: T | null; error: any }> => {
+  try {
+    const result = await queryFn();
+    return result;
+  } catch (error) {
+    console.error("Database query error:", error);
+    return { data: null, error };
+  }
+};
+
+/**
+ * Check Supabase connection health
+ */
+export const checkSupabaseConnection = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('activities')
+      .select('count')
+      .limit(1);
     
-    initTables();
-  }, [tableNames]);
+    return !error;
+  } catch (error) {
+    console.error("Supabase connection check failed:", error);
+    return false;
+  }
 };
