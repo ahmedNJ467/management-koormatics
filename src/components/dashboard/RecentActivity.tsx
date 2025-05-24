@@ -31,11 +31,11 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
         }
         
         return data.map(item => ({
-          id: item.id.toString(),
-          title: item.title,
-          timestamp: new Date(item.timestamp).toLocaleString(),
-          type: item.type as ActivityItemProps['type'],
-          icon: item.type
+          id: item.id?.toString() || 'unknown',
+          title: item.title || 'Unknown activity',
+          timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown time',
+          type: (item.type as ActivityItemProps['type']) || 'default',
+          icon: item.type || 'default'
         })) as ActivityItemProps[];
       } catch (err) {
         console.error("Database connection error:", err);
@@ -68,9 +68,18 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
     return <ActivityEmptyState type="empty" />;
   }
 
+  // Filter out any invalid activities before rendering
+  const validActivities = displayActivities.filter(activity => 
+    activity && typeof activity === 'object' && activity.id
+  );
+
+  if (validActivities.length === 0) {
+    return <ActivityEmptyState type="empty" />;
+  }
+
   return (
     <div className="space-y-4">
-      {displayActivities.map((activity) => (
+      {validActivities.map((activity) => (
         <ActivityItem key={activity.id} activity={activity} />
       ))}
     </div>

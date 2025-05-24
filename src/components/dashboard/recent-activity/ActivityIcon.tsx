@@ -7,6 +7,10 @@ interface ActivityIconProps {
 
 export const ActivityIcon = ({ type }: ActivityIconProps) => {
   const getActivityIcon = (type: string) => {
+    if (!type || typeof type !== 'string') {
+      return <Activity className="h-5 w-5 text-gray-500" />;
+    }
+
     switch (type.toLowerCase()) {
       case 'trip':
         return <Calendar className="h-5 w-5 text-blue-500" />;
