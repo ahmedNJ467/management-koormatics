@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -561,7 +562,7 @@ export default function Invoices() {
         </Select>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="border rounded-lg bg-card">
         <Table>
           <TableHeader>
             <TableRow>
