@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { FileText, MessageCircle, UserCircle, MapPin, Calendar, Users } from "lucide-react";
@@ -59,11 +60,11 @@ export function TripDetailView({
 }: TripDetailViewProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'in_progress': return 'bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300';
-      case 'completed': return 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300';
-      case 'cancelled': return 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300';
-      default: return 'bg-gray-100 text-gray-800 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300';
+      case 'scheduled': return 'bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40';
+      case 'in_progress': return 'bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40';
+      case 'completed': return 'bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/40';
+      case 'cancelled': return 'bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/40';
+      default: return 'bg-muted text-muted-foreground border-border hover:bg-muted/80';
     }
   };
 
@@ -76,12 +77,12 @@ export function TripDetailView({
 
   return (
     <div className="w-full">
-      <div className="bg-gradient-to-r from-slate-900/50 to-indigo-950/50 dark:from-indigo-950/70 dark:to-purple-950/70 p-6 rounded-lg mb-6 border border-slate-800/50">
-        <DialogTitle className="text-xl font-semibold mb-3 text-white flex items-center">
-          <Calendar className="h-5 w-5 mr-2 text-purple-400" />
+      <div className="bg-gradient-to-r from-muted/50 to-muted/30 dark:from-muted/70 dark:to-muted/50 p-6 rounded-lg mb-6 border border-border">
+        <DialogTitle className="text-xl font-semibold mb-3 text-card-foreground flex items-center">
+          <Calendar className="h-5 w-5 mr-2 text-primary" />
           {formatDate(viewTrip.date)}
-          <span className="mx-2 text-slate-400">•</span>
-          <MapPin className="h-5 w-5 mr-2 text-purple-400" />
+          <span className="mx-2 text-muted-foreground">•</span>
+          <MapPin className="h-5 w-5 mr-2 text-primary" />
           {viewTrip.pickup_location.split(',')[0]}
         </DialogTitle>
         
@@ -89,22 +90,22 @@ export function TripDetailView({
           <Badge variant="outline" className={`font-medium ${getStatusColor(viewTrip.status)}`}>
             {viewTrip.status.replace('_', ' ').toUpperCase()}
           </Badge>
-          <Badge variant="outline" className="bg-indigo-900/40 text-indigo-300 hover:bg-indigo-900/40 border-indigo-700">
+          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
             {tripTypeDisplayMap[viewTrip.type]}
           </Badge>
           {isOrganizationTrip && (
-            <Badge variant="outline" className="bg-purple-900/40 text-purple-300 hover:bg-purple-900/40 border-purple-700">
+            <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20">
               Organization
             </Badge>
           )}
           {hasPassengers && (
-            <Badge variant="outline" className="bg-teal-900/40 text-teal-300 hover:bg-teal-900/40 border-teal-700">
+            <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/20 hover:bg-accent/20">
               {viewTrip.passengers?.length} {viewTrip.passengers?.length === 1 ? 'Passenger' : 'Passengers'}
             </Badge>
           )}
         </div>
         
-        <DialogDescription className="text-sm text-slate-400 mb-2">
+        <DialogDescription className="text-sm text-muted-foreground mb-2">
           Trip ID: {viewTrip.id.substring(0, 8).toUpperCase()}
         </DialogDescription>
       </div>
@@ -112,22 +113,22 @@ export function TripDetailView({
       <TripDetailHeader viewTrip={viewTrip} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="w-full bg-slate-900/50 dark:bg-slate-800/30 p-1 border border-slate-800/50 rounded-md">
-          <TabsTrigger value="details" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
+        <TabsList className="w-full bg-muted p-1 border border-border rounded-md">
+          <TabsTrigger value="details" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
             <FileText className="h-4 w-4 mr-2" />
             Details
           </TabsTrigger>
           {isOrganizationTrip && (
-            <TabsTrigger value="passengers" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
+            <TabsTrigger value="passengers" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
               <Users className="h-4 w-4 mr-2" />
               Passengers
             </TabsTrigger>
           )}
-          <TabsTrigger value="messages" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
+          <TabsTrigger value="messages" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
             <MessageCircle className="h-4 w-4 mr-2" />
             Messages
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex-1 text-slate-300 data-[state=active]:bg-indigo-900/30 data-[state=active]:text-purple-300">
+          <TabsTrigger value="assignments" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
             <UserCircle className="h-4 w-4 mr-2" />
             Assignments
           </TabsTrigger>

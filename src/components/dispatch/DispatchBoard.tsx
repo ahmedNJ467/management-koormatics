@@ -54,20 +54,20 @@ export function DispatchBoard({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="border-b border-slate-800">
-            <CardTitle className="text-white">Trip Management</CardTitle>
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-card-foreground">Trip Management</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full bg-slate-800 border border-slate-700">
-                <TabsTrigger value="upcoming" className="flex-1 data-[state=active]:bg-slate-700">
+              <TabsList className="w-full bg-muted border border-border">
+                <TabsTrigger value="upcoming" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
                   Upcoming ({upcomingTrips.length})
                 </TabsTrigger>
-                <TabsTrigger value="in-progress" className="flex-1 data-[state=active]:bg-slate-700">
+                <TabsTrigger value="in-progress" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
                   In Progress ({inProgressTrips.length})
                 </TabsTrigger>
-                <TabsTrigger value="scheduled" className="flex-1 data-[state=active]:bg-slate-700">
+                <TabsTrigger value="scheduled" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
                   Scheduled ({laterTrips.length})
                 </TabsTrigger>
               </TabsList>
@@ -98,9 +98,9 @@ export function DispatchBoard({
       </div>
       
       <div>
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="border-b border-slate-800">
-            <CardTitle className="text-white">Resource Availability</CardTitle>
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-card-foreground">Resource Availability</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <DriverStatus 

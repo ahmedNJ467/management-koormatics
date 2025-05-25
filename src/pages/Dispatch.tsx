@@ -83,17 +83,17 @@ export default function Dispatch() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8 bg-slate-950 text-white p-6 rounded-lg">
+      <div className="space-y-8 bg-card text-card-foreground p-6 rounded-lg border border-border">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-semibold tracking-tight text-white">Dispatch</h2>
-          <p className="text-slate-400">Loading trips...</p>
+          <h2 className="text-3xl font-semibold tracking-tight text-card-foreground">Dispatch</h2>
+          <p className="text-muted-foreground">Loading trips...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in bg-slate-950 p-6 rounded-lg">
+    <div className="space-y-8 animate-fade-in bg-card p-6 rounded-lg border border-border">
       <DispatchHeader />
       
       <DispatchBoard 

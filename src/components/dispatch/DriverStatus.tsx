@@ -36,10 +36,10 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium text-white mb-4">Drivers</h3>
+      <h3 className="text-lg font-medium text-card-foreground mb-4">Drivers</h3>
       
       {drivers.length === 0 ? (
-        <p className="text-slate-400">No drivers available</p>
+        <p className="text-muted-foreground">No drivers available</p>
       ) : (
         <div className="space-y-3">
           {drivers.map(driver => {
@@ -48,19 +48,19 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
             return (
               <div 
                 key={driver.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700"
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border"
               >
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 border border-slate-600">
+                  <Avatar className="h-10 w-10 border border-border">
                     <AvatarImage src={driver.avatar_url} alt={driver.name} />
-                    <AvatarFallback className="bg-slate-700 text-slate-300">
+                    <AvatarFallback className="bg-muted text-muted-foreground">
                       {driver.name?.substring(0, 2).toUpperCase() || "DR"}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div>
-                    <div className="font-medium text-white">{driver.name}</div>
-                    <div className="text-xs text-slate-400 flex items-center gap-1">
+                    <div className="font-medium text-card-foreground">{driver.name}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
                       <Phone className="h-3 w-3" />
                       {formatPhoneNumber(driver.contact)}
                     </div>
@@ -71,8 +71,8 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                   variant="outline" 
                   className={`${
                     isAvailable 
-                      ? "bg-green-900/30 text-green-400 border-green-500" 
-                      : "bg-amber-900/30 text-amber-400 border-amber-500"
+                      ? "bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/40" 
+                      : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40"
                   }`}
                 >
                   {isAvailable ? "Available" : "Assigned"}
@@ -83,29 +83,29 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
         </div>
       )}
       
-      <h3 className="text-lg font-medium text-white mb-4 mt-6">Vehicles</h3>
+      <h3 className="text-lg font-medium text-card-foreground mb-4 mt-6">Vehicles</h3>
       
       {vehicles.length === 0 ? (
-        <p className="text-slate-400">No vehicles available</p>
+        <p className="text-muted-foreground">No vehicles available</p>
       ) : (
         <div className="space-y-3">
           {vehicles.slice(0, 5).map(vehicle => (
             <div 
               key={vehicle.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700"
+              className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border"
             >
               <div>
-                <div className="font-medium text-white">
+                <div className="font-medium text-card-foreground">
                   {vehicle.make} {vehicle.model}
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-muted-foreground">
                   {vehicle.registration}
                 </div>
               </div>
               
               <Badge 
                 variant="outline" 
-                className="bg-green-900/30 text-green-400 border-green-500"
+                className="bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/40"
               >
                 Available
               </Badge>
