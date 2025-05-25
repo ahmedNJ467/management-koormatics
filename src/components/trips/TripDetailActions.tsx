@@ -18,11 +18,11 @@ export function TripDetailActions({
   setDeleteDialogOpen 
 }: TripDetailActionsProps) {
   return (
-    <DialogFooter className="flex flex-wrap gap-2 mt-6 sm:justify-between border-t pt-4 border-slate-800/50">
+    <DialogFooter className="flex flex-wrap gap-2 mt-6 sm:justify-between border-t pt-4 border-border">
       <div className="flex gap-2">
         <Button
           variant="outline"
-          className="border-purple-700 bg-purple-900/20 text-purple-300 hover:bg-purple-800/30 hover:text-purple-200 rounded-full px-4"
+          className="border-purple-500 bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 rounded-full px-4"
           onClick={() => setEditTrip(viewTrip)}
         >
           <EditIcon className="h-4 w-4 mr-2" />
@@ -30,7 +30,7 @@ export function TripDetailActions({
         </Button>
         <Button
           variant="outline" 
-          className="border-red-700 bg-red-900/20 text-red-300 hover:bg-red-800/30 hover:text-red-200 rounded-full px-4"
+          className="border-red-500 bg-red-500/10 text-red-600 hover:bg-red-500/20 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded-full px-4"
           onClick={() => {
             setTripToDelete(viewTrip.id);
             setDeleteDialogOpen(true);
@@ -43,7 +43,7 @@ export function TripDetailActions({
       <DialogClose asChild>
         <Button 
           variant="secondary" 
-          className="bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 border border-slate-700 rounded-full px-4"
+          className="bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border rounded-full px-4"
         >
           <XCircle className="h-4 w-4 mr-2" />
           Close

@@ -8,31 +8,31 @@ export const StatCard = ({ stat }: { stat: StatCardProps }) => {
   const IconComponent = getIconComponent(stat.icon);
   
   return (
-    <Card key={stat.name} className="overflow-hidden">
+    <Card key={stat.name} className="overflow-hidden bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">
+        <CardTitle className="text-sm font-medium text-card-foreground">
           {stat.name}
         </CardTitle>
         <div
           className={`rounded-full p-2.5 ${
             stat.changeType === "positive"
-              ? "bg-green-100 text-green-600 dark:bg-green-900/30"
+              ? "bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400"
               : stat.changeType === "negative"
-              ? "bg-red-100 text-red-600 dark:bg-red-900/30"
-              : "bg-gray-100 text-gray-600 dark:bg-gray-800"
+              ? "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400"
+              : "bg-muted text-muted-foreground"
           }`}
         >
           {IconComponent && <IconComponent className="h-4 w-4" />}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{stat.value}</div>
+        <div className="text-2xl font-bold text-card-foreground">{stat.value}</div>
         <p className={`text-xs ${
             stat.changeType === "positive"
-              ? "text-green-600"
+              ? "text-green-600 dark:text-green-400"
               : stat.changeType === "negative"
-              ? "text-red-600"
-              : "text-gray-600"
+              ? "text-red-600 dark:text-red-400"
+              : "text-muted-foreground"
           } flex items-center mt-1`}>
           {stat.changeType === "positive" ? (
             <TrendingUp className="h-3 w-3 mr-1" />

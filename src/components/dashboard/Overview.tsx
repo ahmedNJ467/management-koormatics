@@ -39,7 +39,6 @@ export const Overview = () => {
       
       if (vehiclesError) throw vehiclesError;
 
-      // Fetch maintenance data to track vehicles in maintenance
       const { data: maintenanceData, error: maintenanceError } = await supabase
         .from("maintenance")
         .select("vehicle_id, date, status")
@@ -48,18 +47,15 @@ export const Overview = () => {
       
       if (maintenanceError) throw maintenanceError;
 
-      // Process the data for the chart by month
       const monthlyData = months.map((month, index) => {
         const monthStart = startOfMonth(new Date(year, index, 1));
         const monthEnd = endOfMonth(new Date(year, index, 1));
         
-        // Filter maintenance records for this month
         const monthlyMaintenance = maintenanceData.filter(item => {
           const itemDate = new Date(item.date);
           return itemDate >= monthStart && itemDate <= monthEnd && item.status === 'in_progress';
         });
         
-        // Count vehicles in different statuses
         const uniqueVehiclesInMaintenance = [...new Set(monthlyMaintenance.map(m => m.vehicle_id))];
         
         const activeVehicles = vehicles.filter(v => 
@@ -85,7 +81,7 @@ export const Overview = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[350px]">
+      <div className="flex items-center justify-center h-[350px] bg-card rounded-lg border border-border">
         <Skeleton className="h-[300px] w-full" />
       </div>
     );
@@ -93,53 +89,57 @@ export const Overview = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-[350px] text-red-500">
+      <div className="flex items-center justify-center h-[350px] text-destructive bg-card rounded-lg border border-border">
         Error loading fleet data
       </div>
     );
   }
 
   return (
-    <ChartContainer config={chartConfig} className="h-[350px] w-full">
-      <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-        <XAxis 
-          dataKey="name" 
-          className="text-muted-foreground text-sm"
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis 
-          className="text-muted-foreground text-sm"
-          axisLine={false}
-          tickLine={false}
-        />
-        <ChartTooltip 
-          content={<ChartTooltipContent />}
-          cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
-        />
-        <Bar 
-          dataKey="active" 
-          stackId="a" 
-          fill="var(--color-active)"
-          name="Active Vehicles" 
-          radius={[0, 0, 0, 0]} 
-        />
-        <Bar 
-          dataKey="maintenance" 
-          stackId="a" 
-          fill="var(--color-maintenance)"
-          name="In Maintenance" 
-          radius={[0, 0, 0, 0]} 
-        />
-        <Bar 
-          dataKey="inactive" 
-          stackId="a" 
-          fill="var(--color-inactive)"
-          name="Inactive" 
-          radius={[4, 4, 0, 0]} 
-        />
-      </BarChart>
-    </ChartContainer>
+    <div className="bg-card rounded-lg border border-border p-4">
+      <ChartContainer config={chartConfig} className="h-[350px] w-full">
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis 
+            dataKey="name" 
+            className="text-muted-foreground text-sm"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "hsl(var(--muted-foreground))" }}
+          />
+          <YAxis 
+            className="text-muted-foreground text-sm"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "hsl(var(--muted-foreground))" }}
+          />
+          <ChartTooltip 
+            content={<ChartTooltipContent />}
+            cursor={{ fill: 'hsl(var(--muted))/20' }}
+          />
+          <Bar 
+            dataKey="active" 
+            stackId="a" 
+            fill="var(--color-active)"
+            name="Active Vehicles" 
+            radius={[0, 0, 0, 0]} 
+          />
+          <Bar 
+            dataKey="maintenance" 
+            stackId="a" 
+            fill="var(--color-maintenance)"
+            name="In Maintenance" 
+            radius={[0, 0, 0, 0]} 
+          />
+          <Bar 
+            dataKey="inactive" 
+            stackId="a" 
+            fill="var(--color-inactive)"
+            name="Inactive" 
+            radius={[4, 4, 0, 0]} 
+          />
+        </BarChart>
+      </ChartContainer>
+    </div>
   );
 };

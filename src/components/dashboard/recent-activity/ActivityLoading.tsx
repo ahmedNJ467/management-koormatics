@@ -6,7 +6,7 @@ export const ActivityLoading = () => {
   return (
     <div className="space-y-4">
       {[...Array(3)].map((_, index) => (
-        <Card key={index}>
+        <Card key={index} className="bg-card border-border">
           <CardContent className="p-4">
             <div className="flex items-center space-x-4">
               <Skeleton className="h-10 w-10 rounded-full" />

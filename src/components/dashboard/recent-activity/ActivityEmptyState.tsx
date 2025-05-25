@@ -32,9 +32,9 @@ export const ActivityEmptyState = ({ type }: ActivityEmptyStateProps) => {
   const content = getContent();
 
   return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
+    <div className="flex flex-col items-center justify-center py-8 text-center bg-card">
       {content.icon}
-      <h3 className="mt-4 text-lg font-medium">{content.title}</h3>
+      <h3 className="mt-4 text-lg font-medium text-card-foreground">{content.title}</h3>
       <div className="mt-2 text-sm text-muted-foreground">{content.description}</div>
     </div>
   );
