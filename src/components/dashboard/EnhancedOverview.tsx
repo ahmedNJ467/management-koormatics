@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export function EnhancedOverview() {
-  const { data: realtimeStats, isLoading } = useQuery({
+  const { data: realtimeStats, isLoading, error } = useQuery({
     queryKey: ["realtime-dashboard-stats"],
     queryFn: async () => {
       // Fetch current month data
@@ -19,93 +19,176 @@ export function EnhancedOverview() {
       const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
       const endOfPrevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0);
 
-      // Fetch trips data
-      const [currentTripsResult, prevTripsResult] = await Promise.all([
-        supabase
-          .from('trips')
-          .select('amount, status')
-          .gte('date', startOfMonth.toISOString().split('T')[0])
-          .lte('date', endOfMonth.toISOString().split('T')[0]),
-        
-        supabase
-          .from('trips')
-          .select('amount, status')
-          .gte('date', prevMonth.toISOString().split('T')[0])
-          .lte('date', endOfPrevMonth.toISOString().split('T')[0])
-      ]);
+      try {
+        // Fetch trips data with better error handling
+        const [currentTripsResult, prevTripsResult] = await Promise.all([
+          supabase
+            .from('trips')
+            .select('amount, status')
+            .gte('date', startOfMonth.toISOString().split('T')[0])
+            .lte('date', endOfMonth.toISOString().split('T')[0]),
+          
+          supabase
+            .from('trips')
+            .select('amount, status')
+            .gte('date', prevMonth.toISOString().split('T')[0])
+            .lte('date', endOfPrevMonth.toISOString().split('T')[0])
+        ]);
 
-      const currentTrips = currentTripsResult.data || [];
-      const prevTrips = prevTripsResult.data || [];
-
-      // Calculate revenue
-      const currentRevenue = currentTrips.reduce((sum, trip) => sum + Number(trip.amount), 0);
-      const prevRevenue = prevTrips.reduce((sum, trip) => sum + Number(trip.amount), 0);
-      const revenueGrowth = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
-
-      // Calculate completion rate
-      const completedTrips = currentTrips.filter(trip => trip.status === 'completed').length;
-      const completionRate = currentTrips.length > 0 ? (completedTrips / currentTrips.length) * 100 : 0;
-
-      // Fetch maintenance and fuel costs
-      const [maintenanceResult, fuelResult] = await Promise.all([
-        supabase
-          .from('maintenance')
-          .select('cost')
-          .gte('date', startOfMonth.toISOString().split('T')[0])
-          .lte('date', endOfMonth.toISOString().split('T')[0]),
-        
-        supabase
-          .from('fuel_logs')
-          .select('cost')
-          .gte('date', startOfMonth.toISOString().split('T')[0])
-          .lte('date', endOfMonth.toISOString().split('T')[0])
-      ]);
-
-      const maintenanceCosts = maintenanceResult.data?.reduce((sum, item) => sum + Number(item.cost), 0) || 0;
-      const fuelCosts = fuelResult.data?.reduce((sum, item) => sum + Number(item.cost), 0) || 0;
-      const totalCosts = maintenanceCosts + fuelCosts;
-      const profit = currentRevenue - totalCosts;
-      const profitMargin = currentRevenue > 0 ? (profit / currentRevenue) * 100 : 0;
-
-      // Fleet utilization
-      const { data: vehicles } = await supabase.from('vehicles').select('status');
-      const activeVehicles = vehicles?.filter(v => v.status === 'active').length || 0;
-      const totalVehicles = vehicles?.length || 0;
-      const utilization = totalVehicles > 0 ? (activeVehicles / totalVehicles) * 100 : 0;
-
-      return {
-        revenue: {
-          current: currentRevenue,
-          growth: revenueGrowth,
-          isPositive: revenueGrowth >= 0
-        },
-        trips: {
-          total: currentTrips.length,
-          completed: completedTrips,
-          completionRate
-        },
-        profit: {
-          amount: profit,
-          margin: profitMargin,
-          isPositive: profit >= 0
-        },
-        costs: {
-          total: totalCosts,
-          maintenance: maintenanceCosts,
-          fuel: fuelCosts
-        },
-        fleet: {
-          utilization,
-          active: activeVehicles,
-          total: totalVehicles
+        if (currentTripsResult.error) {
+          console.error('Error fetching current trips:', currentTripsResult.error);
         }
-      };
+        if (prevTripsResult.error) {
+          console.error('Error fetching previous trips:', prevTripsResult.error);
+        }
+
+        const currentTrips = currentTripsResult.data || [];
+        const prevTrips = prevTripsResult.data || [];
+
+        // Calculate revenue with null safety
+        const currentRevenue = currentTrips.reduce((sum, trip) => {
+          const amount = trip.amount ? Number(trip.amount) : 0;
+          return sum + (isNaN(amount) ? 0 : amount);
+        }, 0);
+        
+        const prevRevenue = prevTrips.reduce((sum, trip) => {
+          const amount = trip.amount ? Number(trip.amount) : 0;
+          return sum + (isNaN(amount) ? 0 : amount);
+        }, 0);
+        
+        const revenueGrowth = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+
+        // Calculate completion rate
+        const completedTrips = currentTrips.filter(trip => trip.status === 'completed').length;
+        const completionRate = currentTrips.length > 0 ? (completedTrips / currentTrips.length) * 100 : 0;
+
+        // Fetch maintenance and fuel costs with error handling
+        const [maintenanceResult, fuelResult] = await Promise.all([
+          supabase
+            .from('maintenance')
+            .select('cost')
+            .gte('date', startOfMonth.toISOString().split('T')[0])
+            .lte('date', endOfMonth.toISOString().split('T')[0]),
+          
+          supabase
+            .from('fuel_logs')
+            .select('cost')
+            .gte('date', startOfMonth.toISOString().split('T')[0])
+            .lte('date', endOfMonth.toISOString().split('T')[0])
+        ]);
+
+        if (maintenanceResult.error) {
+          console.error('Error fetching maintenance costs:', maintenanceResult.error);
+        }
+        if (fuelResult.error) {
+          console.error('Error fetching fuel costs:', fuelResult.error);
+        }
+
+        const maintenanceCosts = maintenanceResult.data?.reduce((sum, item) => {
+          const cost = item.cost ? Number(item.cost) : 0;
+          return sum + (isNaN(cost) ? 0 : cost);
+        }, 0) || 0;
+        
+        const fuelCosts = fuelResult.data?.reduce((sum, item) => {
+          const cost = item.cost ? Number(item.cost) : 0;
+          return sum + (isNaN(cost) ? 0 : cost);
+        }, 0) || 0;
+        
+        const totalCosts = maintenanceCosts + fuelCosts;
+        const profit = currentRevenue - totalCosts;
+        const profitMargin = currentRevenue > 0 ? (profit / currentRevenue) * 100 : 0;
+
+        // Fleet utilization
+        const { data: vehicles } = await supabase.from('vehicles').select('status');
+        const activeVehicles = vehicles?.filter(v => v.status === 'active').length || 0;
+        const totalVehicles = vehicles?.length || 0;
+        const utilization = totalVehicles > 0 ? (activeVehicles / totalVehicles) * 100 : 0;
+
+        return {
+          revenue: {
+            current: currentRevenue,
+            growth: revenueGrowth,
+            isPositive: revenueGrowth >= 0
+          },
+          trips: {
+            total: currentTrips.length,
+            completed: completedTrips,
+            completionRate
+          },
+          profit: {
+            amount: profit,
+            margin: profitMargin,
+            isPositive: profit >= 0
+          },
+          costs: {
+            total: totalCosts,
+            maintenance: maintenanceCosts,
+            fuel: fuelCosts
+          },
+          fleet: {
+            utilization,
+            active: activeVehicles,
+            total: totalVehicles
+          }
+        };
+      } catch (err) {
+        console.error('Error in dashboard stats query:', err);
+        throw err;
+      }
     },
     refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  if (isLoading || !realtimeStats) {
-    return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-full"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-red-200">
+          <CardContent className="p-6">
+            <div className="text-center text-red-600">
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+              <p>Error loading dashboard data. Please try again.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!realtimeStats) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-muted-foreground">
+              <Calendar className="h-8 w-8 mx-auto mb-2" />
+              <p>No data available for this period.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -179,48 +262,50 @@ export function EnhancedOverview() {
       </div>
 
       {/* Cost Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Cost Breakdown (This Month)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Maintenance</span>
-                <span className="text-sm">${realtimeStats.costs.maintenance.toLocaleString()}</span>
+      {realtimeStats.costs.total > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Cost Breakdown (This Month)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Maintenance</span>
+                  <span className="text-sm">${realtimeStats.costs.maintenance.toLocaleString()}</span>
+                </div>
+                <Progress 
+                  value={realtimeStats.costs.total > 0 ? (realtimeStats.costs.maintenance / realtimeStats.costs.total) * 100 : 0} 
+                  className="h-2" 
+                />
               </div>
-              <Progress 
-                value={(realtimeStats.costs.maintenance / realtimeStats.costs.total) * 100} 
-                className="h-2" 
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Fuel</span>
-                <span className="text-sm">${realtimeStats.costs.fuel.toLocaleString()}</span>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Fuel</span>
+                  <span className="text-sm">${realtimeStats.costs.fuel.toLocaleString()}</span>
+                </div>
+                <Progress 
+                  value={realtimeStats.costs.total > 0 ? (realtimeStats.costs.fuel / realtimeStats.costs.total) * 100 : 0} 
+                  className="h-2" 
+                />
               </div>
-              <Progress 
-                value={(realtimeStats.costs.fuel / realtimeStats.costs.total) * 100} 
-                className="h-2" 
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Total Costs</span>
-                <Badge variant="outline" className="font-semibold">
-                  ${realtimeStats.costs.total.toLocaleString()}
-                </Badge>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Total Costs</span>
+                  <Badge variant="outline" className="font-semibold">
+                    ${realtimeStats.costs.total.toLocaleString()}
+                  </Badge>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

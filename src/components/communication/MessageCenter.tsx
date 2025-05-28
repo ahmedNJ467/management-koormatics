@@ -27,6 +27,7 @@ interface Trip {
   dropoff_location: string;
   date: string;
   driver_name?: string;
+  client_name?: string;
 }
 
 export function MessageCenter() {
@@ -49,10 +50,14 @@ export function MessageCenter() {
         .select('*')
         .order('timestamp', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
       setMessages(data || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
+      setMessages([]);
     }
   };
 
@@ -65,24 +70,31 @@ export function MessageCenter() {
           pickup_location,
           dropoff_location,
           date,
-          drivers(name)
+          drivers!inner(name),
+          clients(name)
         `)
-        .eq('status', 'in_progress')
+        .in('status', ['scheduled', 'in_progress'])
         .order('date', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trips:', error);
+        setTrips([]);
+        return;
+      }
       
       const formattedTrips = data?.map(trip => ({
         id: trip.id,
-        pickup_location: trip.pickup_location || '',
-        dropoff_location: trip.dropoff_location || '',
+        pickup_location: trip.pickup_location || 'Unknown Location',
+        dropoff_location: trip.dropoff_location || 'Unknown Destination',
         date: trip.date,
-        driver_name: (trip.drivers as any)?.name || 'Unassigned'
+        driver_name: (trip.drivers as any)?.name || 'Unassigned',
+        client_name: (trip.clients as any)?.name || 'Unknown Client'
       })) || [];
 
       setTrips(formattedTrips);
     } catch (error) {
       console.error('Error fetching trips:', error);
+      setTrips([]);
     }
   };
 
@@ -116,24 +128,43 @@ export function MessageCenter() {
   const filteredTrips = trips.filter(trip =>
     trip.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
     trip.dropoff_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trip.driver_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    trip.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trip.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedTripMessages = messages.filter(msg => msg.trip_id === selectedTrip);
   const unreadCount = messages.filter(msg => !msg.is_read && msg.sender_type === 'driver').length;
 
+  if (trips.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Communication Center
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground py-8">
+            No active trips available for communication
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[400px]">
       {/* Trip List */}
       <Card className="lg:col-span-1">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Active Trips
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Active Trips ({filteredTrips.length})
             </CardTitle>
             {unreadCount > 0 && (
-              <Badge variant="destructive" className="h-5">
+              <Badge variant="destructive" className="h-5 text-xs">
                 {unreadCount}
               </Badge>
             )}
@@ -144,12 +175,12 @@ export function MessageCenter() {
               placeholder="Search trips..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9 h-8 text-xs"
             />
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-[450px]">
+          <ScrollArea className="h-[280px]">
             {filteredTrips.map((trip) => {
               const tripMessages = messages.filter(msg => msg.trip_id === trip.id);
               const hasUnread = tripMessages.some(msg => !msg.is_read && msg.sender_type === 'driver');
@@ -157,21 +188,24 @@ export function MessageCenter() {
               return (
                 <div
                   key={trip.id}
-                  className={`p-4 border-b cursor-pointer hover:bg-muted/50 ${
+                  className={`p-3 border-b cursor-pointer hover:bg-muted/50 text-xs ${
                     selectedTrip === trip.id ? 'bg-muted' : ''
                   }`}
                   onClick={() => setSelectedTrip(trip.id)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
+                      <div className="font-medium truncate">
                         {trip.pickup_location} → {trip.dropoff_location}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="text-muted-foreground mt-1">
                         {format(new Date(trip.date), 'MMM d, yyyy')}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-muted-foreground">
                         Driver: {trip.driver_name}
+                      </div>
+                      <div className="text-muted-foreground">
+                        Client: {trip.client_name}
                       </div>
                     </div>
                     {hasUnread && (
@@ -188,45 +222,45 @@ export function MessageCenter() {
       {/* Message Area */}
       <Card className="lg:col-span-2">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
+          <CardTitle className="text-sm flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
             {selectedTrip ? 'Trip Communication' : 'Select a Trip'}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {selectedTrip ? (
-            <div className="flex flex-col h-[500px]">
+            <div className="flex flex-col h-[320px]">
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
                 {selectedTripMessages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
+                  <div className="text-center text-muted-foreground py-8 text-sm">
                     No messages yet. Start a conversation!
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {selectedTripMessages.map((message) => (
                       <div
                         key={message.id}
                         className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
+                          className={`max-w-[80%] rounded-lg p-2 text-xs ${
                             message.sender_type === 'admin'
                               ? 'bg-primary text-primary-foreground ml-auto'
                               : 'bg-muted'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            <Avatar className="h-6 w-6">
+                            <Avatar className="h-4 w-4">
                               <AvatarFallback className="text-xs">
                                 {message.sender_name.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
-                            <p className="text-xs font-medium">{message.sender_name}</p>
+                            <p className="font-medium">{message.sender_name}</p>
                           </div>
-                          <p className="text-sm">{message.message}</p>
-                          <p className="text-xs mt-1 opacity-70">
-                            {format(new Date(message.timestamp), "MMM d, yyyy 'at' h:mm a")}
+                          <p>{message.message}</p>
+                          <p className="mt-1 opacity-70">
+                            {format(new Date(message.timestamp), "MMM d, h:mm a")}
                           </p>
                         </div>
                       </div>
@@ -236,13 +270,13 @@ export function MessageCenter() {
               </ScrollArea>
 
               {/* Message Input */}
-              <div className="p-4 border-t">
+              <div className="p-3 border-t">
                 <div className="flex gap-2">
                   <Textarea
                     placeholder="Type your message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="min-h-[60px] resize-none"
+                    className="min-h-[40px] resize-none text-xs"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -253,15 +287,16 @@ export function MessageCenter() {
                   <Button
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || isLoading}
+                    size="sm"
                     className="self-end"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[500px] text-muted-foreground">
+            <div className="flex items-center justify-center h-[320px] text-muted-foreground text-sm">
               Select a trip from the list to view and send messages
             </div>
           )}

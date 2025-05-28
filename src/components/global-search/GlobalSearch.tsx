@@ -1,20 +1,20 @@
 
 import { useState, useEffect } from "react";
-import { Search, X, FileText, Users, Car, UserCheck, Calendar } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Search, Car, Users, Calendar, FileText, Wrench, Fuel } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface SearchResult {
   id: string;
   title: string;
   subtitle: string;
-  type: 'trip' | 'client' | 'vehicle' | 'driver';
-  data: any;
+  type: string;
+  icon: any;
+  route: string;
 }
 
 interface GlobalSearchProps {
@@ -28,200 +28,217 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const searchCategories = [
+    { name: "Vehicles", icon: Car, table: "vehicles", fields: ["make", "model", "registration"], route: "/vehicles" },
+    { name: "Drivers", icon: Users, table: "drivers", fields: ["name", "contact", "license_number"], route: "/drivers" },
+    { name: "Trips", icon: Calendar, table: "trips", fields: ["pickup_location", "dropoff_location"], route: "/trips" },
+    { name: "Clients", icon: Users, table: "clients", fields: ["name", "contact", "email"], route: "/clients" },
+    { name: "Maintenance", icon: Wrench, table: "maintenance", fields: ["description", "service_provider"], route: "/maintenance" },
+    { name: "Fuel Logs", icon: Fuel, table: "fuel_logs", fields: ["vehicle_id"], route: "/fuel-logs" }
+  ];
+
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setResults([]);
-      return;
-    }
-
-    const performSearch = async () => {
-      setIsLoading(true);
-      try {
-        const searchResults: SearchResult[] = [];
-        
-        // Search trips
-        const { data: trips } = await supabase
-          .from('trips')
-          .select(`
-            *, 
-            clients(name),
-            vehicles(make, model, registration),
-            drivers(name)
-          `)
-          .or(`pickup_location.ilike.%${searchTerm}%,dropoff_location.ilike.%${searchTerm}%,flight_number.ilike.%${searchTerm}%,notes.ilike.%${searchTerm}%`)
-          .limit(5);
-
-        trips?.forEach(trip => {
-          searchResults.push({
-            id: trip.id,
-            title: `${trip.pickup_location || 'N/A'} → ${trip.dropoff_location || 'N/A'}`,
-            subtitle: `${trip.date} • ${trip.clients?.name || 'No client'} • ${trip.status}`,
-            type: 'trip',
-            data: trip
-          });
-        });
-
-        // Search clients
-        const { data: clients } = await supabase
-          .from('clients')
-          .select('*')
-          .or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%`)
-          .limit(5);
-
-        clients?.forEach(client => {
-          searchResults.push({
-            id: client.id,
-            title: client.name,
-            subtitle: `${client.type} • ${client.email || client.contact || 'No contact'}`,
-            type: 'client',
-            data: client
-          });
-        });
-
-        // Search vehicles
-        const { data: vehicles } = await supabase
-          .from('vehicles')
-          .select('*')
-          .or(`make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,registration.ilike.%${searchTerm}%`)
-          .limit(5);
-
-        vehicles?.forEach(vehicle => {
-          searchResults.push({
-            id: vehicle.id,
-            title: `${vehicle.make} ${vehicle.model}`,
-            subtitle: `${vehicle.registration} • ${vehicle.status}`,
-            type: 'vehicle',
-            data: vehicle
-          });
-        });
-
-        // Search drivers
-        const { data: drivers } = await supabase
-          .from('drivers')
-          .select('*')
-          .or(`name.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%,license_number.ilike.%${searchTerm}%`)
-          .limit(5);
-
-        drivers?.forEach(driver => {
-          searchResults.push({
-            id: driver.id,
-            title: driver.name,
-            subtitle: `${driver.license_number} • ${driver.status}`,
-            type: 'driver',
-            data: driver
-          });
-        });
-
-        setResults(searchResults);
-      } catch (error) {
-        console.error('Search error:', error);
-      } finally {
-        setIsLoading(false);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (!isOpen) {
+          setSearchTerm("");
+          setResults([]);
+        }
       }
     };
 
-    const timeoutId = setTimeout(performSearch, 300);
-    return () => clearTimeout(timeoutId);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (searchTerm.length > 2) {
+      performSearch();
+    } else {
+      setResults([]);
+    }
   }, [searchTerm]);
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'trip': return <Calendar className="h-4 w-4" />;
-      case 'client': return <Users className="h-4 w-4" />;
-      case 'vehicle': return <Car className="h-4 w-4" />;
-      case 'driver': return <UserCheck className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
+  const performSearch = async () => {
+    if (!searchTerm.trim()) return;
+    
+    setIsLoading(true);
+    const searchResults: SearchResult[] = [];
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'trip': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-      case 'client': return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'vehicle': return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
-      case 'driver': return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
-      default: return 'bg-gray-500/10 text-gray-600 border-gray-500/20';
+    try {
+      for (const category of searchCategories) {
+        try {
+          let query = supabase.from(category.table).select('*');
+          
+          // Build OR conditions for text search
+          const searchConditions = category.fields.map(field => 
+            `${field}.ilike.%${searchTerm}%`
+          ).join(',');
+
+          const { data, error } = await query.or(searchConditions).limit(5);
+          
+          if (error) {
+            console.error(`Error searching ${category.table}:`, error);
+            continue;
+          }
+
+          if (data && data.length > 0) {
+            data.forEach(item => {
+              let title = "";
+              let subtitle = "";
+
+              switch (category.table) {
+                case "vehicles":
+                  title = `${item.make} ${item.model}`;
+                  subtitle = `Registration: ${item.registration}`;
+                  break;
+                case "drivers":
+                  title = item.name;
+                  subtitle = `License: ${item.license_number}`;
+                  break;
+                case "trips":
+                  title = `${item.pickup_location} → ${item.dropoff_location}`;
+                  subtitle = `Date: ${item.date}`;
+                  break;
+                case "clients":
+                  title = item.name;
+                  subtitle = item.email || item.contact || "";
+                  break;
+                case "maintenance":
+                  title = item.description;
+                  subtitle = `Provider: ${item.service_provider || 'N/A'}`;
+                  break;
+                case "fuel_logs":
+                  title = `Fuel Log - ${item.date}`;
+                  subtitle = `Cost: $${item.cost}`;
+                  break;
+                default:
+                  title = "Unknown Item";
+                  subtitle = "";
+              }
+
+              searchResults.push({
+                id: item.id,
+                title,
+                subtitle,
+                type: category.name,
+                icon: category.icon,
+                route: category.route
+              });
+            });
+          }
+        } catch (error) {
+          console.error(`Error searching ${category.name}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+    } finally {
+      setIsLoading(false);
     }
+
+    setResults(searchResults);
   };
 
   const handleResultClick = (result: SearchResult) => {
-    switch (result.type) {
-      case 'trip':
-        navigate('/trips');
-        break;
-      case 'client':
-        navigate('/clients');
-        break;
-      case 'vehicle':
-        navigate('/vehicles');
-        break;
-      case 'driver':
-        navigate('/drivers');
-        break;
-    }
+    navigate(result.route);
     onClose();
+    setSearchTerm("");
+    setResults([]);
   };
 
-  if (!isOpen) return null;
+  const groupedResults = results.reduce((acc, result) => {
+    if (!acc[result.type]) {
+      acc[result.type] = [];
+    }
+    acc[result.type].push(result);
+    return acc;
+  }, {} as Record<string, SearchResult[]>);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-20">
-      <Card className="w-full max-w-2xl mx-4">
-        <CardContent className="p-0">
-          <div className="flex items-center gap-3 p-4 border-b">
-            <Search className="h-5 w-5 text-muted-foreground" />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Global Search
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search trips, clients, vehicles, drivers..."
+              placeholder="Search across all fleet data..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="border-0 focus-visible:ring-0 text-lg"
+              className="pl-9"
               autoFocus
             />
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
-          
-          <ScrollArea className="max-h-96">
-            {isLoading && (
-              <div className="p-4 text-center text-muted-foreground">
-                Searching...
-              </div>
-            )}
-            
-            {!isLoading && searchTerm && results.length === 0 && (
-              <div className="p-4 text-center text-muted-foreground">
-                No results found for "{searchTerm}"
-              </div>
-            )}
-            
-            {results.map((result) => (
-              <div
-                key={`${result.type}-${result.id}`}
-                className="p-4 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
-                onClick={() => handleResultClick(result)}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    {getTypeIcon(result.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium truncate">{result.title}</h4>
-                      <Badge variant="outline" className={`${getTypeColor(result.type)} capitalize`}>
-                        {result.type}
+
+          {searchTerm.length > 0 && searchTerm.length <= 2 && (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              Type at least 3 characters to search...
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              Searching...
+            </div>
+          )}
+
+          {searchTerm.length > 2 && !isLoading && results.length === 0 && (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              No results found for "{searchTerm}"
+            </div>
+          )}
+
+          {results.length > 0 && (
+            <ScrollArea className="max-h-96">
+              <div className="space-y-4">
+                {Object.entries(groupedResults).map(([type, typeResults]) => (
+                  <div key={type}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {type} ({typeResults.length})
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {result.subtitle}
-                    </p>
+                    <div className="space-y-1">
+                      {typeResults.map((result) => {
+                        const IconComponent = result.icon;
+                        return (
+                          <div
+                            key={result.id}
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                            onClick={() => handleResultClick(result)}
+                          >
+                            <IconComponent className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">
+                                {result.title}
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {result.subtitle}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+            </ScrollArea>
+          )}
+
+          <div className="text-xs text-muted-foreground text-center pt-2 border-t">
+            Press <kbd className="px-1 py-0.5 bg-muted rounded">⌘K</kbd> to open search
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
