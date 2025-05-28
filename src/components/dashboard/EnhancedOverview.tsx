@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, DollarSign, Users, Car, Calendar, AlertTriangle, CheckCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Users, Car, Calendar, AlertTriangle, CheckCircle, Fuel, Wrench } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -231,17 +230,15 @@ export function EnhancedOverview() {
 
         <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <CardTitle className="text-sm font-medium">Total Costs</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              <span className={realtimeStats.profit.isPositive ? "text-green-600" : "text-red-600"}>
-                {realtimeStats.profit.margin.toFixed(1)}%
-              </span>
+            <div className="text-2xl font-bold text-red-600">
+              ${realtimeStats.costs.total.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground">
-              ${realtimeStats.profit.amount.toLocaleString()} profit this month
+              Monthly operational costs
             </div>
           </CardContent>
         </Card>
@@ -266,16 +263,19 @@ export function EnhancedOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+              <DollarSign className="h-5 w-5" />
               Cost Breakdown (This Month)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Maintenance</span>
-                  <span className="text-sm">${realtimeStats.costs.maintenance.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm font-medium">Maintenance</span>
+                  </div>
+                  <span className="text-sm font-semibold">${realtimeStats.costs.maintenance.toLocaleString()}</span>
                 </div>
                 <Progress 
                   value={realtimeStats.costs.total > 0 ? (realtimeStats.costs.maintenance / realtimeStats.costs.total) * 100 : 0} 
@@ -285,8 +285,11 @@ export function EnhancedOverview() {
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Fuel</span>
-                  <span className="text-sm">${realtimeStats.costs.fuel.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <Fuel className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium">Fuel</span>
+                  </div>
+                  <span className="text-sm font-semibold">${realtimeStats.costs.fuel.toLocaleString()}</span>
                 </div>
                 <Progress 
                   value={realtimeStats.costs.total > 0 ? (realtimeStats.costs.fuel / realtimeStats.costs.total) * 100 : 0} 
@@ -296,10 +299,28 @@ export function EnhancedOverview() {
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Profit Margin</span>
+                  <Badge variant={realtimeStats.profit.isPositive ? "default" : "destructive"}>
+                    {realtimeStats.profit.margin.toFixed(1)}%
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  ${realtimeStats.profit.amount.toLocaleString()} profit
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Total Costs</span>
                   <Badge variant="outline" className="font-semibold">
                     ${realtimeStats.costs.total.toLocaleString()}
                   </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {realtimeStats.costs.maintenance > 0 && realtimeStats.costs.fuel > 0 ? 
+                    `${((realtimeStats.costs.maintenance / realtimeStats.costs.total) * 100).toFixed(0)}% maintenance, ${((realtimeStats.costs.fuel / realtimeStats.costs.total) * 100).toFixed(0)}% fuel` :
+                    'Cost breakdown'
+                  }
                 </div>
               </div>
             </div>

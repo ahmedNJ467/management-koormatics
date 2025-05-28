@@ -152,8 +152,9 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold mb-2">Fleet Dashboard</h1>
       
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-1 md:col-span-2 lg:col-span-4 bg-white dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+        {/* Fleet Overview Section */}
+        <Card className="lg:col-span-2 bg-white dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -183,8 +184,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         
-        <Card className="col-span-1 md:col-span-2 lg:col-span-3 bg-white dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
+        {/* Activity & Communication Section - Fixed spacing */}
+        <Card className="lg:col-span-1 bg-white dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
+          <CardHeader className="pb-4">
             <div>
               <CardTitle className="flex items-center">
                 <TrendingUp className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -195,26 +197,32 @@ export default function Dashboard() {
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="mt-2">
-              <TabsList className="bg-slate-100 dark:bg-slate-800">
-                <TabsTrigger value="activity" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700">Activity</TabsTrigger>
-                <TabsTrigger value="alerts" className="relative data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700">
+          <CardContent className="px-6 pb-6">
+            <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800 mb-4">
+                <TabsTrigger value="activity" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs">
+                  Activity
+                </TabsTrigger>
+                <TabsTrigger value="alerts" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs">
                   Alerts
                 </TabsTrigger>
-                <TabsTrigger value="messages" className="relative data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700">
-                  <MessageCircle className="h-4 w-4 mr-1" />
+                <TabsTrigger value="messages" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs">
+                  <MessageCircle className="h-3 w-3 mr-1" />
                   Messages
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="activity" className="space-y-4 mt-4">
-                <RecentActivity activities={recentActivities} isLoading={false} />
+              <TabsContent value="activity" className="mt-0 space-y-3">
+                <div className="min-h-[350px]">
+                  <RecentActivity activities={recentActivities} isLoading={false} />
+                </div>
               </TabsContent>
-              <TabsContent value="alerts" className="space-y-4 mt-4">
-                <AlertsTab />
+              <TabsContent value="alerts" className="mt-0 space-y-3">
+                <div className="min-h-[350px]">
+                  <AlertsTab />
+                </div>
               </TabsContent>
-              <TabsContent value="messages" className="space-y-4 mt-4">
-                <div className="h-[400px]">
+              <TabsContent value="messages" className="mt-0 space-y-3">
+                <div className="min-h-[350px] -mx-6 -mb-6">
                   <MessageCenter />
                 </div>
               </TabsContent>
