@@ -29,12 +29,12 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const navigate = useNavigate();
 
   const searchCategories = [
-    { name: "Vehicles", icon: Car, table: "vehicles", fields: ["make", "model", "registration"], route: "/vehicles" },
-    { name: "Drivers", icon: Users, table: "drivers", fields: ["name", "contact", "license_number"], route: "/drivers" },
-    { name: "Trips", icon: Calendar, table: "trips", fields: ["pickup_location", "dropoff_location"], route: "/trips" },
-    { name: "Clients", icon: Users, table: "clients", fields: ["name", "contact", "email"], route: "/clients" },
-    { name: "Maintenance", icon: Wrench, table: "maintenance", fields: ["description", "service_provider"], route: "/maintenance" },
-    { name: "Fuel Logs", icon: Fuel, table: "fuel_logs", fields: ["vehicle_id"], route: "/fuel-logs" }
+    { name: "Vehicles", icon: Car, table: "vehicles" as const, fields: ["make", "model", "registration"], route: "/vehicles" },
+    { name: "Drivers", icon: Users, table: "drivers" as const, fields: ["name", "contact", "license_number"], route: "/drivers" },
+    { name: "Trips", icon: Calendar, table: "trips" as const, fields: ["pickup_location", "dropoff_location"], route: "/trips" },
+    { name: "Clients", icon: Users, table: "clients" as const, fields: ["name", "contact", "email"], route: "/clients" },
+    { name: "Maintenance", icon: Wrench, table: "maintenance" as const, fields: ["description", "service_provider"], route: "/maintenance" },
+    { name: "Fuel Logs", icon: Fuel, table: "fuel_logs" as const, fields: [], route: "/fuel-logs" }
   ];
 
   useEffect(() => {
@@ -71,62 +71,64 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         try {
           let query = supabase.from(category.table).select('*');
           
-          // Build OR conditions for text search
-          const searchConditions = category.fields.map(field => 
-            `${field}.ilike.%${searchTerm}%`
-          ).join(',');
+          if (category.fields.length > 0) {
+            // Build OR conditions for text search
+            const searchConditions = category.fields.map(field => 
+              `${field}.ilike.%${searchTerm}%`
+            ).join(',');
 
-          const { data, error } = await query.or(searchConditions).limit(5);
-          
-          if (error) {
-            console.error(`Error searching ${category.table}:`, error);
-            continue;
-          }
+            const { data, error } = await query.or(searchConditions).limit(5);
+            
+            if (error) {
+              console.error(`Error searching ${category.table}:`, error);
+              continue;
+            }
 
-          if (data && data.length > 0) {
-            data.forEach(item => {
-              let title = "";
-              let subtitle = "";
+            if (data && data.length > 0) {
+              data.forEach((item: any) => {
+                let title = "";
+                let subtitle = "";
 
-              switch (category.table) {
-                case "vehicles":
-                  title = `${item.make} ${item.model}`;
-                  subtitle = `Registration: ${item.registration}`;
-                  break;
-                case "drivers":
-                  title = item.name;
-                  subtitle = `License: ${item.license_number}`;
-                  break;
-                case "trips":
-                  title = `${item.pickup_location} → ${item.dropoff_location}`;
-                  subtitle = `Date: ${item.date}`;
-                  break;
-                case "clients":
-                  title = item.name;
-                  subtitle = item.email || item.contact || "";
-                  break;
-                case "maintenance":
-                  title = item.description;
-                  subtitle = `Provider: ${item.service_provider || 'N/A'}`;
-                  break;
-                case "fuel_logs":
-                  title = `Fuel Log - ${item.date}`;
-                  subtitle = `Cost: $${item.cost}`;
-                  break;
-                default:
-                  title = "Unknown Item";
-                  subtitle = "";
-              }
+                switch (category.table) {
+                  case "vehicles":
+                    title = `${item.make || ''} ${item.model || ''}`.trim();
+                    subtitle = `Registration: ${item.registration || 'N/A'}`;
+                    break;
+                  case "drivers":
+                    title = item.name || 'Unknown Driver';
+                    subtitle = `License: ${item.license_number || 'N/A'}`;
+                    break;
+                  case "trips":
+                    title = `${item.pickup_location || 'Unknown'} → ${item.dropoff_location || 'Unknown'}`;
+                    subtitle = `Date: ${item.date || 'N/A'}`;
+                    break;
+                  case "clients":
+                    title = item.name || 'Unknown Client';
+                    subtitle = item.email || item.contact || 'No contact info';
+                    break;
+                  case "maintenance":
+                    title = item.description || 'Maintenance Record';
+                    subtitle = `Provider: ${item.service_provider || 'N/A'}`;
+                    break;
+                  case "fuel_logs":
+                    title = `Fuel Log - ${item.date || 'Unknown Date'}`;
+                    subtitle = `Cost: $${item.cost || '0'}`;
+                    break;
+                  default:
+                    title = "Unknown Item";
+                    subtitle = "";
+                }
 
-              searchResults.push({
-                id: item.id,
-                title,
-                subtitle,
-                type: category.name,
-                icon: category.icon,
-                route: category.route
+                searchResults.push({
+                  id: item.id,
+                  title,
+                  subtitle,
+                  type: category.name,
+                  icon: category.icon,
+                  route: category.route
+                });
               });
-            });
+            }
           }
         } catch (error) {
           console.error(`Error searching ${category.name}:`, error);
