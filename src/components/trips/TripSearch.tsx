@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
+import { FilterPresets } from "@/components/advanced-filters/FilterPresets";
 
 interface TripSearchProps {
   searchTerm: string;
@@ -17,6 +18,21 @@ export function TripSearch({
   setSearchTerm, 
   setStatusFilter 
 }: TripSearchProps) {
+  const currentFilters = {
+    search: searchTerm,
+    status: statusFilter
+  };
+
+  const handleApplyPreset = (filters: Record<string, any>) => {
+    setSearchTerm(filters.search || "");
+    setStatusFilter(filters.status || "all");
+  };
+
+  const handleFiltersChange = (filters: Record<string, any>) => {
+    setSearchTerm(filters.search || "");
+    setStatusFilter(filters.status || "all");
+  };
+
   return (
     <div className="flex gap-4 mb-6">
       <div className="relative flex-1">
@@ -40,6 +56,12 @@ export function TripSearch({
           <SelectItem value="cancelled">Cancelled</SelectItem>
         </SelectContent>
       </Select>
+      
+      <FilterPresets
+        currentFilters={currentFilters}
+        onApplyPreset={handleApplyPreset}
+        onFiltersChange={handleFiltersChange}
+      />
     </div>
   );
 }
