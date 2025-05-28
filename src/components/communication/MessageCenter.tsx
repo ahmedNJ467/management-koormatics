@@ -13,7 +13,7 @@ import { format } from "date-fns";
 
 interface Message {
   id: string;
-  sender_type: 'admin' | 'driver';
+  sender_type: string;
   sender_name: string;
   message: string;
   timestamp: string;

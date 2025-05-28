@@ -1,7 +1,7 @@
 
 import { Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ThemeToggle from "./theme-toggle";
+import { ThemeToggle } from "./theme-toggle";
 import { GlobalSearchTrigger } from "./global-search/GlobalSearchTrigger";
 
 interface NavbarProps {
