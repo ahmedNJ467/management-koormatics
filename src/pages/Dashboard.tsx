@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,24 +7,16 @@ import { EnhancedOverview } from "@/components/dashboard/EnhancedOverview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { AlertsTab } from "@/components/dashboard/AlertsTab";
 import { MessageCenter } from "@/components/communication/MessageCenter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { DashboardStats } from "@/components/dashboard/DashboardStats";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useApiErrorHandler } from "@/lib/api-error-handler";
 import { ActivityItemProps } from "@/types/dashboard";
-import { AlertTriangle, Bell, Car, TrendingUp, UserPlus, Calendar, BarChart, FileBadge, MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { BarChart, MessageCircle } from "lucide-react";
 import { getActivities, logActivity } from "@/utils/activity-logger";
-import { Alert } from "@/types/alert";
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
-  const { handleError } = useApiErrorHandler();
-  const { toast } = useToast();
   const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>([]);
 
   useEffect(() => {
@@ -35,7 +28,7 @@ export default function Dashboard() {
     
     loadActivities();
     
-    // Set up polling interval
+    // Set up polling interval for activities
     const intervalId = setInterval(async () => {
       const activities = await getActivities(5);
       setRecentActivities(activities);
@@ -94,63 +87,12 @@ export default function Dashboard() {
     };
   }, [queryClient]);
 
-  const { data: fleetStats, isLoading: isFleetStatsLoading } = useQuery({
-    queryKey: ["fleet-stats"],
-    queryFn: async () => {
-      const { data: vehicles, error: vehiclesError } = await supabase
-        .from("vehicles")
-        .select("status");
-
-      if (vehiclesError) throw vehiclesError;
-
-      const { data: drivers, error: driversError } = await supabase
-        .from("drivers")
-        .select("status");
-
-      if (driversError) throw driversError;
-
-      const { data: maintenance, error: maintenanceError } = await supabase
-        .from("maintenance")
-        .select("status");
-
-      if (maintenanceError) throw maintenanceError;
-
-      const { data: contracts, error: contractsError } = await supabase
-        .from("contracts")
-        .select("status");
-
-      if (contractsError) throw contractsError;
-
-      return {
-        totalVehicles: vehicles.length,
-        activeVehicles: vehicles.filter((v) => v.status === "active").length,
-        totalDrivers: drivers.length,
-        activeDrivers: drivers.filter((d) => d.status === "active").length,
-        pendingMaintenance: maintenance.filter((m) => m.status === "scheduled").length,
-        activeContracts: contracts.filter((c) => c.status === "active").length,
-        totalContracts: contracts.length,
-      };
-    },
-  });
-
-  // Query for active alerts
-  const { data: alertsData, isLoading: isAlertsLoading } = useQuery({
-    queryKey: ["active-alerts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("alerts")
-        .select("*")
-        .eq("resolved", false)
-        .order("date", { ascending: false });
-
-      if (error) throw error;
-      return data as Alert[];
-    }
-  });
-
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold mb-2">Fleet Dashboard</h1>
+      
+      {/* Stats Section */}
+      <DashboardStats />
       
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Fleet Overview Section */}
@@ -184,12 +126,12 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         
-        {/* Activity & Communication Section - Fixed spacing */}
+        {/* Activity & Communication Section */}
         <Card className="lg:col-span-1 bg-white dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
           <CardHeader className="pb-4">
             <div>
               <CardTitle className="flex items-center">
-                <TrendingUp className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <MessageCircle className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
                 Activity & Communication
               </CardTitle>
               <CardDescription>
@@ -207,7 +149,6 @@ export default function Dashboard() {
                   Alerts
                 </TabsTrigger>
                 <TabsTrigger value="messages" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs">
-                  <MessageCircle className="h-3 w-3 mr-1" />
                   Messages
                 </TabsTrigger>
               </TabsList>

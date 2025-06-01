@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, Eye, Filter, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface InvoiceAccessProps {
-  clientUserId: string;
+  clientUserId?: string;
 }
 
 export function InvoiceAccess({ clientUserId }: InvoiceAccessProps) {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
@@ -21,7 +23,6 @@ export function InvoiceAccess({ clientUserId }: InvoiceAccessProps) {
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["client-invoices", clientUserId],
     queryFn: async () => {
-      // In a real implementation, you'd join with client_bookings to get invoices for this client
       const { data, error } = await supabase
         .from("invoices")
         .select(`
@@ -33,7 +34,10 @@ export function InvoiceAccess({ clientUserId }: InvoiceAccessProps) {
         `)
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching invoices:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -77,12 +81,18 @@ export function InvoiceAccess({ clientUserId }: InvoiceAccessProps) {
   };
 
   const handleDownloadInvoice = (invoiceId: string) => {
-    // In a real implementation, this would generate and download a PDF
+    toast({
+      title: "Download Started",
+      description: "Invoice download will be available soon.",
+    });
     console.log("Downloading invoice:", invoiceId);
   };
 
   const handleViewInvoice = (invoiceId: string) => {
-    // In a real implementation, this would open the invoice in a modal or new page
+    toast({
+      title: "Opening Invoice",
+      description: "Invoice viewer will be available soon.",
+    });
     console.log("Viewing invoice:", invoiceId);
   };
 
@@ -95,6 +105,9 @@ export function InvoiceAccess({ clientUserId }: InvoiceAccessProps) {
       </Card>
     );
   }
+
+  const totalPaid = invoices?.filter(inv => inv.status === "paid").reduce((sum, inv) => sum + Number(inv.total_amount), 0) || 0;
+  const totalOutstanding = invoices?.filter(inv => inv.status === "sent").reduce((sum, inv) => sum + Number(inv.total_amount), 0) || 0;
 
   return (
     <Card>
@@ -149,7 +162,7 @@ export function InvoiceAccess({ clientUserId }: InvoiceAccessProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-green-600">
-                ${invoices?.filter(inv => inv.status === "paid").reduce((sum, inv) => sum + Number(inv.total_amount), 0)?.toLocaleString() || "0"}
+                ${totalPaid.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">Total Paid</p>
             </CardContent>
@@ -157,7 +170,7 @@ export function InvoiceAccess({ clientUserId }: InvoiceAccessProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-orange-600">
-                ${invoices?.filter(inv => inv.status === "sent").reduce((sum, inv) => sum + Number(inv.total_amount), 0)?.toLocaleString() || "0"}
+                ${totalOutstanding.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">Outstanding</p>
             </CardContent>

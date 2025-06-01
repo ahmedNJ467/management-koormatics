@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FeedbackForm } from "./FeedbackForm";
 
 interface TripHistoryProps {
-  clientUserId: string;
+  clientUserId?: string;
 }
 
 export function TripHistory({ clientUserId }: TripHistoryProps) {
@@ -26,26 +26,18 @@ export function TripHistory({ clientUserId }: TripHistoryProps) {
         .from("client_bookings")
         .select(`
           *,
-          trips:trip_id (
-            id,
-            status,
-            date,
-            time,
-            pickup_location,
-            dropoff_location,
-            driver_id,
-            vehicle_id
-          ),
           trip_feedback (
             id,
             rating,
             comments
           )
         `)
-        .eq("client_user_id", clientUserId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching trip history:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -210,7 +202,7 @@ export function TripHistory({ clientUserId }: TripHistoryProps) {
               </div>
               <FeedbackForm
                 tripId={showFeedback}
-                clientUserId={clientUserId}
+                clientUserId={clientUserId || "demo-user"}
                 onSuccess={() => setShowFeedback(null)}
               />
             </div>

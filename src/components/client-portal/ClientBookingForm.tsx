@@ -42,9 +42,7 @@ export function ClientBookingForm({ onSuccess }: ClientBookingFormProps) {
   };
 
   const calculateEstimatedCost = () => {
-    // Simple cost calculation - in real app this would be more sophisticated
     const baseCost = 50;
-    const distanceMultiplier = 2; // per mile estimate
     const serviceMultipliers = {
       airport_transfer: 1.2,
       city_transfer: 1.0,
@@ -73,11 +71,18 @@ export function ClientBookingForm({ onSuccess }: ClientBookingFormProps) {
     try {
       const estimated_cost = calculateEstimatedCost();
       
+      // Get the first available client as a demo
+      const { data: clients } = await supabase
+        .from("clients")
+        .select("id")
+        .limit(1);
+
+      const clientId = clients?.[0]?.id;
+      
       const { data, error } = await supabase
         .from("client_bookings")
         .insert({
-          client_user_id: "mock-client-user-id", // In real app, get from auth
-          client_id: "mock-client-id", // In real app, get from user profile
+          client_id: clientId,
           ...formData,
           estimated_cost,
           status: "pending",
@@ -92,8 +97,22 @@ export function ClientBookingForm({ onSuccess }: ClientBookingFormProps) {
         description: "Your booking request has been submitted and is pending confirmation.",
       });
 
+      // Reset form
+      setFormData({
+        service_type: "",
+        pickup_location: "",
+        dropoff_location: "",
+        pickup_date: "",
+        pickup_time: "",
+        return_date: "",
+        return_time: "",
+        passengers: 1,
+        special_requests: "",
+      });
+
       onSuccess();
     } catch (error: any) {
+      console.error("Booking submission error:", error);
       toast({
         title: "Booking Failed",
         description: error.message || "Failed to submit booking request.",

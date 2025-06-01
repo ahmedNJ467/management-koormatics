@@ -1,24 +1,24 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Star, Plus, History, FileText, Navigation } from "lucide-react";
+import { Calendar, Clock, MapPin, Star, Plus, History, FileText, Navigation, ArrowLeft } from "lucide-react";
 import { ClientBookingForm } from "@/components/client-portal/ClientBookingForm";
 import { TripHistory } from "@/components/client-portal/TripHistory";
 import { InvoiceAccess } from "@/components/client-portal/InvoiceAccess";
 import { TripTracking } from "@/components/client-portal/TripTracking";
-import { FeedbackForm } from "@/components/client-portal/FeedbackForm";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 export default function ClientPortal() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showBookingForm, setShowBookingForm] = useState(false);
 
-  // Mock client user ID - in real implementation this would come from authentication
-  const clientUserId = "mock-client-user-id";
+  // Demo client user ID - in a real implementation this would come from authentication
+  const clientUserId = "demo-client-user-id";
 
   const { data: clientBookings, isLoading } = useQuery({
     queryKey: ["client-bookings", clientUserId],
@@ -26,10 +26,12 @@ export default function ClientPortal() {
       const { data, error } = await supabase
         .from("client_bookings")
         .select("*")
-        .eq("client_user_id", clientUserId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching client bookings:", error);
+        return [];
+      }
       return data;
     },
   });
@@ -39,22 +41,14 @@ export default function ClientPortal() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_bookings")
-        .select(`
-          *,
-          trips:trip_id (
-            id,
-            status,
-            date,
-            time,
-            pickup_location,
-            dropoff_location
-          )
-        `)
-        .eq("client_user_id", clientUserId)
+        .select("*")
         .in("status", ["confirmed", "in_progress"])
         .order("pickup_date", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching active trips:", error);
+        return [];
+      }
       return data;
     },
   });
@@ -68,9 +62,15 @@ export default function ClientPortal() {
       <div className="bg-white dark:bg-gray-800 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Client Portal</h1>
-              <p className="text-gray-600 dark:text-gray-300">Manage your bookings and trips</p>
+            <div className="flex items-center gap-4">
+              <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Client Portal</h1>
+                <p className="text-gray-600 dark:text-gray-300">Manage your bookings and trips</p>
+              </div>
             </div>
             <Button onClick={() => setShowBookingForm(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
