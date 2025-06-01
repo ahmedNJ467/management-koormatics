@@ -40,25 +40,27 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/client-portal" element={<ClientPortal />} />
-            <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-            <Route path="/vehicles" element={<Layout><Vehicles /></Layout>} />
-            <Route path="/drivers" element={<Layout><Drivers /></Layout>} />
-            <Route path="/trips" element={<Layout><Trips /></Layout>} />
-            <Route path="/clients" element={<Layout><Clients /></Layout>} />
-            <Route path="/maintenance" element={<Layout><Maintenance /></Layout>} />
-            <Route path="/fuel-logs" element={<Layout><FuelLogs /></Layout>} />
-            <Route path="/reports" element={<Layout><Reports /></Layout>} />
-            <Route path="/settings" element={<Layout><Settings /></Layout>} />
-            <Route path="/quotations" element={<Layout><Quotations /></Layout>} />
-            <Route path="/invoices" element={<Layout><Invoices /></Layout>} />
-            <Route path="/spare-parts" element={<Layout><SpareParts /></Layout>} />
-            <Route path="/contracts" element={<Layout><Contracts /></Layout>} />
-            <Route path="/alerts" element={<Layout><Alerts /></Layout>} />
-            <Route path="/trip-analytics" element={<Layout><TripAnalytics /></Layout>} />
-            <Route path="/cost-analytics" element={<Layout><CostAnalytics /></Layout>} />
-            <Route path="/combined-analytics" element={<Layout><CombinedAnalytics /></Layout>} />
-            <Route path="/dispatch" element={<Layout><Dispatch /></Layout>} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/*" element={<Layout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="vehicles" element={<Vehicles />} />
+              <Route path="drivers" element={<Drivers />} />
+              <Route path="trips" element={<Trips />} />
+              <Route path="clients" element={<Clients />} />
+              <Route path="maintenance" element={<Maintenance />} />
+              <Route path="fuel-logs" element={<FuelLogs />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="quotations" element={<Quotations />} />
+              <Route path="invoices" element={<Invoices />} />
+              <Route path="spare-parts" element={<SpareParts />} />
+              <Route path="contracts" element={<Contracts />} />
+              <Route path="alerts" element={<Alerts />} />
+              <Route path="trip-analytics" element={<TripAnalytics />} />
+              <Route path="cost-analytics" element={<CostAnalytics />} />
+              <Route path="combined-analytics" element={<CombinedAnalytics />} />
+              <Route path="dispatch" element={<Dispatch />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
