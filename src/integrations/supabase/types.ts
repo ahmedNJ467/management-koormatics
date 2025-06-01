@@ -81,6 +81,91 @@ export type Database = {
         }
         Relationships: []
       }
+      client_bookings: {
+        Row: {
+          client_id: string | null
+          client_user_id: string | null
+          confirmed_cost: number | null
+          created_at: string | null
+          dropoff_location: string
+          estimated_cost: number | null
+          id: string
+          passengers: number | null
+          pickup_date: string
+          pickup_location: string
+          pickup_time: string | null
+          return_date: string | null
+          return_time: string | null
+          service_type: string
+          special_requests: string | null
+          status: string | null
+          trip_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          client_user_id?: string | null
+          confirmed_cost?: number | null
+          created_at?: string | null
+          dropoff_location: string
+          estimated_cost?: number | null
+          id?: string
+          passengers?: number | null
+          pickup_date: string
+          pickup_location: string
+          pickup_time?: string | null
+          return_date?: string | null
+          return_time?: string | null
+          service_type: string
+          special_requests?: string | null
+          status?: string | null
+          trip_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          client_user_id?: string | null
+          confirmed_cost?: number | null
+          created_at?: string | null
+          dropoff_location?: string
+          estimated_cost?: number | null
+          id?: string
+          passengers?: number | null
+          pickup_date?: string
+          pickup_location?: string
+          pickup_time?: string | null
+          return_date?: string | null
+          return_time?: string | null
+          service_type?: string
+          special_requests?: string | null
+          status?: string | null
+          trip_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_bookings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_bookings_client_user_id_fkey"
+            columns: ["client_user_id"]
+            isOneToOne: false
+            referencedRelation: "client_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_bookings_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           client_id: string | null
@@ -168,6 +253,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "client_members_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_users: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          last_login: string | null
+          name: string
+          password_hash: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          last_login?: string | null
+          name: string
+          password_hash: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          last_login?: string | null
+          name?: string
+          password_hash?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_users_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
@@ -645,6 +777,63 @@ export type Database = {
           },
         ]
       }
+      trip_feedback: {
+        Row: {
+          client_user_id: string | null
+          comments: string | null
+          created_at: string | null
+          driver_rating: number | null
+          id: string
+          punctuality_rating: number | null
+          rating: number | null
+          trip_id: string | null
+          updated_at: string | null
+          vehicle_rating: number | null
+          would_recommend: boolean | null
+        }
+        Insert: {
+          client_user_id?: string | null
+          comments?: string | null
+          created_at?: string | null
+          driver_rating?: number | null
+          id?: string
+          punctuality_rating?: number | null
+          rating?: number | null
+          trip_id?: string | null
+          updated_at?: string | null
+          vehicle_rating?: number | null
+          would_recommend?: boolean | null
+        }
+        Update: {
+          client_user_id?: string | null
+          comments?: string | null
+          created_at?: string | null
+          driver_rating?: number | null
+          id?: string
+          punctuality_rating?: number | null
+          rating?: number | null
+          trip_id?: string | null
+          updated_at?: string | null
+          vehicle_rating?: number | null
+          would_recommend?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_feedback_client_user_id_fkey"
+            columns: ["client_user_id"]
+            isOneToOne: false
+            referencedRelation: "client_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_feedback_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_messages: {
         Row: {
           attachment_url: string | null
@@ -685,6 +874,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "trip_messages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_tracking: {
+        Row: {
+          created_at: string | null
+          estimated_arrival: string | null
+          id: string
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          notes: string | null
+          status: string
+          trip_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          estimated_arrival?: string | null
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          status: string
+          trip_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          estimated_arrival?: string | null
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          status?: string
+          trip_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_tracking_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
