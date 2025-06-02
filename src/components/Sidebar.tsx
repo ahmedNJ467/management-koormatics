@@ -96,7 +96,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed top-16 h-[calc(100vh-4rem)] w-64 border-r bg-background transition-transform duration-300 ease-in-out z-30 overflow-y-auto",
+        "fixed top-16 h-[calc(100vh-4rem)] w-64 border-r bg-background transition-transform duration-300 ease-in-out z-30 overflow-y-auto shadow-lg",
         !open && "-translate-x-full"
       )}
     >
@@ -110,8 +110,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <button
                 onClick={() => toggleCategory(group.category)}
                 className={cn(
-                  "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-                  hasActiveItem ? "text-secondary" : "text-foreground hover:bg-muted"
+                  "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-muted",
+                  hasActiveItem ? "text-primary bg-primary/10" : "text-foreground"
                 )}
               >
                 <span>{group.category}</span>
@@ -123,7 +123,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               </button>
               
               {isExpanded && (
-                <div className="ml-2 pl-2 border-l border-muted mt-1">
+                <div className="ml-2 pl-2 border-l border-muted mt-1 space-y-1">
                   {group.items.map((item) => {
                     const isActive = location.pathname === item.href;
                     return (
@@ -132,13 +132,13 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                         to={item.href}
                         onClick={handleLinkClick}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors my-1",
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive
-                            ? "bg-secondary/10 text-secondary font-medium"
+                            ? "bg-primary text-primary-foreground font-medium shadow-sm"
                             : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                         )}
                       >
-                        <item.icon className="h-5 w-5" />
+                        <item.icon className="h-4 w-4" />
                         {item.name}
                       </Link>
                     );

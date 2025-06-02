@@ -18,6 +18,18 @@ export default function Layout() {
     }
   }, [isMobile]);
 
+  // Listen for sidebar toggle events from Dashboard
+  useEffect(() => {
+    const handleToggleSidebar = () => {
+      setSidebarOpen(!sidebarOpen);
+    };
+
+    window.addEventListener('toggleSidebar', handleToggleSidebar);
+    return () => {
+      window.removeEventListener('toggleSidebar', handleToggleSidebar);
+    };
+  }, [sidebarOpen]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />

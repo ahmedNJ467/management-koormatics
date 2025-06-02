@@ -2,22 +2,23 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Overview } from "@/components/dashboard/Overview";
 import { EnhancedOverview } from "@/components/dashboard/EnhancedOverview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
-import { ImprovedMessageCenter } from "@/components/dashboard/ImprovedMessageCenter";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityItemProps } from "@/types/dashboard";
-import { BarChart, MessageCircle } from "lucide-react";
+import { BarChart, MessageCircle, Menu, X } from "lucide-react";
 import { getActivities, logActivity } from "@/utils/activity-logger";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
   const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     // Initial load of activities
@@ -87,12 +88,28 @@ export default function Dashboard() {
     };
   }, [queryClient]);
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    // Send event to parent layout to toggle sidebar
+    window.dispatchEvent(new CustomEvent('toggleSidebar'));
+  };
+
   return (
     <div className="flex flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Fleet Dashboard
-        </h1>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            className="p-2"
+          >
+            {sidebarCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
+          </Button>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Fleet Dashboard
+          </h1>
+        </div>
       </div>
       
       {/* Stats Section */}
@@ -139,21 +156,18 @@ export default function Dashboard() {
                 Activity & Communication
               </CardTitle>
               <CardDescription className="text-base">
-                Recent activities, alerts, and messages
+                Recent activities and alerts
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800 mb-6">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800 mb-6">
                 <TabsTrigger value="activity" className="text-sm">
                   Activity
                 </TabsTrigger>
                 <TabsTrigger value="alerts" className="text-sm">
                   Alerts
-                </TabsTrigger>
-                <TabsTrigger value="messages" className="text-sm">
-                  Messages
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="activity" className="mt-0">
@@ -164,11 +178,6 @@ export default function Dashboard() {
               <TabsContent value="alerts" className="mt-0">
                 <div className="min-h-[400px]">
                   <ImprovedAlertsTab />
-                </div>
-              </TabsContent>
-              <TabsContent value="messages" className="mt-0">
-                <div className="min-h-[400px] -mx-6 -mb-6">
-                  <ImprovedMessageCenter />
                 </div>
               </TabsContent>
             </Tabs>
