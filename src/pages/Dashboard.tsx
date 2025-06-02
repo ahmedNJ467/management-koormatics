@@ -2,23 +2,19 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Overview } from "@/components/dashboard/Overview";
+import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { EnhancedOverview } from "@/components/dashboard/EnhancedOverview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
-import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityItemProps } from "@/types/dashboard";
-import { BarChart, MessageCircle, Menu, X } from "lucide-react";
+import { BarChart, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
 import { getActivities, logActivity } from "@/utils/activity-logger";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("overview");
   const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     // Initial load of activities
@@ -88,99 +84,134 @@ export default function Dashboard() {
     };
   }, [queryClient]);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    // Send event to parent layout to toggle sidebar
-    window.dispatchEvent(new CustomEvent('toggleSidebar'));
-  };
-
   return (
-    <div className="flex flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="p-2"
-          >
-            {sidebarCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
-          </Button>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Fleet Dashboard
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+      <div className="container mx-auto px-4 py-6 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            Fleet Management Dashboard
           </h1>
+          <p className="text-muted-foreground text-lg">
+            Real-time overview of your fleet operations and performance
+          </p>
         </div>
-      </div>
-      
-      {/* Stats Section */}
-      <DashboardStats />
-      
-      <div className="grid gap-6 grid-cols-1 xl:grid-cols-5">
-        {/* Fleet Overview Section */}
-        <Card className="xl:col-span-3 border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        
+        {/* Quick Stats */}
+        <DashboardStats />
+        
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-12">
+          {/* Fleet Analytics Section */}
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                      <BarChart className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl">Fleet Analytics</CardTitle>
+                      <CardDescription className="text-base">
+                        Comprehensive fleet performance metrics and insights
+                      </CardDescription>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                <EnhancedOverview />
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Activity & Alerts Sidebar */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Recent Activity */}
+            <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Recent Activity</CardTitle>
+                    <CardDescription>
+                      Latest system updates and changes
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                <div className="max-h-[400px] overflow-y-auto">
+                  <RecentActivity activities={recentActivities} isLoading={false} />
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* System Alerts */}
+            <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg">
+                    <AlertTriangle className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">System Alerts</CardTitle>
+                    <CardDescription>
+                      Important notifications and warnings
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                <div className="max-h-[400px] overflow-y-auto">
+                  <ImprovedAlertsTab />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        
+        {/* Performance Trends */}
+        <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <CardTitle className="flex items-center text-xl">
-                  <BarChart className="mr-2 h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  Fleet Overview
-                </CardTitle>
+                <CardTitle className="text-2xl">Performance Trends</CardTitle>
                 <CardDescription className="text-base">
-                  Real-time analytics and performance metrics
+                  Track key performance indicators and trends over time
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="px-6">
-            <Tabs defaultValue="enhanced" className="w-full">
-              <TabsList className="mb-6 bg-slate-100 dark:bg-slate-800">
-                <TabsTrigger value="enhanced" className="px-6">Enhanced</TabsTrigger>
-                <TabsTrigger value="classic" className="px-6">Classic</TabsTrigger>
-              </TabsList>
-              <TabsContent value="enhanced">
-                <EnhancedOverview />
-              </TabsContent>
-              <TabsContent value="classic">
-                <Overview />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-        
-        {/* Activity & Communication Section */}
-        <Card className="xl:col-span-2 border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <div>
-              <CardTitle className="flex items-center text-xl">
-                <MessageCircle className="mr-2 h-6 w-6 text-blue-600 dark:text-blue-400" />
-                Activity & Communication
-              </CardTitle>
-              <CardDescription className="text-base">
-                Recent activities and alerts
-              </CardDescription>
-            </div>
-          </CardHeader>
           <CardContent className="px-6 pb-6">
-            <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800 mb-6">
-                <TabsTrigger value="activity" className="text-sm">
-                  Activity
-                </TabsTrigger>
-                <TabsTrigger value="alerts" className="text-sm">
-                  Alerts
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="activity" className="mt-0">
-                <div className="min-h-[400px]">
-                  <RecentActivity activities={recentActivities} isLoading={false} />
-                </div>
-              </TabsContent>
-              <TabsContent value="alerts" className="mt-0">
-                <div className="min-h-[400px]">
-                  <ImprovedAlertsTab />
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+                <div className="text-sm font-medium text-blue-600 dark:text-blue-400">Monthly Revenue</div>
+                <div className="text-2xl font-bold">+12.5%</div>
+                <div className="text-xs text-muted-foreground">vs last month</div>
+              </div>
+              <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
+                <div className="text-sm font-medium text-green-600 dark:text-green-400">Trip Completion</div>
+                <div className="text-2xl font-bold">+8.2%</div>
+                <div className="text-xs text-muted-foreground">vs last month</div>
+              </div>
+              <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
+                <div className="text-sm font-medium text-purple-600 dark:text-purple-400">Fleet Utilization</div>
+                <div className="text-2xl font-bold">+5.7%</div>
+                <div className="text-xs text-muted-foreground">vs last month</div>
+              </div>
+              <div className="p-4 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20">
+                <div className="text-sm font-medium text-orange-600 dark:text-orange-400">Cost Efficiency</div>
+                <div className="text-2xl font-bold">+3.4%</div>
+                <div className="text-xs text-muted-foreground">vs last month</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

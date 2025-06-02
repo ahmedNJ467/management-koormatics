@@ -3,75 +3,79 @@ import { UserOptions } from "jspdf-autotable";
 import { pdfColors, pdfFonts } from "./pdfStyles";
 import { formatClientCell, formatStatusCell } from "./pdfCellFormatters";
 
-// Generate the table configuration for autoTable
+// Generate enhanced table configuration for professional PDFs
 export function getTableConfig(data: any[], filename: string, startY: number): UserOptions {
   return {
     startY,
     styles: {
       fontSize: pdfFonts.bodySize,
-      cellPadding: { top: 0.18, right: 0.15, bottom: 0.18, left: 0.15 },
-      lineWidth: 0, // Remove grid lines
+      cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
+      lineWidth: 0.01,
+      lineColor: pdfColors.light as [number, number, number],
       textColor: pdfColors.text,
-      minCellHeight: 0.4,
-      font: pdfFonts.bodyFont
+      minCellHeight: 0.45,
+      font: pdfFonts.bodyFont,
+      valign: 'middle'
     },
     headStyles: {
       fillColor: pdfColors.primary as [number, number, number],
       textColor: [255, 255, 255] as [number, number, number],
       fontStyle: 'bold',
-      halign: 'left', // Align header text to left to match body cells
-      cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
+      halign: 'left',
+      cellPadding: { top: 0.25, right: 0.15, bottom: 0.25, left: 0.15 },
+      fontSize: pdfFonts.bodySize + 1,
     },
     alternateRowStyles: {
       fillColor: pdfColors.rowAlt as [number, number, number],
     },
-    margin: { top: 2.0, left: 0.6, right: 0.6, bottom: 0.8 }, // Increased side margins
-    tableWidth: 'auto',
     columnStyles: {
-      0: { // Date column (index 0)
-        cellWidth: 0.9,
-      },
-      1: { // Client column (index 1)
-        cellWidth: 1.8, // Reduced width
-        cellPadding: { top: 0.2, right: 0.15, bottom: 0.2, left: 0.15 },
-        // Don't set fillColor here, we'll handle it in didDrawCell
-        fontStyle: 'normal',
-      },
-      2: { // Service Type column (index 2)
-        cellWidth: 1.6, // Reduced width
-        cellPadding: { top: 0.2, right: 0.1, bottom: 0.2, left: 0.1 },
-      },
-      3: { // Pick-up column (index 3)
-        cellWidth: 1.3, // Reduced width
-      },
-      4: { // Drop-off column (index 4)
-        cellWidth: 1.3, // Reduced width
-      },
-      5: { // Vehicle column (index 5)
-        cellWidth: 1.3, // Reduced width
-      },
-      6: { // Driver column (index 6)
-        cellWidth: 1.2, // Reduced width
-      },
-      7: { // Status column (index 7)
-        cellWidth: 0.9, // Reduced width
-        fontStyle: 'bold'
-      },
-      // Status column styling for other report types
+      // Enhanced column styling based on report type
+      ...(filename === 'trips-report' ? {
+        0: { cellWidth: 0.8 }, // Date
+        1: { cellWidth: 2.2 }, // Client (wider for organization info)
+        2: { cellWidth: 1.4 }, // Service Type
+        3: { cellWidth: 1.6 }, // Pickup
+        4: { cellWidth: 1.6 }, // Dropoff
+        5: { cellWidth: 1.2 }, // Vehicle
+        6: { cellWidth: 1.0 }, // Driver
+        7: { cellWidth: 1.0, fontStyle: 'bold' }, // Status
+      } : {}),
       ...(filename === 'vehicles-report' ? {
-        5: { fontStyle: 'bold' }
+        0: { cellWidth: 1.8 }, // Make & Model
+        1: { cellWidth: 1.2 }, // Registration
+        2: { cellWidth: 1.0 }, // Type
+        3: { cellWidth: 0.8 }, // Year
+        4: { cellWidth: 1.0, fontStyle: 'bold' }, // Status
+        5: { cellWidth: 1.2 }, // Insurance Expiry
+      } : {}),
+      ...(filename === 'fuel-report' ? {
+        0: { cellWidth: 0.8 }, // Date
+        1: { cellWidth: 1.5 }, // Vehicle
+        2: { cellWidth: 1.0 }, // Fuel Type
+        3: { cellWidth: 0.8, halign: 'right' }, // Volume
+        4: { cellWidth: 1.0, halign: 'right' }, // Cost
+        5: { cellWidth: 1.0, halign: 'right' }, // Mileage
+        6: { cellWidth: 1.0, halign: 'right' }, // Efficiency
       } : {}),
       ...(filename === 'maintenance-report' ? {
-        3: { fontStyle: 'bold' }
-      } : {})
+        0: { cellWidth: 0.8 }, // Date
+        1: { cellWidth: 1.5 }, // Vehicle
+        2: { cellWidth: 2.5 }, // Description
+        3: { cellWidth: 1.0, fontStyle: 'bold' }, // Status
+        4: { cellWidth: 1.0, halign: 'right' }, // Cost
+        5: { cellWidth: 1.5 }, // Service Provider
+      } : {}),
     },
+    margin: { top: 3.2, left: 0.5, right: 0.5, bottom: 1.0 },
+    tableWidth: 'auto',
+    theme: 'grid',
     didDrawCell: (data) => {
-      // Apply special formatting for client column with passengers
-      if (data.section === 'body' && data.column.index === 1) {
+      // Apply special formatting for specific cells
+      if (data.section === 'body' && data.column.index === 1 && filename === 'trips-report') {
         formatClientCell(data.doc, data, data.cell);
       }
       
-      // Color code status values based on their values
+      // Apply status color coding
       if (data.section === 'body') {
         formatStatusCell(data.doc, data, filename);
       }
@@ -82,5 +86,5 @@ export function getTableConfig(data: any[], filename: string, startY: number): U
   };
 }
 
-// Import the footer function to use in the table config
+// Import the footer function
 import { drawPdfFooter } from "./pdfFooter";

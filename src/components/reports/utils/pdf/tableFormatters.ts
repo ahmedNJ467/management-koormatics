@@ -1,125 +1,160 @@
 
 import { format } from "date-fns";
 
-// Generate table data for different report types
+// Generate table data for different report types with enhanced formatting
 export function generateTableData(data: any[], reportType: string) {
   let tableHeaders: string[] = [];
   let tableData: any[] = [];
 
-  // Format date strings for different reports
+  // Format date strings consistently across all reports
   const formatDateString = (dateStr: string) => {
     try {
       const dateObj = new Date(dateStr);
-      return format(dateObj, 'MM/dd/yyyy'); // More compact date format
+      return format(dateObj, 'MM/dd/yyyy');
     } catch (error) {
-      return dateStr;
+      return dateStr || 'N/A';
     }
+  };
+
+  // Format currency values consistently
+  const formatCurrency = (amount: any) => {
+    const num = Number(amount || 0);
+    return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Format status with proper capitalization
+  const formatStatus = (status: string) => {
+    if (!status) return 'Unknown';
+    return status.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
   };
 
   switch (reportType) {
     case 'trips-report':
-      tableHeaders = ['Date', 'Client', 'Service Type', 'Pick-up', 'Drop-off', 'Vehicle', 'Driver', 'Status'];
+      tableHeaders = ['Date', 'Client', 'Service Type', 'Pick-up Location', 'Drop-off Location', 'Vehicle', 'Driver', 'Status'];
       tableData = data.map(trip => {
-        // Format client information, properly handling organizations with passengers
+        // Enhanced client formatting for organizations with passengers
         let clientDisplay = trip.clients?.name || 'Unknown Client';
         
-        // Special formatting for organizations with passengers
         if (trip.clients?.type === 'organization') {
-          // We're removing the organization label and passenger count
-          // Just add the passenger names directly if they exist
+          clientDisplay = `${clientDisplay} (Organization)`;
           if (trip.passengers && trip.passengers.length > 0) {
-            // Add each passenger name on a new line
-            trip.passengers.forEach((passenger: string) => {
-              clientDisplay += `\n${passenger}`;
+            clientDisplay += `\nPassengers: ${trip.passengers.length}`;
+            trip.passengers.forEach((passenger: string, index: number) => {
+              if (index < 3) { // Limit to first 3 passengers to avoid overcrowding
+                clientDisplay += `\n${passenger}`;
+              }
             });
+            if (trip.passengers.length > 3) {
+              clientDisplay += `\n... and ${trip.passengers.length - 3} more`;
+            }
           }
         }
 
-        // Format date for better readability with more compact format
-        const formattedDate = formatDateString(trip.date);
-        
-        // Compact the service type display to reduce space between columns
-        const serviceType = (trip.display_type || trip.service_type || 'N/A');
-        
-        // Format other fields for consistency and compactness
-        const pickupLocation = trip.pickup_location || 'N/A';
-        const dropoffLocation = trip.dropoff_location || 'N/A';
-        
-        // Make vehicle name more compact
-        const vehicle = trip.vehicles ? 
-          (trip.vehicles.make && trip.vehicles.model ? 
-           `${trip.vehicles.make.substring(0, 8)} ${trip.vehicles.model.substring(0, 5)}` : 
-           (trip.vehicles.make || trip.vehicles.model || 'N/A')).trim() : 
-          'N/A';
-          
-        const driver = trip.drivers?.name || 'Not Assigned';
-        const status = trip.status || 'Scheduled';
-
         return [
-          formattedDate,
+          formatDateString(trip.date),
           clientDisplay,
-          serviceType,
-          pickupLocation,
-          dropoffLocation,
-          vehicle,
-          driver,
-          status
+          trip.display_type || trip.service_type || 'Standard Service',
+          trip.pickup_location || 'Not specified',
+          trip.dropoff_location || 'Not specified',
+          trip.vehicles ? `${trip.vehicles.make || ''} ${trip.vehicles.model || ''}`.trim() || 'Unassigned' : 'Unassigned',
+          trip.drivers?.name || 'Not assigned',
+          formatStatus(trip.status || 'scheduled')
         ];
       });
       break;
       
     case 'vehicles-report':
-      tableHeaders = ['Make', 'Model', 'Registration', 'Type', 'Status', 'Insurance Expiry', 'Notes'];
+      tableHeaders = ['Make & Model', 'Registration', 'Type', 'Year', 'Status', 'Insurance Expiry'];
       tableData = data.map(vehicle => [
-        vehicle.make || 'N/A',
-        vehicle.model || 'N/A',
-        vehicle.registration || 'N/A',
-        vehicle.type || 'N/A',
-        vehicle.status || 'N/A',
-        formatDateString(vehicle.insurance_expiry) || 'N/A',
-        vehicle.notes || 'N/A'
+        `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Unknown Vehicle',
+        vehicle.registration || 'Not registered',
+        vehicle.type || 'Unknown',
+        vehicle.year ? vehicle.year.toString() : 'Unknown',
+        formatStatus(vehicle.status || 'unknown'),
+        vehicle.insurance_expiry ? formatDateString(vehicle.insurance_expiry) : 'Not set'
       ]);
       break;
 
     case 'drivers-report':
-      tableHeaders = ['Name', 'Contact', 'License Number', 'License Expiry', 'Status'];
+      tableHeaders = ['Name', 'Contact Information', 'License Number', 'License Type', 'Expiry Date', 'Status'];
       tableData = data.map(driver => [
-        driver.name || 'N/A',
-        driver.contact || 'N/A',
-        driver.license_number || 'N/A',
-        formatDateString(driver.license_expiry) || 'N/A',
-        driver.status || 'N/A'
+        driver.name || 'Unknown Driver',
+        driver.contact || driver.phone || driver.email || 'No contact info',
+        driver.license_number || 'Not provided',
+        driver.license_type || 'Standard',
+        driver.license_expiry ? formatDateString(driver.license_expiry) : 'Not set',
+        formatStatus(driver.status || 'unknown')
       ]);
       break;
 
     case 'fuel-report':
-      tableHeaders = ['Date', 'Vehicle', 'Fuel Type', 'Volume', 'Cost', 'Mileage', 'Notes'];
-      tableData = data.map(fuelLog => [
-        formatDateString(fuelLog.date),
-        `${fuelLog.vehicles?.make || ''} ${fuelLog.vehicles?.model || ''}`.trim() || 'N/A',
-        fuelLog.fuel_type || 'N/A',
-        fuelLog.volume || 'N/A',
-        `$${Number(fuelLog.cost || 0).toFixed(2)}`,
-        fuelLog.mileage || 'N/A',
-        fuelLog.notes || 'N/A'
-      ]);
+      tableHeaders = ['Date', 'Vehicle', 'Fuel Type', 'Volume (L)', 'Cost', 'Mileage (km)', 'Efficiency'];
+      tableData = data.map(fuelLog => {
+        const volume = Number(fuelLog.volume || 0);
+        const cost = Number(fuelLog.cost || 0);
+        const efficiency = volume > 0 ? `${(cost / volume).toFixed(2)} $/L` : 'N/A';
+        
+        return [
+          formatDateString(fuelLog.date),
+          fuelLog.vehicles ? `${fuelLog.vehicles.make || ''} ${fuelLog.vehicles.model || ''}`.trim() || 'Unknown' : 'Unknown',
+          fuelLog.fuel_type || 'Regular',
+          volume.toFixed(1),
+          formatCurrency(cost),
+          fuelLog.mileage ? fuelLog.mileage.toLocaleString() : 'Not recorded',
+          efficiency
+        ];
+      });
       break;
 
     case 'maintenance-report':
-      tableHeaders = ['Date', 'Vehicle', 'Description', 'Status', 'Cost', 'Service Provider', 'Next Scheduled'];
+      tableHeaders = ['Date', 'Vehicle', 'Service Description', 'Status', 'Cost', 'Service Provider'];
       tableData = data.map(maintenance => [
         formatDateString(maintenance.date),
-        `${maintenance.vehicles?.make || ''} ${maintenance.vehicles?.model || ''}`.trim() || 'N/A',
-        maintenance.description || 'N/A',
-        maintenance.status || 'N/A',
-        `$${Number(maintenance.cost || 0).toFixed(2)}`,
-        maintenance.service_provider || 'N/A',
-        formatDateString(maintenance.next_scheduled) || 'N/A'
+        maintenance.vehicles ? `${maintenance.vehicles.make || ''} ${maintenance.vehicles.model || ''}`.trim() || 'Unknown' : 'Unknown',
+        maintenance.description || 'General maintenance',
+        formatStatus(maintenance.status || 'scheduled'),
+        formatCurrency(maintenance.cost),
+        maintenance.service_provider || 'Internal'
       ]);
+      break;
+
+    case 'financial-report':
+      tableHeaders = ['Period', 'Revenue', 'Fuel Costs', 'Maintenance Costs', 'Net Profit', 'Profit Margin'];
+      tableData = data.map(financial => {
+        const revenue = Number(financial.revenue || 0);
+        const costs = Number(financial.costs || 0);
+        const profit = revenue - costs;
+        const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) + '%' : '0%';
+        
+        return [
+          financial.period || 'Unknown',
+          formatCurrency(revenue),
+          formatCurrency(financial.fuelCosts || 0),
+          formatCurrency(financial.maintenanceCosts || 0),
+          formatCurrency(profit),
+          margin
+        ];
+      });
       break;
 
     default:
       console.warn(`Unknown report type: ${reportType}`);
+      // Fallback for unknown report types
+      if (data.length > 0) {
+        const firstItem = data[0];
+        tableHeaders = Object.keys(firstItem).map(key => 
+          key.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')
+        );
+        tableData = data.map(item => 
+          Object.values(item).map(value => 
+            value !== null && value !== undefined ? String(value) : 'N/A'
+          )
+        );
+      }
       break;
   }
 
