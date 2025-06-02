@@ -26,7 +26,6 @@ import CostAnalytics from "./pages/CostAnalytics";
 import CombinedAnalytics from "./pages/CombinedAnalytics";
 import Dispatch from "./pages/Dispatch";
 import NotFound from "./pages/NotFound";
-import ClientPortal from "./pages/ClientPortal";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +38,6 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/client-portal" element={<ClientPortal />} />
             <Route path="/*" element={<Layout />}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="vehicles" element={<Vehicles />} />
