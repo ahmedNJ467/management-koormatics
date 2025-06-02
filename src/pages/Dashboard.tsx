@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Overview } from "@/components/dashboard/Overview";
 import { EnhancedOverview } from "@/components/dashboard/EnhancedOverview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { AlertsTab } from "@/components/dashboard/AlertsTab";
-import { MessageCenter } from "@/components/communication/MessageCenter";
+import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
+import { ImprovedMessageCenter } from "@/components/dashboard/ImprovedMessageCenter";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,33 +88,37 @@ export default function Dashboard() {
   }, [queryClient]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-bold mb-2">Fleet Dashboard</h1>
+    <div className="flex flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Fleet Dashboard
+        </h1>
+      </div>
       
       {/* Stats Section */}
       <DashboardStats />
       
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-5">
         {/* Fleet Overview Section */}
-        <Card className="lg:col-span-2 bg-white dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
-          <CardHeader>
+        <Card className="xl:col-span-3 border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center">
-                  <BarChart className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <CardTitle className="flex items-center text-xl">
+                  <BarChart className="mr-2 h-6 w-6 text-blue-600 dark:text-blue-400" />
                   Fleet Overview
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-base">
                   Real-time analytics and performance metrics
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pl-2">
+          <CardContent className="px-6">
             <Tabs defaultValue="enhanced" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="enhanced">Enhanced</TabsTrigger>
-                <TabsTrigger value="classic">Classic</TabsTrigger>
+              <TabsList className="mb-6 bg-slate-100 dark:bg-slate-800">
+                <TabsTrigger value="enhanced" className="px-6">Enhanced</TabsTrigger>
+                <TabsTrigger value="classic" className="px-6">Classic</TabsTrigger>
               </TabsList>
               <TabsContent value="enhanced">
                 <EnhancedOverview />
@@ -127,44 +131,44 @@ export default function Dashboard() {
         </Card>
         
         {/* Activity & Communication Section */}
-        <Card className="lg:col-span-1 bg-white dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
+        <Card className="xl:col-span-2 border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="pb-4">
             <div>
-              <CardTitle className="flex items-center">
-                <MessageCircle className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <CardTitle className="flex items-center text-xl">
+                <MessageCircle className="mr-2 h-6 w-6 text-blue-600 dark:text-blue-400" />
                 Activity & Communication
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base">
                 Recent activities, alerts, and messages
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <Tabs defaultValue="activity" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800 mb-4">
-                <TabsTrigger value="activity" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs">
+              <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800 mb-6">
+                <TabsTrigger value="activity" className="text-sm">
                   Activity
                 </TabsTrigger>
-                <TabsTrigger value="alerts" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs">
+                <TabsTrigger value="alerts" className="text-sm">
                   Alerts
                 </TabsTrigger>
-                <TabsTrigger value="messages" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs">
+                <TabsTrigger value="messages" className="text-sm">
                   Messages
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="activity" className="mt-0 space-y-3">
-                <div className="min-h-[350px]">
+              <TabsContent value="activity" className="mt-0">
+                <div className="min-h-[400px]">
                   <RecentActivity activities={recentActivities} isLoading={false} />
                 </div>
               </TabsContent>
-              <TabsContent value="alerts" className="mt-0 space-y-3">
-                <div className="min-h-[350px]">
-                  <AlertsTab />
+              <TabsContent value="alerts" className="mt-0">
+                <div className="min-h-[400px]">
+                  <ImprovedAlertsTab />
                 </div>
               </TabsContent>
-              <TabsContent value="messages" className="mt-0 space-y-3">
-                <div className="min-h-[350px] -mx-6 -mb-6">
-                  <MessageCenter />
+              <TabsContent value="messages" className="mt-0">
+                <div className="min-h-[400px] -mx-6 -mb-6">
+                  <ImprovedMessageCenter />
                 </div>
               </TabsContent>
             </Tabs>
