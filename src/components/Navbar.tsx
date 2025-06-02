@@ -16,7 +16,6 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           variant="ghost"
           size="icon"
           onClick={onMenuClick}
-          className="md:hidden"
         >
           <Menu className="h-5 w-5" />
         </Button>
