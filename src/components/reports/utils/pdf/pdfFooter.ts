@@ -10,12 +10,12 @@ export function drawPdfFooter(doc: jsPDF): void {
   const pageHeight = pageSize.height;
   
   // Add footer with subtle background
-  doc.setFillColor(...pdfColors.light);
+  doc.setFillColor(pdfColors.light[0], pdfColors.light[1], pdfColors.light[2]);
   doc.rect(0, pageHeight - 0.5, pageSize.width, 0.5, 'F');
   
   // Add page number in footer
   doc.setFontSize(8);
-  doc.setTextColor(...pdfColors.text);
+  doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
   
   const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
   doc.text(
@@ -34,7 +34,7 @@ export function drawPdfFooter(doc: jsPDF): void {
   );
   
   // Add company info
-  doc.setTextColor(...pdfColors.primary);
+  doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
   doc.text(
     pdfConfig.companyName,
     pageMargin,
