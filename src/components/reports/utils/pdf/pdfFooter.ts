@@ -15,7 +15,7 @@ export function drawPdfFooter(doc: jsPDF): void {
   
   // Add page number in footer
   doc.setFontSize(8);
-  doc.setTextColor(...pdfColors.dark);
+  doc.setTextColor(...pdfColors.text);
   
   const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
   doc.text(
