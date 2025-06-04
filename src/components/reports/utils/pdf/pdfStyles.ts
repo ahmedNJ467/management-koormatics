@@ -11,23 +11,23 @@ export const pdfColors = {
   dark: [52, 73, 94] as Color,          // #34495e - Dark blue-gray
   text: [44, 62, 80] as Color,          // #2c3e50 - Almost black
   headerBg: [52, 152, 219] as Color,    // #3498db - Light blue
-  rowAlt: [245, 246, 250] as Color      // #f5f6fa - Very light blue-gray
+  rowAlt: [248, 249, 250] as Color      // #f8f9fa - Very light gray
 };
 
-// Document configuration
+// Document configuration - optimized for better content visibility
 export const pdfConfig = {
-  pageMargin: 0.5,
+  pageMargin: 0.4,
   logoPath: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', // Transparent 1x1 pixel fallback
   companyName: 'PBG MOVEMENT & SAFETY DEPT.',
-  format: [11, 8.5] as [number, number], // Wider PDF (11 inches width, 8.5 inches height)
+  format: [11.69, 8.27] as [number, number], // A4 landscape (11.69 x 8.27 inches)
   orientation: 'landscape' as const
 };
 
-// Define font sizes and styles
+// Define font sizes and styles - optimized for better readability
 export const pdfFonts = {
-  titleSize: 22,
-  subtitleSize: 18,
-  bodySize: 10,
-  smallSize: 9,
+  titleSize: 20,
+  subtitleSize: 16,
+  bodySize: 9,
+  smallSize: 8,
   bodyFont: 'helvetica'
 };

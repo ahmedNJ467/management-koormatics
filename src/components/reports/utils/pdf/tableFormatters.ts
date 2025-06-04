@@ -30,36 +30,43 @@ export function generateTableData(data: any[], reportType: string) {
     ).join(' ');
   };
 
+  // Truncate text to prevent overflow
+  const truncateText = (text: string, maxLength: number) => {
+    if (!text) return 'N/A';
+    return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+  };
+
   switch (reportType) {
     case 'trips-report':
-      tableHeaders = ['Date', 'Client', 'Service Type', 'Pick-up Location', 'Drop-off Location', 'Vehicle', 'Driver', 'Status'];
+      tableHeaders = ['Date', 'Client', 'Service', 'Pick-up', 'Drop-off', 'Vehicle', 'Driver', 'Status'];
       tableData = data.map(trip => {
         // Enhanced client formatting for organizations with passengers
         let clientDisplay = trip.clients?.name || 'Unknown Client';
         
         if (trip.clients?.type === 'organization') {
-          clientDisplay = `${clientDisplay} (Organization)`;
+          clientDisplay = `${truncateText(clientDisplay, 20)} (Org)`;
           if (trip.passengers && trip.passengers.length > 0) {
             clientDisplay += `\nPassengers: ${trip.passengers.length}`;
-            trip.passengers.forEach((passenger: string, index: number) => {
-              if (index < 3) { // Limit to first 3 passengers to avoid overcrowding
-                clientDisplay += `\n${passenger}`;
-              }
+            // Show only first 2 passengers to prevent overflow
+            trip.passengers.slice(0, 2).forEach((passenger: string) => {
+              clientDisplay += `\n• ${truncateText(passenger, 15)}`;
             });
-            if (trip.passengers.length > 3) {
-              clientDisplay += `\n... and ${trip.passengers.length - 3} more`;
+            if (trip.passengers.length > 2) {
+              clientDisplay += `\n... +${trip.passengers.length - 2} more`;
             }
           }
+        } else {
+          clientDisplay = truncateText(clientDisplay, 25);
         }
 
         return [
           formatDateString(trip.date),
           clientDisplay,
-          trip.display_type || trip.service_type || 'Standard Service',
-          trip.pickup_location || 'Not specified',
-          trip.dropoff_location || 'Not specified',
-          trip.vehicles ? `${trip.vehicles.make || ''} ${trip.vehicles.model || ''}`.trim() || 'Unassigned' : 'Unassigned',
-          trip.drivers?.name || 'Not assigned',
+          truncateText(trip.display_type || trip.service_type || 'Standard', 12),
+          truncateText(trip.pickup_location || 'Not specified', 18),
+          truncateText(trip.dropoff_location || 'Not specified', 18),
+          trip.vehicles ? truncateText(`${trip.vehicles.make || ''} ${trip.vehicles.model || ''}`.trim(), 12) || 'Unassigned' : 'Unassigned',
+          truncateText(trip.drivers?.name || 'Not assigned', 12),
           formatStatus(trip.status || 'scheduled')
         ];
       });
@@ -68,9 +75,9 @@ export function generateTableData(data: any[], reportType: string) {
     case 'vehicles-report':
       tableHeaders = ['Make & Model', 'Registration', 'Type', 'Year', 'Status', 'Insurance Expiry'];
       tableData = data.map(vehicle => [
-        `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Unknown Vehicle',
-        vehicle.registration || 'Not registered',
-        vehicle.type || 'Unknown',
+        truncateText(`${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Unknown Vehicle', 20),
+        truncateText(vehicle.registration || 'Not registered', 15),
+        truncateText(vehicle.type || 'Unknown', 12),
         vehicle.year ? vehicle.year.toString() : 'Unknown',
         formatStatus(vehicle.status || 'unknown'),
         vehicle.insurance_expiry ? formatDateString(vehicle.insurance_expiry) : 'Not set'
@@ -78,19 +85,19 @@ export function generateTableData(data: any[], reportType: string) {
       break;
 
     case 'drivers-report':
-      tableHeaders = ['Name', 'Contact Information', 'License Number', 'License Type', 'Expiry Date', 'Status'];
+      tableHeaders = ['Name', 'Contact', 'License Number', 'License Type', 'Expiry Date', 'Status'];
       tableData = data.map(driver => [
-        driver.name || 'Unknown Driver',
-        driver.contact || driver.phone || driver.email || 'No contact info',
-        driver.license_number || 'Not provided',
-        driver.license_type || 'Standard',
+        truncateText(driver.name || 'Unknown Driver', 20),
+        truncateText(driver.contact || driver.phone || driver.email || 'No contact info', 18),
+        truncateText(driver.license_number || 'Not provided', 15),
+        truncateText(driver.license_type || 'Standard', 12),
         driver.license_expiry ? formatDateString(driver.license_expiry) : 'Not set',
         formatStatus(driver.status || 'unknown')
       ]);
       break;
 
     case 'fuel-report':
-      tableHeaders = ['Date', 'Vehicle', 'Fuel Type', 'Volume (L)', 'Cost', 'Mileage (km)', 'Efficiency'];
+      tableHeaders = ['Date', 'Vehicle', 'Fuel Type', 'Volume (L)', 'Cost', 'Mileage', 'Efficiency'];
       tableData = data.map(fuelLog => {
         const volume = Number(fuelLog.volume || 0);
         const cost = Number(fuelLog.cost || 0);
@@ -98,30 +105,30 @@ export function generateTableData(data: any[], reportType: string) {
         
         return [
           formatDateString(fuelLog.date),
-          fuelLog.vehicles ? `${fuelLog.vehicles.make || ''} ${fuelLog.vehicles.model || ''}`.trim() || 'Unknown' : 'Unknown',
-          fuelLog.fuel_type || 'Regular',
+          fuelLog.vehicles ? truncateText(`${fuelLog.vehicles.make || ''} ${fuelLog.vehicles.model || ''}`.trim(), 15) || 'Unknown' : 'Unknown',
+          truncateText(fuelLog.fuel_type || 'Regular', 10),
           volume.toFixed(1),
           formatCurrency(cost),
-          fuelLog.mileage ? fuelLog.mileage.toLocaleString() : 'Not recorded',
+          fuelLog.mileage ? fuelLog.mileage.toLocaleString() : 'N/A',
           efficiency
         ];
       });
       break;
 
     case 'maintenance-report':
-      tableHeaders = ['Date', 'Vehicle', 'Service Description', 'Status', 'Cost', 'Service Provider'];
+      tableHeaders = ['Date', 'Vehicle', 'Service Description', 'Status', 'Cost', 'Provider'];
       tableData = data.map(maintenance => [
         formatDateString(maintenance.date),
-        maintenance.vehicles ? `${maintenance.vehicles.make || ''} ${maintenance.vehicles.model || ''}`.trim() || 'Unknown' : 'Unknown',
-        maintenance.description || 'General maintenance',
+        maintenance.vehicles ? truncateText(`${maintenance.vehicles.make || ''} ${maintenance.vehicles.model || ''}`.trim(), 15) || 'Unknown' : 'Unknown',
+        truncateText(maintenance.description || 'General maintenance', 30),
         formatStatus(maintenance.status || 'scheduled'),
         formatCurrency(maintenance.cost),
-        maintenance.service_provider || 'Internal'
+        truncateText(maintenance.service_provider || 'Internal', 15)
       ]);
       break;
 
     case 'financial-report':
-      tableHeaders = ['Period', 'Revenue', 'Fuel Costs', 'Maintenance Costs', 'Net Profit', 'Profit Margin'];
+      tableHeaders = ['Period', 'Revenue', 'Fuel Costs', 'Maintenance', 'Net Profit', 'Margin'];
       tableData = data.map(financial => {
         const revenue = Number(financial.revenue || 0);
         const costs = Number(financial.costs || 0);
@@ -129,7 +136,7 @@ export function generateTableData(data: any[], reportType: string) {
         const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) + '%' : '0%';
         
         return [
-          financial.period || 'Unknown',
+          truncateText(financial.period || 'Unknown', 15),
           formatCurrency(revenue),
           formatCurrency(financial.fuelCosts || 0),
           formatCurrency(financial.maintenanceCosts || 0),
@@ -151,7 +158,7 @@ export function generateTableData(data: any[], reportType: string) {
         );
         tableData = data.map(item => 
           Object.values(item).map(value => 
-            value !== null && value !== undefined ? String(value) : 'N/A'
+            value !== null && value !== undefined ? truncateText(String(value), 20) : 'N/A'
           )
         );
       }
