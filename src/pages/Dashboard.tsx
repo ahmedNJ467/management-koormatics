@@ -5,11 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { EnhancedOverview } from "@/components/dashboard/EnhancedOverview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityItemProps } from "@/types/dashboard";
-import { BarChart, AlertTriangle, Activity, Zap, Shield, TrendingUp } from "lucide-react";
+import { BarChart, Activity, TrendingUp } from "lucide-react";
 import { getActivities, logActivity } from "@/utils/activity-logger";
 
 export default function Dashboard() {
@@ -194,31 +193,6 @@ export default function Dashboard() {
               <CardContent className="relative p-6">
                 <div className="max-h-[350px] overflow-y-auto space-y-1">
                   <RecentActivity activities={recentActivities} isLoading={false} />
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* System Alerts - Enhanced */}
-            <Card className="border-0 shadow-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-md overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5"></div>
-              <CardHeader className="relative pb-4 border-b border-gray-200/20 dark:border-gray-700/20">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl shadow-lg">
-                    <AlertTriangle className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                      System Alerts
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      Critical notifications & warnings
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative p-6">
-                <div className="max-h-[350px] overflow-y-auto space-y-1">
-                  <ImprovedAlertsTab />
                 </div>
               </CardContent>
             </Card>

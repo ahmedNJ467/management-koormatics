@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -53,9 +54,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-          </Button>
+          <Link to="/alerts">
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
+          </Link>
           <ThemeToggle />
           
           <DropdownMenu>
