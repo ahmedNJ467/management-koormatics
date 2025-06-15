@@ -170,7 +170,7 @@ export default function Invoices() {
         status: 'scheduled',
         client_name: trip.clients?.name || "Unknown Client",
         vehicle_details: `${trip.vehicles?.make || ""} ${trip.vehicles?.model || ""} (${trip.vehicles?.registration || ""})`,
-        vehicle_type: trip.vehicles?.type || null, // Add vehicle type to the mapped object
+        vehicle_type: trip.vehicles?.type || null,
         driver_name: trip.drivers?.name || "Unknown Driver",
       } as DisplayTrip & { vehicle_type: string | null }));
     },
@@ -862,9 +862,14 @@ export default function Invoices() {
                             checked={selectedTrips.includes(trip.id)}
                             onCheckedChange={(checked) => {
                               const tripDate = format(new Date(trip.date), "yyyy-MM-dd");
+                              
+                              // Format vehicle type properly
                               const vehicleType = (trip as any).vehicle_type
-                                ? `(${(trip as any).vehicle_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())})`
+                                ? (trip as any).vehicle_type === 'armoured' 
+                                  ? '(Armoured Vehicle)'
+                                  : '(Soft Skin Vehicle)'
                                 : '';
+                              
                               const description = `Trip from ${trip.pickup_location || 'N/A'} to ${trip.dropoff_location || 'N/A'} on ${tripDate} ${vehicleType}`.trim();
                               
                               if (checked) {
@@ -913,6 +918,12 @@ export default function Invoices() {
                                 <span>{trip.pickup_location} to {trip.dropoff_location}</span>
                               ) : (
                                 <span>{trip.pickup_location || trip.dropoff_location}</span>
+                              )}
+                              {/* Show vehicle type in the trip display */}
+                              {(trip as any).vehicle_type && (
+                                <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">
+                                  {(trip as any).vehicle_type === 'armoured' ? 'Armoured' : 'Soft Skin'}
+                                </span>
                               )}
                             </div>
                           </div>
