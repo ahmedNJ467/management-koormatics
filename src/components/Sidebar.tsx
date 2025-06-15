@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,14 +26,9 @@ import { useState } from "react";
 // Navigation structure with categories
 const navigationGroups = [
   {
-    category: "Overview",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
-    ]
-  },
-  {
     category: "Fleet Management",
     items: [
+      { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
       { name: "Vehicles", href: "/vehicles", icon: Car },
       { name: "Drivers", href: "/drivers", icon: Users },
       { name: "Maintenance", href: "/maintenance", icon: Wrench },
