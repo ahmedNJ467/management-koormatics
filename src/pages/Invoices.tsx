@@ -65,6 +65,8 @@ import {
 } from "@/lib/types/invoice";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Client } from "@/lib/types/client";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function Invoices() {
   const { toast } = useToast();
@@ -497,11 +499,84 @@ export default function Invoices() {
   });
 
   const generateInvoicePDF = (invoice: DisplayInvoice) => {
-    toast({
-      title: "PDF Generation",
-      description: "PDF generation would happen here in a real app",
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text("INVOICE", 14, 22);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Invoice #: ${formatInvoiceId(invoice.id)}`, 14, 32);
+    doc.text(`Date: ${formatDate(invoice.date)}`, 14, 38);
+    doc.text(`Due Date: ${formatDate(invoice.due_date)}`, 14, 44);
+
+    // Client Info
+    doc.setFont('helvetica', 'bold');
+    doc.text("Bill To:", 140, 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(invoice.client_name, 140, 28);
+    if (invoice.client_address) {
+        const addressLines = doc.splitTextToSize(invoice.client_address, 60);
+        doc.text(addressLines, 140, 34);
+    }
+    const emailY = invoice.client_address ? 34 + (doc.getTextDimensions(doc.splitTextToSize(invoice.client_address, 60)).h) + 6 : 34;
+    if(invoice.client_email) doc.text(invoice.client_email, 140, emailY);
+    if(invoice.client_phone) doc.text(invoice.client_phone, 140, emailY + 6);
+
+    // Table
+    autoTable(doc, {
+      startY: 70,
+      head: [['Description', 'Qty', 'Unit Price', 'Amount']],
+      body: invoice.items.map(item => [
+        item.description,
+        item.quantity,
+        formatCurrency(item.unit_price),
+        formatCurrency(item.amount)
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [34, 197, 94] },
     });
-    console.log("Generating PDF for invoice:", invoice);
+
+    // Totals
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    let yPos = finalY + 10;
+    
+    doc.setFontSize(10);
+    doc.text('Subtotal:', 140, yPos);
+    doc.text(formatCurrency(invoice.total_amount), 200, yPos, { align: 'right' });
+    yPos += 6;
+    
+    if (invoice.paid_amount > 0) {
+      doc.text('Amount Paid:', 140, yPos);
+      doc.text(`-${formatCurrency(invoice.paid_amount)}`, 200, yPos, { align: 'right' });
+      yPos += 6;
+    }
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Balance Due:', 140, yPos);
+    doc.text(formatCurrency(invoice.total_amount - (invoice.paid_amount || 0)), 200, yPos, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    yPos += 15;
+
+    // Notes
+    if (invoice.notes) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Notes:', 14, yPos);
+      doc.setFont('helvetica', 'normal');
+      const splitNotes = doc.splitTextToSize(invoice.notes, 180);
+      doc.text(splitNotes, 14, yPos + 5);
+    }
+    
+    doc.save(`Invoice-${formatInvoiceId(invoice.id)}.pdf`);
+
+    toast({
+      title: "Invoice PDF Generated",
+      description: "Your invoice has been downloaded.",
+    });
   };
 
   const sendInvoiceByEmail = (invoice: DisplayInvoice) => {
