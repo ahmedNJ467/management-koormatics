@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
@@ -16,6 +15,10 @@ import { TripStatusSelect } from "@/components/trips/TripStatusSelect";
 import { FlightDetailsFields } from "@/components/trips/FlightDetailsFields";
 import { RecurringTripFields } from "@/components/trips/RecurringTripFields";
 import { serviceTypeMap } from "@/components/trips/trip-operations";
+import { FormField, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
+import { format, parseISO } from "date-fns";
 
 const reverseServiceTypeMap: Record<string, string> = {};
 Object.entries(serviceTypeMap).forEach(([key, value]) => {
@@ -39,7 +42,7 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
   const [serviceType, setServiceType] = useState("airport_pickup");
   
   const methods = useForm();
-  const { register, watch, setValue, reset } = methods;
+  const { register, watch, setValue, reset, control } = methods;
   
   const isRecurring = watch("is_recurring");
   const watchServiceType = watch("service_type");
@@ -196,36 +199,57 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
               </Select>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                {...register("date")}
-                defaultValue={editTrip?.date || new Date().toISOString().split('T')[0]}
-              />
-            </div>
+            <FormField
+              control={control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Date</FormLabel>
+                  <FormControl>
+                    <DatePicker
+                      date={field.value ? parseISO(field.value) : undefined}
+                      onDateChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
-            <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
-              <Input
-                id="time"
-                type="time"
-                {...register("time")}
-                defaultValue={editTrip?.time || ""}
-              />
-            </div>
+            <FormField
+              control={control}
+              name="time"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Time</FormLabel>
+                  <FormControl>
+                    <TimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             {needsReturnTime && (
-              <div className="space-y-2">
-                <Label htmlFor="return_time">Return Time</Label>
-                <Input
-                  id="return_time"
-                  type="time"
-                  {...register("return_time")}
-                  defaultValue={editTrip?.return_time || ""}
-                />
-              </div>
+              <FormField
+                control={control}
+                name="return_time"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>Return Time</FormLabel>
+                    <FormControl>
+                      <TimePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
           </div>
           

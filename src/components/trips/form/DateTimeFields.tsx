@@ -1,8 +1,11 @@
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { DisplayTrip } from "@/lib/types/trip";
 import { UIServiceType } from "./types";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
+import { useState, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
 
 interface DateTimeFieldsProps {
   editTrip: DisplayTrip | null;
@@ -11,9 +14,51 @@ interface DateTimeFieldsProps {
 }
 
 export function DateTimeFields({ editTrip, serviceType, onDateTimeChange }: DateTimeFieldsProps) {
-  const handleChange = (field: 'date' | 'time', e: React.ChangeEvent<HTMLInputElement>) => {
+  const [date, setDate] = useState<Date | undefined>();
+  const [time, setTime] = useState<string | undefined>();
+  const [returnTime, setReturnTime] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (editTrip) {
+      if (editTrip.date) {
+        try {
+          // Handle both 'YYYY-MM-DD' and full ISO strings
+          const dateString = editTrip.date.split('T')[0];
+          setDate(parseISO(dateString));
+        } catch (e) {
+          console.error("Invalid date format from editTrip.date:", editTrip.date);
+          const dateObj = new Date(editTrip.date);
+          if (!isNaN(dateObj.getTime())) {
+            setDate(dateObj);
+          }
+        }
+      } else {
+        setDate(undefined);
+      }
+      setTime(editTrip.time || editTrip.start_time);
+      setReturnTime(editTrip.return_time || editTrip.end_time);
+    } else {
+      setDate(undefined);
+      setTime(undefined);
+      setReturnTime(undefined);
+    }
+  }, [editTrip]);
+
+  const handleDateChange = (newDate: Date | undefined) => {
+    setDate(newDate);
     if (onDateTimeChange) {
-      onDateTimeChange(field, e.target.value);
+      if (newDate) {
+        onDateTimeChange('date', format(newDate, 'yyyy-MM-dd'));
+      } else {
+        onDateTimeChange('date', '');
+      }
+    }
+  };
+
+  const handleTimeChange = (newTime: string | undefined) => {
+    setTime(newTime);
+    if (onDateTimeChange && newTime) {
+      onDateTimeChange('time', newTime);
     }
   };
 
@@ -22,38 +67,31 @@ export function DateTimeFields({ editTrip, serviceType, onDateTimeChange }: Date
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Date</Label>
-          <Input 
-            id="date"
-            name="date"
-            type="date"
-            defaultValue={editTrip?.date}
-            onChange={(e) => handleChange('date', e)}
-            required
+          <DatePicker
+            date={date}
+            onDateChange={handleDateChange}
           />
+          <input type="hidden" name="date" value={date ? format(date, 'yyyy-MM-dd') : ''} />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="time">Time</Label>
-          <Input 
-            id="time"
-            name="time"
-            type="time"
-            defaultValue={editTrip?.time || editTrip?.start_time}
-            onChange={(e) => handleChange('time', e)}
-            required
+          <TimePicker
+            value={time}
+            onChange={handleTimeChange}
           />
+          <input type="hidden" name="time" value={time || ''} />
         </div>
       </div>
 
       {["round_trip", "security_escort", "full_day_hire"].includes(serviceType) && (
         <div className="space-y-2">
           <Label htmlFor="return_time">Return Time</Label>
-          <Input 
-            id="return_time"
-            name="return_time"
-            type="time"
-            defaultValue={editTrip?.return_time || editTrip?.end_time}
+          <TimePicker
+            value={returnTime}
+            onChange={setReturnTime}
           />
+          <input type="hidden" name="return_time" value={returnTime || ''} />
         </div>
       )}
     </>
