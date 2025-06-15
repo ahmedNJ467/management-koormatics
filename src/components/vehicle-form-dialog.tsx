@@ -13,7 +13,13 @@ interface VehicleFormDialogProps {
 }
 
 export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDialogProps) {
-  const { uploadVehicleImages } = useVehicleImages();
+  const { 
+    uploadVehicleImages,
+    images,
+    setImages,
+    imagePreviewUrls,
+    setImagePreviewUrls
+  } = useVehicleImages();
   const { onSubmit, isSubmitting } = useVehicleFormSubmit(vehicle, onOpenChange, uploadVehicleImages);
 
   return (
@@ -32,6 +38,10 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
             onSubmit={onSubmit}
             onCancel={() => onOpenChange(false)}
             isSubmitting={isSubmitting}
+            images={images}
+            setImages={setImages}
+            imagePreviewUrls={imagePreviewUrls}
+            setImagePreviewUrls={setImagePreviewUrls}
           />
         </VehicleAuthWrapper>
       </DialogContent>

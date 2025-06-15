@@ -9,23 +9,28 @@ import { VehicleStatusField } from "./vehicle-status-field";
 import { VehicleNotesField } from "./vehicle-notes-field";
 import { VehicleImagesField } from "./vehicle-images-field";
 import { VehicleFormActions } from "./vehicle-form-actions";
-import { useVehicleImages } from "./use-vehicle-images";
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
   onSubmit: (data: Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
+  images: File[];
+  setImages: (files: File[]) => void;
+  imagePreviewUrls: string[];
+  setImagePreviewUrls: (urls: string[]) => void;
 }
 
-export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: VehicleFormProps) {
-  const { 
-    images, 
-    setImages, 
-    imagePreviewUrls, 
-    setImagePreviewUrls 
-  } = useVehicleImages();
-
+export function VehicleForm({ 
+  vehicle, 
+  onSubmit, 
+  onCancel, 
+  isSubmitting,
+  images,
+  setImages,
+  imagePreviewUrls,
+  setImagePreviewUrls,
+}: VehicleFormProps) {
   const form = useForm<Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>>({
     defaultValues: {
       type: vehicle?.type || 'soft_skin',
