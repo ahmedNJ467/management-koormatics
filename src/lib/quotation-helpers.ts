@@ -1,11 +1,11 @@
-
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { DisplayQuotation } from "@/lib/types/quotation";
+import { DisplayQuotation, QuotationStatus } from "@/lib/types/quotation";
 import { pdfColors } from "@/components/reports/utils/pdf/pdfStyles";
 import { toast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate, formatInvoiceId as formatQuotationId } from "@/lib/invoice-helpers";
+import { supabase } from "@/integrations/supabase/client";
 
 export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     const doc = new jsPDF({
@@ -232,4 +232,54 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
       title: "Quotation PDF Generated",
       description: "Your quotation has been downloaded.",
     });
+};
+
+export const sendQuotationByEmail = async (quotation: DisplayQuotation) => {
+  if (!quotation.client_email) {
+    toast({
+      title: "Error",
+      description: "Client does not have an email address.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://kgmjttamzppmypwzargk.supabase.co/functions/v1/send-quotation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnbWp0dGFtenBwbXlwd3phcmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MjY2MjYsImV4cCI6MjA1NTQwMjYyNn0.HMfRqxeKQSjRY2ydzyxuJoTqr06nTVjOmGp0TpXtYpk`
+      },
+      body: JSON.stringify({
+        quotationId: quotation.id,
+        clientEmail: quotation.client_email,
+        clientName: quotation.client_name
+      })
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({ error: "Failed to send quotation" }));
+      throw new Error(result?.error || "Failed to send quotation");
+    }
+
+    const { error } = await supabase
+      .from('quotations')
+      .update({ status: 'sent' as QuotationStatus })
+      .eq('id', quotation.id);
+
+    if (error) throw error;
+
+    toast({
+      title: "Quotation sent",
+      description: `The quotation has been sent to ${quotation.client_email}`,
+    });
+  } catch (error) {
+    console.error("Error sending quotation:", error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to send the quotation",
+      variant: "destructive",
+    });
+  }
 };
