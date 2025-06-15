@@ -170,8 +170,9 @@ export default function Invoices() {
         status: 'scheduled',
         client_name: trip.clients?.name || "Unknown Client",
         vehicle_details: `${trip.vehicles?.make || ""} ${trip.vehicles?.model || ""} (${trip.vehicles?.registration || ""})`,
+        vehicle_type: trip.vehicles?.type || null, // Add vehicle type to the mapped object
         driver_name: trip.drivers?.name || "Unknown Driver",
-      } as DisplayTrip));
+      } as DisplayTrip & { vehicle_type: string | null }));
     },
     enabled: !!selectedClientId,
   });
@@ -861,8 +862,8 @@ export default function Invoices() {
                             checked={selectedTrips.includes(trip.id)}
                             onCheckedChange={(checked) => {
                               const tripDate = format(new Date(trip.date), "yyyy-MM-dd");
-                              const vehicleType = trip.vehicles?.type
-                                ? `(${trip.vehicles.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())})`
+                              const vehicleType = (trip as any).vehicle_type
+                                ? `(${(trip as any).vehicle_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())})`
                                 : '';
                               const description = `Trip from ${trip.pickup_location || 'N/A'} to ${trip.dropoff_location || 'N/A'} on ${tripDate} ${vehicleType}`.trim();
                               
