@@ -670,6 +670,66 @@ export default function Invoices() {
       doc.text(splitNotes, margin, yPosTotals + 5);
     }
     
+    const pageHeight = doc.internal.pageSize.getHeight();
+    if (yPosTotals > pageHeight - 100) {
+        doc.addPage();
+        yPosTotals = margin;
+    }
+    
+    yPosTotals += 10;
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...pdfColors.text);
+    
+    const commText = `Please use the following communication for your payment : ${formatInvoiceId(invoice.id)}`;
+    doc.text(commText, margin, yPosTotals);
+    yPosTotals += 10;
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Terms and conditions', margin, yPosTotals);
+    yPosTotals += 5;
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    const terms = [
+      '1. The quotation provided is valid for a period of thirty (30) days from the date of issue unless otherwise stated',
+      '2. For all clients without an account or contract with us, a 50% down payment of the quoted amount, payable by cash or',
+      '   bank transfer, is required to confirm bookings.',
+      '3. Payment for services is due upon receipt of invoice, unless otherwise specified.'
+    ];
+    doc.text(terms, margin, yPosTotals);
+    yPosTotals += (terms.length * 3.5) + 5;
+    
+    doc.text('"Thank you for your business."', margin, yPosTotals);
+    yPosTotals += 10;
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dahabshil Bank', margin, yPosTotals);
+    yPosTotals += 4;
+    doc.setFont('helvetica', 'normal');
+    const dahabshilDetails = [
+      'Account Name: Peace Business Group',
+      'Account Number: 104 102 369',
+      'Swift Codes: EABDDJJD',
+      'Branch: Mogadishu, Somalia',
+      'IBAN:SO600002301301008035901'
+    ];
+    doc.text(dahabshilDetails, margin, yPosTotals);
+    yPosTotals += (dahabshilDetails.length * 3.5) + 5;
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Premier Bank', margin, yPosTotals);
+    yPosTotals += 4;
+    doc.setFont('helvetica', 'normal');
+    const premierDetails = [
+      'Account Name: Peace Business Group',
+      'Account Number: 020600296001',
+      'IBAN: SO600005002020600296001'
+    ];
+    doc.text(premierDetails, margin, yPosTotals);
+    
     doc.save(`Invoice-${formatInvoiceId(invoice.id)}.pdf`);
 
     toast({
