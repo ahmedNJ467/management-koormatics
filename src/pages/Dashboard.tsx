@@ -179,8 +179,10 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="max-h-[400px] overflow-y-auto">
-                  <RecentActivity activities={recentActivities} isLoading={false} />
+                <div className="max-h-[400px] overflow-y-auto pr-2 -mr-2">
+                  <div className="pr-1">
+                    <RecentActivity activities={recentActivities} isLoading={false} />
+                  </div>
                 </div>
               </CardContent>
             </Card>
