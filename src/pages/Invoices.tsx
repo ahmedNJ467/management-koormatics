@@ -877,13 +877,17 @@ export default function Invoices() {
                               const tripDate = format(new Date(trip.date), "yyyy-MM-dd");
                               
                               // Format vehicle type properly
-                              const vehicleType = (trip as any).vehicle_type
-                                ? (trip as any).vehicle_type === 'armoured' 
-                                  ? '(Armoured Vehicle)'
-                                  : '(Soft Skin Vehicle)'
-                                : '';
+                              const vehicleType = (trip as any).vehicle_type;
+                              const vehicleTypeText = vehicleType === 'armoured'
+                                ? '(Armoured Vehicle)'
+                                : vehicleType === 'soft_skin'
+                                  ? '(Soft Skin Vehicle)'
+                                  : '';
                               
-                              const description = `Trip from ${trip.pickup_location || 'N/A'} to ${trip.dropoff_location || 'N/A'} on ${tripDate} ${vehicleType}`.trim();
+                              const description = [
+                                `Trip from ${trip.pickup_location || 'N/A'} to ${trip.dropoff_location || 'N/A'} on ${tripDate}`,
+                                vehicleTypeText
+                              ].filter(Boolean).join(' ');
                               
                               if (checked) {
                                 setSelectedTrips([...selectedTrips, trip.id]);
