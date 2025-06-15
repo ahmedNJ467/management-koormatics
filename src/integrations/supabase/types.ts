@@ -941,6 +941,7 @@ export type Database = {
           id: string
           invoice_id: string | null
           is_recurring: boolean | null
+          log_sheet_url: string | null
           notes: string | null
           passengers: string[] | null
           pickup_location: string | null
@@ -964,6 +965,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           is_recurring?: boolean | null
+          log_sheet_url?: string | null
           notes?: string | null
           passengers?: string[] | null
           pickup_location?: string | null
@@ -987,6 +989,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           is_recurring?: boolean | null
+          log_sheet_url?: string | null
           notes?: string | null
           passengers?: string[] | null
           pickup_location?: string | null

@@ -23,6 +23,7 @@ export interface DbTrip {
   terminal?: string;        // Now stored directly in the database
   is_recurring?: boolean;
   passengers?: string[];    // Array of passenger names for organization clients
+  log_sheet_url?: string;
 }
 
 export interface Trip {
@@ -51,6 +52,7 @@ export interface Trip {
   terminal?: string;          // Direct from database
   is_recurring?: boolean;
   passengers?: string[];      // Array of passenger names for organization clients
+  log_sheet_url?: string;
 }
 
 export interface DisplayTrip extends Trip {
@@ -64,5 +66,4 @@ export interface DisplayTrip extends Trip {
   special_notes?: string;     // Alternative to notes
   ui_service_type?: string;   // UI-friendly display of type
   display_type?: string;      // Formatted display of trip type
-  passengers?: string[];      // Array of passenger names for organization clients
 }

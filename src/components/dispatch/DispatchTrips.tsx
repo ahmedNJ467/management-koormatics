@@ -1,21 +1,33 @@
 import { Button } from "@/components/ui/button";
-import { DisplayTrip } from "@/lib/types/trip";
-import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone, Plane } from "lucide-react";
+import { DisplayTrip, TripStatus } from "@/lib/types/trip";
+import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone, Plane, MoreVertical, Calendar, Check, X } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { OverdueIndicator } from "./OverdueIndicator";
 
 interface DispatchTripsProps {
   trips: DisplayTrip[];
   onAssignDriver: (trip: DisplayTrip) => void;
   onSendMessage: (trip: DisplayTrip) => void;
+  onCompleteTrip: (trip: DisplayTrip) => void;
+  onUpdateStatus: (tripId: string, status: TripStatus) => void;
 }
 
 export function DispatchTrips({
   trips,
   onAssignDriver,
-  onSendMessage
+  onSendMessage,
+  onCompleteTrip,
+  onUpdateStatus,
 }: DispatchTripsProps) {
   // Ensure we have an array to work with
   const safeTrips = Array.isArray(trips) ? trips.filter(Boolean) : [];
@@ -276,7 +288,7 @@ export function DispatchTrips({
               </div>
             </div>
             
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2 mt-4 items-center">
               <Button 
                 size="sm" 
                 onClick={() => onAssignDriver(trip)}
@@ -294,6 +306,38 @@ export function DispatchTrips({
                 <MessageCircle className="h-4 w-4 mr-1" />
                 Send Message
               </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {trip.status !== "scheduled" && (
+                    <DropdownMenuItem onClick={() => onUpdateStatus(trip.id, "scheduled")}>
+                      <Calendar className="mr-2 h-4 w-4" /> Set as Scheduled
+                    </DropdownMenuItem>
+                  )}
+                  {trip.status !== "in_progress" && (
+                    <DropdownMenuItem onClick={() => onUpdateStatus(trip.id, "in_progress")}>
+                      <Clock className="mr-2 h-4 w-4" /> Set as In Progress
+                    </DropdownMenuItem>
+                  )}
+                  {trip.status !== "completed" && (
+                    <DropdownMenuItem onClick={() => onCompleteTrip(trip)}>
+                      <Check className="mr-2 h-4 w-4" /> Complete Trip
+                    </DropdownMenuItem>
+                  )}
+                  {trip.status !== "cancelled" && (
+                    <DropdownMenuItem className="text-red-500" onClick={() => onUpdateStatus(trip.id, "cancelled")}>
+                      <X className="mr-2 h-4 w-4" /> Cancel Trip
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         )

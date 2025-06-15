@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DispatchTrips } from "./DispatchTrips";
 import { DriverStatus } from "./DriverStatus";
-import { DisplayTrip } from "@/lib/types/trip";
+import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
 import { Vehicle } from "@/lib/types/vehicle";
 
@@ -14,6 +14,8 @@ interface DispatchBoardProps {
   vehicles: Vehicle[];
   onAssignDriver: (trip: DisplayTrip) => void;
   onSendMessage: (trip: DisplayTrip) => void;
+  onCompleteTrip: (trip: DisplayTrip) => void;
+  onUpdateStatus: (tripId: string, status: TripStatus) => void;
 }
 
 export function DispatchBoard({
@@ -21,7 +23,9 @@ export function DispatchBoard({
   drivers,
   vehicles,
   onAssignDriver,
-  onSendMessage
+  onSendMessage,
+  onCompleteTrip,
+  onUpdateStatus
 }: DispatchBoardProps) {
   const [activeTab, setActiveTab] = useState("upcoming");
   
@@ -81,6 +85,8 @@ export function DispatchBoard({
                   trips={upcomingTrips}
                   onAssignDriver={onAssignDriver}
                   onSendMessage={onSendMessage}
+                  onCompleteTrip={onCompleteTrip}
+                  onUpdateStatus={onUpdateStatus}
                 />
               </TabsContent>
               <TabsContent value="in-progress" className="mt-4">
@@ -88,6 +94,8 @@ export function DispatchBoard({
                   trips={inProgressTrips}
                   onAssignDriver={onAssignDriver}
                   onSendMessage={onSendMessage}
+                  onCompleteTrip={onCompleteTrip}
+                  onUpdateStatus={onUpdateStatus}
                 />
               </TabsContent>
               <TabsContent value="scheduled" className="mt-4">
@@ -95,6 +103,8 @@ export function DispatchBoard({
                   trips={laterTrips}
                   onAssignDriver={onAssignDriver}
                   onSendMessage={onSendMessage}
+                  onCompleteTrip={onCompleteTrip}
+                  onUpdateStatus={onUpdateStatus}
                 />
               </TabsContent>
             </Tabs>
