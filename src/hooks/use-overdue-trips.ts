@@ -12,22 +12,26 @@ export function useOverdueTrips(trips: DisplayTrip[] = []) {
 
   const checkOverdueTrips = async () => {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM format
+    const gracePeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
     for (const trip of trips) {
       if (trip.status !== 'scheduled') continue;
 
-      const tripDate = trip.date;
-      const tripTime = trip.time;
-
+      const { date: tripDate, time: tripTime } = trip;
       if (!tripDate || !tripTime) continue;
 
-      // Check if trip is overdue (past scheduled date/time)
-      const isOverdue = tripDate < today || 
-        (tripDate === today && tripTime < currentTime);
+      const tripDateTime = new Date(`${tripDate}T${tripTime}`);
 
-      if (isOverdue) {
+      // Continue if the date is invalid
+      if (isNaN(tripDateTime.getTime())) {
+        console.warn(`Invalid date/time for trip ${trip.id}: ${tripDate} ${tripTime}`);
+        continue;
+      }
+      
+      const timeDifference = now.getTime() - tripDateTime.getTime();
+
+      // Check if trip is overdue (past scheduled date/time by 24 hours)
+      if (timeDifference > gracePeriod) {
         try {
           // Update trip status to indicate it's overdue
           const { error: updateError } = await supabase
@@ -35,8 +39,8 @@ export function useOverdueTrips(trips: DisplayTrip[] = []) {
             .update({ 
               status: 'cancelled', // Mark as cancelled since it's missed
               notes: trip.notes ? 
-                `${trip.notes}\n\nAutomatically marked as missed - trip was overdue.` : 
-                'Automatically marked as missed - trip was overdue.'
+                `${trip.notes}\n\nAutomatically marked as missed - trip was overdue for 24 hours.` : 
+                'Automatically marked as missed - trip was overdue for 24 hours.'
             })
             .eq("id", trip.id);
 
@@ -50,12 +54,12 @@ export function useOverdueTrips(trips: DisplayTrip[] = []) {
             title: `Missed trip - ${trip.client_name}`,
             priority: 'high',
             type: 'trip',
-            description: `Trip scheduled for ${tripDate} at ${tripTime} was not completed and has been marked as missed. Pickup: ${trip.pickup_location || 'Not specified'}, Dropoff: ${trip.dropoff_location || 'Not specified'}`,
+            description: `Trip scheduled for ${tripDate} at ${tripTime} was not completed and has been marked as missed after 24 hours. Pickup: ${trip.pickup_location || 'Not specified'}, Dropoff: ${trip.dropoff_location || 'Not specified'}`,
             relatedId: trip.id,
             relatedType: 'trip'
           });
 
-          console.log(`Trip ${trip.id} marked as missed - was overdue`);
+          console.log(`Trip ${trip.id} marked as missed - was overdue for >24h`);
 
         } catch (error) {
           console.error("Error processing overdue trip:", error);
