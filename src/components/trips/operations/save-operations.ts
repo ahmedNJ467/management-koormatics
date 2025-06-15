@@ -1,9 +1,11 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip, TripStatus, TripType, DbServiceType } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
 import { serviceTypeMap, mapTripTypeToDbServiceType } from "./service-type-mapping";
 import { createRecurringTrips } from "./recurring-operations";
 import { logActivity } from "@/utils/activity-logger";
+import { format } from "date-fns";
 
 export const handleSaveTrip = async (
   event: React.FormEvent<HTMLFormElement>,
@@ -26,6 +28,10 @@ export const handleSaveTrip = async (
   const dbServiceType: DbServiceType = mapTripTypeToDbServiceType(tripType);
   const isRecurringChecked = formData.get("is_recurring") === "on";
   
+  const timeValue = formData.get("time") as string;
+  const returnTimeValue = formData.get("return_time") as string;
+  const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(uiServiceType);
+
   const flightNumber = (uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff") 
     ? formData.get("flight_number") as string 
     : null;
@@ -73,8 +79,8 @@ export const handleSaveTrip = async (
         .update({
           client_id: formData.get("client_id") as string,
           date: formData.get("date") as string,
-          time: formData.get("time") as string,
-          return_time: formData.get("return_time") as string || null,
+          time: timeValue || null,
+          return_time: needsReturnTime ? (returnTimeValue || null) : null,
           service_type: dbServiceType,
           pickup_location: formData.get("pickup_location") as string || null,
           dropoff_location: formData.get("dropoff_location") as string || null,
@@ -120,6 +126,8 @@ export const handleSaveTrip = async (
         trip.vehicle_type = vehicleType;
         trip.driver_id = null;
         trip.vehicle_id = null;
+        trip.time = timeValue || null;
+        trip.return_time = needsReturnTime ? (returnTimeValue || null) : null;
       });
       
       const { data, error } = await supabase
@@ -145,13 +153,11 @@ export const handleSaveTrip = async (
       
       setBookingOpen(false);
     } else {
-      const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(uiServiceType);
-      
       const tripData = {
         client_id: formData.get("client_id") as string,
         date: formData.get("date") as string,
-        time: formData.get("time") as string,
-        return_time: needsReturnTime ? (formData.get("return_time") as string) : null,
+        time: timeValue || null,
+        return_time: needsReturnTime ? (returnTimeValue || null) : null,
         service_type: dbServiceType,
         amount: amount,
         pickup_location: formData.get("pickup_location") as string || null,

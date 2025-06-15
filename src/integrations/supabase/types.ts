@@ -952,6 +952,7 @@ export type Database = {
           time: string | null
           updated_at: string | null
           vehicle_id: string | null
+          vehicle_type: string | null
         }
         Insert: {
           airline?: string | null
@@ -976,6 +977,7 @@ export type Database = {
           time?: string | null
           updated_at?: string | null
           vehicle_id?: string | null
+          vehicle_type?: string | null
         }
         Update: {
           airline?: string | null
@@ -1000,6 +1002,7 @@ export type Database = {
           time?: string | null
           updated_at?: string | null
           vehicle_id?: string | null
+          vehicle_type?: string | null
         }
         Relationships: [
           {
