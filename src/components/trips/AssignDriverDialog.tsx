@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
 import { UserCheck, AlertCircle, Clock } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 
 interface AssignDriverDialogProps {
@@ -27,42 +27,34 @@ export function AssignDriverDialog({
   onDriverAssigned
 }: AssignDriverDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [drivers, setDrivers] = useState<(Driver & { isAvailable: boolean })[]>([]);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [assignmentNote, setAssignmentNote] = useState("");
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
 
-  // Load all trips to check for driver availability conflicts
-  const { data: allTrips } = useQuery({
-    queryKey: ["trips"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("trips")
-        .select(`
-          id, date, time, driver_id
-        `)
-        .neq('id', tripToAssign?.id || '');
-      
-      if (error) throw error;
-      return data as DisplayTrip[];
-    },
-    enabled: open && !!tripToAssign,
-  });
+  // Use the existing trips data from the main query instead of creating a new one
+  const allTrips = queryClient.getQueryData<DisplayTrip[]>(["trips"]) || [];
 
   // Load available drivers and check their availability
   useEffect(() => {
     const fetchDrivers = async () => {
+      if (!open) return;
+      
       const { data, error } = await supabase
         .from("drivers")
         .select("*")
         .eq("status", "active");
       
-      if (!error && data && allTrips && tripToAssign) {
+      if (!error && data && tripToAssign) {
+        // Filter out the current trip from conflicts check
+        const otherTrips = allTrips.filter(trip => trip.id !== tripToAssign.id);
+        
         // Check each driver's availability
         const driversWithAvailability = data.map(driver => {
           // Check if driver is already assigned to another trip on the same day/time
-          const conflicts = allTrips.filter(trip => {
+          const conflicts = otherTrips.filter(trip => {
             if (trip.driver_id !== driver.id) return false;
             if (trip.date !== tripToAssign.date) return false;
             
@@ -86,8 +78,10 @@ export function AssignDriverDialog({
       }
     };
 
+    fetchDrivers();
+    
+    // Reset form state when dialog opens
     if (open) {
-      fetchDrivers();
       setSelectedDriver("");
       setAssignmentNote("");
       setConflictWarning(null);
@@ -96,9 +90,12 @@ export function AssignDriverDialog({
 
   // Check for scheduling conflicts when driver is selected
   useEffect(() => {
-    if (selectedDriver && tripToAssign && allTrips) {
+    if (selectedDriver && tripToAssign) {
+      // Filter out the current trip from conflicts check
+      const otherTrips = allTrips.filter(trip => trip.id !== tripToAssign.id);
+      
       // Check if driver is already assigned to another trip on the same day/time
-      const conflicts = allTrips.filter(trip => {
+      const conflicts = otherTrips.filter(trip => {
         if (trip.driver_id !== selectedDriver) return false;
         if (trip.date !== tripToAssign.date) return false;
         
@@ -154,8 +151,11 @@ export function AssignDriverDialog({
         description: "Driver has been successfully assigned to the trip",
       });
       
+      // Invalidate trips query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      
       onDriverAssigned();
-      onClose();
+      handleClose();
     } catch (error) {
       console.error("Error assigning driver:", error);
       toast({
@@ -165,9 +165,16 @@ export function AssignDriverDialog({
       });
     } finally {
       setIsLoading(false);
-      setSelectedDriver("");
-      setAssignmentNote("");
     }
+  };
+
+  const handleClose = () => {
+    // Reset all form state when closing
+    setSelectedDriver("");
+    setAssignmentNote("");
+    setConflictWarning(null);
+    setIsLoading(false);
+    onClose();
   };
 
   const formatTripId = (id: string): string => {
@@ -183,7 +190,7 @@ export function AssignDriverDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md bg-slate-900 border border-slate-800 shadow-lg rounded-lg">
         <DialogHeader className="border-b border-slate-800 pb-4">
           <DialogTitle className="text-white flex items-center">
@@ -249,7 +256,7 @@ export function AssignDriverDialog({
         <DialogFooter className="border-t border-slate-800 pt-4">
           <Button 
             variant="outline" 
-            onClick={onClose} 
+            onClick={handleClose} 
             className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-slate-200 rounded-full"
           >
             Cancel
