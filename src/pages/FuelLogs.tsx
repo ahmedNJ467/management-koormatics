@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { format, isValid, parseISO } from "date-fns";
 
 export default function FuelLogs() {
   const { toast } = useToast();
@@ -77,6 +78,13 @@ export default function FuelLogs() {
     }
   };
 
+  const formatDateCell = (dateString?: string | null) => {
+    if (!dateString) return "—";
+    const date = parseISO(dateString);
+    if (!isValid(date)) return "Invalid Date";
+    return format(date, "P");
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -118,7 +126,7 @@ export default function FuelLogs() {
             ) : (
               fuelLogs?.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell>{new Date(log.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatDateCell(log.date)}</TableCell>
                   <TableCell>
                     {log.vehicle ? `${log.vehicle.make} ${log.vehicle.model}` : "Unknown Vehicle"}
                   </TableCell>
