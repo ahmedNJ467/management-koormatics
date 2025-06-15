@@ -10,7 +10,7 @@ export function drawPdfHeader(doc: jsPDF, title: string): void {
   
   // Add logo to header
   const logoWidth = 1.5; // inches
-  const logoHeight = logoWidth * (123 / 622); // Maintain aspect ratio based on original image dimensions
+  const logoHeight = logoWidth * pdfConfig.logoAspectRatio; // Maintain aspect ratio
   const logoX = (pageWidth / 2) - (logoWidth / 2); // Centered
   const logoY = 0.1;
 

@@ -67,6 +67,7 @@ import { DisplayTrip } from "@/lib/types/trip";
 import { Client } from "@/lib/types/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { pdfConfig } from "@/components/reports/utils/pdf/pdfStyles";
 
 export default function Invoices() {
   const { toast } = useToast();
@@ -500,10 +501,13 @@ export default function Invoices() {
 
   const generateInvoicePDF = (invoice: DisplayInvoice) => {
     const doc = new jsPDF();
-    const logoUrl = '/lovable-uploads/6996f29f-4f5b-4a22-ba41-51dc5c98afb7.png';
 
     // Logo
-    doc.addImage(logoUrl, 'PNG', 14, 15, 60, 12);
+    if (pdfConfig.logoPath) {
+      const logoWidth = 60; // in mm
+      const logoHeight = logoWidth * pdfConfig.logoAspectRatio;
+      doc.addImage(pdfConfig.logoPath, 'PNG', 14, 15, logoWidth, logoHeight);
+    }
     
     // Header
     doc.setFontSize(20);
