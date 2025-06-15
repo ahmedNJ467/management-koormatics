@@ -82,7 +82,7 @@ export default function FuelLogs() {
     if (!dateString) return "—";
     const date = parseISO(dateString);
     if (!isValid(date)) return "Invalid Date";
-    return format(date, "P");
+    return format(date, "dd/MM/yyyy");
   };
 
   return (
