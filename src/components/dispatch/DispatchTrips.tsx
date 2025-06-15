@@ -318,7 +318,12 @@ export function DispatchTrips({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onAssignVehicle(trip)}>
+                    <Car className="mr-2 h-4 w-4" />
+                    {trip.vehicle_id ? "Reassign Vehicle" : "Assign Vehicle"}
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {trip.status !== "scheduled" && (
                     <DropdownMenuItem onClick={() => onUpdateStatus(trip.id, "scheduled")}>
