@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -234,14 +235,14 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     });
 };
 
-export const sendQuotationByEmail = async (quotation: DisplayQuotation) => {
+export const sendQuotationByEmail = async (quotation: DisplayQuotation): Promise<boolean> => {
   if (!quotation.client_email) {
     toast({
       title: "Error",
       description: "Client does not have an email address.",
       variant: "destructive",
     });
-    return;
+    return false;
   }
 
   try {
@@ -274,6 +275,7 @@ export const sendQuotationByEmail = async (quotation: DisplayQuotation) => {
       title: "Quotation sent",
       description: `The quotation has been sent to ${quotation.client_email}`,
     });
+    return true;
   } catch (error) {
     console.error("Error sending quotation:", error);
     toast({
@@ -281,5 +283,6 @@ export const sendQuotationByEmail = async (quotation: DisplayQuotation) => {
       description: error instanceof Error ? error.message : "Failed to send the quotation",
       variant: "destructive",
     });
+    return false;
   }
 };

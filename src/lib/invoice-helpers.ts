@@ -322,14 +322,14 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     });
 };
 
-export const sendInvoiceByEmail = async (invoice: DisplayInvoice) => {
+export const sendInvoiceByEmail = async (invoice: DisplayInvoice): Promise<boolean> => {
   if (!invoice.client_email) {
     toast({
       title: "Error",
       description: "Client does not have an email address.",
       variant: "destructive",
     });
-    return;
+    return false;
   }
 
   try {
@@ -362,6 +362,7 @@ export const sendInvoiceByEmail = async (invoice: DisplayInvoice) => {
       title: "Invoice sent",
       description: `The invoice has been sent to ${invoice.client_email}`,
     });
+    return true;
   } catch (error) {
     console.error("Error sending invoice:", error);
     toast({
@@ -369,5 +370,6 @@ export const sendInvoiceByEmail = async (invoice: DisplayInvoice) => {
       description: error instanceof Error ? error.message : "Failed to send the invoice",
       variant: "destructive",
     });
+    return false;
   }
 };

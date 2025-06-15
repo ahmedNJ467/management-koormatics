@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { QuotationItem, QuotationStatus, Client, DisplayQuotation } from "@/lib/types";
 import { TableFooter } from "@/components/ui/table";
 import { calculateTotal, formatCurrency } from "@/lib/invoice-helpers";
-import { generateQuotationPDF } from "@/lib/quotation-helpers";
+import { generateQuotationPDF, sendQuotationByEmail } from "@/lib/quotation-helpers";
 
 export default function Quotations() {
   const { toast } = useToast();
@@ -179,74 +178,17 @@ export default function Quotations() {
   };
 
   const handleSendQuotation = async (quotation: DisplayQuotation) => {
+    if (!quotation) return;
     setIsSending(true);
-    try {
-      const client = clients?.find(c => c.id === quotation.client_id);
-      
-      if (!client?.email) {
-        toast({
-          title: "Error",
-          description: "Client does not have an email address.",
-          variant: "destructive",
-        });
-        setIsSending(false);
-        return;
-      }
-
-      // Send the quotation via the edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-quotation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          quotationId: quotation.id,
-          clientEmail: client.email,
-          clientName: client.name
-        })
-      });
-      
-      // Check if response is JSON before parsing
-      let result;
-      try {
-        result = await response.json();
-      } catch (error) {
-        console.error("Error parsing response:", error);
-        throw new Error("Failed to parse response from server");
-      }
-      
-      if (!response.ok) {
-        throw new Error(result?.error || "Failed to send quotation");
-      }
-
-      // Update quotation status to "sent"
-      const { error } = await supabase
-        .from('quotations')
-        .update({ status: 'sent' as QuotationStatus })
-        .eq('id', quotation.id);
-        
-      if (error) throw error;
-
-      toast({
-        title: "Quotation sent",
-        description: `The quotation has been sent to ${client.email}`,
-      });
-      
+    const success = await sendQuotationByEmail(quotation);
+    
+    // Only invalidate and close dialog on success
+    if (success) {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
-      
-      // Close the dialog if it was opened
       setViewQuotation(null);
-    } catch (error) {
-      console.error("Error sending quotation:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send the quotation",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSending(false);
     }
+    
+    setIsSending(false);
   };
 
   const handleDuplicateQuotation = async (quotation: DisplayQuotation) => {
