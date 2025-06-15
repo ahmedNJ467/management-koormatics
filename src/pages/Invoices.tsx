@@ -89,6 +89,8 @@ export default function Invoices() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank_transfer");
   const [paymentDate, setPaymentDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [paymentNotes, setPaymentNotes] = useState<string>("");
+  const [vatEnabled, setVatEnabled] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
 
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ["invoices"],
@@ -197,10 +199,14 @@ export default function Invoices() {
         { description: "", quantity: 1, unit_price: 0, amount: 0 }
       ]);
       setSelectedClientId(editInvoice.client_id);
+      setVatEnabled(!!editInvoice.vat_percentage && editInvoice.vat_percentage > 0);
+      setDiscountAmount(editInvoice.discount_amount || 0);
     } else if (createInvoiceOpen) {
       setInvoiceItems([{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
       setSelectedClientId("");
       setSelectedTrips([]);
+      setVatEnabled(false);
+      setDiscountAmount(0);
     }
   }, [editInvoice, createInvoiceOpen]);
 
@@ -252,7 +258,9 @@ export default function Invoices() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    const totalAmount = calculateTotal(invoiceItems);
+    const subtotal = calculateTotal(invoiceItems);
+    const vatAmount = vatEnabled ? subtotal * 0.05 : 0;
+    const grandTotal = subtotal + vatAmount - (discountAmount || 0);
     
     try {
       if (editInvoice) {
@@ -262,10 +270,12 @@ export default function Invoices() {
           due_date: formData.get("due_date") as string,
           status: formData.get("status") as InvoiceStatus,
           items: prepareForSupabase(invoiceItems),
-          total_amount: totalAmount,
+          total_amount: grandTotal,
           paid_amount: editInvoice.paid_amount,
           notes: formData.get("notes") as string || null,
           updated_at: new Date().toISOString(),
+          vat_percentage: vatEnabled ? 5 : null,
+          discount_amount: discountAmount > 0 ? discountAmount : null,
         };
         
         const { error } = await supabase
@@ -288,11 +298,13 @@ export default function Invoices() {
           due_date: formData.get("due_date") as string,
           status: formData.get("status") as InvoiceStatus || "draft",
           items: prepareForSupabase(invoiceItems),
-          total_amount: totalAmount,
+          total_amount: grandTotal,
           paid_amount: 0,
           notes: formData.get("notes") as string || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          vat_percentage: vatEnabled ? 5 : null,
+          discount_amount: discountAmount > 0 ? discountAmount : null,
         };
         
         const { data, error } = await supabase
@@ -628,12 +640,40 @@ export default function Invoices() {
 
     const finalY = (doc as any).lastAutoTable.finalY || 100;
     let yPosTotals = finalY + 10;
+    
+    const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
+    const vatAmount = invoice.vat_percentage ? subtotal * (invoice.vat_percentage / 100) : 0;
+    const discountAmount = invoice.discount_amount || 0;
     const totalAmount = invoice.total_amount;
     const balanceDue = totalAmount - (invoice.paid_amount || 0);
+
     const totalCol1 = pageW - margin - 50;
     const totalCol2 = pageW - margin;
 
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...pdfColors.text);
+
+    doc.text('Subtotal:', totalCol1, yPosTotals, { align: 'right' });
+    doc.text(formatCurrency(subtotal), totalCol2, yPosTotals, { align: 'right' });
+    yPosTotals += 7;
+
+    if (vatAmount > 0) {
+      doc.text(`VAT (${invoice.vat_percentage}%)`, totalCol1, yPosTotals, { align: 'right' });
+      doc.text(formatCurrency(vatAmount), totalCol2, yPosTotals, { align: 'right' });
+      yPosTotals += 7;
+    }
+
+    if (discountAmount > 0) {
+      doc.text('Discount:', totalCol1, yPosTotals, { align: 'right' });
+      doc.text(`-${formatCurrency(discountAmount)}`, totalCol2, yPosTotals, { align: 'right' });
+      yPosTotals += 7;
+    }
+    
+    // Add a separator line before total
+    doc.setDrawColor(...pdfColors.border);
+    doc.line(totalCol1 - 5, yPosTotals - 3, totalCol2, yPosTotals - 3);
+
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...pdfColors.primary);
     doc.text('Total:', totalCol1, yPosTotals, { align: 'right' });
@@ -923,6 +963,8 @@ export default function Invoices() {
           setSelectedClientId("");
           setSelectedTrips([]);
           setInvoiceItems([{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
+          setVatEnabled(false);
+          setDiscountAmount(0);
         }
       }}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh]">
@@ -1156,14 +1198,42 @@ export default function Invoices() {
                 </div>
                 
                 <div className="flex justify-end pt-4">
-                  <div className="w-[200px] space-y-1">
+                  <div className="w-[250px] space-y-1">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal:</span>
                       <span>{formatCurrency(calculateTotal(invoiceItems))}</span>
                     </div>
-                    <div className="flex justify-between font-medium">
+
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="vat" checked={vatEnabled} onCheckedChange={(checked) => setVatEnabled(checked as boolean)} />
+                        <Label htmlFor="vat">VAT (5%)</Label>
+                      </div>
+                      <span>{formatCurrency(vatEnabled ? calculateTotal(invoiceItems) * 0.05 : 0)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <Label htmlFor="discount" className="pr-2">Discount:</Label>
+                      <Input
+                        id="discount"
+                        type="number"
+                        placeholder="0.00"
+                        step="0.01"
+                        value={discountAmount || ""}
+                        onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+                        className="h-8 text-right w-24"
+                      />
+                    </div>
+                    
+                    <div className="flex justify-between font-medium pt-2 border-t mt-2">
                       <span>Total:</span>
-                      <span>{formatCurrency(calculateTotal(invoiceItems))}</span>
+                      <span>
+                        {formatCurrency(
+                          calculateTotal(invoiceItems) +
+                          (vatEnabled ? calculateTotal(invoiceItems) * 0.05 : 0) -
+                          (discountAmount || 0)
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1221,13 +1291,13 @@ export default function Invoices() {
         <DialogContent className="sm:max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Invoice {viewInvoice && formatInvoiceId(viewInvoice.id)}</DialogTitle>
-            <DialogDescription>
+            <div className="text-sm text-muted-foreground">
               {viewInvoice && (
                 <Badge className={getStatusColor(viewInvoice.status)}>
                   {formatStatus(viewInvoice.status)}
                 </Badge>
               )}
-            </DialogDescription>
+            </div>
           </DialogHeader>
 
           {viewInvoice && (
@@ -1293,8 +1363,33 @@ export default function Invoices() {
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell colSpan={3} className="text-right font-medium">Total</TableCell>
+                        <TableCell colSpan={3} className="text-right font-medium">Subtotal</TableCell>
                         <TableCell className="text-right font-medium">
+                          {formatCurrency(viewInvoice.items.reduce((sum, item) => sum + item.amount, 0))}
+                        </TableCell>
+                      </TableRow>
+
+                      {viewInvoice.vat_percentage && viewInvoice.vat_percentage > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-right">VAT ({viewInvoice.vat_percentage}%)</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(viewInvoice.items.reduce((sum, item) => sum + item.amount, 0) * (viewInvoice.vat_percentage / 100))}
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {viewInvoice.discount_amount && viewInvoice.discount_amount > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-right">Discount</TableCell>
+                          <TableCell className="text-right text-green-600">
+                            -{formatCurrency(viewInvoice.discount_amount)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-right font-medium border-t">Total</TableCell>
+                        <TableCell className="text-right font-medium border-t">
                           {formatCurrency(viewInvoice.total_amount)}
                         </TableCell>
                       </TableRow>
