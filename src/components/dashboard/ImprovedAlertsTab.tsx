@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -126,7 +125,7 @@ export const ImprovedAlertsTab = () => {
   }
 
   return (
-    <div className="space-y-3 max-h-[400px] overflow-y-auto">
+    <div className="space-y-3">
       {alerts.map((alert) => (
         <div 
           key={alert.id} 

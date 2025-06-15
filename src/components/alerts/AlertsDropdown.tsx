@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
 import { useAlertsData } from "@/hooks/use-alerts-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function AlertsDropdown() {
   const [open, setOpen] = useState(false);
@@ -71,9 +73,11 @@ export function AlertsDropdown() {
               <p className="text-sm text-muted-foreground">Critical notifications & warnings</p>
             </div>
           </div>
-          <div className="max-h-80">
-            <ImprovedAlertsTab />
-          </div>
+          <ScrollArea className="h-80">
+            <div className="pr-4">
+              <ImprovedAlertsTab />
+            </div>
+          </ScrollArea>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
