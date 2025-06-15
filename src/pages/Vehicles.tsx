@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -38,15 +37,26 @@ export default function Vehicles() {
       
       if (!vehiclesData) return [];
 
-      // Sanitize data to prevent render errors from missing optional properties
+      // Comprehensive data sanitization to prevent any undefined property errors
       const sanitizedVehicles = vehiclesData.map(v => ({
         ...v,
-        color: v.color ?? 'N/A',
-        vin: v.vin ?? 'N/A',
-        notes: v.notes ?? '',
-        vehicle_images: v.vehicle_images ?? [],
+        id: v.id || '',
+        make: v.make || 'Unknown',
+        model: v.model || 'Model',
+        registration: v.registration || 'N/A',
+        type: v.type || 'armoured',
+        status: v.status || 'active',
+        year: v.year || null,
+        color: v.color || 'N/A',
+        vin: v.vin || 'N/A',
+        insurance_expiry: v.insurance_expiry || null,
+        notes: v.notes || '',
+        created_at: v.created_at || new Date().toISOString(),
+        updated_at: v.updated_at || new Date().toISOString(),
+        vehicle_images: Array.isArray(v.vehicle_images) ? v.vehicle_images : [],
       }));
 
+      console.log('Sanitized vehicles data:', sanitizedVehicles);
       return sanitizedVehicles as (Vehicle & { vehicle_images: { image_url: string }[] })[];
     },
   });

@@ -23,8 +23,13 @@ export const VehicleTable = memo(({ vehicles, onVehicleClick }: VehicleTableProp
   }, [onVehicleClick]);
 
   const safeReplace = (value: string | null | undefined, defaultValue: string = 'N/A'): string => {
-    if (!value) return defaultValue;
+    if (!value || typeof value !== 'string') return defaultValue;
     return value.replace('_', ' ');
+  };
+
+  const safeString = (value: any, defaultValue: string = ''): string => {
+    if (value === null || value === undefined) return defaultValue;
+    return String(value);
   };
 
   return (
@@ -47,12 +52,12 @@ export const VehicleTable = memo(({ vehicles, onVehicleClick }: VehicleTableProp
             className="cursor-pointer hover:bg-muted/50"
             onClick={() => handleVehicleClick(vehicle)}
           >
-            <TableCell>{formatVehicleId(vehicle.id)}</TableCell>
+            <TableCell>{formatVehicleId(vehicle.id || '')}</TableCell>
             <TableCell>
               {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
                 <img
                   src={vehicle.vehicle_images[0].image_url}
-                  alt={`${vehicle.make || 'Vehicle'} ${vehicle.model || ''}`}
+                  alt={`${safeString(vehicle.make, 'Vehicle')} ${safeString(vehicle.model)}`}
                   className="w-16 h-16 rounded-lg object-contain"
                 />
               ) : (
@@ -62,9 +67,9 @@ export const VehicleTable = memo(({ vehicles, onVehicleClick }: VehicleTableProp
               )}
             </TableCell>
             <TableCell className="capitalize">{safeReplace(vehicle.type)}</TableCell>
-            <TableCell>{`${vehicle.make || 'Unknown'} ${vehicle.model || 'Model'}`}</TableCell>
+            <TableCell>{`${safeString(vehicle.make, 'Unknown')} ${safeString(vehicle.model, 'Model')}`}</TableCell>
             <TableCell className="capitalize">{safeReplace(vehicle.status)}</TableCell>
-            <TableCell>{vehicle.registration || 'N/A'}</TableCell>
+            <TableCell>{safeString(vehicle.registration, 'N/A')}</TableCell>
             <TableCell>
               {vehicle.insurance_expiry 
                 ? new Date(vehicle.insurance_expiry).toLocaleDateString()
