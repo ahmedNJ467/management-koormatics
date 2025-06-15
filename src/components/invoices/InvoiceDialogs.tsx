@@ -88,7 +88,7 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
     const grandTotal = subtotal + vatAmount - discountAmount;
 
     const invoiceData = {
-      client_id: formData.get("client_id") as string,
+      client_id: selectedClientId,
       date: formData.get("date") as string,
       due_date: formData.get("due_date") as string,
       status: (formData.get("status") as InvoiceStatus) || "draft",
