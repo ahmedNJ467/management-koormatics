@@ -32,7 +32,14 @@ export function DispatchBoard({
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
-  const upcomingTrips = trips.filter(trip => {
+  // Separate trips by status first, then by date for scheduled trips
+  const inProgressTrips = trips.filter(trip => trip.status === "in_progress");
+  
+  const scheduledTrips = trips.filter(trip => trip.status === "scheduled");
+  
+  // From scheduled trips, separate upcoming (today/tomorrow) from later
+  const upcomingTrips = scheduledTrips.filter(trip => {
+    if (!trip.date) return false;
     const tripDate = new Date(trip.date);
     tripDate.setHours(0, 0, 0, 0);
     
@@ -41,15 +48,13 @@ export function DispatchBoard({
   });
   
   // Trips scheduled for later (after tomorrow)
-  const laterTrips = trips.filter(trip => {
+  const laterTrips = scheduledTrips.filter(trip => {
+    if (!trip.date) return false;
     const tripDate = new Date(trip.date);
     tripDate.setHours(0, 0, 0, 0);
     
     return tripDate.getTime() > tomorrow.getTime();
   });
-  
-  // In progress trips
-  const inProgressTrips = trips.filter(trip => trip.status === "in_progress");
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

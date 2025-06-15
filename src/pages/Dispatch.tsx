@@ -20,12 +20,10 @@ export default function Dispatch() {
   const [tripToMessage, setTripToMessage] = useState<DisplayTrip | null>(null);
   const [newMessage, setNewMessage] = useState("");
   
-  // Filter only scheduled and in_progress trips for dispatch
+  // Pass all trips to DispatchBoard - it will handle the filtering internally
   // Add safety check to ensure trips is an array and filter out any bad data
   const dispatchTrips = Array.isArray(trips) 
-    ? trips
-        .filter(trip => trip && typeof trip === 'object')
-        .filter(trip => trip.status === "scheduled" || trip.status === "in_progress")
+    ? trips.filter(trip => trip && typeof trip === 'object')
     : [];
 
   // Handle sending a message to driver
