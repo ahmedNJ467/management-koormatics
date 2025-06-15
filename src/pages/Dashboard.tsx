@@ -105,93 +105,81 @@ export default function Dashboard() {
   }, [queryClient]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-8 space-y-8">
-        {/* Enhanced Header */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-600/10 rounded-2xl"></div>
-          <div className="relative p-8 rounded-2xl border border-white/20 bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Fleet Command Center
-                </h1>
-                <p className="text-lg text-muted-foreground">
-                  Real-time insights and operational excellence at your fingertips
-                </p>
-              </div>
-              <div className="hidden md:flex items-center space-x-4">
-                <div className="flex items-center space-x-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-green-700 dark:text-green-400">System Online</span>
-                </div>
-              </div>
+        {/* Clean Header */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Fleet Dashboard
+              </h1>
+              <p className="text-muted-foreground">
+                Real-time insights and operational management
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 rounded-lg border">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">System Online</span>
             </div>
           </div>
         </div>
         
-        {/* Enhanced Stats */}
-        <div className="relative">
-          <DashboardStats />
-        </div>
+        {/* Stats Section */}
+        <DashboardStats />
         
-        {/* Main Content Grid with Better Spacing */}
-        <div className="grid gap-8 lg:grid-cols-12">
-          {/* Fleet Analytics - Enhanced */}
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-12">
+          {/* Analytics Section */}
           <div className="lg:col-span-8">
-            <Card className="border-0 shadow-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-md overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5"></div>
-              <CardHeader className="relative pb-4 border-b border-gray-200/20 dark:border-gray-700/20">
+            <Card>
+              <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl shadow-lg">
-                      <BarChart className="h-6 w-6 text-white" />
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <BarChart className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <CardTitle className="text-xl">
                         Fleet Analytics
                       </CardTitle>
-                      <CardDescription className="text-base">
-                        Comprehensive performance metrics and operational insights
+                      <CardDescription>
+                        Performance metrics and operational insights
                       </CardDescription>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                      <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Live Data</span>
-                    </div>
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md border">
+                    <TrendingUp className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs font-medium text-blue-700 dark:text-blue-400">Live</span>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="relative p-8">
+              <CardContent>
                 <EnhancedOverview />
               </CardContent>
             </Card>
           </div>
           
-          {/* Enhanced Sidebar */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Recent Activity - Enhanced */}
-            <Card className="border-0 shadow-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-md overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-emerald-500/5"></div>
-              <CardHeader className="relative pb-4 border-b border-gray-200/20 dark:border-gray-700/20">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                    <Activity className="h-5 w-5 text-white" />
+          {/* Activity Sidebar */}
+          <div className="lg:col-span-4">
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Activity className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                      Live Activity
+                    <CardTitle className="text-lg">
+                      Recent Activity
                     </CardTitle>
                     <CardDescription className="text-sm">
-                      Real-time system updates
+                      Live system updates
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="relative p-6">
-                <div className="max-h-[350px] overflow-y-auto space-y-1">
+              <CardContent>
+                <div className="max-h-[400px] overflow-y-auto">
                   <RecentActivity activities={recentActivities} isLoading={false} />
                 </div>
               </CardContent>
