@@ -4,6 +4,7 @@ import autoTable from "jspdf-autotable";
 import { DisplayInvoice, Invoice, InvoiceStatus, InvoiceItem, Json } from "@/lib/types/invoice";
 import { pdfColors } from "@/components/reports/utils/pdf/pdfStyles";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const formatStatus = (status: InvoiceStatus | undefined): string => {
   if (!status) return "Unknown";
@@ -321,10 +322,52 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     });
 };
 
-export const sendInvoiceByEmail = (invoice: DisplayInvoice) => {
-  toast({
-    title: "Email Sending",
-    description: "Email sending would happen here in a real app",
-  });
-  console.log("Sending invoice by email:", invoice);
+export const sendInvoiceByEmail = async (invoice: DisplayInvoice) => {
+  if (!invoice.client_email) {
+    toast({
+      title: "Error",
+      description: "Client does not have an email address.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invoice`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({
+        invoiceId: invoice.id,
+        clientEmail: invoice.client_email,
+        clientName: invoice.client_name
+      })
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({ error: "Failed to send invoice" }));
+      throw new Error(result?.error || "Failed to send invoice");
+    }
+
+    const { error } = await supabase
+      .from('invoices')
+      .update({ status: 'sent' as InvoiceStatus })
+      .eq('id', invoice.id);
+
+    if (error) throw error;
+
+    toast({
+      title: "Invoice sent",
+      description: `The invoice has been sent to ${invoice.client_email}`,
+    });
+  } catch (error) {
+    console.error("Error sending invoice:", error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to send the invoice",
+      variant: "destructive",
+    });
+  }
 };
