@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +15,7 @@ interface DispatchBoardProps {
   onSendMessage: (trip: DisplayTrip) => void;
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
+  onAssignVehicle: (trip: DisplayTrip) => void;
 }
 
 export function DispatchBoard({
@@ -25,7 +25,8 @@ export function DispatchBoard({
   onAssignDriver,
   onSendMessage,
   onCompleteTrip,
-  onUpdateStatus
+  onUpdateStatus,
+  onAssignVehicle,
 }: DispatchBoardProps) {
   const [activeTab, setActiveTab] = useState("upcoming");
   
@@ -87,6 +88,7 @@ export function DispatchBoard({
                   onSendMessage={onSendMessage}
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
+                  onAssignVehicle={onAssignVehicle}
                 />
               </TabsContent>
               <TabsContent value="in-progress" className="mt-4">
@@ -96,6 +98,7 @@ export function DispatchBoard({
                   onSendMessage={onSendMessage}
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
+                  onAssignVehicle={onAssignVehicle}
                 />
               </TabsContent>
               <TabsContent value="scheduled" className="mt-4">
@@ -105,6 +108,7 @@ export function DispatchBoard({
                   onSendMessage={onSendMessage}
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
+                  onAssignVehicle={onAssignVehicle}
                 />
               </TabsContent>
             </Tabs>

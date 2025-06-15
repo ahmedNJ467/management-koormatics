@@ -8,6 +8,7 @@ import { DispatchBoard } from "@/components/dispatch/DispatchBoard";
 import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
 import { TripMessageDialog } from "@/components/trips/TripMessageDialog";
 import { CompleteTripDialog } from "@/components/dispatch/CompleteTripDialog";
+import { AssignVehicleDialog } from "@/components/dispatch/AssignVehicleDialog";
 import { logActivity } from "@/utils/activity-logger";
 import { useOverdueTrips } from "@/hooks/use-overdue-trips";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,8 @@ export default function Dispatch() {
   const [tripToMessage, setTripToMessage] = useState<DisplayTrip | null>(null);
   const [tripToComplete, setTripToComplete] = useState<DisplayTrip | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [assignVehicleOpen, setAssignVehicleOpen] = useState(false);
+  const [tripToAssignVehicle, setTripToAssignVehicle] = useState<DisplayTrip | null>(null);
   
   // Pass all trips to DispatchBoard - it will handle the filtering internally
   // Add safety check to ensure trips is an array and filter out any bad data
@@ -87,6 +90,10 @@ export default function Dispatch() {
       title: "Driver assigned",
       description: "The driver has been successfully assigned to the trip",
     });
+  };
+
+  const handleVehicleAssigned = () => {
+    // The dialog handles success messages and query invalidation.
   };
 
   const handleUpdateTripStatus = async (tripId: string, status: TripStatus) => {
@@ -199,6 +206,10 @@ export default function Dispatch() {
           setCompleteTripOpen(true);
         }}
         onUpdateStatus={handleUpdateTripStatus}
+        onAssignVehicle={(trip) => {
+          setTripToAssignVehicle(trip);
+          setAssignVehicleOpen(true);
+        }}
       />
       
       {/* Dialogs */}
@@ -223,6 +234,13 @@ export default function Dispatch() {
         trip={tripToComplete}
         onClose={() => setCompleteTripOpen(false)}
         onConfirm={handleConfirmCompleteTrip}
+      />
+
+      <AssignVehicleDialog
+        open={assignVehicleOpen}
+        trip={tripToAssignVehicle}
+        onClose={() => setAssignVehicleOpen(false)}
+        onVehicleAssigned={handleVehicleAssigned}
       />
     </div>
   );
