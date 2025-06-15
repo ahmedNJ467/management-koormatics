@@ -24,61 +24,84 @@ export default function Dashboard() {
     
     loadActivities();
     
+    // Refresh activities every 30 seconds instead of 15 to reduce load
     const intervalId = setInterval(async () => {
       const activities = await getActivities(5);
       setRecentActivities(activities);
-    }, 15000);
+    }, 30000);
     
     return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
-    const fleetStatsChannel = supabase
-      .channel('fleet-stats-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, 
-        async () => {
-          queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-          await logActivity({
-            title: "Vehicle status updated",
-            type: "vehicle"
-          });
-          const activities = await getActivities(5);
-          setRecentActivities(activities);
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, 
-        async () => {
-          queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-          await logActivity({
-            title: "Driver information updated",
-            type: "driver"
-          });
-          const activities = await getActivities(5);
-          setRecentActivities(activities);
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance' }, 
-        async () => {
-          queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-          await logActivity({
-            title: "Maintenance record updated",
-            type: "maintenance"
-          });
-          const activities = await getActivities(5);
-          setRecentActivities(activities);
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' }, 
-        async () => {
-          queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
-          await logActivity({
-            title: "Contract information updated",
-            type: "contract"
-          });
-          const activities = await getActivities(5);
-          setRecentActivities(activities);
-        })
-      .subscribe();
+    // Create a single channel for all fleet data changes
+    const fleetChannel = supabase
+      .channel('fleet-data-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'vehicles' 
+      }, async () => {
+        queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+        await logActivity({
+          title: "Vehicle status updated",
+          type: "vehicle"
+        });
+        const activities = await getActivities(5);
+        setRecentActivities(activities);
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'drivers' 
+      }, async () => {
+        queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+        await logActivity({
+          title: "Driver information updated",
+          type: "driver"
+        });
+        const activities = await getActivities(5);
+        setRecentActivities(activities);
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'maintenance' 
+      }, async () => {
+        queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+        await logActivity({
+          title: "Maintenance record updated",
+          type: "maintenance"
+        });
+        const activities = await getActivities(5);
+        setRecentActivities(activities);
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'contracts' 
+      }, async () => {
+        queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
+        await logActivity({
+          title: "Contract information updated",
+          type: "contract"
+        });
+        const activities = await getActivities(5);
+        setRecentActivities(activities);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Dashboard realtime subscribed successfully');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Dashboard realtime subscription error');
+        } else if (status === 'CLOSED') {
+          console.log('Dashboard realtime subscription closed');
+        }
+      });
     
     return () => {
-      supabase.removeChannel(fleetStatsChannel);
+      console.log('Cleaning up dashboard realtime subscription');
+      supabase.removeChannel(fleetChannel);
     };
   }, [queryClient]);
 

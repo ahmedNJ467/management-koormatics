@@ -25,26 +25,9 @@ export const ImprovedAlertsTab = () => {
 
       if (error) throw error;
       return data as Alert[];
-    }
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds instead of relying on realtime
   });
-
-  // Set up realtime subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('alerts-realtime')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'alerts'
-      }, () => {
-        refetch();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
 
   const handleResolveAlert = async (alertId: string) => {
     try {
