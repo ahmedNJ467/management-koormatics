@@ -1,5 +1,5 @@
 
-import { Menu, User, Settings, LogOut } from "lucide-react";
+import { Menu, User, Settings, LogOut, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { GlobalSearchTrigger } from "./global-search/GlobalSearchTrigger";
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -48,9 +49,10 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           <Menu className="h-5 w-5" />
         </Button>
         
-        <div className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2 text-foreground hover:no-underline">
+          <Truck className="h-6 w-6 text-primary" />
           <h1 className="text-lg font-semibold hidden sm:block">Fleet Management</h1>
-        </div>
+        </Link>
         
         <div className="flex-1 flex justify-center max-w-sm mx-auto">
           <GlobalSearchTrigger />
