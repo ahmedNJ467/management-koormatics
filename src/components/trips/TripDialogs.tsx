@@ -139,6 +139,10 @@ export function TripDialogs({
       {/* View Trip Dialog */}
       <Dialog open={!!viewTrip} onOpenChange={onViewTripOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogTitle>Trip Details</DialogTitle>
+          <DialogDescription>
+            View and manage trip information, assignments, and communications.
+          </DialogDescription>
           {viewTrip && (
             <TripDetailView
               viewTrip={viewTrip}
