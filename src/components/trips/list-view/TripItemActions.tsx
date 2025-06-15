@@ -7,6 +7,9 @@ import {
   FileText, MessageCircle, User, Calendar, Clock, 
   Check, X, Trash, Car 
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { generateInvoiceForTrip } from "@/lib/invoice-utils";
 
 interface TripItemActionsProps {
   trip: DisplayTrip;
@@ -37,6 +40,27 @@ export function TripItemActions({
   setDeleteDialogOpen,
   updateTripStatus
 }: TripItemActionsProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const handleGenerateInvoice = async () => {
+    try {
+      await generateInvoiceForTrip(trip);
+      toast({
+        title: "Success",
+        description: `Invoice generated for trip ${trip.id.substring(0, 8)}.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    } catch (error: any) {
+      toast({
+        title: "Error generating invoice",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -69,6 +93,14 @@ export function TripItemActions({
         <Car className="h-4 w-4 mr-2" />
         Assign Vehicle
       </DropdownMenuItem>
+
+      {trip.status === "completed" && !trip.invoice_id && (
+        <DropdownMenuItem onClick={handleGenerateInvoice}>
+          <FileText className="h-4 w-4 mr-2" />
+          Generate Invoice
+        </DropdownMenuItem>
+      )}
+
       <DropdownMenuSeparator />
 
       {/* Status change options */}
@@ -129,4 +161,3 @@ export function TripItemActions({
     </>
   );
 }
-
