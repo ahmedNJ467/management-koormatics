@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DisplayTrip } from "@/lib/types/trip";
-import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone } from "lucide-react";
+import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone, Plane } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -174,115 +174,130 @@ export function DispatchTrips({
         </div>
       )}
 
-      {safeTrips.map(trip => (
-        <div 
-          key={trip.id || `trip-${Math.random().toString(36).substring(2, 9)}`} 
-          className={`border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow ${
-            trip.id && conflictedTrips.has(String(trip.id)) ? 'border-amber-500 dark:border-amber-500/70' : ''
-          }`}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
-            <div className="font-medium text-lg">
-              {safeFormatDate(trip.date)} 
-              {trip.time && (
-                <span className="text-muted-foreground ml-2 text-sm">
-                  <Clock className="h-3 w-3 inline mr-1" />
-                  {safeFormatTime(trip.time)}
-                </span>
-              )}
-              
-              {/* Conflict indicator */}
-              {trip.id && conflictedTrips.has(String(trip.id)) && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="ml-2 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Conflict
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-sm">
-                      <p>This driver is scheduled for multiple trips at the same time</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-              {/* Overdue indicator */}
-              <OverdueIndicator trip={trip} className="ml-2" />
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Trip ID: {safeFormatId(trip.id)}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <div>
-              <div className="flex items-start gap-1 text-sm mb-1">
-                <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <div className="font-medium">Pickup</div>
-                  <div>{safeFormatText(trip.pickup_location)}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-1 text-sm">
-                <MapPin className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                <div>
-                  <div className="font-medium">Dropoff</div>
-                  <div>{safeFormatText(trip.dropoff_location)}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <div className="text-sm mb-1">
-                <span className="font-medium">Client:</span> {safeFormatText(trip.client_name)}
-              </div>
-              
-              <div className="text-sm">
-                <span className="font-medium">Driver:</span> {trip.driver_id ? (
-                  <span>
-                    {safeFormatText(trip.driver_name, "Unknown Driver")}
-                    {trip.driver_contact && (
-                      <span className="text-xs ml-2 text-muted-foreground">
-                        <Phone className="h-3 w-3 inline mr-1" />
-                        {formatPhoneNumber(trip.driver_contact)}
-                      </span>
-                    )}
+      {safeTrips.map(trip => {
+        const flightDetails = [trip.airline, trip.flight_number, trip.terminal].filter(Boolean).join(' / ');
+        return (
+          <div 
+            key={trip.id || `trip-${Math.random().toString(36).substring(2, 9)}`} 
+            className={`border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow ${
+              trip.id && conflictedTrips.has(String(trip.id)) ? 'border-amber-500 dark:border-amber-500/70' : ''
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
+              <div className="font-medium text-lg">
+                {safeFormatDate(trip.date)} 
+                {trip.time && (
+                  <span className="text-muted-foreground ml-2 text-sm">
+                    <Clock className="h-3 w-3 inline mr-1" />
+                    {safeFormatTime(trip.time)}
                   </span>
-                ) : "Unassigned"}
+                )}
+                
+                {/* Conflict indicator */}
+                {trip.id && conflictedTrips.has(String(trip.id)) && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="ml-2 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Conflict
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p>This driver is scheduled for multiple trips at the same time</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
+                {/* Overdue indicator */}
+                <OverdueIndicator trip={trip} className="ml-2" />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Trip ID: {safeFormatId(trip.id)}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <div className="flex items-start gap-1 text-sm mb-1">
+                  <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-medium">Pickup</div>
+                    <div>{safeFormatText(trip.pickup_location)}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-1 text-sm">
+                  <MapPin className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-medium">Dropoff</div>
+                    <div>{safeFormatText(trip.dropoff_location)}</div>
+                  </div>
+                </div>
               </div>
               
-              {trip.passengers && Array.isArray(trip.passengers) && trip.passengers.length > 0 && (
-                <div className="text-sm mt-1">
-                  <span className="font-medium">Passengers:</span> {trip.passengers.length}
+              <div>
+                <div className="text-sm mb-1">
+                  <span className="font-medium">Client:</span> {safeFormatText(trip.client_name)}
                 </div>
-              )}
+                
+                <div className="text-sm">
+                  <span className="font-medium">Driver:</span> {trip.driver_id ? (
+                    <span>
+                      {safeFormatText(trip.driver_name, "Unknown Driver")}
+                      {trip.driver_contact && (
+                        <span className="text-xs ml-2 text-muted-foreground">
+                          <Phone className="h-3 w-3 inline mr-1" />
+                          {formatPhoneNumber(trip.driver_contact)}
+                        </span>
+                      )}
+                    </span>
+                  ) : "Unassigned"}
+                </div>
+                
+                {(trip.type === 'airport_pickup' || trip.type === 'airport_dropoff') && flightDetails ? (
+                  <div className="mt-2 pt-2 border-t border-border">
+                    <div className="flex items-start gap-1 text-sm">
+                        <Plane className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <div>
+                            <div className="font-medium">Flight Details</div>
+                            <div className="text-muted-foreground">{flightDetails}</div>
+                        </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {trip.passengers && Array.isArray(trip.passengers) && trip.passengers.length > 0 && (
+                  <div className="text-sm mt-1">
+                    <span className="font-medium">Passengers:</span> {trip.passengers.length}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4">
+              <Button 
+                size="sm" 
+                onClick={() => onAssignDriver(trip)}
+                className={trip.driver_id ? "bg-blue-500 hover:bg-blue-600" : "bg-primary"}
+              >
+                <User className="h-4 w-4 mr-1" />
+                {trip.driver_id ? "Reassign Driver" : "Assign Driver"}
+              </Button>
+              
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => onSendMessage(trip)}
+              >
+                <MessageCircle className="h-4 w-4 mr-1" />
+                Send Message
+              </Button>
             </div>
           </div>
-          
-          <div className="flex gap-2 mt-4">
-            <Button 
-              size="sm" 
-              onClick={() => onAssignDriver(trip)}
-              className={trip.driver_id ? "bg-blue-500 hover:bg-blue-600" : "bg-primary"}
-            >
-              <User className="h-4 w-4 mr-1" />
-              {trip.driver_id ? "Reassign Driver" : "Assign Driver"}
-            </Button>
-            
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => onSendMessage(trip)}
-            >
-              <MessageCircle className="h-4 w-4 mr-1" />
-              Send Message
-            </Button>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   );
 }
