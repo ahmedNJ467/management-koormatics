@@ -50,7 +50,7 @@ export function useTripsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, make, model, registration")
+        .select("id, make, model, registration, type")
         .eq("status", "active")
         .order("make");
       if (error) throw error;

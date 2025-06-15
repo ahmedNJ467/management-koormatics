@@ -4,8 +4,8 @@ import { TripStatus, TripType, DbServiceType } from "./base-types";
 export interface DbTrip {
   id: string;
   client_id: string;
-  vehicle_id: string;
-  driver_id: string;
+  vehicle_id?: string;
+  driver_id?: string;
   date: string;
   time?: string;             // start_time in application
   return_time?: string;      // end_time in application
@@ -24,13 +24,14 @@ export interface DbTrip {
   is_recurring?: boolean;
   passengers?: string[];    // Array of passenger names for organization clients
   log_sheet_url?: string;
+  vehicle_type?: 'armoured' | 'soft_skin';
 }
 
 export interface Trip {
   id: string;
   client_id: string;
-  vehicle_id: string;
-  driver_id: string;
+  vehicle_id?: string;
+  driver_id?: string;
   date: string;
   start_time?: string;        // time in database
   end_time?: string;          // return_time in database
@@ -49,10 +50,11 @@ export interface Trip {
   service_type?: DbServiceType;      // Alias for type
   airline?: string;           // Direct from database
   flight_number?: string;     // Direct from database
-  terminal?: string;          // Direct from database
+  terminal?: string;        // Direct from database
   is_recurring?: boolean;
   passengers?: string[];      // Array of passenger names for organization clients
   log_sheet_url?: string;
+  vehicle_type?: 'armoured' | 'soft_skin';
 }
 
 export interface DisplayTrip extends Trip {

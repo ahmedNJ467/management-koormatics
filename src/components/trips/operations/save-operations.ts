@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip, TripStatus, TripType, DbServiceType } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
@@ -62,6 +61,8 @@ export const handleSaveTrip = async (
   const amountValue = formData.get("amount") as string;
   const amount = amountValue ? parseFloat(amountValue) : 0;
   
+  const vehicleType = formData.get("vehicle_type") as 'armoured' | 'soft_skin' | null;
+  
   console.log("Saving trip with client type:", clientType);
   console.log("Saving trip with passengers:", passengers);
   
@@ -71,8 +72,6 @@ export const handleSaveTrip = async (
         .from("trips")
         .update({
           client_id: formData.get("client_id") as string,
-          vehicle_id: formData.get("vehicle_id") as string,
-          driver_id: formData.get("driver_id") as string,
           date: formData.get("date") as string,
           time: formData.get("time") as string,
           return_time: formData.get("return_time") as string || null,
@@ -85,7 +84,8 @@ export const handleSaveTrip = async (
           airline: airline,
           terminal: terminal,
           passengers: clientType === "organization" ? passengers : null,
-          amount: amount
+          amount: amount,
+          vehicle_type: vehicleType,
         })
         .eq("id", editTrip.id);
       
@@ -117,6 +117,7 @@ export const handleSaveTrip = async (
         trip.status = "scheduled";
         trip.passengers = clientType === "organization" ? passengers : null;
         trip.amount = amount;
+        trip.vehicle_type = vehicleType;
       });
       
       const { data, error } = await supabase
@@ -146,8 +147,6 @@ export const handleSaveTrip = async (
       
       const tripData = {
         client_id: formData.get("client_id") as string,
-        vehicle_id: formData.get("vehicle_id") as string,
-        driver_id: formData.get("driver_id") as string,
         date: formData.get("date") as string,
         time: formData.get("time") as string,
         return_time: needsReturnTime ? (formData.get("return_time") as string) : null,
@@ -160,7 +159,8 @@ export const handleSaveTrip = async (
         flight_number: flightNumber,
         airline: airline,
         terminal: terminal,
-        passengers: clientType === "organization" ? passengers : null
+        passengers: clientType === "organization" ? passengers : null,
+        vehicle_type: vehicleType,
       };
       
       const { data, error } = await supabase

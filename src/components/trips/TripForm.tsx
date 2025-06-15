@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TripFormProps, UIServiceType } from "./form/types";
@@ -6,13 +5,16 @@ import { PassengerManagement } from "./form/PassengerManagement";
 import { FlightDetails } from "./form/FlightDetails";
 import { RecurringTripFields } from "./form/RecurringTripFields";
 import { TripStatusField } from "./form/TripStatusField";
-import { ClientVehicleDriverSelects, VehicleDriverSelects } from "./form/ClientVehicleDriverSelects";
+import { ClientVehicleDriverSelects } from "./form/ClientVehicleDriverSelects";
 import { LocationFields } from "./form/LocationFields";
 import { DateTimeFields } from "./form/DateTimeFields";
 import { NotesField } from "./form/NotesField";
 import { FormFooter } from "./form/FormFooter";
 import { AmountField } from "./form/AmountField";
 import { formatUIServiceType } from "./form/utils";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { VehicleType } from "@/lib/types";
 
 export function TripForm({
   editTrip,
@@ -123,20 +125,34 @@ export function TripForm({
       <form onSubmit={onSubmit} className="space-y-6">
         <input type="hidden" name="client_type" value={selectedClientType} />
         <input type="hidden" name="passengers" value={JSON.stringify(validPassengers)} />
+        {editTrip && <input type="hidden" name="vehicle_type" value={editTrip.vehicle_type || ''} />}
         
         <ClientVehicleDriverSelects
           clients={clients}
-          vehicles={vehicles}
-          drivers={drivers}
           editTrip={editTrip}
           selectedClientId={selectedClientId}
           serviceType={serviceType}
           handleClientChange={handleClientChange}
           setServiceType={setServiceType}
-          selectedDate={selectedDate}
-          selectedTime={selectedTime}
-          allTrips={trips}
         />
+        
+        {!editTrip && (
+          <div className="space-y-2">
+            <Label htmlFor="vehicle_type">Vehicle Type</Label>
+            <Select 
+              name="vehicle_type"
+              required
+            >
+              <SelectTrigger id="vehicle_type">
+                <SelectValue placeholder="Select vehicle type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="soft_skin">Soft Skin</SelectItem>
+                <SelectItem value="armoured">Armoured</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {selectedClientType === "organization" && (
           <PassengerManagement
@@ -160,15 +176,6 @@ export function TripForm({
           editTrip={editTrip} 
           serviceType={serviceType}
           onDateTimeChange={handleDateTimeChange}
-        />
-
-        <VehicleDriverSelects 
-          vehicles={vehicles} 
-          drivers={drivers} 
-          editTrip={editTrip}
-          selectedDate={selectedDate}
-          selectedTime={selectedTime}
-          allTrips={trips}
         />
 
         <LocationFields editTrip={editTrip} />

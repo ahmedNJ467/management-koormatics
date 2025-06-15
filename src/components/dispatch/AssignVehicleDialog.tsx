@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/utils/activity-logger";
 import { Vehicle } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 interface AssignVehicleDialogProps {
   open: boolean;
@@ -33,6 +34,13 @@ export function AssignVehicleDialog({ open, trip, onClose, onVehicleAssigned }: 
     }
   }, [trip]);
 
+  const filteredVehicles = vehicles.filter(vehicle => {
+    if (!trip || !trip.vehicle_type) {
+      return true;
+    }
+    return vehicle.type === trip.vehicle_type;
+  });
+
   const mutation = useMutation({
     mutationFn: async ({ tripId, vehicleId }: { tripId: string, vehicleId: string }) => {
       const { error } = await supabase
@@ -45,12 +53,12 @@ export function AssignVehicleDialog({ open, trip, onClose, onVehicleAssigned }: 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trips"] });
       toast({
-        title: "Vehicle Reassigned",
-        description: "The vehicle has been successfully reassigned to the trip.",
+        title: "Vehicle Assigned",
+        description: "The vehicle has been successfully assigned to the trip.",
       });
       if (trip) {
         logActivity({
-          title: `Vehicle reassigned for trip ${trip.id}`,
+          title: `Vehicle assigned for trip ${trip.id}`,
           type: "trip",
           relatedId: trip.id.toString(),
         });
@@ -61,7 +69,7 @@ export function AssignVehicleDialog({ open, trip, onClose, onVehicleAssigned }: 
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: `Failed to reassign vehicle: ${error.message}`,
+        description: `Failed to assign vehicle: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -77,9 +85,10 @@ export function AssignVehicleDialog({ open, trip, onClose, onVehicleAssigned }: 
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reassign Vehicle</DialogTitle>
+          <DialogTitle>Assign Vehicle</DialogTitle>
           <DialogDescription>
-            Reassign a vehicle for trip {trip?.id ? trip.id.substring(0, 8).toUpperCase() : ''}.
+            Assign a vehicle for trip {trip?.id ? trip.id.substring(0, 8).toUpperCase() : ''}.
+            {trip?.vehicle_type && <span className="block mt-1 capitalize">Required type: <Badge variant="outline">{trip.vehicle_type.replace('_', ' ')}</Badge></span>}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -91,7 +100,7 @@ export function AssignVehicleDialog({ open, trip, onClose, onVehicleAssigned }: 
                   <SelectValue placeholder="Select a vehicle" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicles.map((vehicle: Vehicle) => (
+                  {filteredVehicles.map((vehicle: Vehicle) => (
                     <SelectItem key={vehicle.id} value={vehicle.id}>
                       {vehicle.make} {vehicle.model} ({vehicle.registration})
                     </SelectItem>
@@ -103,7 +112,7 @@ export function AssignVehicleDialog({ open, trip, onClose, onVehicleAssigned }: 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={!selectedVehicle || mutation.isPending}>
-              {mutation.isPending ? "Reassigning..." : "Reassign Vehicle"}
+              {mutation.isPending ? "Assigning..." : "Assign Vehicle"}
             </Button>
           </DialogFooter>
         </form>

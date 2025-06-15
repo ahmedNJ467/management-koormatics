@@ -299,7 +299,7 @@ export function DispatchTrips({
                 className={trip.driver_id ? "bg-blue-500 hover:bg-blue-600" : "bg-primary"}
               >
                 <User className="h-4 w-4 mr-1" />
-                {trip.driver_id ? "Reassign Driver" : "Assign Driver"}
+                Assign Driver
               </Button>
 
               <Button
@@ -308,7 +308,7 @@ export function DispatchTrips({
                 className={trip.vehicle_id ? "bg-blue-500 hover:bg-blue-600" : "bg-primary"}
               >
                 <Car className="h-4 w-4 mr-1" />
-                {trip.vehicle_id ? "Reassign Vehicle" : "Assign Vehicle"}
+                Assign Vehicle
               </Button>
               
               <Button 
