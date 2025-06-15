@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
-import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone, Plane, MoreVertical, Calendar, Check, X, Car } from "lucide-react";
+import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone, Plane, MoreVertical, Calendar, Check, X, Car, FileText } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -21,6 +21,7 @@ interface DispatchTripsProps {
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
   onAssignVehicle: (trip: DisplayTrip) => void;
+  onGenerateInvoice: (trip: DisplayTrip) => void;
 }
 
 export function DispatchTrips({
@@ -30,6 +31,7 @@ export function DispatchTrips({
   onCompleteTrip,
   onUpdateStatus,
   onAssignVehicle,
+  onGenerateInvoice,
 }: DispatchTripsProps) {
   // Ensure we have an array to work with
   const safeTrips = Array.isArray(trips) ? trips.filter(Boolean) : [];
@@ -331,6 +333,11 @@ export function DispatchTrips({
                   {trip.status !== "completed" && (
                     <DropdownMenuItem onClick={() => onCompleteTrip(trip)}>
                       <Check className="mr-2 h-4 w-4" /> Complete Trip
+                    </DropdownMenuItem>
+                  )}
+                  {trip.status === 'completed' && !trip.invoice_id && (
+                    <DropdownMenuItem onClick={() => onGenerateInvoice(trip)}>
+                      <FileText className="mr-2 h-4 w-4" /> Generate Invoice
                     </DropdownMenuItem>
                   )}
                   {trip.status !== "cancelled" && (

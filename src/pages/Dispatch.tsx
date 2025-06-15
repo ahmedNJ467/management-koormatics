@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -118,6 +119,33 @@ export default function Dispatch() {
     }
   };
 
+  const handleGenerateInvoice = async (trip: DisplayTrip) => {
+    if (trip.invoice_id) {
+      toast({
+        title: "Invoice Already Exists",
+        description: "An invoice has already been generated for this trip.",
+      });
+      return;
+    }
+
+    try {
+      await generateInvoiceForTrip(trip);
+      toast({
+        title: "Invoice Generated",
+        description: "Invoice has been successfully generated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    } catch (error: any) {
+      console.error("Error generating invoice:", error);
+      toast({
+        title: "Error",
+        description: `Failed to generate invoice: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleConfirmCompleteTrip = async (trip: DisplayTrip, logSheet: File) => {
     // 1. Upload file
     const fileExt = logSheet.name.split(".").pop();
@@ -210,6 +238,7 @@ export default function Dispatch() {
           setTripToAssignVehicle(trip);
           setAssignVehicleOpen(true);
         }}
+        onGenerateInvoice={handleGenerateInvoice}
       />
       
       {/* Dialogs */}

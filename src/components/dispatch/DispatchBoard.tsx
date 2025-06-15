@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,7 @@ interface DispatchBoardProps {
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
   onAssignVehicle: (trip: DisplayTrip) => void;
+  onGenerateInvoice: (trip: DisplayTrip) => void;
 }
 
 export function DispatchBoard({
@@ -27,6 +29,7 @@ export function DispatchBoard({
   onCompleteTrip,
   onUpdateStatus,
   onAssignVehicle,
+  onGenerateInvoice,
 }: DispatchBoardProps) {
   const [activeTab, setActiveTab] = useState("upcoming");
   
@@ -39,6 +42,7 @@ export function DispatchBoard({
   
   // Separate trips by status first, then by date for scheduled trips
   const inProgressTrips = trips.filter(trip => trip.status === "in_progress");
+  const completedTrips = trips.filter(trip => trip.status === "completed");
   
   const scheduledTrips = trips.filter(trip => trip.status === "scheduled");
   
@@ -80,6 +84,9 @@ export function DispatchBoard({
                 <TabsTrigger value="scheduled" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
                   Scheduled ({laterTrips.length})
                 </TabsTrigger>
+                <TabsTrigger value="completed" className="flex-1 text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+                  Completed ({completedTrips.length})
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="upcoming" className="mt-4">
                 <DispatchTrips 
@@ -89,6 +96,7 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignVehicle={onAssignVehicle}
+                  onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
               <TabsContent value="in-progress" className="mt-4">
@@ -99,6 +107,7 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignVehicle={onAssignVehicle}
+                  onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
               <TabsContent value="scheduled" className="mt-4">
@@ -109,6 +118,18 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignVehicle={onAssignVehicle}
+                  onGenerateInvoice={onGenerateInvoice}
+                />
+              </TabsContent>
+              <TabsContent value="completed" className="mt-4">
+                <DispatchTrips 
+                  trips={completedTrips}
+                  onAssignDriver={onAssignDriver}
+                  onSendMessage={onSendMessage}
+                  onCompleteTrip={onCompleteTrip}
+                  onUpdateStatus={onUpdateStatus}
+                  onAssignVehicle={onAssignVehicle}
+                  onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
             </Tabs>
