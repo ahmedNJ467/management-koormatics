@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { InvoiceItem, prepareForSupabase } from "@/lib/types/invoice";
@@ -9,11 +8,17 @@ export async function generateInvoiceForTrip(trip: DisplayTrip) {
     throw new Error("Trip does not have a client to invoice.");
   }
 
+  const vehicleTypeDescription = trip.vehicle_type
+    ? ` (${trip.vehicle_type
+        .replace("_", " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase())})`
+    : "";
+
   const invoiceItems: InvoiceItem[] = [
     {
       description: `Trip from ${trip.pickup_location || "N/A"} to ${
         trip.dropoff_location || "N/A"
-      } on ${trip.date}`,
+      } on ${trip.date}${vehicleTypeDescription}`,
       quantity: 1,
       unit_price: trip.amount,
       amount: trip.amount,
