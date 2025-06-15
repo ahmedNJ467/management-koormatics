@@ -1,15 +1,16 @@
+
 // Define Color as tuple type [number, number, number] for RGB values
 export type Color = [number, number, number];
 
-// Professional color scheme matching the example
+// Professional color scheme with a blue-green blend
 export const pdfColors = {
-  primary: [0, 0, 0] as Color,           // Black for text and borders
-  headerBg: [0, 0, 0] as Color,          // Black header background
-  headerText: [255, 255, 255] as Color,  // White header text
-  text: [0, 0, 0] as Color,              // Black text
-  border: [0, 0, 0] as Color,            // Black borders
-  rowAlt: [245, 245, 245] as Color,      // Light gray for alternating rows
-  statusRed: [255, 200, 200] as Color,   // Light red for status highlighting
+  primary: [20, 83, 103] as Color,          // Dark Teal for headers and important text
+  headerBg: [20, 83, 103] as Color,         // Dark Teal for header background
+  headerText: [255, 255, 255] as Color,     // White header text
+  text: [51, 51, 51] as Color,              // Dark Gray for body text
+  border: [200, 200, 200] as Color,         // Light gray for borders
+  rowAlt: [229, 245, 248] as Color,         // Very Light Teal for alternating rows
+  statusRed: [255, 200, 200] as Color,      // Light red for status highlighting
   statusOrange: [255, 235, 200] as Color, // Light orange for status highlighting
   statusGreen: [200, 255, 200] as Color, // Light green for status highlighting
   light: [248, 248, 248] as Color        // Very light gray

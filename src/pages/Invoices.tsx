@@ -66,7 +66,7 @@ import { DisplayTrip } from "@/lib/types/trip";
 import { Client } from "@/lib/types/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { pdfConfig } from "@/components/reports/utils/pdf/pdfStyles";
+import { pdfConfig, pdfColors } from "@/components/reports/utils/pdf/pdfStyles";
 
 export default function Invoices() {
   const { toast } = useToast();
@@ -521,9 +521,6 @@ export default function Invoices() {
     
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 15;
-    const primaryColor = '#000000';
-    const secondaryColor = '#555555';
-    const headerBgColor = '#F5F5F5';
 
     doc.setFont('helvetica');
 
@@ -543,22 +540,22 @@ export default function Invoices() {
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(secondaryColor);
+    doc.setTextColor(...pdfColors.text);
     const companyInfoText = [
         'Wadajir district.',
         'Airport Road, Mogadishu, Somalia',
-        'http://www.koormatics.com'
+        'www.koormatics.com'
     ];
     doc.text(companyInfoText, margin, 15 + logoHeight + 5);
 
     doc.setFontSize(26);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
+    doc.setTextColor(...pdfColors.primary);
     doc.text("INVOICE", pageW - margin, 25, { align: 'right' });
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(secondaryColor);
+    doc.setTextColor(...pdfColors.text);
     let yPosHeader = 35;
     doc.text(`Invoice #: ${formatInvoiceId(invoice.id)}`, pageW - margin, yPosHeader, { align: 'right' });
     yPosHeader += 6;
@@ -569,11 +566,11 @@ export default function Invoices() {
     let yPos = 15 + logoHeight + 5 + (companyInfoText.length * 5) + 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
+    doc.setTextColor(...pdfColors.primary);
     doc.text("BILL TO", margin, yPos);
     
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(secondaryColor);
+    doc.setTextColor(...pdfColors.text);
     yPos += 5;
     doc.text(invoice.client_name, margin, yPos);
     yPos += 5;
@@ -603,24 +600,26 @@ export default function Invoices() {
       ]),
       theme: 'grid',
       headStyles: { 
-        fillColor: primaryColor, 
-        textColor: '#FFFFFF',
+        fillColor: pdfColors.headerBg, 
+        textColor: pdfColors.headerText,
         fontStyle: 'bold'
       },
       styles: {
         font: 'helvetica',
         fontSize: 9,
         cellPadding: 3,
-        overflow: 'linebreak'
+        overflow: 'linebreak',
+        textColor: pdfColors.text,
+        lineColor: pdfColors.border
       },
       alternateRowStyles: {
-        fillColor: headerBgColor
+        fillColor: pdfColors.rowAlt
       },
       didDrawPage: function (data) {
         const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
         const pageCount = (doc as any).internal.getNumberOfPages();
         doc.setFontSize(8);
-        doc.setTextColor(secondaryColor);
+        doc.setTextColor(...pdfColors.text);
         doc.text('Thank you for your business!', margin, doc.internal.pageSize.height - 10);
         doc.text(`Page ${pageNumber} of ${pageCount}`, pageW - margin, doc.internal.pageSize.height - 10, { align: 'right' });
       }
@@ -628,46 +627,32 @@ export default function Invoices() {
 
     const finalY = (doc as any).lastAutoTable.finalY || 100;
     let yPosTotals = finalY + 10;
-    const subtotal = invoice.total_amount;
-    const taxRate = 0.05;
-    const taxAmount = subtotal * taxRate;
-    const totalWithTax = subtotal + taxAmount;
-    const balanceDue = totalWithTax - (invoice.paid_amount || 0);
+    const totalAmount = invoice.total_amount;
+    const balanceDue = totalAmount - (invoice.paid_amount || 0);
     const totalCol1 = pageW - margin - 50;
     const totalCol2 = pageW - margin;
 
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(secondaryColor);
-    
-    doc.text('Subtotal:', totalCol1, yPosTotals, { align: 'right' });
-    doc.text(formatCurrency(subtotal), totalCol2, yPosTotals, { align: 'right' });
-    yPosTotals += 7;
-    
-    doc.text('Tax (5%):', totalCol1, yPosTotals, { align: 'right' });
-    doc.text(formatCurrency(taxAmount), totalCol2, yPosTotals, { align: 'right' });
-    yPosTotals += 7;
-
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
+    doc.setTextColor(...pdfColors.primary);
     doc.text('Total:', totalCol1, yPosTotals, { align: 'right' });
-    doc.text(formatCurrency(totalWithTax), totalCol2, yPosTotals, { align: 'right' });
+    doc.text(formatCurrency(totalAmount), totalCol2, yPosTotals, { align: 'right' });
     yPosTotals += 7;
     
     if (invoice.paid_amount > 0) {
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(secondaryColor);
+      doc.setTextColor(...pdfColors.text);
       doc.text('Amount Paid:', totalCol1, yPosTotals, { align: 'right' });
       doc.text(`-${formatCurrency(invoice.paid_amount)}`, totalCol2, yPosTotals, { align: 'right' });
       yPosTotals += 7;
 
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(primaryColor);
+      doc.setTextColor(...pdfColors.primary);
       doc.text('Balance Due:', totalCol1, yPosTotals, { align: 'right' });
       doc.text(formatCurrency(balanceDue), totalCol2, yPosTotals, { align: 'right' });
     } else {
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(primaryColor);
+      doc.setTextColor(...pdfColors.primary);
       doc.text('Balance Due:', totalCol1, yPosTotals, { align: 'right' });
       doc.text(formatCurrency(balanceDue), totalCol2, yPosTotals, { align: 'right' });
     }
@@ -677,10 +662,10 @@ export default function Invoices() {
     if (invoice.notes) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(primaryColor);
+      doc.setTextColor(...pdfColors.primary);
       doc.text('Notes:', margin, yPosTotals);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(secondaryColor);
+      doc.setTextColor(...pdfColors.text);
       const splitNotes = doc.splitTextToSize(invoice.notes, pageW - (margin * 2));
       doc.text(splitNotes, margin, yPosTotals + 5);
     }
