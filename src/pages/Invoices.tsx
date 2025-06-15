@@ -544,7 +544,8 @@ export default function Invoices() {
     const companyInfoText = [
         'Wadajir district.',
         'Airport Road, Mogadishu, Somalia',
-        'www.koormatics.com'
+        'www.koormatics.com',
+        '+252-619494974'
     ];
     doc.text(companyInfoText, margin, 15 + logoHeight + 5);
 
