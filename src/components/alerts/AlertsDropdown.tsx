@@ -43,8 +43,10 @@ export function AlertsDropdown() {
               <p className="text-sm text-muted-foreground">Critical notifications & warnings</p>
             </div>
           </div>
-          <div className="max-h-80 overflow-y-auto">
-            <ImprovedAlertsTab />
+          <div className="max-h-80 overflow-y-auto pr-2 -mr-2">
+            <div className="pr-1">
+              <ImprovedAlertsTab />
+            </div>
           </div>
         </div>
       </DropdownMenuContent>
