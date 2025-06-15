@@ -2,6 +2,8 @@
 import { ImagePlus, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Vehicle } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface VehicleImagesFieldProps {
   vehicle?: Vehicle;
@@ -18,10 +20,16 @@ export function VehicleImagesField({
   imagePreviewUrls,
   setImagePreviewUrls,
 }: VehicleImagesFieldProps) {
+  const { toast } = useToast();
+  const [existingImages, setExistingImages] = useState<{ image_url: string; id?: string }[]>([]);
+
   useEffect(() => {
     if (vehicle?.vehicle_images) {
-      setImagePreviewUrls(vehicle.vehicle_images.map(img => img.image_url));
+      const existingImageUrls = vehicle.vehicle_images.map(img => ({ image_url: img.image_url }));
+      setExistingImages(existingImageUrls);
+      setImagePreviewUrls(existingImageUrls.map(img => img.image_url));
     } else {
+      setExistingImages([]);
       setImagePreviewUrls([]);
     }
     setImages([]);
@@ -37,12 +45,64 @@ export function VehicleImagesField({
     setImagePreviewUrls(updatedPreviewUrls);
   };
 
-  const removeImage = (index: number) => {
-    const updatedImages = images.filter((_, i) => i !== index);
-    setImages(updatedImages);
+  const removeImage = async (index: number) => {
+    const imageUrl = imagePreviewUrls[index];
     
+    // Check if this is an existing image from the database
+    const existingImageIndex = existingImages.findIndex(img => img.image_url === imageUrl);
+    
+    if (existingImageIndex !== -1 && vehicle) {
+      try {
+        // Delete from database
+        const { error } = await supabase
+          .from('vehicle_images')
+          .delete()
+          .eq('vehicle_id', vehicle.id)
+          .eq('image_url', imageUrl);
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Failed to remove image from database",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Update local state
+        const updatedExistingImages = existingImages.filter((_, i) => i !== existingImageIndex);
+        setExistingImages(updatedExistingImages);
+        
+        toast({
+          title: "Success",
+          description: "Image removed successfully",
+        });
+      } catch (error) {
+        console.error('Error removing image:', error);
+        toast({
+          title: "Error",
+          description: "Failed to remove image",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      // This is a new image (File object), just remove from local state
+      const fileIndex = index - existingImages.length;
+      if (fileIndex >= 0) {
+        const updatedImages = images.filter((_, i) => i !== fileIndex);
+        setImages(updatedImages);
+      }
+    }
+    
+    // Update preview URLs
     const updatedPreviewUrls = imagePreviewUrls.filter((_, i) => i !== index);
     setImagePreviewUrls(updatedPreviewUrls);
+    
+    // Clean up object URL if it's a blob URL
+    if (imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imageUrl);
+    }
   };
 
   return (

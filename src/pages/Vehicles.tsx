@@ -1,3 +1,4 @@
+
 import { useState, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -299,7 +300,7 @@ export default function Vehicles() {
                       <img
                         src={vehicle.vehicle_images[0].image_url}
                         alt={`${vehicle.make} ${vehicle.model}`}
-                        className="w-16 h-16 rounded-lg object-cover"
+                        className="w-16 h-16 rounded-lg object-contain"
                       />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
@@ -337,7 +338,7 @@ export default function Vehicles() {
         onOpenChange={setFormOpen}
       />
 
-      <Dialog open={!!selectedVehicle && viewMode === "view"} onOpenChange={closeVehicleDetails}>
+      <Dialog open={!!selectedVehicle} onOpenChange={closeVehicleDetails}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="pr-10">
@@ -345,7 +346,7 @@ export default function Vehicles() {
             </DialogTitle>
           </DialogHeader>
 
-          {selectedVehicle && (
+          {selectedVehicle && viewMode === "view" && (
             <VehicleDetailsContent 
               selectedVehicle={selectedVehicle}
               currentImageIndex={currentImageIndex}
@@ -356,18 +357,33 @@ export default function Vehicles() {
               setShowDeleteConfirm={setShowDeleteConfirm}
             />
           )}
+
+          {selectedVehicle && viewMode === "edit" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-4 border-b">
+                <h3 className="text-lg font-semibold">Edit Vehicle</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode("view")}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel Edit
+                </Button>
+              </div>
+              <VehicleFormDialog
+                open={true}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    handleEditComplete();
+                  }
+                }}
+                vehicle={selectedVehicle}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
-
-      <VehicleFormDialog
-        open={!!selectedVehicle && viewMode === "edit"}
-        onOpenChange={(open) => {
-          if (!open) {
-            handleEditComplete();
-          }
-        }}
-        vehicle={selectedVehicle || undefined}
-      />
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
