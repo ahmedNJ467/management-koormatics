@@ -21,6 +21,8 @@ export function MaintenanceFormDialog({
   onMaintenanceDeleted
 }: MaintenanceFormDialogProps) {
   const { toast } = useToast();
+  const isCompleted = maintenance?.status === 'completed';
+  
   const {
     form,
     isSubmitting,
@@ -59,6 +61,11 @@ export function MaintenanceFormDialog({
     await handleSubmit(values);
     onOpenChange(false);
   };
+
+  // Don't render the dialog if trying to edit a completed maintenance record
+  if (maintenance && isCompleted) {
+    return null;
+  }
 
   return (
     <>

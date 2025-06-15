@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +47,14 @@ export default function Maintenance() {
   const handleMaintenanceDeleted = () => {
     queryClient.invalidateQueries({ queryKey: ["maintenance"] });
     setSelectedRecord(undefined);
+  };
+
+  const handleRowClick = (record: Maintenance) => {
+    // Don't allow editing completed maintenance records
+    if (record.status === 'completed') {
+      return;
+    }
+    setSelectedRecord(record);
   };
 
   const filteredRecords = maintenanceRecords?.filter((record) => {
@@ -142,8 +149,9 @@ export default function Maintenance() {
               filteredRecords?.map((record) => (
                 <TableRow
                   key={record.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => setSelectedRecord(record)}
+                  className={`${record.status === 'completed' ? 'opacity-75' : 'cursor-pointer hover:bg-muted/50'}`}
+                  onClick={() => handleRowClick(record)}
+                  title={record.status === 'completed' ? 'Completed maintenance records cannot be edited' : 'Click to edit'}
                 >
                   <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
                   <TableCell>
