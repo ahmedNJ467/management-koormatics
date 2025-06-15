@@ -11,6 +11,7 @@ import { NotesField } from "./fuel-log-form/notes-field";
 import { FormActions } from "./fuel-log-form/form-actions";
 import { DeleteFuelLogDialog } from "./fuel-log-form/delete-fuel-log-dialog";
 import type { FuelLog } from "@/lib/types";
+import { Form } from "@/components/ui/form";
 
 interface FuelLogFormDialogProps {
   open: boolean;
@@ -50,19 +51,21 @@ export function FuelLogFormDialog({ open, onOpenChange, fuelLog }: FuelLogFormDi
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[calc(80vh-4rem)] pr-4" type="always">
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 px-1">
-              <VehicleSelect form={form} vehicles={vehicles} />
-              <FuelDetails form={form} />
-              <VolumePrice form={form} />
-              <MileageFields form={form} />
-              <NotesField form={form} />
-              <FormActions 
-                onCancel={() => onOpenChange(false)} 
-                isSubmitting={isSubmitting} 
-                isEdit={!!fuelLog}
-                onDelete={fuelLog ? handleDeleteClick : undefined}
-              />
-            </form>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 px-1">
+                <VehicleSelect form={form} vehicles={vehicles} />
+                <FuelDetails form={form} />
+                <VolumePrice form={form} />
+                <MileageFields form={form} />
+                <NotesField form={form} />
+                <FormActions 
+                  onCancel={() => onOpenChange(false)} 
+                  isSubmitting={isSubmitting} 
+                  isEdit={!!fuelLog}
+                  onDelete={fuelLog ? handleDeleteClick : undefined}
+                />
+              </form>
+            </Form>
           </ScrollArea>
         </DialogContent>
       </Dialog>

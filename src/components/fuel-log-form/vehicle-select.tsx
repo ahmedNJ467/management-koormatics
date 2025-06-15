@@ -1,5 +1,4 @@
 
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { FuelLogFormValues } from "./schemas/fuel-log-schema";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 type VehicleSelectProps = {
   form: UseFormReturn<FuelLogFormValues>;
@@ -17,26 +17,29 @@ type VehicleSelectProps = {
 
 export function VehicleSelect({ form, vehicles }: VehicleSelectProps) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor="vehicle_id">Vehicle</Label>
-      <Select
-        defaultValue={form.getValues("vehicle_id")}
-        onValueChange={(value) => form.setValue("vehicle_id", value)}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Select a vehicle" />
-        </SelectTrigger>
-        <SelectContent>
-          {vehicles?.map((vehicle) => (
-            <SelectItem key={vehicle.id} value={vehicle.id}>
-              {vehicle.make} {vehicle.model} - {vehicle.registration}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {form.formState.errors.vehicle_id && (
-        <p className="text-sm text-destructive">{form.formState.errors.vehicle_id.message}</p>
+    <FormField
+      control={form.control}
+      name="vehicle_id"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Vehicle</FormLabel>
+          <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a vehicle" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {vehicles?.map((vehicle) => (
+                <SelectItem key={vehicle.id} value={vehicle.id}>
+                  {vehicle.make} {vehicle.model} - {vehicle.registration}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
       )}
-    </div>
+    />
   );
 }
