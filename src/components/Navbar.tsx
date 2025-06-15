@@ -1,4 +1,3 @@
-
 import { Menu, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
@@ -79,9 +78,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         
         <Link to="/dashboard" className="flex items-center">
           <img 
-            src="/lovable-uploads/76df9771-fea9-4ebd-81b4-b48360911b83.png" 
+            src="/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png" 
             alt="Koormatics Logo" 
-            className={`h-8 object-contain ${resolvedTheme === 'light' ? 'mix-blend-multiply' : ''}`}
+            className="h-8 object-contain"
           />
         </Link>
         
