@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { GlobalSearchTrigger } from "./global-search/GlobalSearchTrigger";
 import { AlertsDropdown } from "./alerts/AlertsDropdown";
+import { useProfile } from "@/hooks/use-profile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,8 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
+  const { profile } = useProfile();
+
   const handleProfileClick = () => {
     // Navigate to profile page
     window.location.href = "/profile";
@@ -59,19 +62,23 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src="/placeholder.svg" alt="Admin" />
-                  <AvatarFallback>AD</AvatarFallback>
+              <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={profile?.profile_image_url || "/placeholder.svg"} alt="Admin" />
+                  <AvatarFallback>
+                    {profile?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD'}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin User</p>
+                  <p className="text-sm font-medium leading-none">
+                    {profile?.name || "Admin User"}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    admin@fleetmanagement.com
+                    {profile?.email || "admin@fleetmanagement.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>

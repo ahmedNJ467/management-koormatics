@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Camera, Save, User, Mail, Phone, MapPin, Building } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useProfile, type ProfileData } from "@/hooks/use-profile";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -26,15 +26,15 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function Profile() {
-  const { toast } = useToast();
+  const { profile, loading, saveProfile, uploadProfileImage } = useProfile();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: "Admin User",
-      email: "admin@fleetmanagement.com",
+      name: "",
+      email: "",
       phone: "",
       address: "",
       company: "",
@@ -42,38 +42,59 @@ export default function Profile() {
     },
   });
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Update form when profile loads
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone || "",
+        address: profile.address || "",
+        company: profile.company || "",
+        bio: profile.bio || "",
+      });
+      setProfileImage(profile.profile_image_url);
+    }
+  }, [profile, form]);
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const imageUrl = await uploadProfileImage(file);
+        setProfileImage(imageUrl);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
     }
   };
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      // Here you would typically save to your backend/Supabase
-      console.log("Profile data:", data);
-      console.log("Profile image:", profileImage);
+      const profileData: ProfileData = {
+        ...data,
+        profile_image_url: profileImage,
+      };
       
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
-      });
+      await saveProfile(profileData);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error saving profile:', error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
@@ -98,7 +119,9 @@ export default function Profile() {
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={profileImage || "/placeholder.svg"} alt="Profile" />
-                <AvatarFallback className="text-lg">AD</AvatarFallback>
+                <AvatarFallback className="text-lg">
+                  {profile?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD'}
+                </AvatarFallback>
               </Avatar>
               
               <div className="flex flex-col space-y-2">
