@@ -935,7 +935,7 @@ export type Database = {
           client_id: string | null
           created_at: string | null
           date: string
-          driver_id: string
+          driver_id: string | null
           dropoff_location: string | null
           flight_number: string | null
           id: string
@@ -951,7 +951,7 @@ export type Database = {
           terminal: string | null
           time: string | null
           updated_at: string | null
-          vehicle_id: string
+          vehicle_id: string | null
         }
         Insert: {
           airline?: string | null
@@ -959,7 +959,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           date: string
-          driver_id: string
+          driver_id?: string | null
           dropoff_location?: string | null
           flight_number?: string | null
           id?: string
@@ -975,7 +975,7 @@ export type Database = {
           terminal?: string | null
           time?: string | null
           updated_at?: string | null
-          vehicle_id: string
+          vehicle_id?: string | null
         }
         Update: {
           airline?: string | null
@@ -983,7 +983,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           date?: string
-          driver_id?: string
+          driver_id?: string | null
           dropoff_location?: string | null
           flight_number?: string | null
           id?: string
@@ -999,7 +999,7 @@ export type Database = {
           terminal?: string | null
           time?: string | null
           updated_at?: string | null
-          vehicle_id?: string
+          vehicle_id?: string | null
         }
         Relationships: [
           {
