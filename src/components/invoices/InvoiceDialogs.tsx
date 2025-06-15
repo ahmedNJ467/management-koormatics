@@ -36,7 +36,7 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
   const [selectedTrips, setSelectedTrips] = useState<string[]>([]);
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
   const [vatEnabled, setVatEnabled] = useState(false);
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
 
   const { data: availableTrips } = useQuery({
     queryKey: ["availableTrips", selectedClientId],
@@ -54,13 +54,13 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
       setSelectedClientId(editInvoice.client_id);
       setInvoiceItems(editInvoice.items.length > 0 ? editInvoice.items : [{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
       setVatEnabled(!!editInvoice.vat_percentage && editInvoice.vat_percentage > 0);
-      setDiscountAmount(editInvoice.discount_amount || 0);
+      setDiscountPercentage(editInvoice.discount_percentage || 0);
     } else {
       setSelectedClientId("");
       setSelectedTrips([]);
       setInvoiceItems([{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
       setVatEnabled(false);
-      setDiscountAmount(0);
+      setDiscountPercentage(0);
     }
   }, [editInvoice, isOpen]);
 
@@ -84,7 +84,8 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
     const formData = new FormData(form);
     const subtotal = calculateTotal(invoiceItems);
     const vatAmount = vatEnabled ? subtotal * 0.05 : 0;
-    const grandTotal = subtotal + vatAmount - (discountAmount || 0);
+    const discountAmount = subtotal * ((discountPercentage || 0) / 100);
+    const grandTotal = subtotal + vatAmount - discountAmount;
 
     const invoiceData = {
       client_id: formData.get("client_id") as string,
@@ -96,7 +97,7 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
       paid_amount: editInvoice?.paid_amount || 0,
       notes: formData.get("notes") as string || undefined,
       vat_percentage: vatEnabled ? 5 : undefined,
-      discount_amount: discountAmount > 0 ? discountAmount : undefined,
+      discount_percentage: discountPercentage > 0 ? discountPercentage : undefined,
       ...(editInvoice ? { updated_at: new Date().toISOString() } : { created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
     };
 
@@ -104,6 +105,11 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
     onOpenChange(false);
   };
   
+  const subtotal = calculateTotal(invoiceItems);
+  const vatAmount = vatEnabled ? subtotal * 0.05 : 0;
+  const discountAmountValue = subtotal * ((discountPercentage || 0) / 100);
+  const grandTotal = subtotal + vatAmount - discountAmountValue;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh]">
@@ -164,16 +170,16 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
             </div>
             <div className="flex justify-end pt-4">
               <div className="w-[250px] space-y-1">
-                <div className="flex justify-between text-sm"><span>Subtotal:</span><span>{formatCurrency(calculateTotal(invoiceItems))}</span></div>
+                <div className="flex justify-between text-sm"><span>Subtotal:</span><span>{formatCurrency(subtotal)}</span></div>
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center space-x-2"><Checkbox id="vat" checked={vatEnabled} onCheckedChange={(c) => setVatEnabled(c as boolean)} /><Label htmlFor="vat">VAT (5%)</Label></div>
-                  <span>{formatCurrency(vatEnabled ? calculateTotal(invoiceItems) * 0.05 : 0)}</span>
+                  <span>{formatCurrency(vatAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <Label htmlFor="discount">Discount:</Label>
-                  <Input id="discount" type="number" value={discountAmount || ""} onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)} className="h-8 text-right w-24" />
+                  <Label htmlFor="discount">Discount (%):</Label>
+                  <Input id="discount" type="number" value={discountPercentage || ""} onChange={(e) => setDiscountPercentage(parseFloat(e.target.value) || 0)} className="h-8 text-right w-24" />
                 </div>
-                <div className="flex justify-between font-medium pt-2 border-t mt-2"><span>Total:</span><span>{formatCurrency(calculateTotal(invoiceItems) + (vatEnabled ? calculateTotal(invoiceItems) * 0.05 : 0) - (discountAmount || 0))}</span></div>
+                <div className="flex justify-between font-medium pt-2 border-t mt-2"><span>Total:</span><span>{formatCurrency(grandTotal)}</span></div>
               </div>
             </div>
             <div className="space-y-2"><Label htmlFor="notes">Notes</Label><Textarea id="notes" name="notes" defaultValue={editInvoice?.notes || ""} /></div>
@@ -215,7 +221,7 @@ export function ViewInvoiceDialog({ isOpen, onOpenChange, invoice, onRecordPayme
                     <TableBody>{invoice.items.map((item, i) => <TableRow key={i}><TableCell>{item.description}</TableCell><TableCell className="text-right">{formatCurrency(item.amount)}</TableCell></TableRow>)}</TableBody>
                     <TableFooter>
                       {invoice.vat_percentage && <TableRow><TableCell colSpan={1} className="text-right">VAT ({invoice.vat_percentage}%)</TableCell><TableCell className="text-right">{formatCurrency(calculateTotal(invoice.items) * (invoice.vat_percentage/100))}</TableCell></TableRow>}
-                      {invoice.discount_amount && <TableRow><TableCell colSpan={1} className="text-right">Discount</TableCell><TableCell className="text-right">-{formatCurrency(invoice.discount_amount)}</TableCell></TableRow>}
+                      {invoice.discount_percentage && <TableRow><TableCell colSpan={1} className="text-right">Discount ({invoice.discount_percentage}%)</TableCell><TableCell className="text-right">-{formatCurrency(calculateTotal(invoice.items) * (invoice.discount_percentage / 100))}</TableCell></TableRow>}
                       <TableRow><TableCell colSpan={1} className="text-right font-bold">Total</TableCell><TableCell className="text-right font-bold">{formatCurrency(invoice.total_amount)}</TableCell></TableRow>
                       {invoice.paid_amount > 0 && <TableRow><TableCell colSpan={1} className="text-right font-bold">Paid</TableCell><TableCell className="text-right font-bold text-green-600">{formatCurrency(invoice.paid_amount)}</TableCell></TableRow>}
                       <TableRow><TableCell colSpan={1} className="text-right font-bold">Balance Due</TableCell><TableCell className="text-right font-bold">{formatCurrency(invoice.total_amount - invoice.paid_amount)}</TableCell></TableRow>

@@ -1,3 +1,4 @@
+
 import { DisplayTrip } from './trip';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
@@ -35,7 +36,7 @@ export interface Invoice {
   created_at?: string;
   updated_at?: string;
   vat_percentage?: number;
-  discount_amount?: number;
+  discount_percentage?: number;
 }
 
 export interface DisplayInvoice extends Invoice {

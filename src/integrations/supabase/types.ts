@@ -494,7 +494,7 @@ export type Database = {
           client_id: string | null
           created_at: string | null
           date: string
-          discount_amount: number | null
+          discount_percentage: number | null
           due_date: string
           id: string
           items: Json
@@ -512,7 +512,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           date: string
-          discount_amount?: number | null
+          discount_percentage?: number | null
           due_date: string
           id?: string
           items?: Json
@@ -530,7 +530,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           date?: string
-          discount_amount?: number | null
+          discount_percentage?: number | null
           due_date?: string
           id?: string
           items?: Json
