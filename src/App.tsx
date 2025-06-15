@@ -15,6 +15,7 @@ import Maintenance from "./pages/Maintenance";
 import FuelLogs from "./pages/FuelLogs";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import Quotations from "./pages/Quotations";
 import Invoices from "./pages/Invoices";
 import SpareParts from "./pages/SpareParts";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="fuel-logs" element={<FuelLogs />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="quotations" element={<Quotations />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="spare-parts" element={<SpareParts />} />

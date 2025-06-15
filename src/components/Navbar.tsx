@@ -21,7 +21,7 @@ interface NavbarProps {
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const handleProfileClick = () => {
     // Navigate to profile page
-    console.log("Navigate to profile");
+    window.location.href = "/profile";
   };
 
   const handleSettingsClick = () => {
@@ -59,8 +59,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Avatar className="h-10 w-10">
                   <AvatarImage src="/placeholder.svg" alt="Admin" />
                   <AvatarFallback>AD</AvatarFallback>
                 </Avatar>
