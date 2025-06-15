@@ -8,15 +8,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
+import { useAlertsData } from "@/hooks/use-alerts-data";
 
 export function AlertsDropdown() {
   const [open, setOpen] = useState(false);
+  const { alerts } = useAlertsData({ activeOnly: true });
+
+  const unreadCount = alerts?.filter(alert => !alert.resolved).length || 0;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center min-w-[1.25rem]">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
