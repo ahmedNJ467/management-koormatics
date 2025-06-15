@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,7 +29,7 @@ const navigationGroups = [
   {
     category: "Overview",
     items: [
-      { name: "Dashboard", href: "/", icon: BarChart3 },
+      { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
     ]
   },
   {
