@@ -3,6 +3,8 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { Vehicle } from "@/lib/types";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format, parseISO } from "date-fns";
 
 type VehicleFormData = Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>;
 
@@ -48,7 +50,10 @@ export function VehicleDetailsFields({ form }: VehicleDetailsFieldsProps) {
           <FormItem>
             <FormLabel>Insurance Expiry</FormLabel>
             <FormControl>
-              <Input type="date" {...field} />
+              <DatePicker
+                date={field.value ? parseISO(field.value) : undefined}
+                onDateChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

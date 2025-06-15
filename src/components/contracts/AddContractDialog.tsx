@@ -1,10 +1,11 @@
-
 import React from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, FileText, Calendar } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format, parseISO } from "date-fns";
 
 interface AddContractDialogProps {
   open: boolean;
@@ -33,6 +34,17 @@ const AddContractDialog = ({
   isPending,
   isStorageAvailable = true,
 }: AddContractDialogProps) => {
+  const handleDateChange = (name: 'start_date' | 'end_date') => (date: Date | undefined) => {
+    const value = date ? format(date, 'yyyy-MM-dd') : '';
+    const event = {
+      target: {
+        name,
+        value,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+    handleInputChange(event);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -97,36 +109,22 @@ const AddContractDialog = ({
               <Label htmlFor="start_date" className="text-base font-medium">
                 Start Date
               </Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="start_date"
-                  name="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={handleInputChange}
-                  className="h-11 pl-10"
-                  required
-                />
-              </div>
+              <DatePicker
+                date={formData.start_date ? parseISO(formData.start_date) : undefined}
+                onDateChange={handleDateChange('start_date')}
+                className="h-11"
+              />
             </div>
             
             <div className="grid gap-2">
               <Label htmlFor="end_date" className="text-base font-medium">
                 End Date
               </Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="end_date"
-                  name="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={handleInputChange}
-                  className="h-11 pl-10"
-                  required
-                />
-              </div>
+              <DatePicker
+                date={formData.end_date ? parseISO(formData.end_date) : undefined}
+                onDateChange={handleDateChange('end_date')}
+                className="h-11"
+              />
             </div>
             
             <div className="grid gap-2">
