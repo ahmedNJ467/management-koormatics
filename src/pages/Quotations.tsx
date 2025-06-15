@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,8 @@ import {
   MoreHorizontal, 
   Copy, 
   Trash,
-  Loader2
+  Loader2,
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +34,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogTitle, DialogContent, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuotationItem, QuotationStatus, Client, DisplayQuotation } from "@/lib/types";
+import { TableFooter } from "@/components/ui/table";
+import { calculateTotal, formatCurrency } from "@/lib/invoice-helpers";
+import { generateQuotationPDF } from "@/lib/quotation-helpers";
 
 export default function Quotations() {
   const { toast } = useToast();
@@ -57,7 +60,7 @@ export default function Quotations() {
         .from('quotations')
         .select(`
           *,
-          clients:client_id(name, email)
+          clients:client_id(name, email, address, phone)
         `)
         .order('date', { ascending: false });
       
@@ -70,13 +73,17 @@ export default function Quotations() {
         client_id: quote.client_id,
         client_name: quote.clients?.name || 'Unknown Client',
         client_email: quote.clients?.email,
+        client_address: quote.clients?.address,
+        client_phone: quote.clients?.phone,
         status: quote.status as QuotationStatus,
         total_amount: quote.total_amount,
         valid_until: quote.valid_until,
         notes: quote.notes,
         items: (quote.items as unknown) as QuotationItem[],
         created_at: quote.created_at,
-        updated_at: quote.updated_at
+        updated_at: quote.updated_at,
+        vat_percentage: quote.vat_percentage,
+        discount_percentage: quote.discount_percentage,
       })) as DisplayQuotation[];
     },
   });
@@ -466,6 +473,8 @@ export default function Quotations() {
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Client</h4>
                   <p>{viewQuotation.client_name || "Unknown Client"}</p>
+                  {viewQuotation.client_address && <p className="text-sm text-muted-foreground">{viewQuotation.client_address}</p>}
+                  {viewQuotation.client_email && <p className="text-sm text-muted-foreground">{viewQuotation.client_email}</p>}
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Valid Until</h4>
@@ -498,8 +507,8 @@ export default function Quotations() {
                           <TableRow key={index}>
                             <TableCell>{item?.description || "Unknown item"}</TableCell>
                             <TableCell className="text-right">{item?.quantity || 0}</TableCell>
-                            <TableCell className="text-right">${Number(item?.unit_price || 0).toFixed(2)}</TableCell>
-                            <TableCell className="text-right">${Number(item?.amount || 0).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(item?.unit_price || 0)}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(item?.amount || 0)}</TableCell>
                           </TableRow>
                         ))
                       ) : (
@@ -507,18 +516,40 @@ export default function Quotations() {
                           <TableCell colSpan={4} className="text-center">No items found</TableCell>
                         </TableRow>
                       )}
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-right font-medium">Total:</TableCell>
-                        <TableCell className="text-right font-bold">${Number(viewQuotation.total_amount || 0).toFixed(2)}</TableCell>
-                      </TableRow>
                     </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                          <TableCell colSpan={3} className="text-right">Subtotal</TableCell>
+                          <TableCell className="text-right">{formatCurrency(calculateTotal(viewQuotation.items))}</TableCell>
+                      </TableRow>
+                      {viewQuotation.vat_percentage && viewQuotation.vat_percentage > 0 && (
+                          <TableRow>
+                              <TableCell colSpan={3} className="text-right">VAT ({viewQuotation.vat_percentage}%)</TableCell>
+                              <TableCell className="text-right">{formatCurrency(calculateTotal(viewQuotation.items) * (viewQuotation.vat_percentage / 100))}</TableCell>
+                          </TableRow>
+                      )}
+                      {viewQuotation.discount_percentage && viewQuotation.discount_percentage > 0 && (
+                          <TableRow>
+                              <TableCell colSpan={3} className="text-right">Discount ({viewQuotation.discount_percentage}%)</TableCell>
+                              <TableCell className="text-right">-{formatCurrency(calculateTotal(viewQuotation.items) * (viewQuotation.discount_percentage / 100))}</TableCell>
+                          </TableRow>
+                      )}
+                      <TableRow className="font-bold border-t">
+                          <TableCell colSpan={3} className="text-right">Total</TableCell>
+                          <TableCell className="text-right">{formatCurrency(viewQuotation.total_amount)}</TableCell>
+                      </TableRow>
+                    </TableFooter>
                   </Table>
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-2 pt-4">
+              <DialogFooter className="flex justify-end space-x-2 pt-4">
                 <Button variant="outline" onClick={() => setViewQuotation(null)}>
                   Close
+                </Button>
+                <Button variant="outline" onClick={() => generateQuotationPDF(viewQuotation)}>
+                  <Download className="mr-2 h-4 w-4" />
+                  PDF
                 </Button>
                 <Button 
                   onClick={() => handleSendQuotation(viewQuotation)} 
@@ -536,7 +567,7 @@ export default function Quotations() {
                     </>
                   )}
                 </Button>
-              </div>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>

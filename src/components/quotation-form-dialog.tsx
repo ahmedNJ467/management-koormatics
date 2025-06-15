@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +27,9 @@ import { Quotation, QuotationStatus, Client } from "@/lib/types";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, addDays } from "date-fns";
+import { Checkbox } from "./ui/checkbox";
+import { Label } from "./ui/label";
+import { formatCurrency } from "@/lib/invoice-helpers";
 
 // Quotation form schema
 const quotationSchema = z.object({
@@ -64,6 +66,8 @@ export function QuotationFormDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [vatEnabled, setVatEnabled] = useState(false);
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
   
   // Set default dates for new quotations
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -107,6 +111,8 @@ export function QuotationFormDialog({
           status: quotation.status,
           items: quotation.items
         });
+        setVatEnabled(!!quotation.vat_percentage && quotation.vat_percentage > 0);
+        setDiscountPercentage(quotation.discount_percentage || 0);
       } else {
         form.reset({
           client_id: "",
@@ -116,6 +122,8 @@ export function QuotationFormDialog({
           status: "draft",
           items: [{ description: "", quantity: 1, unit_price: 0, amount: 0 }]
         });
+        setVatEnabled(false);
+        setDiscountPercentage(0);
       }
     }
   }, [open, quotation, form, today, thirtyDaysFromNow]);
@@ -131,14 +139,11 @@ export function QuotationFormDialog({
   };
 
   // Calculate total amount
-  const calculateTotalAmount = () => {
-    const items = form.getValues("items");
-    return items.reduce((total, item) => {
-      const quantity = item.quantity || 0;
-      const unitPrice = item.unit_price || 0;
-      return total + (quantity * unitPrice);
-    }, 0);
-  };
+  const watchedItems = form.watch("items");
+  const subtotal = watchedItems.reduce((total, item) => total + (item.amount || 0), 0);
+  const vatAmount = vatEnabled ? subtotal * 0.05 : 0;
+  const discountAmountValue = subtotal * ((discountPercentage || 0) / 100);
+  const grandTotal = subtotal + vatAmount - discountAmountValue;
 
   // Add a new item
   const handleAddItem = () => {
@@ -155,7 +160,7 @@ export function QuotationFormDialog({
     setIsSubmitting(true);
     
     try {
-      const totalAmount = calculateTotalAmount();
+      const totalAmount = grandTotal;
       
       // Format the data for Supabase
       const formattedValues = {
@@ -165,7 +170,9 @@ export function QuotationFormDialog({
         status: values.status,
         notes: values.notes || null,
         total_amount: totalAmount,
-        items: values.items as any // Cast to any to handle the JSON type
+        items: values.items as any, // Cast to any to handle the JSON type
+        vat_percentage: vatEnabled ? 5 : undefined,
+        discount_percentage: discountPercentage > 0 ? discountPercentage : undefined,
       };
       
       if (quotation) {
@@ -446,10 +453,27 @@ export function QuotationFormDialog({
                 ))}
               </div>
               
-              <div className="flex justify-end mt-2">
-                <div className="bg-muted px-3 py-2 rounded-md">
-                  <span className="font-medium">Total: </span>
-                  <span className="font-bold">${calculateTotalAmount().toFixed(2)}</span>
+              <div className="flex justify-end pt-4 mt-4">
+                <div className="w-[280px] space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="vat" checked={vatEnabled} onCheckedChange={(c) => setVatEnabled(c as boolean)} />
+                      <Label htmlFor="vat">VAT (5%)</Label>
+                    </div>
+                    <span>{formatCurrency(vatAmount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <Label htmlFor="discount">Discount (%):</Label>
+                    <Input id="discount" type="number" value={discountPercentage || ""} onChange={(e) => setDiscountPercentage(parseFloat(e.target.value) || 0)} className="h-8 text-right w-24" />
+                  </div>
+                  <div className="flex justify-between font-medium pt-2 border-t mt-2">
+                    <span>Total:</span>
+                    <span>{formatCurrency(grandTotal)}</span>
+                  </div>
                 </div>
               </div>
             </div>

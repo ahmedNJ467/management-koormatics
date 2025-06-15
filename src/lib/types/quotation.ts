@@ -19,10 +19,13 @@ export interface Quotation {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  vat_percentage?: number;
+  discount_percentage?: number;
 }
 
 export interface DisplayQuotation extends Quotation {
   client_name: string;
   client_email?: string;
   client_phone?: string;
+  client_address?: string;
 }
