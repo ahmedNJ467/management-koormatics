@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -76,8 +75,17 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(
-    navigationGroups.map(group => group.category) // Start with all categories expanded
+  
+  // Find which category contains the current route and set it as default expanded
+  const findActiveCategoryIndex = () => {
+    const activeIndex = navigationGroups.findIndex(group => 
+      group.items.some(item => location.pathname === item.href)
+    );
+    return activeIndex !== -1 ? activeIndex : 0; // Default to first category if no match
+  };
+  
+  const [expandedCategoryIndex, setExpandedCategoryIndex] = useState<number | null>(
+    findActiveCategoryIndex()
   );
 
   const handleLinkClick = () => {
@@ -86,11 +94,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     }
   };
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(cat => cat !== category) 
-        : [...prev, category]
+  const toggleCategory = (categoryIndex: number) => {
+    // If clicking on the already expanded category, collapse it
+    // Otherwise, expand the clicked category (and collapse others)
+    setExpandedCategoryIndex(
+      expandedCategoryIndex === categoryIndex ? null : categoryIndex
     );
   };
 
@@ -102,14 +110,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       )}
     >
       <nav className="flex flex-col gap-1 p-4">
-        {navigationGroups.map((group) => {
-          const isExpanded = expandedCategories.includes(group.category);
+        {navigationGroups.map((group, groupIndex) => {
+          const isExpanded = expandedCategoryIndex === groupIndex;
           const hasActiveItem = group.items.some(item => location.pathname === item.href);
           
           return (
             <div key={group.category} className="mb-2">
               <button
-                onClick={() => toggleCategory(group.category)}
+                onClick={() => toggleCategory(groupIndex)}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-muted",
                   hasActiveItem ? "text-primary bg-primary/10" : "text-foreground"
