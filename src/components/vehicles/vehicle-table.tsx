@@ -22,6 +22,11 @@ export const VehicleTable = memo(({ vehicles, onVehicleClick }: VehicleTableProp
     onVehicleClick(vehicle);
   }, [onVehicleClick]);
 
+  const safeReplace = (value: string | null | undefined, defaultValue: string = 'N/A'): string => {
+    if (!value) return defaultValue;
+    return value.replace('_', ' ');
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -47,7 +52,7 @@ export const VehicleTable = memo(({ vehicles, onVehicleClick }: VehicleTableProp
               {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
                 <img
                   src={vehicle.vehicle_images[0].image_url}
-                  alt={`${vehicle.make} ${vehicle.model}`}
+                  alt={`${vehicle.make || 'Vehicle'} ${vehicle.model || ''}`}
                   className="w-16 h-16 rounded-lg object-contain"
                 />
               ) : (
@@ -56,10 +61,10 @@ export const VehicleTable = memo(({ vehicles, onVehicleClick }: VehicleTableProp
                 </div>
               )}
             </TableCell>
-            <TableCell className="capitalize">{vehicle.type?.replace('_', ' ') ?? 'N/A'}</TableCell>
-            <TableCell>{`${vehicle.make} ${vehicle.model}`}</TableCell>
-            <TableCell className="capitalize">{vehicle.status?.replace('_', ' ') ?? 'N/A'}</TableCell>
-            <TableCell>{vehicle.registration}</TableCell>
+            <TableCell className="capitalize">{safeReplace(vehicle.type)}</TableCell>
+            <TableCell>{`${vehicle.make || 'Unknown'} ${vehicle.model || 'Model'}`}</TableCell>
+            <TableCell className="capitalize">{safeReplace(vehicle.status)}</TableCell>
+            <TableCell>{vehicle.registration || 'N/A'}</TableCell>
             <TableCell>
               {vehicle.insurance_expiry 
                 ? new Date(vehicle.insurance_expiry).toLocaleDateString()
