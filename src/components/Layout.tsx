@@ -4,6 +4,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ErrorBoundary from "./ErrorBoundary";
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,7 +37,9 @@ export default function Layout() {
       <div className="flex h-[calc(100vh-4rem)]">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className={`flex-1 overflow-y-auto p-4 md:p-6 transition-all duration-300 ${sidebarOpen && !isMobile ? 'ml-64' : 'ml-0'}`}>
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>
