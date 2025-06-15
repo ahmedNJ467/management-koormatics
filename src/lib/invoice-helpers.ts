@@ -186,7 +186,7 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     
     const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
     const vatAmount = invoice.vat_percentage ? subtotal * (invoice.vat_percentage / 100) : 0;
-    const discountAmount = invoice.discount_amount || 0;
+    const discountAmount = invoice.discount_percentage ? subtotal * (invoice.discount_percentage / 100) : 0;
     const totalAmount = invoice.total_amount;
     const balanceDue = totalAmount - (invoice.paid_amount || 0);
 
@@ -208,7 +208,7 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     }
 
     if (discountAmount > 0) {
-      doc.text('Discount:', totalCol1, yPosTotals, { align: 'right' });
+      doc.text(`Discount (${invoice.discount_percentage}%):`, totalCol1, yPosTotals, { align: 'right' });
       doc.text(`-${formatCurrency(discountAmount)}`, totalCol2, yPosTotals, { align: 'right' });
       yPosTotals += 7;
     }
