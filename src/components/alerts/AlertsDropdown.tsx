@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -72,10 +71,8 @@ export function AlertsDropdown() {
               <p className="text-sm text-muted-foreground">Critical notifications & warnings</p>
             </div>
           </div>
-          <div className="max-h-80 overflow-y-auto pr-2 -mr-2">
-            <div className="pr-1">
-              <ImprovedAlertsTab />
-            </div>
+          <div className="max-h-80">
+            <ImprovedAlertsTab />
           </div>
         </div>
       </DropdownMenuContent>
