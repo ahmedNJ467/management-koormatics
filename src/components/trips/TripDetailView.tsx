@@ -13,6 +13,7 @@ import { TripDetailHeader } from "@/components/trips/TripDetailHeader";
 import { TripDetailActions } from "@/components/trips/TripDetailActions";
 import { Driver } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDate } from "@/components/trips/utils";
 import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
 import { QueryClient } from "@tanstack/react-query";
@@ -108,6 +109,21 @@ export function TripDetailView({
         <DialogDescription className="text-sm text-muted-foreground mb-2">
           Trip ID: {viewTrip.id.substring(0, 8).toUpperCase()}
         </DialogDescription>
+
+        {viewTrip.status === 'completed' && viewTrip.log_sheet_url && (
+            <div className="mt-4">
+                <Button asChild>
+                    <a 
+                        href={viewTrip.log_sheet_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                    >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Download Log Sheet
+                    </a>
+                </Button>
+            </div>
+        )}
       </div>
 
       <TripDetailHeader viewTrip={viewTrip} />
