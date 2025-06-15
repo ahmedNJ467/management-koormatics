@@ -4,7 +4,7 @@ import { AlertTriangle, Clock } from "lucide-react";
 import { DisplayTrip } from "@/lib/types/trip";
 
 interface OverdueIndicatorProps {
-  trip: DisplayTriip;
+  trip: DisplayTrip;
   className?: string;
 }
 
