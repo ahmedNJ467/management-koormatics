@@ -192,6 +192,19 @@ export default function Invoices() {
   }, [invoiceToMarkPaid]);
 
   useEffect(() => {
+    if (editInvoice) {
+      setInvoiceItems(editInvoice.items.length > 0 ? editInvoice.items : [
+        { description: "", quantity: 1, unit_price: 0, amount: 0 }
+      ]);
+      setSelectedClientId(editInvoice.client_id);
+    } else if (createInvoiceOpen) {
+      setInvoiceItems([{ description: "", quantity: 1, unit_price: 0, amount: 0 }]);
+      setSelectedClientId("");
+      setSelectedTrips([]);
+    }
+  }, [editInvoice, createInvoiceOpen]);
+
+  useEffect(() => {
     const channel = supabase
       .channel("invoices-changes")
       .on("postgres_changes", 
