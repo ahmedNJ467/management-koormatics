@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, addDays } from "date-fns";
@@ -16,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Plus, Trash, CreditCard, Download, Send, DollarSign, Check } from "lucide-react";
-import { DisplayInvoice, InvoiceItem, PaymentMethod, InvoiceStatus, prepareForSupabase } from "@/lib/types/invoice";
+import { DisplayInvoice, InvoiceItem, PaymentMethod, InvoiceStatus } from "@/lib/types/invoice";
 import { Client } from "@/lib/types/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,7 +91,7 @@ export function InvoiceFormDialog({ isOpen, onOpenChange, editInvoice, clients }
       date: formData.get("date") as string,
       due_date: formData.get("due_date") as string,
       status: (formData.get("status") as InvoiceStatus) || "draft",
-      items: prepareForSupabase(invoiceItems),
+      items: invoiceItems,
       total_amount: grandTotal,
       paid_amount: editInvoice?.paid_amount || 0,
       notes: formData.get("notes") as string || undefined,

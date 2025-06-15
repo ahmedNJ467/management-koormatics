@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, InvoiceStatus, DisplayInvoice, PaymentMethod } from "@/lib/types/invoice";
 import { format } from "date-fns";
+import { prepareForSupabase } from "@/lib/invoice-helpers";
 
 export function useInvoiceMutations() {
   const queryClient = useQueryClient();
@@ -11,13 +12,24 @@ export function useInvoiceMutations() {
 
   const saveInvoiceMutation = useMutation({
     mutationFn: async ({ invoiceData, editInvoice, selectedTrips }: { invoiceData: Partial<Invoice>, editInvoice: DisplayInvoice | null, selectedTrips: string[] }) => {
+      const dbData = {
+        ...invoiceData,
+        items: prepareForSupabase(invoiceData.items || [])
+      };
+      
       if (editInvoice) {
-        const { error } = await supabase.from("invoices").update(invoiceData).eq("id", editInvoice.id);
-        if (error) throw error;
+        const { error } = await supabase.from("invoices").update(dbData).eq("id", editInvoice.id);
+        if (error) {
+          console.error("Error updating invoice:", error)
+          throw error;
+        }
         return editInvoice;
       } else {
-        const { data, error } = await supabase.from("invoices").insert(invoiceData).select();
-        if (error) throw error;
+        const { data, error } = await supabase.from("invoices").insert(dbData as any).select();
+        if (error) {
+          console.error("Error creating invoice:", error)
+          throw error;
+        }
         const newInvoice = data[0];
         if (selectedTrips.length > 0) {
           const { error: updateError } = await supabase.from("trips").update({ invoice_id: newInvoice.id }).in("id", selectedTrips);
@@ -32,7 +44,7 @@ export function useInvoiceMutations() {
       queryClient.invalidateQueries({ queryKey: ["availableTrips"] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to save invoice.", variant: "destructive" });
+      toast({ title: "Error saving invoice", description: error.message || "Failed to save invoice.", variant: "destructive" });
     },
   });
 

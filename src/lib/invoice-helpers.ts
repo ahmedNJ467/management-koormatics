@@ -1,8 +1,7 @@
-
 import { format, isBefore, parseISO } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { DisplayInvoice, Invoice, InvoiceStatus, InvoiceItem } from "@/lib/types/invoice";
+import { DisplayInvoice, Invoice, InvoiceStatus, InvoiceItem, Json } from "@/lib/types/invoice";
 import { pdfColors } from "@/components/reports/utils/pdf/pdfStyles";
 import { toast } from "@/hooks/use-toast";
 
@@ -63,6 +62,10 @@ export const isInvoiceOverdue = (invoice: Invoice): boolean => {
 
 export const calculateTotal = (items: InvoiceItem[]): number => {
   return items.reduce((sum, item) => sum + (item.amount || 0), 0);
+};
+
+export const prepareForSupabase = (items: InvoiceItem[]): Json => {
+  return items as unknown as Json;
 };
 
 export const generateInvoicePDF = (invoice: DisplayInvoice) => {
