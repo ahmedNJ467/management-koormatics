@@ -20,7 +20,7 @@ export function AlertsDropdown() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
-        className="w-80 max-h-96 overflow-y-auto bg-background border shadow-lg z-50" 
+        className="w-96 bg-background border shadow-lg z-50" 
         align="end" 
         forceMount
       >
@@ -34,7 +34,7 @@ export function AlertsDropdown() {
               <p className="text-sm text-muted-foreground">Critical notifications & warnings</p>
             </div>
           </div>
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto">
             <ImprovedAlertsTab />
           </div>
         </div>
