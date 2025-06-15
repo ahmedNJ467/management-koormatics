@@ -13,7 +13,12 @@ interface AlertItemProps {
 
 export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
   const getIconByType = (type: string) => {
-    switch (type) {
+    // Add safety check for undefined type
+    if (!type) {
+      return <AlertTriangle className="h-5 w-5 text-gray-500" />;
+    }
+
+    switch (type.toLowerCase()) {
       case "maintenance":
         return <Wrench className="h-5 w-5 text-amber-500" />;
       case "trip":
@@ -31,12 +36,23 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
     }
   };
 
-  // Format date with fallback to current date if date is invalid
+  // Format date with enhanced safety checks
   const formatDate = (dateString: string) => {
+    if (!dateString || typeof dateString !== 'string') {
+      console.warn("Invalid date string provided:", dateString);
+      return format(new Date(), "PP");
+    }
+
     try {
-      return format(parseISO(dateString), "PP");
+      // Check if it's already a valid date string
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        // Try parsing as ISO if direct conversion fails
+        return format(parseISO(dateString), "PP");
+      }
+      return format(date, "PP");
     } catch (error) {
-      console.error("Invalid date format:", dateString);
+      console.error("Date formatting error:", error, "for date:", dateString);
       return format(new Date(), "PP");
     }
   };
@@ -55,7 +71,7 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
             {getIconByType(alert.type)}
           </div>
           <div className="flex-1">
-            <h3 className="font-medium text-base">{alert.title}</h3>
+            <h3 className="font-medium text-base">{alert.title || 'Untitled Alert'}</h3>
             {alert.description && (
               <p className="text-sm text-muted-foreground mt-1">{alert.description}</p>
             )}
@@ -70,7 +86,7 @@ export const AlertItem = ({ alert, onResolve }: AlertItemProps) => {
                     : "border-blue-500 text-blue-500"
                 }
               >
-                {alert.priority}
+                {alert.priority || 'low'}
               </Badge>
               <span className="text-xs text-muted-foreground">
                 {formatDate(alert.date)}

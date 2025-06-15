@@ -7,14 +7,16 @@ interface TripsByTypeChartProps {
 }
 
 export function TripsByTypeChart({ trips }: TripsByTypeChartProps) {
-  // Count trips by type
+  // Count trips by type with safety checks
   const typeCounts = trips.reduce((acc, trip) => {
     const type = trip.display_type || trip.service_type || 'other';
-    acc[type] = (acc[type] || 0) + 1;
+    // Ensure type is a string before using it as a key
+    const safeType = typeof type === 'string' ? type : 'unknown';
+    acc[safeType] = (acc[safeType] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
   
-  // Convert to array format for chart
+  // Convert to array format for chart with safety checks
   const chartData = Object.entries(typeCounts).map(([name, value]) => ({
     name: formatTypeName(name),
     trips: value
@@ -54,6 +56,11 @@ export function TripsByTypeChart({ trips }: TripsByTypeChartProps) {
 }
 
 function formatTypeName(type: string): string {
+  // Add safety checks for undefined/null values
+  if (!type || typeof type !== 'string') {
+    return 'Unknown';
+  }
+  
   // Format the type name for display
   return type
     .replace(/_/g, ' ')

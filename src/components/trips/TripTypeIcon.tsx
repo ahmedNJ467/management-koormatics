@@ -8,6 +8,11 @@ interface TripTypeIconProps {
 }
 
 export function TripTypeIcon({ type, className }: TripTypeIconProps) {
+  // Add safety check for undefined type
+  if (!type) {
+    return <Car className={className || "h-4 w-4"} />;
+  }
+
   switch (type) {
     case "airport_pickup":
       return <Plane className={className || "h-4 w-4"} />;
