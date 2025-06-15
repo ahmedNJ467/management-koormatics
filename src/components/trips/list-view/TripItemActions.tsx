@@ -43,6 +43,8 @@ export function TripItemActions({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  console.log("Trip data for actions menu:", { id: trip.id, status: trip.status, invoice_id: trip.invoice_id });
+
   const handleGenerateInvoice = async () => {
     try {
       await generateInvoiceForTrip(trip);
