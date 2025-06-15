@@ -9,12 +9,41 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
 import { useAlertsData } from "@/hooks/use-alerts-data";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function AlertsDropdown() {
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { alerts } = useAlertsData({ activeOnly: true });
 
   const unreadCount = alerts?.filter(alert => !alert.resolved).length || 0;
+
+  // Set up real-time listener for alert changes
+  useEffect(() => {
+    const channelName = 'alerts-dropdown-realtime-' + Math.random().toString(36).substring(7);
+    
+    const alertsChannel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'alerts' 
+      }, (payload) => {
+        console.log('Real-time alert update in dropdown:', payload);
+        // Invalidate queries to refresh alert count
+        queryClient.invalidateQueries({ queryKey: ["alerts"] });
+        queryClient.invalidateQueries({ queryKey: ["improved-alerts"] });
+      })
+      .subscribe();
+    
+    console.log('AlertsDropdown real-time subscription activated');
+    
+    return () => {
+      console.log('Cleaning up AlertsDropdown real-time subscription');
+      supabase.removeChannel(alertsChannel);
+    };
+  }, [queryClient]);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -29,7 +58,7 @@ export function AlertsDropdown() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
-        className="w-[28rem] bg-background border shadow-lg z-50" 
+        className="w-[28rem] bg-background shadow-lg z-50" 
         align="end" 
         forceMount
       >
