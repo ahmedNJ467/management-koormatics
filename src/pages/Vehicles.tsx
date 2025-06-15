@@ -36,7 +36,18 @@ export default function Vehicles() {
         throw vehiclesError;
       }
       
-      return vehiclesData as (Vehicle & { vehicle_images: { image_url: string }[] })[];
+      if (!vehiclesData) return [];
+
+      // Sanitize data to prevent render errors from missing optional properties
+      const sanitizedVehicles = vehiclesData.map(v => ({
+        ...v,
+        color: v.color ?? 'N/A',
+        vin: v.vin ?? 'N/A',
+        notes: v.notes ?? '',
+        vehicle_images: v.vehicle_images ?? [],
+      }));
+
+      return sanitizedVehicles as (Vehicle & { vehicle_images: { image_url: string }[] })[];
     },
   });
 
