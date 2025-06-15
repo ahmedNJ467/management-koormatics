@@ -1,9 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertsList } from "@/components/alerts/AlertsList";
 import { ImprovedAlertsTab } from "@/components/dashboard/ImprovedAlertsTab";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Bell } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 export default function Alerts() {
   return (
@@ -32,11 +30,10 @@ export default function Alerts() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid gap-8 lg:grid-cols-12">
-          {/* System Alerts - Enhanced */}
-          <div className="lg:col-span-6">
-            <Card className="border-0 shadow-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-md overflow-hidden h-fit">
+        {/* System Alerts - Centered and Enhanced */}
+        <div className="flex justify-center">
+          <div className="w-full max-w-4xl">
+            <Card className="border-0 shadow-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-md overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5"></div>
               <CardHeader className="relative pb-4 border-b border-gray-200/20 dark:border-gray-700/20">
                 <div className="flex items-center space-x-4">
@@ -57,54 +54,6 @@ export default function Alerts() {
                 <div className="max-h-[600px] overflow-y-auto space-y-1">
                   <ImprovedAlertsTab />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* All Alerts Management */}
-          <div className="lg:col-span-6">
-            <Card className="border-0 shadow-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-md overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5"></div>
-              <CardHeader className="relative pb-4 border-b border-gray-200/20 dark:border-gray-700/20">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl shadow-lg">
-                    <Bell className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
-                      All Alerts
-                    </CardTitle>
-                    <CardDescription className="text-base">
-                      Comprehensive alert management and filtering
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative p-6">
-                <Tabs defaultValue="all" className="w-full">
-                  <TabsList className="mb-4 bg-white/50 dark:bg-gray-800/50">
-                    <TabsTrigger value="all">All Alerts</TabsTrigger>
-                    <TabsTrigger value="critical">Critical</TabsTrigger>
-                    <TabsTrigger value="warning">Warning</TabsTrigger>
-                    <TabsTrigger value="info">Info</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="all" className="max-h-[500px] overflow-y-auto">
-                    <AlertsList />
-                  </TabsContent>
-                  
-                  <TabsContent value="critical" className="max-h-[500px] overflow-y-auto">
-                    <AlertsList filterPriority="high" />
-                  </TabsContent>
-                  
-                  <TabsContent value="warning" className="max-h-[500px] overflow-y-auto">
-                    <AlertsList filterPriority="medium" />
-                  </TabsContent>
-                  
-                  <TabsContent value="info" className="max-h-[500px] overflow-y-auto">
-                    <AlertsList filterPriority="low" />
-                  </TabsContent>
-                </Tabs>
               </CardContent>
             </Card>
           </div>
