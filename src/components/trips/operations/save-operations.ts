@@ -110,7 +110,7 @@ export const handleSaveTrip = async (
       
       const trips = await createRecurringTrips(formData, occurrences, frequencyValue);
       
-      trips.forEach(trip => {
+      trips.forEach((trip: any) => {
         trip.flight_number = flightNumber;
         trip.airline = airline; 
         trip.terminal = terminal;
@@ -118,6 +118,8 @@ export const handleSaveTrip = async (
         trip.passengers = clientType === "organization" ? passengers : null;
         trip.amount = amount;
         trip.vehicle_type = vehicleType;
+        trip.driver_id = null;
+        trip.vehicle_id = null;
       });
       
       const { data, error } = await supabase
@@ -161,6 +163,8 @@ export const handleSaveTrip = async (
         terminal: terminal,
         passengers: clientType === "organization" ? passengers : null,
         vehicle_type: vehicleType,
+        driver_id: null,
+        vehicle_id: null,
       };
       
       const { data, error } = await supabase
