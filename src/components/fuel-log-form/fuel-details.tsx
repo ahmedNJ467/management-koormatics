@@ -1,6 +1,5 @@
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -10,6 +9,9 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { FuelLogFormValues } from "./schemas/fuel-log-schema";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format, parseISO } from "date-fns";
 
 type FuelDetailsProps = {
   form: UseFormReturn<FuelLogFormValues>;
@@ -18,17 +20,25 @@ type FuelDetailsProps = {
 export function FuelDetails({ form }: FuelDetailsProps) {
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="date">Date</Label>
-        <Input
-          id="date"
-          type="date"
-          {...form.register("date")}
-        />
-        {form.formState.errors.date && (
-          <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>
+      <FormField
+        control={form.control}
+        name="date"
+        render={({ field }) => (
+          <FormItem className="space-y-2">
+            <FormLabel>Date</FormLabel>
+            <FormControl>
+              <DatePicker
+                date={field.value ? parseISO(field.value) : undefined}
+                onDateChange={(date) =>
+                  field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                }
+                className="w-full"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
-      </div>
+      />
 
       <div className="space-y-2">
         <Label htmlFor="fuel_type">Fuel Type</Label>
