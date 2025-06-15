@@ -132,15 +132,56 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
         }
       }
 
+      // Create next scheduled maintenance if current maintenance is completed and has next_scheduled date
+      if (values.status === 'completed' && values.next_scheduled) {
+        const nextMaintenanceData = {
+          vehicle_id: values.vehicle_id,
+          date: values.next_scheduled,
+          description: `Follow-up: ${values.description}`,
+          cost: 0, // Default cost for scheduled maintenance
+          status: 'scheduled',
+          next_scheduled: null, // Will be set when this maintenance is planned
+          notes: `Auto-generated follow-up maintenance for previous service on ${values.date}`,
+          service_provider: values.service_provider || null,
+        };
+
+        const { error: nextMaintenanceError } = await supabase
+          .from("maintenance")
+          .insert(nextMaintenanceData);
+
+        if (nextMaintenanceError) {
+          console.error("Error creating next scheduled maintenance:", nextMaintenanceError);
+          // Don't throw error as main maintenance was successful
+          toast({
+            title: "Warning",
+            description: "Maintenance completed but failed to create next scheduled maintenance",
+            variant: "destructive",
+          });
+        } else {
+          console.log("Next scheduled maintenance created successfully");
+        }
+      }
+
       // Invalidate relevant queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["maintenance"] });
       queryClient.invalidateQueries({ queryKey: ["spare-parts"] });
 
+      const successMessage = maintenance 
+        ? "Maintenance record updated"
+        : "Maintenance record created";
+      
+      const successDescription = maintenance 
+        ? "The maintenance record has been updated successfully."
+        : "A new maintenance record has been created successfully.";
+
+      // Add info about next scheduled maintenance if it was created
+      const finalDescription = values.status === 'completed' && values.next_scheduled
+        ? `${successDescription} Next scheduled maintenance has been automatically created for ${values.next_scheduled}.`
+        : successDescription;
+
       toast({
-        title: maintenance ? "Maintenance record updated" : "Maintenance record created",
-        description: maintenance 
-          ? "The maintenance record has been updated successfully."
-          : "A new maintenance record has been created successfully.",
+        title: successMessage,
+        description: finalDescription,
       });
 
       form.reset();
