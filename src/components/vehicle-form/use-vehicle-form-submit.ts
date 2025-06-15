@@ -29,6 +29,22 @@ export function useVehicleFormSubmit(
       };
 
       if (vehicle) {
+        const { data: existingVehicle, error: checkError } = await supabase
+          .from('vehicles')
+          .select('id')
+          .eq('registration', formattedData.registration)
+          .not('id', 'eq', vehicle.id)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error("Check existing vehicle error:", checkError);
+          throw checkError;
+        }
+
+        if (existingVehicle) {
+          throw new ApiError(`A vehicle with registration ${formattedData.registration} already exists`, 409);
+        }
+        
         const { error } = await supabase
           .from('vehicles')
           .update(formattedData)
