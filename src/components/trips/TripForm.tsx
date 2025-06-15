@@ -12,7 +12,7 @@ import { DateTimeFields } from "./form/DateTimeFields";
 import { NotesField } from "./form/NotesField";
 import { FormFooter } from "./form/FormFooter";
 import { AmountField } from "./form/AmountField";
-import { formatUIServiceType, prepareFormData } from "./form/utils";
+import { formatUIServiceType } from "./form/utils";
 
 export function TripForm({
   editTrip,
@@ -38,11 +38,12 @@ export function TripForm({
       setServiceType(editTrip.ui_service_type as UIServiceType || formatUIServiceType(editTrip));
       setSelectedClientId(editTrip.client_id);
       setSelectedDate(editTrip.date);
-      setSelectedTime(editTrip.time);
+      setSelectedTime(editTrip.time || "");
       
-      if (editTrip.client_type === "organization") {
-        setSelectedClientType("organization");
-        
+      const clientType = editTrip.client_type || "individual";
+      setSelectedClientType(clientType);
+      
+      if (clientType === "organization") {
         // Get passengers from both dedicated passengers array and notes
         const extractedPassengers = editTrip.notes ? parsePassengers(editTrip.notes) : [];
         const arrayPassengers = Array.isArray(editTrip.passengers) ? editTrip.passengers : [];
@@ -52,7 +53,6 @@ export function TripForm({
         
         setPassengers(allPassengers.length > 0 ? allPassengers : [""]);
       } else {
-        setSelectedClientType("individual");
         setPassengers([""]);
       }
     } else {
@@ -114,22 +114,16 @@ export function TripForm({
     }
   };
 
-  // Wrap the onSubmit handler to include passenger data
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    // Prepare the form data with passengers
-    prepareFormData(formData, selectedClientType, passengers);
-    
-    // Pass the event to the original onSubmit handler
-    onSubmit(event);
-  };
+  const validPassengers = selectedClientType === "organization"
+    ? passengers.filter(p => p && p.trim() !== "")
+    : [];
 
   return (
     <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
-      <form onSubmit={handleFormSubmit} className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-6">
+        <input type="hidden" name="client_type" value={selectedClientType} />
+        <input type="hidden" name="passengers" value={JSON.stringify(validPassengers)} />
+        
         <ClientVehicleDriverSelects
           clients={clients}
           vehicles={vehicles}
