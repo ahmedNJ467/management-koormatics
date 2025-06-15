@@ -494,6 +494,7 @@ export type Database = {
           client_id: string | null
           created_at: string | null
           date: string
+          discount_amount: number | null
           due_date: string
           id: string
           items: Json
@@ -505,11 +506,13 @@ export type Database = {
           status: Database["public"]["Enums"]["invoice_status"]
           total_amount: number
           updated_at: string | null
+          vat_percentage: number | null
         }
         Insert: {
           client_id?: string | null
           created_at?: string | null
           date: string
+          discount_amount?: number | null
           due_date: string
           id?: string
           items?: Json
@@ -521,11 +524,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["invoice_status"]
           total_amount?: number
           updated_at?: string | null
+          vat_percentage?: number | null
         }
         Update: {
           client_id?: string | null
           created_at?: string | null
           date?: string
+          discount_amount?: number | null
           due_date?: string
           id?: string
           items?: Json
@@ -537,6 +542,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["invoice_status"]
           total_amount?: number
           updated_at?: string | null
+          vat_percentage?: number | null
         }
         Relationships: [
           {
