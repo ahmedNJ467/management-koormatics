@@ -3,7 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useTripsData } from "@/hooks/use-trips-data";
 import { useTripDetails } from "@/hooks/use-trip-details";
-import { TripStatus } from "@/lib/types/trip";
+import { DisplayTrip, TripStatus } from "@/lib/types/trip";
+import { useState } from "react";
 
 import { TripHeader } from "@/components/trips/TripHeader";
 import { TripSearch } from "@/components/trips/TripSearch";
@@ -43,8 +44,6 @@ export default function Trips() {
     setMessageOpen,
     tripToAssign,
     setTripToAssign,
-    tripToMessage,
-    setTripToMessage,
     assignDriver,
     setAssignDriver,
     assignNote,
@@ -60,6 +59,9 @@ export default function Trips() {
     calendarView,
     setCalendarView
   } = useTripState();
+
+  const [assignVehicleOpen, setAssignVehicleOpen] = useState(false);
+  const [tripToAssignVehicle, setTripToAssignVehicle] = useState<DisplayTrip | null>(null);
 
   // Fetch all data
   const { trips, isLoading, clients, vehicles, drivers } = useTripsData();
@@ -138,6 +140,8 @@ export default function Trips() {
           setMessageOpen={setMessageOpen}
           setTripToAssign={setTripToAssign}
           setAssignOpen={setAssignOpen}
+          setTripToAssignVehicle={setTripToAssignVehicle}
+          setAssignVehicleOpen={setAssignVehicleOpen}
           setTripToDelete={setTripToDelete}
           setDeleteDialogOpen={setDeleteDialogOpen}
           updateTripStatus={handleTripStatusUpdate}
@@ -165,6 +169,8 @@ export default function Trips() {
         trips={trips}
         messages={messages}
         assignments={assignments}
+        assignVehicleOpen={assignVehicleOpen}
+        tripToAssignVehicle={tripToAssignVehicle}
         setViewTrip={setViewTrip}
         setEditTrip={setEditTrip}
         setBookingOpen={setBookingOpen}
@@ -178,6 +184,8 @@ export default function Trips() {
         setAssignNote={setAssignNote}
         setNewMessage={setNewMessage}
         setActiveTab={setActiveTab}
+        setAssignVehicleOpen={setAssignVehicleOpen}
+        setTripToAssignVehicle={setTripToAssignVehicle}
         handleTripFormSubmit={handleTripFormSubmit}
         handleDriverAssignment={handleDriverAssignment}
         handleMessageSend={handleMessageSend}
@@ -186,3 +194,4 @@ export default function Trips() {
     </div>
   );
 }
+

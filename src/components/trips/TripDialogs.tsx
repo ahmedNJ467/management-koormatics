@@ -10,6 +10,7 @@ import { DisplayTrip } from "@/lib/types/trip";
 import { Client, Driver, Vehicle } from "@/lib/types";
 import { TripMessage, TripAssignment } from "@/lib/types/trip/communication";
 import { QueryClient } from "@tanstack/react-query";
+import { AssignVehicleDialog } from "@/components/dispatch/AssignVehicleDialog";
 
 interface TripDialogsProps {
   viewTrip: DisplayTrip | null;
@@ -31,6 +32,8 @@ interface TripDialogsProps {
   trips?: DisplayTrip[];
   messages: TripMessage[];
   assignments: TripAssignment[];
+  assignVehicleOpen: boolean;
+  tripToAssignVehicle: DisplayTrip | null;
   setViewTrip: (trip: DisplayTrip | null) => void;
   setEditTrip: (trip: DisplayTrip | null) => void;
   setBookingOpen: (open: boolean) => void;
@@ -44,6 +47,8 @@ interface TripDialogsProps {
   setAssignNote: (note: string) => void;
   setNewMessage: (message: string) => void;
   setActiveTab: (tab: string) => void;
+  setAssignVehicleOpen: (open: boolean) => void;
+  setTripToAssignVehicle: (trip: DisplayTrip | null) => void;
   handleTripFormSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
   handleDriverAssignment: () => Promise<void>;
   handleMessageSend: () => Promise<void>;
@@ -70,6 +75,8 @@ export function TripDialogs({
   trips,
   messages,
   assignments,
+  assignVehicleOpen,
+  tripToAssignVehicle,
   setViewTrip,
   setEditTrip,
   setBookingOpen,
@@ -83,6 +90,8 @@ export function TripDialogs({
   setAssignNote,
   setNewMessage,
   setActiveTab,
+  setAssignVehicleOpen,
+  setTripToAssignVehicle,
   handleTripFormSubmit,
   handleDriverAssignment,
   handleMessageSend,
@@ -183,6 +192,18 @@ export function TripDialogs({
           if (viewTrip) {
             queryClient.invalidateQueries({ queryKey: ["tripAssignments", viewTrip.id] });
           }
+        }}
+      />
+
+      <AssignVehicleDialog
+        open={assignVehicleOpen}
+        trip={tripToAssignVehicle}
+        onClose={() => {
+          setAssignVehicleOpen(false);
+          setTripToAssignVehicle(null);
+        }}
+        onVehicleAssigned={() => {
+          queryClient.invalidateQueries({ queryKey: ["trips"] });
         }}
       />
 

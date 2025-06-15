@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   FileText, MessageCircle, User, Calendar, Clock, 
-  Check, X, Trash 
+  Check, X, Trash, Car 
 } from "lucide-react";
 
 interface TripItemActionsProps {
@@ -16,6 +16,8 @@ interface TripItemActionsProps {
   setMessageOpen: (open: boolean) => void;
   setTripToAssign: (trip: DisplayTrip) => void;
   setAssignOpen: (open: boolean) => void;
+  setTripToAssignVehicle: (trip: DisplayTrip) => void;
+  setAssignVehicleOpen: (open: boolean) => void;
   setTripToDelete: (id: string) => void;
   setDeleteDialogOpen: (open: boolean) => void;
   updateTripStatus: (tripId: string, status: TripStatus) => Promise<void>;
@@ -29,6 +31,8 @@ export function TripItemActions({
   setMessageOpen,
   setTripToAssign,
   setAssignOpen,
+  setTripToAssignVehicle,
+  setAssignVehicleOpen,
   setTripToDelete,
   setDeleteDialogOpen,
   updateTripStatus
@@ -57,6 +61,13 @@ export function TripItemActions({
       }}>
         <User className="h-4 w-4 mr-2" />
         Assign Driver
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => {
+        setTripToAssignVehicle(trip);
+        setAssignVehicleOpen(true);
+      }}>
+        <Car className="h-4 w-4 mr-2" />
+        Assign Vehicle
       </DropdownMenuItem>
       <DropdownMenuSeparator />
 
@@ -118,3 +129,4 @@ export function TripItemActions({
     </>
   );
 }
+
