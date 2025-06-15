@@ -15,6 +15,8 @@ interface TripListViewProps {
   setMessageOpen: (open: boolean) => void;
   setTripToAssign: (trip: DisplayTrip) => void;
   setAssignOpen: (open: boolean) => void;
+  setTripToAssignVehicle: (trip: DisplayTrip) => void;
+  setAssignVehicleOpen: (open: boolean) => void;
   setTripToDelete: (id: string) => void;
   setDeleteDialogOpen: (open: boolean) => void;
   updateTripStatus: (tripId: string, status: TripStatus) => Promise<void>;
@@ -28,6 +30,8 @@ export function TripListView({
   setMessageOpen,
   setTripToAssign,
   setAssignOpen,
+  setTripToAssignVehicle,
+  setAssignVehicleOpen,
   setTripToDelete,
   setDeleteDialogOpen,
   updateTripStatus
@@ -61,6 +65,8 @@ export function TripListView({
                 setMessageOpen={setMessageOpen}
                 setTripToAssign={setTripToAssign}
                 setAssignOpen={setAssignOpen}
+                setTripToAssignVehicle={setTripToAssignVehicle}
+                setAssignVehicleOpen={setAssignVehicleOpen}
                 setTripToDelete={setTripToDelete}
                 setDeleteDialogOpen={setDeleteDialogOpen}
                 updateTripStatus={updateTripStatus}

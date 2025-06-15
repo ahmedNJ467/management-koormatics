@@ -44,6 +44,8 @@ export default function Trips() {
     setMessageOpen,
     tripToAssign,
     setTripToAssign,
+    tripToMessage,
+    setTripToMessage,
     assignDriver,
     setAssignDriver,
     assignNote,
@@ -194,4 +196,3 @@ export default function Trips() {
     </div>
   );
 }
-
