@@ -49,7 +49,7 @@ const navigationGroups = [
     ]
   },
   {
-    category: "Monitoring",
+    category: "Analytics",
     items: [
       { name: "Revenue & Cost Analytics", href: "/cost-analytics", icon: DollarSign },
       { name: "Reports", href: "/reports", icon: BarChart },
