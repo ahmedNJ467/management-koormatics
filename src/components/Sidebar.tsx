@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -141,9 +142,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                         to={item.href}
                         onClick={handleLinkClick}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
                           isActive
-                            ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                            ? "bg-primary/10 text-primary font-medium border-l-2 border-primary ml-1"
                             : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                         )}
                       >
