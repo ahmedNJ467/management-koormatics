@@ -292,7 +292,7 @@ export function DispatchTrips({
               </div>
             </div>
             
-            <div className="flex gap-2 mt-4 items-center">
+            <div className="flex flex-wrap gap-2 mt-4 items-center">
               <Button 
                 size="sm" 
                 onClick={() => onAssignDriver(trip)}
@@ -300,6 +300,15 @@ export function DispatchTrips({
               >
                 <User className="h-4 w-4 mr-1" />
                 {trip.driver_id ? "Reassign Driver" : "Assign Driver"}
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => onAssignVehicle(trip)}
+                className={trip.vehicle_id ? "bg-blue-500 hover:bg-blue-600" : "bg-primary"}
+              >
+                <Car className="h-4 w-4 mr-1" />
+                {trip.vehicle_id ? "Reassign Vehicle" : "Assign Vehicle"}
               </Button>
               
               <Button 
@@ -319,11 +328,6 @@ export function DispatchTrips({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onAssignVehicle(trip)}>
-                    <Car className="mr-2 h-4 w-4" />
-                    {trip.vehicle_id ? "Reassign Vehicle" : "Assign Vehicle"}
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {trip.status !== "scheduled" && (
                     <DropdownMenuItem onClick={() => onUpdateStatus(trip.id, "scheduled")}>
