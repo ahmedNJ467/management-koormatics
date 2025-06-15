@@ -56,9 +56,9 @@ export const VehicleTable = memo(({ vehicles, onVehicleClick }: VehicleTableProp
                 </div>
               )}
             </TableCell>
-            <TableCell className="capitalize">{vehicle.type.replace('_', ' ')}</TableCell>
+            <TableCell className="capitalize">{vehicle.type?.replace('_', ' ') ?? 'N/A'}</TableCell>
             <TableCell>{`${vehicle.make} ${vehicle.model}`}</TableCell>
-            <TableCell className="capitalize">{vehicle.status.replace('_', ' ')}</TableCell>
+            <TableCell className="capitalize">{vehicle.status?.replace('_', ' ') ?? 'N/A'}</TableCell>
             <TableCell>{vehicle.registration}</TableCell>
             <TableCell>
               {vehicle.insurance_expiry 
