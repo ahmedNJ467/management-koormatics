@@ -3,17 +3,21 @@ import { TripType } from "@/lib/types/trip";
 import { Plane, ArrowRight, Clock, Calendar, Car, Shield, Repeat } from "lucide-react";
 
 interface TripTypeIconProps {
-  type: TripType;
+  type: TripType | string | undefined | null;
   className?: string;
 }
 
 export function TripTypeIcon({ type, className }: TripTypeIconProps) {
-  // Add safety check for undefined type
-  if (!type) {
+  // Enhanced safety check for undefined/null type
+  if (!type || typeof type !== 'string') {
+    console.warn('TripTypeIcon: Invalid type provided', type);
     return <Car className={className || "h-4 w-4"} />;
   }
 
-  switch (type) {
+  // Convert to string and check for valid values
+  const safeType = String(type).toLowerCase();
+
+  switch (safeType) {
     case "airport_pickup":
       return <Plane className={className || "h-4 w-4"} />;
     case "airport_dropoff":

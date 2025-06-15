@@ -4,22 +4,32 @@ import { AlertTriangle, Clock } from "lucide-react";
 import { DisplayTrip } from "@/lib/types/trip";
 
 interface OverdueIndicatorProps {
-  trip: DisplayTrip;
+  trip: DisplayTriip;
   className?: string;
 }
 
 export function OverdueIndicator({ trip, className = "" }: OverdueIndicatorProps) {
+  // Add safety checks for trip data
+  if (!trip || typeof trip !== 'object') {
+    console.warn('OverdueIndicator: Invalid trip data', trip);
+    return null;
+  }
+
   const now = new Date();
   const today = now.toISOString().split('T')[0];
   const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM format
 
   // Only show indicator for scheduled trips
-  if (trip.status !== 'scheduled') return null;
+  if (!trip.status || trip.status !== 'scheduled') return null;
 
   const tripDate = trip.date;
   const tripTime = trip.time;
 
-  if (!tripDate || !tripTime) return null;
+  // Add safety checks for date and time
+  if (!tripDate || typeof tripDate !== 'string' || !tripTime || typeof tripTime !== 'string') {
+    console.warn('OverdueIndicator: Invalid date/time data', { tripDate, tripTime });
+    return null;
+  }
 
   // Check if trip is overdue
   const isOverdue = tripDate < today || 
@@ -57,11 +67,35 @@ export function OverdueIndicator({ trip, className = "" }: OverdueIndicatorProps
 }
 
 function calculateMinutesDifference(tripTime: string, currentTime: string): number {
-  const [tripHours, tripMinutes] = tripTime.split(':').map(Number);
-  const [currentHours, currentMinutes] = currentTime.split(':').map(Number);
-  
-  const tripTotalMinutes = tripHours * 60 + tripMinutes;
-  const currentTotalMinutes = currentHours * 60 + currentMinutes;
-  
-  return tripTotalMinutes - currentTotalMinutes;
+  // Add safety checks
+  if (!tripTime || !currentTime || typeof tripTime !== 'string' || typeof currentTime !== 'string') {
+    console.warn('calculateMinutesDifference: Invalid time parameters', { tripTime, currentTime });
+    return 0;
+  }
+
+  try {
+    const tripParts = tripTime.split(':');
+    const currentParts = currentTime.split(':');
+    
+    if (tripParts.length !== 2 || currentParts.length !== 2) {
+      console.warn('calculateMinutesDifference: Invalid time format', { tripTime, currentTime });
+      return 0;
+    }
+
+    const [tripHours, tripMinutes] = tripParts.map(Number);
+    const [currentHours, currentMinutes] = currentParts.map(Number);
+    
+    if (isNaN(tripHours) || isNaN(tripMinutes) || isNaN(currentHours) || isNaN(currentMinutes)) {
+      console.warn('calculateMinutesDifference: Non-numeric time values', { tripTime, currentTime });
+      return 0;
+    }
+    
+    const tripTotalMinutes = tripHours * 60 + tripMinutes;
+    const currentTotalMinutes = currentHours * 60 + currentMinutes;
+    
+    return tripTotalMinutes - currentTotalMinutes;
+  } catch (error) {
+    console.error('calculateMinutesDifference: Error calculating time difference', error);
+    return 0;
+  }
 }
