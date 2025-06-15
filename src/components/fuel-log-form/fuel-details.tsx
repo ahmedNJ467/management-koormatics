@@ -1,5 +1,4 @@
 
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -40,25 +39,28 @@ export function FuelDetails({ form }: FuelDetailsProps) {
         )}
       />
 
-      <div className="space-y-2">
-        <Label htmlFor="fuel_type">Fuel Type</Label>
-        <Select
-          defaultValue={form.getValues("fuel_type")}
-          onValueChange={(value) => form.setValue("fuel_type", value as "petrol" | "diesel" | "cng")}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select fuel type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="petrol">Petrol</SelectItem>
-            <SelectItem value="diesel">Diesel</SelectItem>
-            <SelectItem value="cng">CNG</SelectItem>
-          </SelectContent>
-        </Select>
-        {form.formState.errors.fuel_type && (
-          <p className="text-sm text-destructive">{form.formState.errors.fuel_type.message}</p>
+      <FormField
+        control={form.control}
+        name="fuel_type"
+        render={({ field }) => (
+          <FormItem className="space-y-2">
+            <FormLabel>Fuel Type</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select fuel type" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="petrol">Petrol</SelectItem>
+                <SelectItem value="diesel">Diesel</SelectItem>
+                <SelectItem value="cng">CNG</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
         )}
-      </div>
+      />
     </>
   );
 }
