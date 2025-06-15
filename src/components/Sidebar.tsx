@@ -1,4 +1,5 @@
 
+
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,12 +27,6 @@ import { useState } from "react";
 
 // Navigation structure with categories
 const navigationGroups = [
-  {
-    category: "Dashboard",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
-    ]
-  },
   {
     category: "Fleet Management",
     items: [
@@ -97,6 +92,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     );
   };
 
+  const isDashboardActive = location.pathname === "/dashboard";
+
   return (
     <aside
       className={cn(
@@ -105,6 +102,23 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       )}
     >
       <nav className="flex flex-col gap-1 p-4">
+        {/* Dashboard standalone item */}
+        <div className="mb-4">
+          <Link
+            to="/dashboard"
+            onClick={handleLinkClick}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+              isDashboardActive
+                ? "bg-primary/10 text-primary font-medium border-l-2 border-primary ml-1"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Dashboard
+          </Link>
+        </div>
+
         {navigationGroups.map((group, groupIndex) => {
           const isExpanded = expandedCategoryIndex === groupIndex;
           const hasActiveItem = group.items.some(item => location.pathname === item.href);
@@ -156,3 +170,4 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     </aside>
   );
 }
+
