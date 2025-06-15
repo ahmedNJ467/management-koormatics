@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -155,7 +154,7 @@ export default function Invoices() {
         .select(`
           *,
           clients:client_id(name, email, address, phone),
-          vehicles:vehicle_id(make, model, registration),
+          vehicles:vehicle_id(make, model, registration, type),
           drivers:driver_id(name, contact, avatar_url)
         `)
         .eq("client_id", selectedClientId)
@@ -861,35 +860,43 @@ export default function Invoices() {
                             id={`trip-${trip.id}`}
                             checked={selectedTrips.includes(trip.id)}
                             onCheckedChange={(checked) => {
+                              const tripDate = format(new Date(trip.date), "yyyy-MM-dd");
+                              const vehicleType = trip.vehicles?.type
+                                ? `(${trip.vehicles.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())})`
+                                : '';
+                              const description = `Trip from ${trip.pickup_location || 'N/A'} to ${trip.dropoff_location || 'N/A'} on ${tripDate} ${vehicleType}`.trim();
+                              
                               if (checked) {
                                 setSelectedTrips([...selectedTrips, trip.id]);
                                 
-                                const tripDate = format(new Date(trip.date), "MMM d, yyyy");
-                                const description = `Transportation service on ${tripDate}`;
                                 const amount = trip.amount || 0;
                                 
-                                setInvoiceItems([
-                                  ...invoiceItems,
-                                  { 
-                                    description, 
-                                    quantity: 1, 
-                                    unit_price: amount, 
-                                    amount 
-                                  }
-                                ]);
+                                setInvoiceItems(currentItems => {
+                                  const newItems = currentItems.filter(item => item.description || item.amount);
+                                  return [
+                                    ...newItems,
+                                    { 
+                                      description, 
+                                      quantity: 1, 
+                                      unit_price: amount, 
+                                      amount 
+                                    }
+                                  ];
+                                });
                               } else {
                                 setSelectedTrips(selectedTrips.filter(id => id !== trip.id));
                                 
-                                const tripDate = format(new Date(trip.date), "MMM d, yyyy");
-                                const itemIndex = invoiceItems.findIndex(
-                                  item => item.description.includes(tripDate)
-                                );
-                                
-                                if (itemIndex !== -1) {
-                                  const updatedItems = [...invoiceItems];
-                                  updatedItems.splice(itemIndex, 1);
-                                  setInvoiceItems(updatedItems);
-                                }
+                                setInvoiceItems(currentItems => {
+                                  const updatedItems = currentItems.filter(
+                                    item => item.description !== description
+                                  );
+
+                                  if (updatedItems.length === 0) {
+                                    return [{ description: "", quantity: 1, unit_price: 0, amount: 0 }];
+                                  }
+                                  
+                                  return updatedItems;
+                                });
                               }
                             }}
                           />
