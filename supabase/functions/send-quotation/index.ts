@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.8';
 import { Resend } from "npm:resend@2.0.0";
@@ -13,17 +12,6 @@ const corsHeaders = {
   "Content-Type": "application/json"
 };
 
-// Handle CORS preflight requests
-function handleCors(req: Request) {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: corsHeaders,
-      status: 204,
-    });
-  }
-  return null;
-}
-
 interface QuotationEmailRequest {
   quotationId: string;
   clientEmail: string;
@@ -32,8 +20,12 @@ interface QuotationEmailRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
 
   try {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
