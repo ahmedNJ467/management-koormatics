@@ -136,11 +136,11 @@ export function useCostAnalyticsData(selectedYear: string) {
     queryKey: ['sparePartsCosts', selectedYear],
     queryFn: async () => {
       try {
-        // First, fetch all spare parts
+        // Fetch spare parts including both in_stock and low_stock
         const { data: parts, error: partsError } = await supabase
           .from('spare_parts')
           .select('*')
-          .gt('quantity_used', 0)
+          .in('status', ['in_stock', 'low_stock'])
           .or(`purchase_date.gte.${selectedYear}-01-01,last_used_date.gte.${selectedYear}-01-01`)
           .or(`purchase_date.lte.${selectedYear}-12-31,last_used_date.lte.${selectedYear}-12-31`);
         
@@ -211,7 +211,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           };
         });
         
-        console.log("Processed spare parts data with vehicle relationships:", partsWithRelationships);
+        console.log("Processed spare parts data with vehicle relationships (including low stock):", partsWithRelationships);
         return partsWithRelationships;
       } catch (error) {
         console.error("Error fetching spare parts data:", error);
@@ -344,11 +344,11 @@ export function useCostAnalyticsData(selectedYear: string) {
       if (!comparisonYear) return [];
       
       try {
-        // First, fetch all spare parts
+        // Fetch spare parts including both in_stock and low_stock
         const { data: parts, error: partsError } = await supabase
           .from('spare_parts')
           .select('*')
-          .gt('quantity_used', 0)
+          .in('status', ['in_stock', 'low_stock'])
           .or(`purchase_date.gte.${comparisonYear}-01-01,last_used_date.gte.${comparisonYear}-01-01`)
           .or(`purchase_date.lte.${comparisonYear}-12-31,last_used_date.lte.${comparisonYear}-12-31`);
         

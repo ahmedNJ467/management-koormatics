@@ -1,3 +1,4 @@
+
 import { DisplayTrip } from "./types/trip";
 
 export type FinancialData = {
@@ -52,18 +53,20 @@ export function calculateFinancialData(
     ? fuelData.reduce((sum, record) => sum + Number(record.cost || 0), 0)
     : 0;
   
-  // Calculate spare parts total inventory value (quantity × unit price)
+  // Calculate spare parts total inventory value - include both in_stock and low_stock
   const sparePartsCosts = Array.isArray(sparePartsData)
     ? sparePartsData.reduce((sum, part) => {
-        const quantity = Number(part.quantity || 0);
-        const costPerUnit = Number(part.unit_price || part.cost_per_unit || 0);
-        const totalValue = quantity * costPerUnit;
-        
-        // Log to debug
-        console.log('Part inventory:', part.name, 'Quantity:', quantity, 'Cost per unit:', costPerUnit, 'Total value:', totalValue);
-        
-        // Add to total inventory value
-        return sum + totalValue;
+        // Only include parts that are in_stock or low_stock
+        if (part?.status === 'in_stock' || part?.status === 'low_stock') {
+          const quantity = Number(part.quantity || 0);
+          const costPerUnit = Number(part.unit_price || part.cost_per_unit || 0);
+          const totalValue = quantity * costPerUnit;
+          
+          console.log('Part inventory:', part.name, `(${part.status})`, 'Quantity:', quantity, 'Cost per unit:', costPerUnit, 'Total value:', totalValue);
+          
+          return sum + totalValue;
+        }
+        return sum;
       }, 0)
     : 0;
   
@@ -72,7 +75,7 @@ export function calculateFinancialData(
   
   console.log('Financial Calcs - Maintenance costs:', maintenanceCosts);
   console.log('Financial Calcs - Fuel costs:', fuelCosts);
-  console.log('Financial Calcs - Spare parts costs:', sparePartsCosts);
+  console.log('Financial Calcs - Spare parts costs (including low stock):', sparePartsCosts);
   console.log('Financial Calcs - Total expenses:', totalExpenses);
   
   // Calculate profit and margin
@@ -192,39 +195,41 @@ function calculateMonthlyFinancialData(
     });
   }
   
-  // Process spare parts expenses by month (based on purchase date or usage date)
+  // Process spare parts expenses by month - include both in_stock and low_stock
   if (Array.isArray(sparePartsData)) {
     sparePartsData.forEach(part => {
-      // Use purchase_date or last_used_date (whichever is available)
-      const dateString = part.last_used_date || part.purchase_date;
-      if (!dateString) return;
-      
-      const date = new Date(dateString);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-      
-      if (!months[monthKey]) {
-        months[monthKey] = {
-          month: monthName,
-          revenue: 0,
-          expenses: 0,
-          profit: 0,
-          maintenance: 0,
-          fuel: 0,
-          spareParts: 0
-        };
-      }
-      
-      // Calculate cost based on quantity used and cost per unit
-      const quantityUsed = Number(part.quantity_used || 0);
-      const costPerUnit = Number(part.unit_price || 0);
-      const cost = quantityUsed * costPerUnit;
-      
-      // Only include costs for spare parts not already accounted for in maintenance
-      const isIncludedInMaintenance = part.maintenance_id != null;
-      if (!isIncludedInMaintenance) {
-        months[monthKey].spareParts += cost;
-        months[monthKey].expenses += cost;
+      // Only process parts that are in_stock or low_stock
+      if (part?.status === 'in_stock' || part?.status === 'low_stock') {
+        const dateString = part.last_used_date || part.purchase_date;
+        if (!dateString) return;
+        
+        const date = new Date(dateString);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        
+        if (!months[monthKey]) {
+          months[monthKey] = {
+            month: monthName,
+            revenue: 0,
+            expenses: 0,
+            profit: 0,
+            maintenance: 0,
+            fuel: 0,
+            spareParts: 0
+          };
+        }
+        
+        // Calculate cost based on quantity used and cost per unit
+        const quantityUsed = Number(part.quantity_used || 0);
+        const costPerUnit = Number(part.unit_price || 0);
+        const cost = quantityUsed * costPerUnit;
+        
+        // Only include costs for spare parts not already accounted for in maintenance
+        const isIncludedInMaintenance = part.maintenance_id != null;
+        if (!isIncludedInMaintenance) {
+          months[monthKey].spareParts += cost;
+          months[monthKey].expenses += cost;
+        }
       }
     });
   }
