@@ -1,4 +1,3 @@
-
 // Define Color as tuple type [number, number, number] for RGB values
 export type Color = [number, number, number];
 
@@ -21,7 +20,7 @@ export const pdfConfig = {
   pageMargin: 0.5,
   logoPath: '/lovable-uploads/6996f29f-4f5b-4a22-ba41-51dc5c98afb7.png',
   logoAspectRatio: 123 / 622, // height / width, based on original image dimensions
-  companyName: 'PBG | MOVCON DEPT.',
+  companyName: 'Koormatics',
   format: [11.69, 8.27] as [number, number], // A4 landscape
   orientation: 'landscape' as const
 };

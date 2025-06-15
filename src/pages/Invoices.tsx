@@ -538,18 +538,16 @@ export default function Invoices() {
       console.error("Error adding logo:", e);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text("PBG | MOVCON DEPT.", margin, 25);
+      doc.text("Koormatics", margin, 25);
     }
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(secondaryColor);
     const companyInfoText = [
-        'PBG | MOVCON DEPT.',
-        'UNOCA Compound, Garowe, Puntland, Somalia',
-        '+252 (0) 907-790101',
-        'pbg.movcon@pbg-som.com',
-        'www.pbg-som.com'
+        'Wadajir district.',
+        'Airport Road, Mogadishu, Somalia',
+        'http://www.koormatics.com'
     ];
     doc.text(companyInfoText, margin, 15 + logoHeight + 5);
 
