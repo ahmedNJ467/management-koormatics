@@ -73,7 +73,12 @@ export default function Profile() {
     setIsLoading(true);
     try {
       const profileData: ProfileData = {
-        ...data,
+        name: data.name,
+        email: data.email,
+        phone: data.phone || "",
+        address: data.address || "",
+        company: data.company || "",
+        bio: data.bio || "",
         profile_image_url: profileImage,
       };
       
