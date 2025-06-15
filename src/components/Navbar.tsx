@@ -1,3 +1,4 @@
+
 import { Menu, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -21,6 +24,12 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const { profile } = useProfile();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleProfileClick = () => {
     // Navigate to profile page
@@ -36,6 +45,26 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     // Handle logout logic
     console.log("Logout clicked");
   };
+  
+  // Render a placeholder on initial mount to avoid theme flash
+  if (!mounted) {
+    return (
+      <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-16 items-center px-4 gap-4">
+          <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
+          <div className="h-8 w-32 bg-muted rounded-md animate-pulse" />
+          <div className="flex-1 flex justify-center max-w-sm mx-auto">
+            <div className="h-10 w-full bg-muted rounded-lg animate-pulse" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
+            <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
+            <div className="h-12 w-12 bg-muted rounded-full animate-pulse" />
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -49,7 +78,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </Button>
         
         <Link to="/dashboard" className="flex items-center">
-          <img src="/lovable-uploads/76df9771-fea9-4ebd-81b4-b48360911b83.png" alt="Koormatics Logo" className="h-8 object-contain" />
+          <img 
+            src="/lovable-uploads/76df9771-fea9-4ebd-81b4-b48360911b83.png" 
+            alt="Koormatics Logo" 
+            className={`h-8 object-contain ${resolvedTheme === 'light' ? 'mix-blend-multiply' : ''}`}
+          />
         </Link>
         
         <div className="flex-1 flex justify-center max-w-sm mx-auto">
