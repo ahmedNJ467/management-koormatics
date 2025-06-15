@@ -50,12 +50,12 @@ const VehicleDetailsContent = memo(({
     <div className="space-y-6">
       {selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 0 ? (
         <div className="relative">
-          <div className="w-full aspect-video bg-muted rounded-lg overflow-hidden relative">
+          <div className="w-full h-80 bg-muted rounded-lg overflow-hidden relative">
             {currentImage && (
               <img
                 src={currentImage}
                 alt={`Vehicle ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-contain rounded-lg"
               />
             )}
             
@@ -81,7 +81,7 @@ const VehicleDetailsContent = memo(({
             )}
           </div>
           
-          {selectedVehicle.vehicle_images.length > 3 && (
+          {selectedVehicle.vehicle_images.length > 1 && (
             <ScrollArea className="w-full h-24 mt-2">
               <div className="flex gap-2 p-1">
                 {selectedVehicle.vehicle_images.map((image, index) => (
@@ -104,7 +104,7 @@ const VehicleDetailsContent = memo(({
           )}
         </div>
       ) : (
-        <div className="flex items-center justify-center w-full h-48 bg-muted rounded-lg">
+        <div className="flex items-center justify-center w-full h-80 bg-muted rounded-lg">
           <Car className="h-16 w-16 text-muted-foreground" />
         </div>
       )}
@@ -157,7 +157,6 @@ const VehicleDetailsContent = memo(({
   );
 });
 
-// For TypeScript to not complain about missing displayName
 VehicleDetailsContent.displayName = "VehicleDetailsContent";
 
 export default function Vehicles() {
@@ -244,6 +243,11 @@ export default function Vehicles() {
     setCurrentImageIndex(index);
   }, []);
 
+  const handleVehicleClick = useCallback((vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setCurrentImageIndex(0);
+  }, []);
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -283,7 +287,7 @@ export default function Vehicles() {
                 <TableRow 
                   key={vehicle.id} 
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => setSelectedVehicle(vehicle)}
+                  onClick={() => handleVehicleClick(vehicle)}
                 >
                   <TableCell>{formatVehicleId(vehicle.id)}</TableCell>
                   <TableCell>
@@ -291,10 +295,12 @@ export default function Vehicles() {
                       <img
                         src={vehicle.vehicle_images[0].image_url}
                         alt={`${vehicle.make} ${vehicle.model}`}
-                        className="w-24 h-24 rounded-lg object-cover"
+                        className="w-16 h-16 rounded-lg object-cover"
                       />
                     ) : (
-                      <Car className="h-24 w-24 p-2 text-muted-foreground" />
+                      <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                        <Car className="h-8 w-8 text-muted-foreground" />
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="capitalize">{vehicle.type.replace('_', ' ')}</TableCell>
@@ -327,7 +333,6 @@ export default function Vehicles() {
         onOpenChange={setFormOpen}
       />
 
-      {/* Vehicle Details Dialog - Moved outside of an internal component */}
       <Dialog open={!!selectedVehicle} onOpenChange={closeVehicleDetails}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -369,7 +374,6 @@ export default function Vehicles() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
