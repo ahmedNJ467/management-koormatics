@@ -1,10 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { DisplayTrip } from "@/lib/types/trip";
 import { MapPin, User, MessageCircle, Clock, AlertTriangle, Phone } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { OverdueIndicator } from "./OverdueIndicator";
 
 interface DispatchTripsProps {
   trips: DisplayTrip[];
@@ -207,6 +207,9 @@ export function DispatchTrips({
                   </Tooltip>
                 </TooltipProvider>
               )}
+
+              {/* Overdue indicator */}
+              <OverdueIndicator trip={trip} className="ml-2" />
             </div>
             <div className="text-sm text-muted-foreground">
               Trip ID: {safeFormatId(trip.id)}

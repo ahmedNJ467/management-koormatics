@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,7 @@ import {
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { TripItemActions } from "./TripItemActions";
+import { OverdueIndicator } from "../../dispatch/OverdueIndicator";
 
 export const formatTripId = (id: string): string => {
   if (!id) return "N/A";
@@ -135,6 +135,7 @@ export function TripListItem({
         {trip.return_time && (
           <div className="text-xs text-muted-foreground">Return: {formatTime(trip.return_time)}</div>
         )}
+        <OverdueIndicator trip={trip} className="mt-1" />
       </TableCell>
       <TableCell>
         <div className="font-medium">{trip.client_name}</div>

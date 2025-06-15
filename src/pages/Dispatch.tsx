@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTripsData } from "@/hooks/use-trips-data";
@@ -8,6 +7,7 @@ import { DispatchBoard } from "@/components/dispatch/DispatchBoard";
 import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
 import { TripMessageDialog } from "@/components/trips/TripMessageDialog";
 import { logActivity } from "@/utils/activity-logger";
+import { useOverdueTrips } from "@/hooks/use-overdue-trips";
 
 export default function Dispatch() {
   const { toast } = useToast();
@@ -25,6 +25,9 @@ export default function Dispatch() {
   const dispatchTrips = Array.isArray(trips) 
     ? trips.filter(trip => trip && typeof trip === 'object')
     : [];
+
+  // Add overdue trip monitoring
+  useOverdueTrips(dispatchTrips);
 
   // Handle sending a message to driver
   const handleSendMessage = async () => {
