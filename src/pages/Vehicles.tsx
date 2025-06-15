@@ -1,172 +1,23 @@
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Car, Trash2, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Vehicle } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VehicleFormDialog } from "@/components/vehicle-form-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { formatVehicleId } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-// Memoized vehicle details content to prevent unnecessary re-renders
-const VehicleDetailsContent = memo(({ 
-  selectedVehicle, 
-  currentImageIndex, 
-  handlePrevImage, 
-  handleNextImage, 
-  selectThumbnail,
-  setViewMode,
-  setShowDeleteConfirm 
-}: { 
-  selectedVehicle: Vehicle;
-  currentImageIndex: number;
-  handlePrevImage: (e: React.MouseEvent) => void;
-  handleNextImage: (e: React.MouseEvent) => void;
-  selectThumbnail: (index: number) => void;
-  setViewMode: (mode: "view" | "edit") => void;
-  setShowDeleteConfirm: (show: boolean) => void;
-}) => {
-  const hasMultipleImages = selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 1;
-  const currentImage = selectedVehicle.vehicle_images?.[currentImageIndex]?.image_url;
-
-  return (
-    <div className="space-y-6">
-      {selectedVehicle.vehicle_images && selectedVehicle.vehicle_images.length > 0 ? (
-        <div className="relative">
-          <div className="w-full h-80 bg-muted rounded-lg overflow-hidden relative">
-            {currentImage && (
-              <img
-                src={currentImage}
-                alt={`Vehicle ${currentImageIndex + 1}`}
-                className="w-full h-full object-contain rounded-lg"
-              />
-            )}
-            
-            {hasMultipleImages && (
-              <>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
-                  onClick={handlePrevImage}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
-                  onClick={handleNextImage}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
-          
-          {selectedVehicle.vehicle_images.length > 1 && (
-            <ScrollArea className="w-full h-24 mt-2">
-              <div className="flex gap-2 p-1">
-                {selectedVehicle.vehicle_images.map((image, index) => (
-                  <div 
-                    key={`thumb-${index}`}
-                    className={`w-24 h-20 flex-shrink-0 cursor-pointer rounded-md overflow-hidden border-2 ${
-                      currentImageIndex === index ? 'border-primary' : 'border-transparent'
-                    }`}
-                    onClick={() => selectThumbnail(index)}
-                  >
-                    <img
-                      src={image.image_url}
-                      alt={`Vehicle thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </div>
-      ) : (
-        <div className="flex items-center justify-center w-full h-80 bg-muted rounded-lg">
-          <Car className="h-16 w-16 text-muted-foreground" />
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h3 className="font-semibold mb-2">Basic Information</h3>
-          <div className="space-y-2">
-            <p><span className="text-muted-foreground">Make:</span> {selectedVehicle.make}</p>
-            <p><span className="text-muted-foreground">Model:</span> {selectedVehicle.model}</p>
-            <p><span className="text-muted-foreground">Type:</span> {selectedVehicle.type.replace('_', ' ')}</p>
-            <p><span className="text-muted-foreground">Registration:</span> {selectedVehicle.registration}</p>
-          </div>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Additional Details</h3>
-          <div className="space-y-2">
-            <p><span className="text-muted-foreground">Year:</span> {selectedVehicle.year || 'N/A'}</p>
-            <p><span className="text-muted-foreground">Color:</span> {selectedVehicle.color || 'N/A'}</p>
-            <p><span className="text-muted-foreground">VIN:</span> {selectedVehicle.vin || 'N/A'}</p>
-            <p><span className="text-muted-foreground">Insurance Expiry:</span> {selectedVehicle.insurance_expiry ? new Date(selectedVehicle.insurance_expiry).toLocaleDateString() : 'N/A'}</p>
-          </div>
-        </div>
-      </div>
-
-      {selectedVehicle.notes && (
-        <div>
-          <h3 className="font-semibold mb-2">Notes</h3>
-          <p className="text-muted-foreground">{selectedVehicle.notes}</p>
-        </div>
-      )}
-
-      <div className="flex justify-end gap-4 pt-4 border-t">
-        <Button
-          variant="outline"
-          onClick={() => setViewMode("edit")}
-        >
-          <Edit className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
-        <Button
-          variant="destructive"
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
-        </Button>
-      </div>
-    </div>
-  );
-});
-
-VehicleDetailsContent.displayName = "VehicleDetailsContent";
+import { VehicleTable } from "@/components/vehicles/vehicle-table";
+import { VehicleDetailsDialog } from "@/components/vehicles/vehicle-details-dialog";
+import { VehiclesEmptyState } from "@/components/vehicles/vehicles-empty-state";
+import { VehiclesLoading } from "@/components/vehicles/vehicles-loading";
+import { VehiclesError } from "@/components/vehicles/vehicles-error";
 
 export default function Vehicles() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [viewMode, setViewMode] = useState<"view" | "edit">("view");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { data: vehicles, isLoading, error } = useQuery({
     queryKey: ['vehicles'],
@@ -202,7 +53,6 @@ export default function Vehicles() {
         description: "Vehicle has been successfully deleted",
       });
       setSelectedVehicle(null);
-      setShowDeleteConfirm(false);
     },
     onError: (error) => {
       toast({
@@ -213,45 +63,23 @@ export default function Vehicles() {
     },
   });
 
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id);
-  };
+  const handleDelete = useCallback(() => {
+    if (selectedVehicle) {
+      deleteMutation.mutate(selectedVehicle.id);
+    }
+  }, [selectedVehicle, deleteMutation]);
 
   const closeVehicleDetails = useCallback(() => {
     setSelectedVehicle(null);
-    setViewMode("view");
-    setCurrentImageIndex(0);
-  }, []);
-
-  const handleNextImage = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedVehicle?.vehicle_images) return;
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === selectedVehicle.vehicle_images.length - 1 ? 0 : prevIndex + 1
-    );
-  }, [selectedVehicle]);
-
-  const handlePrevImage = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedVehicle?.vehicle_images) return;
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === 0 ? selectedVehicle.vehicle_images.length - 1 : prevIndex - 1
-    );
-  }, [selectedVehicle]);
-
-  const selectThumbnail = useCallback((index: number) => {
-    setCurrentImageIndex(index);
   }, []);
 
   const handleVehicleClick = useCallback((vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
-    setCurrentImageIndex(0);
   }, []);
 
-  const handleEditComplete = useCallback(() => {
-    setViewMode("view");
-    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-  }, [queryClient]);
+  const handleAddVehicle = useCallback(() => {
+    setFormOpen(true);
+  }, []);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -260,76 +88,20 @@ export default function Vehicles() {
           <h2 className="text-3xl font-semibold tracking-tight">Vehicles</h2>
           <p className="text-muted-foreground">Manage your fleet vehicles</p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
+        <Button onClick={handleAddVehicle}>
           <Plus className="mr-2 h-4 w-4" /> Add Vehicle
         </Button>
       </div>
 
       <div className="rounded-lg border">
         {isLoading ? (
-          <div className="flex items-center justify-center p-8">
-            <Car className="h-8 w-8 animate-pulse text-muted-foreground" />
-          </div>
+          <VehiclesLoading />
         ) : error ? (
-          <div className="flex items-center justify-center p-8 text-destructive">
-            Failed to load vehicles
-          </div>
+          <VehiclesError />
         ) : vehicles && vehicles.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Image</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Make & Model</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Registration</TableHead>
-                <TableHead>Insurance Expiry</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {vehicles.map((vehicle) => (
-                <TableRow 
-                  key={vehicle.id} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleVehicleClick(vehicle)}
-                >
-                  <TableCell>{formatVehicleId(vehicle.id)}</TableCell>
-                  <TableCell>
-                    {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
-                      <img
-                        src={vehicle.vehicle_images[0].image_url}
-                        alt={`${vehicle.make} ${vehicle.model}`}
-                        className="w-16 h-16 rounded-lg object-contain"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
-                        <Car className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="capitalize">{vehicle.type.replace('_', ' ')}</TableCell>
-                  <TableCell>{`${vehicle.make} ${vehicle.model}`}</TableCell>
-                  <TableCell className="capitalize">{vehicle.status.replace('_', ' ')}</TableCell>
-                  <TableCell>{vehicle.registration}</TableCell>
-                  <TableCell>
-                    {vehicle.insurance_expiry 
-                      ? new Date(vehicle.insurance_expiry).toLocaleDateString()
-                      : 'N/A'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <VehicleTable vehicles={vehicles} onVehicleClick={handleVehicleClick} />
         ) : (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Car className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">No vehicles found</h3>
-            <p className="text-muted-foreground mb-4">Add your first vehicle to get started.</p>
-            <Button onClick={() => setFormOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-            </Button>
-          </div>
+          <VehiclesEmptyState onAddVehicle={handleAddVehicle} />
         )}
       </div>
 
@@ -338,75 +110,11 @@ export default function Vehicles() {
         onOpenChange={setFormOpen}
       />
 
-      <Dialog open={!!selectedVehicle} onOpenChange={closeVehicleDetails}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="pr-10">
-              {selectedVehicle && `Vehicle Details - ${formatVehicleId(selectedVehicle.id)}`}
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedVehicle && viewMode === "view" && (
-            <VehicleDetailsContent 
-              selectedVehicle={selectedVehicle}
-              currentImageIndex={currentImageIndex}
-              handlePrevImage={handlePrevImage}
-              handleNextImage={handleNextImage}
-              selectThumbnail={selectThumbnail}
-              setViewMode={setViewMode}
-              setShowDeleteConfirm={setShowDeleteConfirm}
-            />
-          )}
-
-          {selectedVehicle && viewMode === "edit" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pb-4 border-b">
-                <h3 className="text-lg font-semibold">Edit Vehicle</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode("view")}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Cancel Edit
-                </Button>
-              </div>
-              <VehicleFormDialog
-                open={true}
-                onOpenChange={(open) => {
-                  if (!open) {
-                    handleEditComplete();
-                  }
-                }}
-                vehicle={selectedVehicle}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Vehicle</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this vehicle? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end space-x-4 mt-4">
-            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => selectedVehicle && handleDelete(selectedVehicle.id)}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <VehicleDetailsDialog
+        selectedVehicle={selectedVehicle}
+        onClose={closeVehicleDetails}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
