@@ -28,9 +28,9 @@ export function DispatchTrips({
     );
   }
 
-  // Format phone number for display
-  const formatPhoneNumber = (phone?: string) => {
-    if (!phone) return "No contact info";
+  // Format phone number for display with safety checks
+  const formatPhoneNumber = (phone?: string | null) => {
+    if (!phone || typeof phone !== 'string') return "No contact info";
     
     // Try to format if it looks like a standard phone number
     if (phone.length === 10 && /^\d+$/.test(phone)) {
@@ -49,11 +49,15 @@ export function DispatchTrips({
   safeTrips.forEach(trip => {
     if (!trip || !trip.date) return; // Skip trips without dates
     
-    const dateKey = trip.date.toString();
-    if (!tripsByDate.has(dateKey)) {
-      tripsByDate.set(dateKey, []);
+    try {
+      const dateKey = String(trip.date);
+      if (!tripsByDate.has(dateKey)) {
+        tripsByDate.set(dateKey, []);
+      }
+      tripsByDate.get(dateKey)?.push(trip);
+    } catch (error) {
+      console.error("Error processing trip date:", error, trip);
     }
-    tripsByDate.get(dateKey)?.push(trip);
   });
 
   // Check for conflicts within each date
@@ -63,13 +67,13 @@ export function DispatchTrips({
       const trip1 = dateTrips[i];
       
       // Skip if no driver assigned or already identified as conflicted
-      if (!trip1.driver_id) continue;
+      if (!trip1 || !trip1.driver_id) continue;
       
       for (let j = i + 1; j < dateTrips.length; j++) {
         const trip2 = dateTrips[j];
         
         // Skip if no driver assigned or different drivers
-        if (!trip2.driver_id || trip1.driver_id !== trip2.driver_id) continue;
+        if (!trip2 || !trip2.driver_id || trip1.driver_id !== trip2.driver_id) continue;
         
         // Check if the times overlap (within 1 hour) - SAFELY
         const time1 = convertTimeToMinutes(trip1.time);
@@ -77,21 +81,22 @@ export function DispatchTrips({
         
         if (Math.abs(time1 - time2) < 60) {
           // Add both trips to the conflicted set if they have valid IDs
-          if (trip1.id) conflictedTrips.add(trip1.id);
-          if (trip2.id) conflictedTrips.add(trip2.id);
+          if (trip1.id) conflictedTrips.add(String(trip1.id));
+          if (trip2.id) conflictedTrips.add(String(trip2.id));
           
           // Group conflicts by driver
           if (trip1.driver_id) {
-            if (!conflictedDrivers.has(trip1.driver_id)) {
-              conflictedDrivers.set(trip1.driver_id, []);
+            const driverId = String(trip1.driver_id);
+            if (!conflictedDrivers.has(driverId)) {
+              conflictedDrivers.set(driverId, []);
             }
             
-            if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip1.id)) {
-              conflictedDrivers.get(trip1.driver_id)?.push(trip1);
+            if (!conflictedDrivers.get(driverId)?.some(t => t.id === trip1.id)) {
+              conflictedDrivers.get(driverId)?.push(trip1);
             }
             
-            if (!conflictedDrivers.get(trip1.driver_id)?.some(t => t.id === trip2.id)) {
-              conflictedDrivers.get(trip1.driver_id)?.push(trip2);
+            if (!conflictedDrivers.get(driverId)?.some(t => t.id === trip2.id)) {
+              conflictedDrivers.get(driverId)?.push(trip2);
             }
           }
         }
@@ -101,7 +106,7 @@ export function DispatchTrips({
 
   // Safe formatters that don't throw errors
   const safeFormatDate = (dateStr: string | undefined | null): string => {
-    if (!dateStr) return "No date";
+    if (!dateStr || typeof dateStr !== 'string') return "No date";
     try {
       return formatDate(dateStr);
     } catch (error) {
@@ -111,7 +116,7 @@ export function DispatchTrips({
   };
 
   const safeFormatTime = (timeStr: string | undefined | null): string => {
-    if (!timeStr) return "No time";
+    if (!timeStr || typeof timeStr !== 'string') return "No time";
     try {
       return formatTime(timeStr);
     } catch (error) {
@@ -121,14 +126,21 @@ export function DispatchTrips({
   };
 
   // Safe ID formatter
-  const safeFormatId = (id: string | undefined | null): string => {
+  const safeFormatId = (id: string | number | undefined | null): string => {
     if (!id) return "N/A";
     try {
-      return id.substring(0, 8).toUpperCase();
+      const idStr = String(id);
+      return idStr.substring(0, 8).toUpperCase();
     } catch (error) {
       console.error("Error formatting ID:", error);
       return "Invalid ID";
     }
+  };
+
+  // Safe text formatter for locations and names
+  const safeFormatText = (text: string | undefined | null, fallback: string = "Not specified"): string => {
+    if (!text || typeof text !== 'string') return fallback;
+    return text;
   };
 
   return (
@@ -142,7 +154,7 @@ export function DispatchTrips({
           </div>
           <div className="text-sm text-amber-700 dark:text-amber-200">
             {Array.from(conflictedDrivers.entries()).map(([driverId, trips]) => {
-              const driverName = trips[0]?.driver_name || 'Unknown Driver';
+              const driverName = safeFormatText(trips[0]?.driver_name, 'Unknown Driver');
               return (
                 <div key={driverId} className="mb-2">
                   <p>
@@ -150,8 +162,8 @@ export function DispatchTrips({
                   </p>
                   <ul className="list-disc list-inside pl-2">
                     {trips.map(trip => (
-                      <li key={trip.id || "unknown"}>
-                        {safeFormatDate(trip.date)} at {safeFormatTime(trip.time)} - {trip.pickup_location || "No pickup"} to {trip.dropoff_location || "No dropoff"}
+                      <li key={trip.id || Math.random()}>
+                        {safeFormatDate(trip.date)} at {safeFormatTime(trip.time)} - {safeFormatText(trip.pickup_location, "No pickup")} to {safeFormatText(trip.dropoff_location, "No dropoff")}
                       </li>
                     ))}
                   </ul>
@@ -164,9 +176,9 @@ export function DispatchTrips({
 
       {safeTrips.map(trip => (
         <div 
-          key={trip.id || "trip-" + Math.random().toString(36).substring(2, 9)} 
+          key={trip.id || `trip-${Math.random().toString(36).substring(2, 9)}`} 
           className={`border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow ${
-            trip.id && conflictedTrips.has(trip.id) ? 'border-amber-500 dark:border-amber-500/70' : ''
+            trip.id && conflictedTrips.has(String(trip.id)) ? 'border-amber-500 dark:border-amber-500/70' : ''
           }`}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
@@ -180,7 +192,7 @@ export function DispatchTrips({
               )}
               
               {/* Conflict indicator */}
-              {trip.id && conflictedTrips.has(trip.id) && (
+              {trip.id && conflictedTrips.has(String(trip.id)) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -207,7 +219,7 @@ export function DispatchTrips({
                 <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <div>
                   <div className="font-medium">Pickup</div>
-                  <div>{trip.pickup_location || "Not specified"}</div>
+                  <div>{safeFormatText(trip.pickup_location)}</div>
                 </div>
               </div>
               
@@ -215,20 +227,20 @@ export function DispatchTrips({
                 <MapPin className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                 <div>
                   <div className="font-medium">Dropoff</div>
-                  <div>{trip.dropoff_location || "Not specified"}</div>
+                  <div>{safeFormatText(trip.dropoff_location)}</div>
                 </div>
               </div>
             </div>
             
             <div>
               <div className="text-sm mb-1">
-                <span className="font-medium">Client:</span> {trip.client_name || "Not specified"}
+                <span className="font-medium">Client:</span> {safeFormatText(trip.client_name)}
               </div>
               
               <div className="text-sm">
                 <span className="font-medium">Driver:</span> {trip.driver_id ? (
                   <span>
-                    {trip.driver_name}
+                    {safeFormatText(trip.driver_name, "Unknown Driver")}
                     {trip.driver_contact && (
                       <span className="text-xs ml-2 text-muted-foreground">
                         <Phone className="h-3 w-3 inline mr-1" />
@@ -239,7 +251,7 @@ export function DispatchTrips({
                 ) : "Unassigned"}
               </div>
               
-              {trip.passengers && trip.passengers.length > 0 && (
+              {trip.passengers && Array.isArray(trip.passengers) && trip.passengers.length > 0 && (
                 <div className="text-sm mt-1">
                   <span className="font-medium">Passengers:</span> {trip.passengers.length}
                 </div>
@@ -274,10 +286,15 @@ export function DispatchTrips({
 
 // Helper function to convert time string (HH:MM) to minutes for easier comparison
 function convertTimeToMinutes(timeString: string | undefined | null): number {
-  if (!timeString) return 0;
+  if (!timeString || typeof timeString !== 'string') return 0;
   
   try {
-    const [hours, minutes] = timeString.split(':').map(Number);
+    const parts = timeString.split(':');
+    if (parts.length !== 2) return 0;
+    
+    const hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    
     return (isNaN(hours) ? 0 : hours * 60) + (isNaN(minutes) ? 0 : minutes);
   } catch (error) {
     console.error("Error converting time to minutes:", timeString, error);
