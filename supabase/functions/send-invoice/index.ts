@@ -3,7 +3,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.8';
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 
@@ -37,6 +36,16 @@ const handler = async (req: Request): Promise<Response> => {
   if (corsResponse) return corsResponse;
 
   try {
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY is not set");
+      return new Response(
+        JSON.stringify({ error: "Email service is not configured. Missing API key." }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    const resend = new Resend(resendApiKey);
+
     // Parse request body
     let requestData: InvoiceEmailRequest;
     try {

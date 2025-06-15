@@ -333,23 +333,15 @@ export const sendInvoiceByEmail = async (invoice: DisplayInvoice): Promise<boole
   }
 
   try {
-    const response = await fetch(`https://kgmjttamzppmypwzargk.supabase.co/functions/v1/send-invoice`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnbWp0dGFtenBwbXlwd3phcmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MjY2MjYsImV4cCI6MjA1NTQwMjYyNn0.HMfRqxeKQSjRY2ydzyxuJoTqr06nTVjOmGp0TpXtYpk`
-      },
-      body: JSON.stringify({
+    const { error: invokeError } = await supabase.functions.invoke('send-invoice', {
+      body: {
         invoiceId: invoice.id,
         clientEmail: invoice.client_email,
-        clientName: invoice.client_name
-      })
+        clientName: invoice.client_name,
+      }
     });
 
-    if (!response.ok) {
-      const result = await response.json().catch(() => ({ error: "Failed to send invoice" }));
-      throw new Error(result?.error || "Failed to send invoice");
-    }
+    if (invokeError) throw invokeError;
 
     const { error } = await supabase
       .from('invoices')

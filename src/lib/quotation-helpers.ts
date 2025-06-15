@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -246,23 +245,15 @@ export const sendQuotationByEmail = async (quotation: DisplayQuotation): Promise
   }
 
   try {
-    const response = await fetch(`https://kgmjttamzppmypwzargk.supabase.co/functions/v1/send-quotation`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnbWp0dGFtenBwbXlwd3phcmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MjY2MjYsImV4cCI6MjA1NTQwMjYyNn0.HMfRqxeKQSjRY2ydzyxuJoTqr06nTVjOmGp0TpXtYpk`
-      },
-      body: JSON.stringify({
+    const { error: invokeError } = await supabase.functions.invoke('send-quotation', {
+      body: {
         quotationId: quotation.id,
         clientEmail: quotation.client_email,
-        clientName: quotation.client_name
-      })
+        clientName: quotation.client_name,
+      }
     });
 
-    if (!response.ok) {
-      const result = await response.json().catch(() => ({ error: "Failed to send quotation" }));
-      throw new Error(result?.error || "Failed to send quotation");
-    }
+    if (invokeError) throw invokeError;
 
     const { error } = await supabase
       .from('quotations')
