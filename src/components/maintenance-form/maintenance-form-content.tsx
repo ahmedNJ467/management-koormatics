@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -56,7 +55,7 @@ export function MaintenanceFormContent({
         .from("spare_parts")
         .select("*")
         .gt("quantity", 0)
-        .eq("status", "in_stock")
+        .in("status", ["in_stock", "low_stock"])
         .order("name", { ascending: true });
 
       if (error) throw error;
