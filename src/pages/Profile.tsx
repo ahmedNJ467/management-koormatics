@@ -11,8 +11,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Camera, Save, User, Mail, Phone, MapPin, Building } from "lucide-react";
+import { Camera, Save, User, Mail, Phone, MapPin, Building, Wand2 } from "lucide-react";
 import { useProfile, type ProfileData } from "@/hooks/use-profile";
+import { toast } from "sonner";
+import { removeBackground, loadImage, blobToDataURL } from "@/utils/image-processing";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -29,6 +31,7 @@ export default function Profile() {
   const { profile, loading, saveProfile, uploadProfileImage } = useProfile();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -66,6 +69,37 @@ export default function Profile() {
       } catch (error) {
         console.error('Error uploading image:', error);
       }
+    }
+  };
+
+  const handleRemoveBackground = async () => {
+    if (!profileImage) return;
+
+    setIsRemovingBackground(true);
+    toast.info("Starting background removal...", {
+      description: "This may take a moment as the AI model loads.",
+    });
+
+    try {
+      const blob = await (await fetch(profileImage)).blob();
+      const imageElement = await loadImage(blob);
+      
+      toast.info("Processing image...", {
+        description: "The AI is analyzing the image to find the background.",
+      });
+
+      const resultBlob = await removeBackground(imageElement);
+      const resultDataUrl = await blobToDataURL(resultBlob);
+      
+      setProfileImage(resultDataUrl);
+      toast.success("Background removed successfully!");
+    } catch (error) {
+      console.error("Error removing background:", error);
+      toast.error("Failed to remove background.", {
+        description: "Please try again or use a different image.",
+      });
+    } finally {
+      setIsRemovingBackground(false);
     }
   };
 
@@ -146,13 +180,32 @@ export default function Profile() {
                 </label>
                 
                 {profileImage && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setProfileImage(null)}
-                  >
-                    Remove Photo
-                  </Button>
+                  <div className="flex w-full items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setProfileImage(null)}
+                      className="flex-1"
+                    >
+                      Remove
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveBackground}
+                      disabled={isRemovingBackground}
+                      className="flex-1"
+                    >
+                      {isRemovingBackground ? (
+                        <span className="animate-pulse">Processing...</span>
+                      ) : (
+                        <>
+                          <Wand2 className="h-4 w-4 mr-2" />
+                          Remove BG
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
