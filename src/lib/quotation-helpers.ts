@@ -110,14 +110,6 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
       alternateRowStyles: {
         fillColor: pdfColors.rowAlt
       },
-      didDrawPage: function (data) {
-        const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
-        const pageCount = (doc as any).internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.setTextColor(...pdfColors.text);
-        doc.text('Thank you for your business!', margin, doc.internal.pageSize.height - 10);
-        doc.text(`Page ${pageNumber} of ${pageCount}`, pageW - margin, doc.internal.pageSize.height - 10, { align: 'right' });
-      }
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 100;
@@ -160,15 +152,78 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     doc.text(formatCurrency(totalAmount), totalCol2, yPosTotals, { align: 'right' });
     yPosTotals += 15;
 
+    let yPosAfterTotals = yPosTotals;
+
     if (quotation.notes) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...pdfColors.primary);
-      doc.text('Notes:', margin, yPosTotals);
+      doc.text('Notes:', margin, yPosAfterTotals);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...pdfColors.text);
       const splitNotes = doc.splitTextToSize(quotation.notes, pageW - (margin * 2));
-      doc.text(splitNotes, margin, yPosTotals + 5);
+      doc.text(splitNotes, margin, yPosAfterTotals + 5);
+      yPosAfterTotals += doc.getTextDimensions(splitNotes).h + 10;
+    }
+    
+    const finalContent = [];
+    finalContent.push([{ content: 'Payment Communication:', styles: { fontStyle: 'bold', textColor: pdfColors.primary, fontSize: 10 } }]);
+    finalContent.push([{ content: 'Please use the following communication for your payment : 78991069', styles: { fontSize: 9 } }]);
+    finalContent.push(['']); // spacer
+    finalContent.push([{ content: 'Terms and Conditions:', styles: { fontStyle: 'bold', textColor: pdfColors.primary, fontSize: 10 } }]);
+    
+    const terms = [
+      '1. The quotation provided is valid for a period of thirty (30) days from the date of issue unless otherwise stated',
+      '2. For all clients without an account or contract with us, a 50% down payment of the quoted amount, payable by cash or bank transfer, is required to confirm bookings.',
+      '3. Payment for services is due upon receipt of invoice, unless otherwise specified.'
+    ].join('\n\n');
+    finalContent.push([{ content: terms, styles: { fontSize: 8 } }]);
+    
+    finalContent.push(['']); // spacer
+    finalContent.push([{ content: 'Bank Details:', styles: { fontStyle: 'bold', textColor: pdfColors.primary, fontSize: 10 } }]);
+    finalContent.push([{ content: 'Dahabshil Bank', styles: { fontStyle: 'bold', fontSize: 9 } }]);
+    
+    const dahabshilDetails = [
+        'Account Name: Peace Business Group',
+        'Account Number: 104 102 369',
+        'Swift Codes: EABDDJJD',
+        'Branch: Mogadishu, Somalia',
+        'IBAN: SO600002301301008035901'
+    ].join('\n');
+    finalContent.push([{ content: dahabshilDetails, styles: { fontSize: 9 } }]);
+    
+    finalContent.push(['']); // spacer
+    finalContent.push([{ content: 'Premier Bank', styles: { fontStyle: 'bold', fontSize: 9 } }]);
+    
+    const premierDetails = [
+        'Account Name: Peace Business Group',
+        'Account Number: 020600296001',
+        'IBAN: SO600005002020600296001'
+    ].join('\n');
+    finalContent.push([{ content: premierDetails, styles: { fontSize: 9 } }]);
+
+    autoTable(doc, {
+        startY: yPosAfterTotals,
+        body: finalContent,
+        theme: 'plain',
+        styles: {
+            font: 'helvetica',
+            textColor: pdfColors.text,
+            cellPadding: { top: 0, right: 0, bottom: 1, left: 0 },
+        },
+        columnStyles: {
+            0: { cellWidth: pageW - (margin * 2) }
+        }
+    });
+
+    // Add footer to all pages
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(...pdfColors.text);
+        doc.text('Thank you for your business!', margin, doc.internal.pageSize.height - 10);
+        doc.text(`Page ${i} of ${pageCount}`, pageW - margin, doc.internal.pageSize.height - 10, { align: 'right' });
     }
     
     doc.save(`Quotation-${formatQuotationId(quotation.id)}.pdf`);
