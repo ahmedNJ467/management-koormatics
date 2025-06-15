@@ -8,23 +8,37 @@ export function drawPdfHeader(doc: jsPDF, title: string): void {
   const { pageMargin } = pdfConfig;
   const pageWidth = doc.internal.pageSize.width;
   
-  // Black header bar
-  doc.setFillColor(...pdfColors.headerBg);
-  doc.rect(0, 0, pageWidth, 0.4, 'F');
-  
-  // Company name in header - white text on black background
-  doc.setFontSize(pdfFonts.titleSize);
-  doc.setTextColor(...pdfColors.headerText);
-  doc.setFont('helvetica', 'bold');
-  doc.text(pdfConfig.companyName, pageWidth / 2, 0.25, { align: 'center' });
-  
+  // Add logo to header
+  const logoWidth = 1.5; // inches
+  const logoHeight = logoWidth * (123 / 622); // Maintain aspect ratio based on original image dimensions
+  const logoX = (pageWidth / 2) - (logoWidth / 2); // Centered
+  const logoY = 0.1;
+
+  if (pdfConfig.logoPath) {
+    try {
+      doc.addImage(pdfConfig.logoPath, 'PNG', logoX, logoY, logoWidth, logoHeight);
+    } catch (e) {
+      console.error("Error adding logo to PDF:", e);
+      // Fallback to text if logo fails to load
+      doc.setFontSize(pdfFonts.titleSize);
+      doc.setFont('helvetica', 'bold');
+      doc.text(pdfConfig.companyName, pageWidth / 2, 0.25, { align: 'center' });
+    }
+  } else {
+    // Fallback to text if no logo path is defined
+    doc.setFontSize(pdfFonts.titleSize);
+    doc.setFont('helvetica', 'bold');
+    doc.text(pdfConfig.companyName, pageWidth / 2, 0.25, { align: 'center' });
+  }
+
   // Add thin border line under header
+  const lineY = logoY + logoHeight + 0.1;
   doc.setDrawColor(...pdfColors.border);
   doc.setLineWidth(0.01);
-  doc.line(0, 0.4, pageWidth, 0.4);
+  doc.line(pageMargin, lineY, pageWidth - pageMargin, lineY);
   
   // Column headers section
-  const startY = 0.6;
+  const startY = lineY + 0.2;
   const colHeaders = ['DATE', 'CLIENT/PASSENGER(S)', 'ORGANISATION', 'CONTACT', 'SERVICE TYPE', 'PICK-UP ADDRESS', 'DROP-OFF ADDRESS', 'TIME', 'CARRIER/FLIGHT #', 'ASSIGNED VEHICLE', 'ASSIGNED DRIVER'];
   const colWidths = [0.8, 1.4, 1.0, 0.8, 0.9, 1.3, 1.3, 0.6, 1.0, 1.2, 1.2];
   

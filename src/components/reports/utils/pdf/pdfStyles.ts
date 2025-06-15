@@ -19,7 +19,7 @@ export const pdfColors = {
 // Document configuration for professional appearance
 export const pdfConfig = {
   pageMargin: 0.5,
-  logoPath: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+  logoPath: '/lovable-uploads/6996f29f-4f5b-4a22-ba41-51dc5c98afb7.png',
   companyName: 'PBG | MOVCON DEPT.',
   format: [11.69, 8.27] as [number, number], // A4 landscape
   orientation: 'landscape' as const

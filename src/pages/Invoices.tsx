@@ -500,34 +500,47 @@ export default function Invoices() {
 
   const generateInvoicePDF = (invoice: DisplayInvoice) => {
     const doc = new jsPDF();
+    const logoUrl = '/lovable-uploads/6996f29f-4f5b-4a22-ba41-51dc5c98afb7.png';
 
+    // Logo
+    doc.addImage(logoUrl, 'PNG', 14, 15, 60, 12);
+    
     // Header
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text("INVOICE", 14, 22);
+    doc.text("INVOICE", 14, 45);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Invoice #: ${formatInvoiceId(invoice.id)}`, 14, 32);
-    doc.text(`Date: ${formatDate(invoice.date)}`, 14, 38);
-    doc.text(`Due Date: ${formatDate(invoice.due_date)}`, 14, 44);
+    doc.text(`Invoice #: ${formatInvoiceId(invoice.id)}`, 14, 55);
+    doc.text(`Date: ${formatDate(invoice.date)}`, 14, 61);
+    doc.text(`Due Date: ${formatDate(invoice.due_date)}`, 14, 67);
 
     // Client Info
     doc.setFont('helvetica', 'bold');
-    doc.text("Bill To:", 140, 22);
+    doc.text("Bill To:", 140, 45);
     doc.setFont('helvetica', 'normal');
-    doc.text(invoice.client_name, 140, 28);
+    doc.text(invoice.client_name, 140, 51);
+    
+    let clientInfoY = 51;
     if (invoice.client_address) {
         const addressLines = doc.splitTextToSize(invoice.client_address, 60);
-        doc.text(addressLines, 140, 34);
+        doc.text(addressLines, 140, clientInfoY + 6);
+        clientInfoY += doc.getTextDimensions(addressLines).h;
     }
-    const emailY = invoice.client_address ? 34 + (doc.getTextDimensions(doc.splitTextToSize(invoice.client_address, 60)).h) + 6 : 34;
-    if(invoice.client_email) doc.text(invoice.client_email, 140, emailY);
-    if(invoice.client_phone) doc.text(invoice.client_phone, 140, emailY + 6);
 
+    clientInfoY += 6;
+    if(invoice.client_email) {
+      doc.text(invoice.client_email, 140, clientInfoY + 6);
+      clientInfoY += 6;
+    }
+    if(invoice.client_phone) {
+      doc.text(invoice.client_phone, 140, clientInfoY + 6);
+    }
+    
     // Table
     autoTable(doc, {
-      startY: 70,
+      startY: 85,
       head: [['Description', 'Qty', 'Unit Price', 'Amount']],
       body: invoice.items.map(item => [
         item.description,
