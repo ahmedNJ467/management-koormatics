@@ -139,7 +139,7 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
           date: values.next_scheduled,
           description: `Follow-up: ${values.description}`,
           cost: 0, // Default cost for scheduled maintenance
-          status: 'scheduled',
+          status: 'scheduled' as const, // Fix TypeScript issue by using 'as const'
           next_scheduled: null, // Will be set when this maintenance is planned
           notes: `Auto-generated follow-up maintenance for previous service on ${values.date}`,
           service_provider: values.service_provider || null,
