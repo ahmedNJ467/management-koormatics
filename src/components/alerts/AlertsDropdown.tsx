@@ -29,7 +29,7 @@ export function AlertsDropdown() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
-        className="w-96 bg-background border shadow-lg z-50" 
+        className="w-[28rem] bg-background border shadow-lg z-50" 
         align="end" 
         forceMount
       >
