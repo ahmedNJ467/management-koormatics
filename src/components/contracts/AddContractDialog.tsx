@@ -6,6 +6,13 @@ import { Label } from "@/components/ui/label";
 import { AlertTriangle, FileText } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format, parseISO } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddContractDialogProps {
   open: boolean;
@@ -43,6 +50,12 @@ const AddContractDialog = ({
       },
     } as React.ChangeEvent<HTMLInputElement>;
     handleInputChange(event);
+  };
+
+  const handleStatusChange = (value: string) => {
+    handleInputChange({
+      target: { name: 'status', value },
+    } as React.ChangeEvent<HTMLSelectElement>);
   };
 
   return (
@@ -90,19 +103,21 @@ const AddContractDialog = ({
               <Label htmlFor="status" className="text-base font-medium">
                 Status
               </Label>
-              <select
-                id="status"
-                name="status"
+              <Select
                 value={formData.status}
-                onChange={handleInputChange}
-                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                onValueChange={handleStatusChange}
                 required
               >
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="expired">Expired</option>
-                <option value="terminated">Terminated</option>
-              </select>
+                <SelectTrigger id="status" className="h-11">
+                  <SelectValue placeholder="Select a status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="grid gap-2">
