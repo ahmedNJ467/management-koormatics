@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ export default function Quotations() {
       if (error) throw error;
 
       // Map the data to match our Quotation interface
-      return data.map(quote => ({
+      return data.map((quote: any) => ({
         id: quote.id,
         date: quote.date,
         client_id: quote.client_id,
