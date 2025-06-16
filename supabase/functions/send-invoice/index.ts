@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.8';
 import { Resend } from "npm:resend@2.0.0";
@@ -19,6 +20,8 @@ interface InvoiceEmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log("Function called with method:", req.method);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -42,6 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
     let requestData: InvoiceEmailRequest;
     try {
       requestData = await req.json();
+      console.log("Request data:", requestData);
     } catch (e) {
       console.error("Error parsing request JSON:", e);
       return new Response(
