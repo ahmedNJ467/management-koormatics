@@ -616,6 +616,7 @@ export type Database = {
           client_id: string
           created_at: string | null
           date: string
+          discount_percentage: number | null
           id: string
           items: Json
           notes: string | null
@@ -623,11 +624,13 @@ export type Database = {
           total_amount: number
           updated_at: string | null
           valid_until: string
+          vat_percentage: number | null
         }
         Insert: {
           client_id: string
           created_at?: string | null
           date: string
+          discount_percentage?: number | null
           id?: string
           items?: Json
           notes?: string | null
@@ -635,11 +638,13 @@ export type Database = {
           total_amount?: number
           updated_at?: string | null
           valid_until: string
+          vat_percentage?: number | null
         }
         Update: {
           client_id?: string
           created_at?: string | null
           date?: string
+          discount_percentage?: number | null
           id?: string
           items?: Json
           notes?: string | null
@@ -647,6 +652,7 @@ export type Database = {
           total_amount?: number
           updated_at?: string | null
           valid_until?: string
+          vat_percentage?: number | null
         }
         Relationships: [
           {
