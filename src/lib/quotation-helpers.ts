@@ -245,6 +245,8 @@ export const sendQuotationByEmail = async (quotation: DisplayQuotation): Promise
   }
 
   try {
+    console.log("Sending quotation email for quotation ID:", quotation.id);
+    
     const { error: invokeError } = await supabase.functions.invoke('send-quotation', {
       body: {
         quotationId: quotation.id,
@@ -253,14 +255,20 @@ export const sendQuotationByEmail = async (quotation: DisplayQuotation): Promise
       }
     });
 
-    if (invokeError) throw invokeError;
+    if (invokeError) {
+      console.error("Invoke error:", invokeError);
+      throw invokeError;
+    }
 
     const { error } = await supabase
       .from('quotations')
       .update({ status: 'sent' as QuotationStatus })
       .eq('id', quotation.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Status update error:", error);
+      throw error;
+    }
 
     toast({
       title: "Quotation sent",

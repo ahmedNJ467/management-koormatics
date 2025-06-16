@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,7 +32,7 @@ import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
 import { formatCurrency } from "@/lib/invoice-helpers";
 
-// Quotation form schema
+// Updated quotation form schema
 const quotationSchema = z.object({
   client_id: z.string({ required_error: "Please select a client" }),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
@@ -45,7 +46,9 @@ const quotationSchema = z.object({
       unit_price: z.number().min(0, "Price must be 0 or higher"),
       amount: z.number()
     })
-  ).min(1, "At least one item is required")
+  ).min(1, "At least one item is required"),
+  vat_percentage: z.number().optional(),
+  discount_percentage: z.number().optional()
 });
 
 type QuotationFormValues = z.infer<typeof quotationSchema>;
@@ -82,14 +85,18 @@ export function QuotationFormDialog({
       valid_until: quotation.valid_until,
       notes: quotation.notes || "",
       status: quotation.status,
-      items: quotation.items
+      items: quotation.items,
+      vat_percentage: quotation.vat_percentage || undefined,
+      discount_percentage: quotation.discount_percentage || undefined
     } : {
       client_id: "",
       date: today,
       valid_until: thirtyDaysFromNow,
       notes: "",
       status: "draft",
-      items: [{ description: "", quantity: 1, unit_price: 0, amount: 0 }]
+      items: [{ description: "", quantity: 1, unit_price: 0, amount: 0 }],
+      vat_percentage: undefined,
+      discount_percentage: undefined
     }
   });
 
@@ -109,7 +116,9 @@ export function QuotationFormDialog({
           valid_until: quotation.valid_until,
           notes: quotation.notes || "",
           status: quotation.status,
-          items: quotation.items
+          items: quotation.items,
+          vat_percentage: quotation.vat_percentage || undefined,
+          discount_percentage: quotation.discount_percentage || undefined
         });
         setVatEnabled(!!quotation.vat_percentage && quotation.vat_percentage > 0);
         setDiscountPercentage(quotation.discount_percentage || 0);
@@ -120,7 +129,9 @@ export function QuotationFormDialog({
           valid_until: thirtyDaysFromNow,
           notes: "",
           status: "draft",
-          items: [{ description: "", quantity: 1, unit_price: 0, amount: 0 }]
+          items: [{ description: "", quantity: 1, unit_price: 0, amount: 0 }],
+          vat_percentage: undefined,
+          discount_percentage: undefined
         });
         setVatEnabled(false);
         setDiscountPercentage(0);
@@ -171,9 +182,11 @@ export function QuotationFormDialog({
         notes: values.notes || null,
         total_amount: totalAmount,
         items: values.items as any, // Cast to any to handle the JSON type
-        vat_percentage: vatEnabled ? 5 : undefined,
-        discount_percentage: discountPercentage > 0 ? discountPercentage : undefined,
+        vat_percentage: vatEnabled ? 5 : null,
+        discount_percentage: discountPercentage > 0 ? discountPercentage : null,
       };
+
+      console.log("Submitting quotation with data:", formattedValues);
       
       if (quotation) {
         // Update existing quotation
@@ -182,7 +195,10 @@ export function QuotationFormDialog({
           .update(formattedValues)
           .eq("id", quotation.id);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Update error:", error);
+          throw error;
+        }
         
         toast({
           title: "Quotation updated",
@@ -194,7 +210,10 @@ export function QuotationFormDialog({
           .from("quotations")
           .insert(formattedValues);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Insert error:", error);
+          throw error;
+        }
         
         toast({
           title: "Quotation created",
