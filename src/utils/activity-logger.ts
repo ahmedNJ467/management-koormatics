@@ -1,4 +1,3 @@
-
 import { ActivityItemProps } from "@/types/dashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { checkSupabaseConnection } from "./supabase-helpers";
@@ -9,6 +8,11 @@ interface ActivityLogParams {
   title: string;
   type: ActivityType;
   relatedId?: string;
+  tripDetails?: {
+    clientName?: string;
+    pickupLocation?: string;
+    dropoffLocation?: string;
+  };
 }
 
 // Format timestamps in a human-readable format
@@ -31,11 +35,11 @@ const formatTimestamp = (date: Date): string => {
 };
 
 // Add a new activity to the database
-export const logActivity = async ({ title, type, relatedId }: ActivityLogParams): Promise<ActivityItemProps> => {
+export const logActivity = async ({ title, type, relatedId, tripDetails }: ActivityLogParams): Promise<ActivityItemProps> => {
   const id = Date.now().toString();
   const timestamp = new Date();
   
-  // Updated icon mapping to align with our new design
+  // Enhanced icon mapping
   const iconMap: Record<ActivityType, string> = {
     trip: 'calendar',
     maintenance: 'clock',
@@ -46,12 +50,25 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
     contract: 'file-check'
   };
 
+  // Create more detailed titles for trip activities
+  let enhancedTitle = title;
+  if (type === 'trip' && tripDetails) {
+    const { clientName, pickupLocation, dropoffLocation } = tripDetails;
+    if (pickupLocation && dropoffLocation) {
+      enhancedTitle = `Trip: ${pickupLocation} to ${dropoffLocation}`;
+      if (clientName) {
+        enhancedTitle += ` (${clientName})`;
+      }
+    }
+  }
+
   const newActivity: ActivityItemProps = {
     id,
-    title,
+    title: enhancedTitle,
     timestamp: formatTimestamp(timestamp),
     type,
-    icon: iconMap[type] || 'activity'
+    icon: iconMap[type] || 'activity',
+    related_id: relatedId
   };
   
   // Save to the database with better error handling
@@ -59,7 +76,7 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
     // Check if connection is healthy before attempting to save
     const isConnected = await checkSupabaseConnection();
     if (!isConnected) {
-      console.warn("Database connection not available, activity not saved:", title);
+      console.warn("Database connection not available, activity not saved:", enhancedTitle);
       return newActivity;
     }
 
@@ -67,7 +84,7 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
       .from('activities')
       .insert([
         { 
-          title, 
+          title: enhancedTitle, 
           type, 
           related_id: relatedId,
           timestamp: timestamp.toISOString()
@@ -78,7 +95,7 @@ export const logActivity = async ({ title, type, relatedId }: ActivityLogParams)
       console.error("Error saving activity to database:", error);
       // Still return the activity object for local use
     } else {
-      console.log("Activity logged successfully:", title);
+      console.log("Activity logged successfully:", enhancedTitle);
     }
   } catch (err) {
     console.error("Failed to log activity to database:", err);
@@ -119,11 +136,74 @@ export const getActivities = async (limit?: number): Promise<ActivityItemProps[]
       title: item.title,
       timestamp: formatTimestamp(new Date(item.timestamp)),
       type: item.type as ActivityType,
-      icon: item.type as ActivityType
+      icon: item.type as ActivityType,
+      related_id: item.related_id
     }));
   } catch (err) {
     console.error("Failed to fetch activities:", err);
     return [];
+  }
+};
+
+// Enhanced trip activity logging with proper trip details
+export const logTripActivity = async (action: string, tripId: string, tripData?: any): Promise<void> => {
+  try {
+    // Fetch trip details to create a meaningful activity
+    const { data: trip, error } = await supabase
+      .from('trips')
+      .select(`
+        *,
+        clients:client_id(name),
+        vehicles:vehicle_id(make, model, registration),
+        drivers:driver_id(name)
+      `)
+      .eq('id', tripId)
+      .single();
+
+    if (error || !trip) {
+      console.warn('Could not fetch trip details for activity logging');
+      return;
+    }
+
+    const clientName = trip.clients?.name || 'Unknown Client';
+    const vehicleDetails = trip.vehicles 
+      ? `${trip.vehicles.make} ${trip.vehicles.model}` 
+      : 'Unknown Vehicle';
+    const driverName = trip.drivers?.name || 'Unassigned Driver';
+
+    let title = '';
+    switch (action) {
+      case 'created':
+        title = `New trip created: ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
+        break;
+      case 'updated':
+        title = `Trip updated: ${clientName} - ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
+        break;
+      case 'assigned':
+        title = `Vehicle assigned: ${vehicleDetails} to trip for ${clientName}`;
+        break;
+      case 'driver_assigned':
+        title = `Driver assigned: ${driverName} to trip for ${clientName}`;
+        break;
+      case 'completed':
+        title = `Trip completed: ${clientName} - ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
+        break;
+      default:
+        title = `Trip ${action}: ${clientName}`;
+    }
+
+    await logActivity({
+      title,
+      type: 'trip',
+      relatedId: tripId,
+      tripDetails: {
+        clientName,
+        pickupLocation: trip.pickup_location,
+        dropoffLocation: trip.dropoff_location
+      }
+    });
+  } catch (err) {
+    console.error('Error logging trip activity:', err);
   }
 };
 

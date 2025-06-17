@@ -6,6 +6,7 @@ import { ActivityLoading } from "./recent-activity/ActivityLoading";
 import { ActivityEmptyState } from "./recent-activity/ActivityEmptyState";
 import { ActivityItem } from "./recent-activity/ActivityItem";
 import { useRealtimeActivities } from "./recent-activity/useRealtimeActivities";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RecentActivityProps {
   isLoading?: boolean;
@@ -35,7 +36,8 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
           title: item.title || 'Unknown activity',
           timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown time',
           type: (item.type as ActivityItemProps['type']) || 'default',
-          icon: item.type || 'default'
+          icon: item.type || 'default',
+          related_id: item.related_id // Keep the actual related trip ID for reference
         })) as ActivityItemProps[];
       } catch (err) {
         console.error("Database connection error:", err);
@@ -78,10 +80,12 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
   }
 
   return (
-    <div className="space-y-4">
-      {validActivities.map((activity) => (
-        <ActivityItem key={activity.id} activity={activity} />
-      ))}
-    </div>
+    <ScrollArea className="h-[400px] w-full">
+      <div className="space-y-3 pr-4">
+        {validActivities.map((activity) => (
+          <ActivityItem key={activity.id} activity={activity} />
+        ))}
+      </div>
+    </ScrollArea>
   );
 };

@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityItemProps } from "@/types/dashboard";
 import { BarChart, Activity, TrendingUp } from "lucide-react";
-import { getActivities, logActivity } from "@/utils/activity-logger";
+import { getActivities, logTripActivity } from "@/utils/activity-logger";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -42,10 +42,6 @@ export default function Dashboard() {
         table: 'vehicles' 
       }, async () => {
         queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-        await logActivity({
-          title: "Vehicle status updated",
-          type: "vehicle"
-        });
         const activities = await getActivities(5);
         setRecentActivities(activities);
       })
@@ -55,10 +51,6 @@ export default function Dashboard() {
         table: 'drivers' 
       }, async () => {
         queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-        await logActivity({
-          title: "Driver information updated",
-          type: "driver"
-        });
         const activities = await getActivities(5);
         setRecentActivities(activities);
       })
@@ -68,10 +60,6 @@ export default function Dashboard() {
         table: 'maintenance' 
       }, async () => {
         queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-        await logActivity({
-          title: "Maintenance record updated",
-          type: "maintenance"
-        });
         const activities = await getActivities(5);
         setRecentActivities(activities);
       })
@@ -81,10 +69,38 @@ export default function Dashboard() {
         table: 'contracts' 
       }, async () => {
         queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
-        await logActivity({
-          title: "Contract information updated",
-          type: "contract"
-        });
+        const activities = await getActivities(5);
+        setRecentActivities(activities);
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'trips' 
+      }, async (payload) => {
+        queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
+        
+        // Log enhanced trip activity with proper details
+        if (payload.new && payload.eventType) {
+          const tripId = payload.new.id;
+          let action = '';
+          
+          switch (payload.eventType) {
+            case 'INSERT':
+              action = 'created';
+              break;
+            case 'UPDATE':
+              action = 'updated';
+              break;
+            case 'DELETE':
+              action = 'deleted';
+              break;
+          }
+          
+          if (action && tripId) {
+            await logTripActivity(action, tripId, payload.new);
+          }
+        }
+        
         const activities = await getActivities(5);
         setRecentActivities(activities);
       })
@@ -179,11 +195,7 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="max-h-[400px] overflow-y-auto pr-2 -mr-2">
-                  <div className="pr-1">
-                    <RecentActivity activities={recentActivities} isLoading={false} />
-                  </div>
-                </div>
+                <RecentActivity activities={recentActivities} isLoading={false} />
               </CardContent>
             </Card>
           </div>
