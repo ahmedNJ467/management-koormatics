@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,7 +79,7 @@ export default function Dashboard() {
         queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
         
         // Log enhanced trip activity with proper details
-        if (payload.new && payload.eventType) {
+        if (payload.new && payload.eventType && typeof payload.new === 'object' && 'id' in payload.new) {
           const tripId = payload.new.id;
           let action = '';
           
