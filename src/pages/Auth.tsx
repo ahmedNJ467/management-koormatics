@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, User, Eye, EyeOff, Truck, Car } from "lucide-react";
+import { Lock, User, Eye, EyeOff } from "lucide-react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -56,59 +56,16 @@ export default function Auth() {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900">
-      {/* Animated Background with Moving Vehicles */}
-      <div className="absolute inset-0">
-        {/* Road lines */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="h-full w-full" style={{
-            backgroundImage: `repeating-linear-gradient(
-              0deg,
-              transparent,
-              transparent 50px,
-              rgba(255,255,255,0.1) 50px,
-              rgba(255,255,255,0.1) 52px
-            )`
-          }}></div>
-        </div>
-        
-        {/* Moving vehicles */}
-        <div className="absolute inset-0">
-          {/* Vehicle 1 */}
-          <div 
-            className="absolute top-1/4 left-0 text-blue-300/30 animate-[moveRight_15s_linear_infinite]"
-            style={{ animationDelay: '0s' }}
-          >
-            <Truck size={40} />
-          </div>
-          
-          {/* Vehicle 2 */}
-          <div 
-            className="absolute top-2/4 left-0 text-green-300/30 animate-[moveRight_20s_linear_infinite]"
-            style={{ animationDelay: '5s' }}
-          >
-            <Car size={32} />
-          </div>
-          
-          {/* Vehicle 3 */}
-          <div 
-            className="absolute top-3/4 left-0 text-blue-400/30 animate-[moveRight_18s_linear_infinite]"
-            style={{ animationDelay: '10s' }}
-          >
-            <Truck size={36} />
-          </div>
-          
-          {/* Vehicle 4 - smaller car */}
-          <div 
-            className="absolute top-1/3 left-0 text-slate-300/30 animate-[moveRight_25s_linear_infinite]"
-            style={{ animationDelay: '15s' }}
-          >
-            <Car size={28} />
-          </div>
-        </div>
-        
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-blue-800/70 to-blue-900/90"></div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Real Transportation Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`,
+        }}
+      >
+        {/* Dark overlay for better readability */}
+        <div className="absolute inset-0 bg-black/50"></div>
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
@@ -122,10 +79,10 @@ export default function Auth() {
                 className="h-20 object-contain drop-shadow-lg"
               />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
               Koormatics Transportation & Logistics
             </h1>
-            <p className="text-blue-200 text-sm">
+            <p className="text-white/90 text-sm drop-shadow">
               Fleet Management System
             </p>
           </div>
@@ -245,10 +202,10 @@ export default function Auth() {
 
           {/* Footer */}
           <div className="text-center mt-6 space-y-2">
-            <p className="text-white/60 text-xs">
+            <p className="text-white/80 text-xs drop-shadow">
               © 2024 Koormatics Transportation & Logistics
             </p>
-            <p className="text-white/40 text-xs">
+            <p className="text-white/60 text-xs drop-shadow">
               All rights reserved | Fleet Management System
             </p>
           </div>
