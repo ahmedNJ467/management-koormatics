@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, User, Eye, EyeOff } from "lucide-react";
+import { Lock, User, Eye, EyeOff, Truck, Car } from "lucide-react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -55,30 +56,78 @@ export default function Auth() {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Moving Cars Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')`,
-        }}
-      >
-        {/* Animated overlay to simulate moving effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 via-blue-800/60 to-blue-900/80 animate-pulse"></div>
-        <div className="absolute inset-0 bg-black/40"></div>
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900">
+      {/* Animated Background with Moving Vehicles */}
+      <div className="absolute inset-0">
+        {/* Road lines */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="h-full w-full" style={{
+            backgroundImage: `repeating-linear-gradient(
+              0deg,
+              transparent,
+              transparent 50px,
+              rgba(255,255,255,0.1) 50px,
+              rgba(255,255,255,0.1) 52px
+            )`
+          }}></div>
+        </div>
+        
+        {/* Moving vehicles */}
+        <div className="absolute inset-0">
+          {/* Vehicle 1 */}
+          <div 
+            className="absolute top-1/4 left-0 text-blue-300/30 animate-[moveRight_15s_linear_infinite]"
+            style={{ animationDelay: '0s' }}
+          >
+            <Truck size={40} />
+          </div>
+          
+          {/* Vehicle 2 */}
+          <div 
+            className="absolute top-2/4 left-0 text-green-300/30 animate-[moveRight_20s_linear_infinite]"
+            style={{ animationDelay: '5s' }}
+          >
+            <Car size={32} />
+          </div>
+          
+          {/* Vehicle 3 */}
+          <div 
+            className="absolute top-3/4 left-0 text-blue-400/30 animate-[moveRight_18s_linear_infinite]"
+            style={{ animationDelay: '10s' }}
+          >
+            <Truck size={36} />
+          </div>
+          
+          {/* Vehicle 4 - smaller car */}
+          <div 
+            className="absolute top-1/3 left-0 text-slate-300/30 animate-[moveRight_25s_linear_infinite]"
+            style={{ animationDelay: '15s' }}
+          >
+            <Car size={28} />
+          </div>
+        </div>
+        
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-blue-800/70 to-blue-900/90"></div>
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          {/* Koormatics Logo */}
+          {/* Company Logo and Branding */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
               <img
-                src="/koormatics-logo.svg"
-                alt="Koormatics Logo"
-                className="h-16 object-contain"
+                src="/lovable-uploads/4ac6bd3a-707d-4262-bc89-af00beb7077e.png"
+                alt="Koormatics Transportation & Logistics"
+                className="h-20 object-contain drop-shadow-lg"
               />
             </div>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Koormatics Transportation & Logistics
+            </h1>
+            <p className="text-blue-200 text-sm">
+              Fleet Management System
+            </p>
           </div>
 
           {/* Login Card */}
@@ -86,53 +135,53 @@ export default function Auth() {
             <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-slate-50 pb-6">
               <CardTitle className="text-gray-800 flex items-center justify-center gap-3 text-xl">
                 <Lock className="h-5 w-5 text-blue-600" />
-                Admin Login
+                Administrator Access
               </CardTitle>
+              <p className="text-sm text-gray-600 mt-2">
+                Sign in to manage your fleet operations
+              </p>
             </CardHeader>
             <CardContent className="p-8">
               <form onSubmit={handleAuth} className="space-y-6">
                 {/* Email Field */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-gray-700 font-medium">
-                    Email:
+                    Email Address
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="admin@koormatics.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="pl-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                      className="pl-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg transition-all duration-200"
                     />
                   </div>
                 </div>
 
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-gray-700 font-medium"
-                  >
-                    Password:
+                  <Label htmlFor="password" className="text-gray-700 font-medium">
+                    Password
                   </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="Enter your secure password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                      className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg transition-all duration-200"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -143,15 +192,8 @@ export default function Auth() {
                   </div>
                 </div>
 
-                {/* Language and Remember Me */}
+                {/* Options Row */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <select className="text-sm border border-gray-200 rounded-md px-3 py-2 bg-gray-50 text-gray-700 focus:border-blue-500 focus:outline-none">
-                      <option value="en">English</option>
-                      <option value="so">Somali</option>
-                      <option value="ar">Arabic</option>
-                    </select>
-                  </div>
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -161,43 +203,54 @@ export default function Auth() {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <Label htmlFor="remember" className="text-sm text-gray-600">
-                      Remember
+                      Remember me
                     </Label>
                   </div>
+                  <button
+                    type="button"
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                  >
+                    Forgot password?
+                  </button>
                 </div>
 
                 {/* Login Button */}
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 h-12 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 h-12 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Signing In...
+                      Authenticating...
                     </div>
                   ) : (
-                    "Log in"
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Sign In to Dashboard
+                    </div>
                   )}
                 </Button>
 
-                {/* Additional Links */}
-                <div className="flex justify-center space-x-4 text-sm">
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    Forgot password?
-                  </button>
+                {/* Security Notice */}
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">
+                    Secure connection protected by SSL encryption
+                  </p>
                 </div>
               </form>
             </CardContent>
           </Card>
 
-          {/* Bottom branding */}
-          <div className="text-center mt-6">
-            <p className="text-white/60 text-xs">© koormatics</p>
+          {/* Footer */}
+          <div className="text-center mt-6 space-y-2">
+            <p className="text-white/60 text-xs">
+              © 2024 Koormatics Transportation & Logistics
+            </p>
+            <p className="text-white/40 text-xs">
+              All rights reserved | Fleet Management System
+            </p>
           </div>
         </div>
       </div>
