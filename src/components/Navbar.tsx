@@ -13,9 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -25,6 +27,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const { profile } = useProfile();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -40,11 +44,30 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     window.location.href = "/settings";
   };
 
-  const handleLogoutClick = () => {
-    // Handle logout logic
-    console.log("Logout clicked");
+  const handleLogoutClick = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      toast({
+        title: "Logged out successfully",
+        description: "You have been signed out of the system",
+      });
+
+      // Redirect to auth page
+      navigate("/auth");
+    } catch (error) {
+      toast({
+        title: "Logout failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred during logout",
+        variant: "destructive",
+      });
+    }
   };
-  
+
   // Render a placeholder on initial mount to avoid theme flash
   if (!mounted) {
     return (
@@ -68,37 +91,43 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   return (
     <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onMenuClick}
-        >
+        <Button variant="ghost" size="icon" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
-        
+
         <Link to="/dashboard" className="flex items-center">
-          <img 
-            src="/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png" 
-            alt="Koormatics Logo" 
+          <img
+            src="/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png"
+            alt="Koormatics Logo"
             className="h-8 object-contain"
           />
         </Link>
-        
+
         <div className="flex-1 flex justify-center max-w-sm mx-auto">
           <GlobalSearchTrigger />
         </div>
-        
+
         <div className="flex items-center gap-2">
           <AlertsDropdown />
           <ThemeToggle />
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-12 w-12 rounded-full"
+              >
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={profile?.profile_image_url || "/placeholder.svg"} alt="Admin" />
+                  <AvatarImage
+                    src={profile?.profile_image_url || "/placeholder.svg"}
+                    alt="Admin"
+                  />
                   <AvatarFallback>
-                    {profile?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD'}
+                    {profile?.name
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase() || "AD"}
                   </AvatarFallback>
                 </Avatar>
               </Button>

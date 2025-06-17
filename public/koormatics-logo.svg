@@ -1,0 +1,25 @@
+<svg width="300" height="100" viewBox="0 0 300 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pinGradient" x1="50" y1="20" x2="50" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#83C442"/>
+      <stop offset="1" stop-color="#6AA830"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Map Pin Background -->
+  <path d="M50 20C41.7 16 31.7 16 23.4 20C15.1 24 8.9 31.6 6.5 40.8C4.1 50 5.2 59.8 9.7 68.2L25.3 90.5C25.9 91.4 26.7 92 27.6 92.3C28.5 92.6 29.5 92.6 30.4 92.3C31.3 92 32.1 91.4 32.7 90.5L48.3 68.2C52.8 59.8 53.9 50 51.5 40.8C49.1 31.6 42.9 24 34.6 20H50Z" fill="url(#pinGradient)"/>
+  
+  <!-- Elephant Silhouette -->
+  <path d="M30 30C28 30 26 31 24 32C22 33 20 35 19 37C18 39 18 41 19 43C20 45 22 47 24 48C26 49 28 50 30 50C32 50 34 49 36 48C38 47 40 45 41 43C42 41 42 39 41 37C40 35 38 33 36 32C34 31 32 30 30 30Z" fill="#3351B5"/>
+  
+  <!-- Elephant Ear -->
+  <path d="M24 34C23 34 22 35 22 36C22 37 23 38 24 38C25 38 26 37 26 36C26 35 25 34 24 34Z" fill="#3351B5"/>
+  
+  <!-- Elephant Trunk -->
+  <path d="M30 40C29 40 28 41 28 42C28 43 29 44 30 44C31 44 32 43 32 42C32 41 31 40 30 40Z" fill="#3351B5"/>
+  
+  <!-- Text KOORMATICS -->
+  <text x="100" y="45" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#3351B5">KO</text>
+  <circle cx="125" cy="40" r="3" fill="#83C442"/>
+  <text x="140" y="45" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#3351B5">RMATICS</text>
+</svg> 

@@ -1,6 +1,5 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDatabaseFieldsToTrip } from "@/lib/types/trip";
 import { DbTripData } from "@/components/trips/types";
@@ -8,6 +7,7 @@ import { Driver, Vehicle, Client } from "@/lib/types";
 
 export function useTripsData() {
   const queryClient = useQueryClient();
+  const channelRef = useRef<any>(null);
 
   // Fetch trips data
   const tripsQuery = useQuery({
@@ -15,12 +15,14 @@ export function useTripsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        .select(`
+        .select(
+          `
           *,
           clients:client_id(name, email, type),
           vehicles:vehicle_id(make, model, registration),
           drivers:driver_id(name, contact, avatar_url)
-        `)
+        `
+        )
         .order("date", { ascending: false });
 
       if (error) throw error;
@@ -73,18 +75,26 @@ export function useTripsData() {
 
   // Subscribe to real-time changes
   useEffect(() => {
-    const channel = supabase
-      .channel("trips-changes")
-      .on("postgres_changes", 
-        { event: "*", schema: "public", table: "trips" }, 
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["trips"] });
-        }
-      )
-      .subscribe();
+    // Only create subscription if one doesn't already exist
+    if (!channelRef.current) {
+      const channelName = `trips-data-${Date.now()}-${Math.random()}`;
+      channelRef.current = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "trips" },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["trips"] });
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient]);
 

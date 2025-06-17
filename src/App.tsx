@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,6 +25,8 @@ import CostAnalytics from "./pages/CostAnalytics";
 import CombinedAnalytics from "./pages/CombinedAnalytics";
 import Dispatch from "./pages/Dispatch";
 import NotFound from "./pages/NotFound";
+import InvitationLetter from "./pages/InvitationLetter";
+import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
 
@@ -37,7 +38,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/auth" replace />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/*" element={<Layout />}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="vehicles" element={<Vehicles />} />
@@ -56,8 +58,12 @@ const App = () => (
               <Route path="alerts" element={<Alerts />} />
               <Route path="trip-analytics" element={<TripAnalytics />} />
               <Route path="cost-analytics" element={<CostAnalytics />} />
-              <Route path="combined-analytics" element={<CombinedAnalytics />} />
+              <Route
+                path="combined-analytics"
+                element={<CombinedAnalytics />}
+              />
               <Route path="dispatch" element={<Dispatch />} />
+              <Route path="invitation-letter" element={<InvitationLetter />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

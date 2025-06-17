@@ -1,5 +1,3 @@
-
-
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -21,7 +19,8 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
-  Navigation
+  Navigation,
+  Mail,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -35,7 +34,7 @@ const navigationGroups = [
       { name: "Maintenance", href: "/maintenance", icon: Wrench },
       { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
       { name: "Spare Parts", href: "/spare-parts", icon: Package },
-    ]
+    ],
   },
   {
     category: "Operations",
@@ -46,15 +45,20 @@ const navigationGroups = [
       { name: "Contracts", href: "/contracts", icon: File },
       { name: "Quotations", href: "/quotations", icon: FileText },
       { name: "Invoices", href: "/invoices", icon: Receipt },
-    ]
+      { name: "Invitation Letter", href: "/invitation-letter", icon: Mail },
+    ],
   },
   {
     category: "Analytics",
     items: [
-      { name: "Revenue & Cost Analytics", href: "/cost-analytics", icon: DollarSign },
+      {
+        name: "Revenue & Cost Analytics",
+        href: "/cost-analytics",
+        icon: DollarSign,
+      },
       { name: "Reports", href: "/reports", icon: BarChart },
-    ]
-  }
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -65,18 +69,18 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
-  
+
   // Find which category contains the current route and set it as default expanded
   const findActiveCategoryIndex = () => {
-    const activeIndex = navigationGroups.findIndex(group => 
-      group.items.some(item => location.pathname === item.href)
+    const activeIndex = navigationGroups.findIndex((group) =>
+      group.items.some((item) => location.pathname === item.href)
     );
     return activeIndex !== -1 ? activeIndex : 0; // Default to first category if no match
   };
-  
-  const [expandedCategoryIndex, setExpandedCategoryIndex] = useState<number | null>(
-    findActiveCategoryIndex()
-  );
+
+  const [expandedCategoryIndex, setExpandedCategoryIndex] = useState<
+    number | null
+  >(findActiveCategoryIndex());
 
   const handleLinkClick = () => {
     if (isMobile && open) {
@@ -121,15 +125,19 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
         {navigationGroups.map((group, groupIndex) => {
           const isExpanded = expandedCategoryIndex === groupIndex;
-          const hasActiveItem = group.items.some(item => location.pathname === item.href);
-          
+          const hasActiveItem = group.items.some(
+            (item) => location.pathname === item.href
+          );
+
           return (
             <div key={group.category} className="mb-2">
               <button
                 onClick={() => toggleCategory(groupIndex)}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-muted",
-                  hasActiveItem ? "text-primary bg-primary/10" : "text-foreground"
+                  hasActiveItem
+                    ? "text-primary bg-primary/10"
+                    : "text-foreground"
                 )}
               >
                 <span>{group.category}</span>
@@ -139,7 +147,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   <ChevronRight className="h-4 w-4" />
                 )}
               </button>
-              
+
               {isExpanded && (
                 <div className="ml-2 pl-2 border-l border-muted mt-1 space-y-1">
                   {group.items.map((item) => {
@@ -170,4 +178,3 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     </aside>
   );
 }
-
