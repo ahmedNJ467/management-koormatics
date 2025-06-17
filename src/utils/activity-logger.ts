@@ -1,3 +1,4 @@
+
 import { ActivityItemProps } from "@/types/dashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { checkSupabaseConnection } from "./supabase-helpers";
@@ -14,6 +15,12 @@ interface ActivityLogParams {
     dropoffLocation?: string;
   };
 }
+
+// Format trip ID to display format (first 8 characters, uppercase)
+const formatTripId = (tripId: string): string => {
+  if (!tripId) return '';
+  return tripId.substring(0, 8).toUpperCase();
+};
 
 // Format timestamps in a human-readable format
 const formatTimestamp = (date: Date): string => {
@@ -50,14 +57,21 @@ export const logActivity = async ({ title, type, relatedId, tripDetails }: Activ
     contract: 'file-check'
   };
 
-  // Create more detailed titles for trip activities
+  // Create more detailed titles for trip activities with formatted IDs
   let enhancedTitle = title;
-  if (type === 'trip' && tripDetails) {
+  if (type === 'trip' && tripDetails && relatedId) {
     const { clientName, pickupLocation, dropoffLocation } = tripDetails;
+    const formattedTripId = formatTripId(relatedId);
+    
     if (pickupLocation && dropoffLocation) {
-      enhancedTitle = `Trip: ${pickupLocation} to ${dropoffLocation}`;
+      enhancedTitle = `Trip ${formattedTripId}: ${pickupLocation} to ${dropoffLocation}`;
       if (clientName) {
         enhancedTitle += ` (${clientName})`;
+      }
+    } else {
+      enhancedTitle = `Trip ${formattedTripId} updated`;
+      if (clientName) {
+        enhancedTitle += ` - ${clientName}`;
       }
     }
   }
@@ -131,14 +145,25 @@ export const getActivities = async (limit?: number): Promise<ActivityItemProps[]
       return [];
     }
     
-    return data.map(item => ({
-      id: item.id.toString(),
-      title: item.title,
-      timestamp: formatTimestamp(new Date(item.timestamp)),
-      type: item.type as ActivityType,
-      icon: item.type as ActivityType,
-      related_id: item.related_id
-    }));
+    return data.map(item => {
+      let formattedTitle = item.title;
+      
+      // Format trip IDs in existing activity titles
+      if (item.type === 'trip' && item.related_id) {
+        const formattedTripId = formatTripId(item.related_id);
+        // Replace any existing trip ID format with the new format
+        formattedTitle = item.title.replace(/trip\s+[a-f0-9-]+/gi, `Trip ${formattedTripId}`);
+      }
+      
+      return {
+        id: item.id.toString(),
+        title: formattedTitle,
+        timestamp: formatTimestamp(new Date(item.timestamp)),
+        type: item.type as ActivityType,
+        icon: item.type as ActivityType,
+        related_id: item.related_id
+      };
+    });
   } catch (err) {
     console.error("Failed to fetch activities:", err);
     return [];
@@ -170,26 +195,27 @@ export const logTripActivity = async (action: string, tripId: string, tripData?:
       ? `${trip.vehicles.make} ${trip.vehicles.model}` 
       : 'Unknown Vehicle';
     const driverName = trip.drivers?.name || 'Unassigned Driver';
+    const formattedTripId = formatTripId(tripId);
 
     let title = '';
     switch (action) {
       case 'created':
-        title = `New trip created: ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
+        title = `New trip ${formattedTripId} created: ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
         break;
       case 'updated':
-        title = `Trip updated: ${clientName} - ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
+        title = `Trip ${formattedTripId} updated: ${clientName} - ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
         break;
       case 'assigned':
-        title = `Vehicle assigned: ${vehicleDetails} to trip for ${clientName}`;
+        title = `Vehicle assigned to trip ${formattedTripId}: ${vehicleDetails} for ${clientName}`;
         break;
       case 'driver_assigned':
-        title = `Driver assigned: ${driverName} to trip for ${clientName}`;
+        title = `Driver assigned to trip ${formattedTripId}: ${driverName} for ${clientName}`;
         break;
       case 'completed':
-        title = `Trip completed: ${clientName} - ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
+        title = `Trip ${formattedTripId} completed: ${clientName} - ${trip.pickup_location || 'Unknown'} to ${trip.dropoff_location || 'Unknown'}`;
         break;
       default:
-        title = `Trip ${action}: ${clientName}`;
+        title = `Trip ${formattedTripId} ${action}: ${clientName}`;
     }
 
     await logActivity({

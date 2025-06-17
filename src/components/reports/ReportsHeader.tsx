@@ -22,15 +22,16 @@ export function ReportsHeader({
 }: ReportsHeaderProps) {
   return (
     <div className="flex justify-between items-center">
-      <h1 className="text-3xl font-bold">Reports</h1>
+      <div>
+        <h1 className="text-3xl font-bold">Management Reports</h1>
+        <p className="text-muted-foreground mt-1">Koormatics Fleet Management System</p>
+      </div>
       <div className="flex items-center gap-4">
         <Select 
           value={timeRange} 
           onValueChange={(value) => {
             setTimeRange(value);
             if (value !== "custom") {
-              // Here's the issue - we're using setDateRange which isn't available
-              // We should use handleDateRangeChange instead
               handleDateRangeChange(undefined);
             }
           }}
