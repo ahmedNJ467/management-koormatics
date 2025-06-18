@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,11 +58,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Black SUV Background Image */}
+      {/* Black Luxury Vehicle Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/lovable-uploads/attached-login-bg.jpg')`,
+          backgroundImage: `url('/lovable-uploads/22bbc0c7-9a78-466f-bff6-23f163b20cce.png')`,
         }}
       >
         {/* Dark overlay for better readability */}
@@ -92,7 +93,7 @@ export default function Auth() {
                 Administrator Access
               </CardTitle>
               <p className="text-sm text-gray-600 mt-2">
-                Sign in to manage your fleet operations
+                Sign in to manage your operations
               </p>
             </CardHeader>
             <CardContent className="p-8">
