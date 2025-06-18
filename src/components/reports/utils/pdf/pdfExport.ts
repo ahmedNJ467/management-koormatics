@@ -565,7 +565,7 @@ function generateProfessionalVehiclesTable(
       doc.rect(startX, tableY, tableWidth, tableHeight, "S");
 
       // Add page number
-      const pageNumber = `Page ${doc.getNumberOfPages()}`;
+      const pageNumber = `Page ${doc.internal.getNumberOfPages()}`;
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
       doc.text(pageNumber, pageWidth / 2, (data as any).cursor.y + 10, {
@@ -664,7 +664,7 @@ function drawProfessionalFooter(
   doc.setTextColor(60, 60, 60);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const pageInfo = `Page ${doc.getNumberOfPages()}`;
+  const pageInfo = `Page ${doc.internal.getNumberOfPages()}`;
   const pageInfoWidth = doc.getTextWidth(pageInfo);
   doc.text(pageInfo, (pageWidth - pageInfoWidth) / 2, footerY + 2);
 

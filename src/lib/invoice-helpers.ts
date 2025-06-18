@@ -174,8 +174,8 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
         fillColor: [pdfColors.rowAlt[0], pdfColors.rowAlt[1], pdfColors.rowAlt[2]]
       },
       didDrawPage: function (data) {
-        const pageNumber = doc.getNumberOfPages();
-        const pageCount = doc.getNumberOfPages();
+        const pageNumber = doc.internal.getNumberOfPages();
+        const pageCount = doc.internal.getNumberOfPages();
         doc.setFontSize(8);
         doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
         doc.text('Thank you for your business!', margin, doc.internal.pageSize.height - 10);

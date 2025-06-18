@@ -36,8 +36,8 @@ export function drawPdfFooter(doc: jsPDF): void {
   doc.text("Transportation & Logistics Management", pageMargin, footerY + 0.15);
 
   // Enhanced page numbering - center aligned
-  const pageCount = doc.getNumberOfPages();
-  const currentPage = (doc as any).internal.getCurrentPageInfo?.()?.pageNumber || 1;
+  const pageCount = doc.internal.getNumberOfPages();
+  const currentPage = 1; // Default to page 1 since we can't get current page reliably
 
   doc.setFontSize(pdfFonts.smallSize);
   doc.setFont("helvetica", "normal");
