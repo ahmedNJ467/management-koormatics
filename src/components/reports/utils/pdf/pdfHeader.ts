@@ -1,80 +1,60 @@
-
 import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { pdfColors, pdfConfig, pdfFonts } from "./pdfStyles";
 
-// Draw a professional header with company branding and improved logo visibility
+// Enhanced professional header matching the template design
 export function drawPdfHeader(doc: jsPDF, title: string): void {
   const { pageMargin } = pdfConfig;
   const pageWidth = doc.internal.pageSize.width;
-  
-  // Header background with professional gradient effect
-  doc.setFillColor(...pdfColors.headerBg);
-  doc.rect(0, 0, pageWidth, 1.4, 'F');
-  
-  // Company logo section with white background for better visibility
-  const logoWidth = 2.0;
+  const pageHeight = doc.internal.pageSize.height;
+
+  // Professional black header background matching template
+  doc.setFillColor(0, 0, 0); // Black background
+  doc.rect(0, 0, pageWidth, 1.2, "F");
+
+  // Company logo section - left aligned
+  const logoWidth = 1.8;
   const logoHeight = logoWidth * pdfConfig.logoAspectRatio;
   const logoX = pageMargin;
-  const logoY = 0.25;
+  const logoY = 0.2;
 
-  // Create white background circle for logo
-  doc.setFillColor(...pdfColors.logoBackground);
-  doc.circle(logoX + logoWidth/2, logoY + logoHeight/2, logoHeight/2 + 0.1, 'F');
-
+  // Add Koormatics logo
   if (pdfConfig.logoPath) {
     try {
-      doc.addImage(pdfConfig.logoPath, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      doc.addImage(
+        pdfConfig.logoPath,
+        "SVG",
+        logoX,
+        logoY,
+        logoWidth,
+        logoHeight
+      );
     } catch (e) {
       console.error("Error adding logo to PDF:", e);
-      // Fallback to text if logo fails to load
-      doc.setFontSize(pdfFonts.titleSize);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...pdfColors.headerText);
-      doc.text(pdfConfig.companyName, logoX, logoY + 0.4);
+      // Fallback to text
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text("KOORMATICS", logoX, logoY + 0.4);
     }
-  } else {
-    // Fallback to text if no logo path is defined
-    doc.setFontSize(pdfFonts.titleSize);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...pdfColors.headerText);
-    doc.text(pdfConfig.companyName, logoX, logoY + 0.4);
   }
 
-  // Report title section - right aligned
-  doc.setFontSize(pdfFonts.titleSize + 2);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...pdfColors.headerText);
-  doc.text(title.toUpperCase(), pageWidth - pageMargin, logoY + 0.2, { align: 'right' });
-  
-  // Report generation info
-  doc.setFontSize(pdfFonts.bodySize);
-  doc.setFont('helvetica', 'normal');
-  doc.text(
-    `Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`,
-    pageWidth - pageMargin,
-    logoY + 0.5,
-    { align: 'right' }
-  );
-  
-  // Subtitle line - centered
-  const subtitleY = logoY + logoHeight + 0.15;
-  doc.setFontSize(pdfFonts.subtitleSize);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(...pdfColors.headerText);
-  doc.text('Professional Fleet Management System Report', pageWidth / 2, subtitleY, { align: 'center' });
-  
-  // Professional separator line with enhanced styling
-  const lineY = subtitleY + 0.25;
-  doc.setDrawColor(...pdfColors.primary);
-  doc.setLineWidth(0.03);
-  doc.line(pageMargin, lineY, pageWidth - pageMargin, lineY);
-  
-  // Add a thin accent line below
-  doc.setDrawColor(...pdfColors.headerText);
-  doc.setLineWidth(0.01);
-  doc.line(pageMargin, lineY + 0.05, pageWidth - pageMargin, lineY + 0.05);
-  
+  // Main header text - center aligned matching template style
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+
+  // Create the header text similar to "PBG | MOVCON DEPT."
+  const headerText = "KOORMATICS | MOVCON DEPT.";
+  const textWidth = doc.getTextWidth(headerText);
+  const centerX = pageWidth / 2;
+  doc.text(headerText, centerX - textWidth / 2, 0.7);
+
+  // Company subtitle
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("TRANSPORTATION & LOGISTICS", centerX, 0.95, { align: "center" });
+
   // Reset text color for content
   doc.setTextColor(...pdfColors.text);
 }

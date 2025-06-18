@@ -1,37 +1,60 @@
+import { Color } from "jspdf-autotable";
 
-// Define Color as tuple type [number, number, number] for RGB values
-export type Color = [number, number, number];
-
-// Professional color scheme optimized for better visibility and contrast
+// Enhanced professional color scheme with better contrast and readability
 export const pdfColors = {
-  primary: [34, 139, 34] as Color,           // Forest Green for headers and important text
-  headerBg: [46, 125, 50] as Color,          // Medium Green for header background
-  headerText: [255, 255, 255] as Color,      // White header text for maximum contrast
-  text: [33, 33, 33] as Color,               // Dark Gray for body text
-  border: [189, 189, 189] as Color,          // Medium gray for borders
-  rowAlt: [240, 248, 240] as Color,          // Very Light Green for alternating rows
-  statusRed: [255, 235, 238] as Color,       // Light red for status highlighting
-  statusOrange: [255, 243, 224] as Color,    // Light orange for status highlighting
-  statusGreen: [232, 245, 233] as Color,     // Light green for status highlighting
-  light: [250, 250, 250] as Color,           // Very light gray
-  logoBackground: [255, 255, 255] as Color   // White background for logo visibility
+  primary: [41, 98, 255] as Color, // Professional Blue for headers and accents
+  headerBg: [37, 87, 230] as Color, // Darker Blue for header background
+  headerText: [255, 255, 255] as Color, // White header text for maximum contrast
+  text: [44, 44, 44] as Color, // Charcoal for body text (better readability)
+  border: [220, 220, 220] as Color, // Light gray for borders
+  rowAlt: [248, 250, 252] as Color, // Very light blue-gray for alternating rows
+  statusRed: [254, 242, 242] as Color, // Light red for status highlighting
+  statusOrange: [255, 251, 235] as Color, // Light amber for status highlighting
+  statusGreen: [240, 253, 244] as Color, // Light green for status highlighting
+  light: [252, 252, 252] as Color, // Very light gray
+  logoBackground: [255, 255, 255] as Color, // White background for logo visibility
+  accent: [99, 102, 241] as Color, // Indigo accent color
+  tableHeader: [30, 64, 175] as Color, // Deep blue for table headers
+  divider: [229, 231, 235] as Color, // Light gray for dividers
 };
 
-// Document configuration for professional appearance
+// Enhanced configuration for better document layout
 export const pdfConfig = {
-  pageMargin: 0.5,
-  logoPath: '/lovable-uploads/6996f29f-4f5b-4a22-ba41-51dc5c98afb7.png',
-  logoAspectRatio: 123 / 622, // height / width, based on original image dimensions
-  companyName: 'Koormatics Management',
-  format: [11.69, 8.27] as [number, number], // A4 landscape
-  orientation: 'landscape' as const
+  orientation: "landscape" as "landscape",
+  format: "a4" as "a4",
+  pageMargin: 0.6,
+  companyName: "KOORMATICS",
+  logoPath: "/koormatics-logo.svg",
+  logoAspectRatio: 0.3,
 };
 
-// Professional font configuration
+// Professional typography with improved hierarchy
 export const pdfFonts = {
-  titleSize: 14,
-  subtitleSize: 11,
-  bodySize: 9,
-  smallSize: 8,
-  bodyFont: 'helvetica'
+  titleSize: 16, // Larger title for better hierarchy
+  subtitleSize: 12, // Better subtitle size
+  headerSize: 11, // Table header size
+  bodySize: 10, // Body text size (increased for readability)
+  smallSize: 9, // Small text size
+  bodyFont: "helvetica",
+  headerFont: "helvetica",
+};
+
+// Professional spacing configuration
+export const pdfSpacing = {
+  cellPadding: {
+    top: 0.15,
+    right: 0.12,
+    bottom: 0.15,
+    left: 0.12,
+  },
+  headerPadding: {
+    top: 0.18,
+    right: 0.12,
+    bottom: 0.18,
+    left: 0.12,
+  },
+  minCellHeight: 0.4,
+  minHeaderHeight: 0.45,
+  lineWidth: 0.01,
+  headerLineWidth: 0.02,
 };

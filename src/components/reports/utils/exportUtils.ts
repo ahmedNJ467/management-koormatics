@@ -1,6 +1,9 @@
-
-import { flattenData, formatClientWithPassengers, getVehicleMaintenanceCosts } from "./dataUtils";
-import { exportToPDF } from "./pdfExport";
+import {
+  flattenData,
+  formatClientWithPassengers,
+  getVehicleMaintenanceCosts,
+} from "./dataUtils";
+import { exportToPDF } from "./pdf/pdfExport";
 import { exportToCSV } from "./csvExport";
 
 // Re-export all utilities
@@ -9,5 +12,5 @@ export {
   formatClientWithPassengers,
   getVehicleMaintenanceCosts,
   exportToPDF,
-  exportToCSV
+  exportToCSV,
 };

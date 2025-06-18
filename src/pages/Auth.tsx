@@ -56,16 +56,17 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Moving Cars Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')`,
-        }}
-      >
-        {/* Animated overlay to simulate moving effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 via-blue-800/60 to-blue-900/80 animate-pulse"></div>
-        <div className="absolute inset-0 bg-black/40"></div>
+      {/* Static Car Image Background */}
+      <div className="absolute inset-0">
+        <div
+          className="w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png')`,
+          }}
+        />
+        {/* Overlay for better contrast */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 via-blue-800/50 to-blue-900/70"></div>
+        <div className="absolute inset-0 bg-black/30"></div>
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
@@ -76,7 +77,7 @@ export default function Auth() {
               <img
                 src="/koormatics-logo.svg"
                 alt="Koormatics Logo"
-                className="h-16 object-contain"
+                className="h-20 object-contain filter drop-shadow-lg"
               />
             </div>
           </div>
