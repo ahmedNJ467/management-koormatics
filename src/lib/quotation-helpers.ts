@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -34,7 +35,7 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
     const companyInfoText = [
         'Wadajir district.',
         'Airport Road, Mogadishu, Somalia',
@@ -45,12 +46,12 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
 
     doc.setFontSize(26);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...pdfColors.primary);
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
     doc.text("QUOTATION", pageW - margin, 25, { align: 'right' });
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
     let yPosHeader = 35;
     doc.text(`Quotation #: ${formatQuotationId(quotation.id)}`, pageW - margin, yPosHeader, { align: 'right' });
     yPosHeader += 6;
@@ -61,11 +62,11 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     let yPos = 15 + logoHeight + 5 + (companyInfoText.length * 5) + 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...pdfColors.primary);
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
     doc.text("BILL TO", margin, yPos);
     
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
     yPos += 5;
     doc.text(quotation.client_name, margin, yPos);
     yPos += 5;
@@ -95,8 +96,8 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
       ]),
       theme: 'grid',
       headStyles: { 
-        fillColor: pdfColors.headerBg, 
-        textColor: pdfColors.headerText,
+        fillColor: [pdfColors.headerBg[0], pdfColors.headerBg[1], pdfColors.headerBg[2]], 
+        textColor: [pdfColors.headerText[0], pdfColors.headerText[1], pdfColors.headerText[2]],
         fontStyle: 'bold'
       },
       styles: {
@@ -104,11 +105,11 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
         fontSize: 9,
         cellPadding: 3,
         overflow: 'linebreak',
-        textColor: pdfColors.text,
-        lineColor: pdfColors.border
+        textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]],
+        lineColor: [pdfColors.border[0], pdfColors.border[1], pdfColors.border[2]]
       },
       alternateRowStyles: {
-        fillColor: pdfColors.rowAlt
+        fillColor: [pdfColors.rowAlt[0], pdfColors.rowAlt[1], pdfColors.rowAlt[2]]
       },
     });
 
@@ -125,7 +126,7 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
 
     doc.text('Subtotal:', totalCol1, yPosTotals, { align: 'right' });
     doc.text(formatCurrency(subtotal), totalCol2, yPosTotals, { align: 'right' });
@@ -143,11 +144,11 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
       yPosTotals += 7;
     }
     
-    doc.setDrawColor(...pdfColors.border);
+    doc.setDrawColor(pdfColors.border[0], pdfColors.border[1], pdfColors.border[2]);
     doc.line(totalCol1 - 5, yPosTotals - 3, totalCol2, yPosTotals - 3);
 
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...pdfColors.primary);
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
     doc.text('Total:', totalCol1, yPosTotals, { align: 'right' });
     doc.text(formatCurrency(totalAmount), totalCol2, yPosTotals, { align: 'right' });
     yPosTotals += 15;
@@ -157,20 +158,20 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     if (quotation.notes) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...pdfColors.primary);
+      doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
       doc.text('Notes:', margin, yPosAfterTotals);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...pdfColors.text);
+      doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
       const splitNotes = doc.splitTextToSize(quotation.notes, pageW - (margin * 2));
       doc.text(splitNotes, margin, yPosAfterTotals + 5);
       yPosAfterTotals += doc.getTextDimensions(splitNotes).h + 10;
     }
     
     const finalContent = [];
-    finalContent.push([{ content: 'Payment Communication:', styles: { fontStyle: 'bold', textColor: pdfColors.primary, fontSize: 10 } }]);
+    finalContent.push([{ content: 'Payment Communication:', styles: { fontStyle: 'bold', textColor: [pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]], fontSize: 10 } }]);
     finalContent.push([{ content: 'Please use the following communication for your payment : 78991069', styles: { fontSize: 9 } }]);
     finalContent.push(['']); // spacer
-    finalContent.push([{ content: 'Terms and Conditions:', styles: { fontStyle: 'bold', textColor: pdfColors.primary, fontSize: 10 } }]);
+    finalContent.push([{ content: 'Terms and Conditions:', styles: { fontStyle: 'bold', textColor: [pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]], fontSize: 10 } }]);
     
     const terms = [
       '1. The quotation provided is valid for a period of thirty (30) days from the date of issue unless otherwise stated',
@@ -180,7 +181,7 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     finalContent.push([{ content: terms, styles: { fontSize: 8 } }]);
     
     finalContent.push(['']); // spacer
-    finalContent.push([{ content: 'Bank Details:', styles: { fontStyle: 'bold', textColor: pdfColors.primary, fontSize: 10 } }]);
+    finalContent.push([{ content: 'Bank Details:', styles: { fontStyle: 'bold', textColor: [pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]], fontSize: 10 } }]);
     finalContent.push([{ content: 'Dahabshil Bank', styles: { fontStyle: 'bold', fontSize: 9 } }]);
     
     const dahabshilDetails = [
@@ -208,7 +209,7 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
         theme: 'plain',
         styles: {
             font: 'helvetica',
-            textColor: pdfColors.text,
+            textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]],
             cellPadding: { top: 0, right: 0, bottom: 1, left: 0 },
         },
         columnStyles: {
@@ -217,11 +218,11 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     });
 
     // Add footer to all pages
-    const pageCount = (doc as any).internal.getNumberOfPages();
+    const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(...pdfColors.text);
+        doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
         doc.text('Thank you for your business!', margin, doc.internal.pageSize.height - 10);
         doc.text(`Page ${i} of ${pageCount}`, pageW - margin, doc.internal.pageSize.height - 10, { align: 'right' });
     }

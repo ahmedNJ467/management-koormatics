@@ -1,21 +1,22 @@
+
 import { Color } from "jspdf-autotable";
 
 // Enhanced professional color scheme with better contrast and readability
 export const pdfColors = {
-  primary: [41, 98, 255] as Color, // Professional Blue for headers and accents
-  headerBg: [37, 87, 230] as Color, // Darker Blue for header background
-  headerText: [255, 255, 255] as Color, // White header text for maximum contrast
-  text: [44, 44, 44] as Color, // Charcoal for body text (better readability)
-  border: [220, 220, 220] as Color, // Light gray for borders
-  rowAlt: [248, 250, 252] as Color, // Very light blue-gray for alternating rows
-  statusRed: [254, 242, 242] as Color, // Light red for status highlighting
-  statusOrange: [255, 251, 235] as Color, // Light amber for status highlighting
-  statusGreen: [240, 253, 244] as Color, // Light green for status highlighting
-  light: [252, 252, 252] as Color, // Very light gray
-  logoBackground: [255, 255, 255] as Color, // White background for logo visibility
-  accent: [99, 102, 241] as Color, // Indigo accent color
-  tableHeader: [30, 64, 175] as Color, // Deep blue for table headers
-  divider: [229, 231, 235] as Color, // Light gray for dividers
+  primary: [41, 98, 255] as [number, number, number], // Professional Blue for headers and accents
+  headerBg: [37, 87, 230] as [number, number, number], // Darker Blue for header background
+  headerText: [255, 255, 255] as [number, number, number], // White header text for maximum contrast
+  text: [44, 44, 44] as [number, number, number], // Charcoal for body text (better readability)
+  border: [220, 220, 220] as [number, number, number], // Light gray for borders
+  rowAlt: [248, 250, 252] as [number, number, number], // Very light blue-gray for alternating rows
+  statusRed: [254, 242, 242] as [number, number, number], // Light red for status highlighting
+  statusOrange: [255, 251, 235] as [number, number, number], // Light amber for status highlighting
+  statusGreen: [240, 253, 244] as [number, number, number], // Light green for status highlighting
+  light: [252, 252, 252] as [number, number, number], // Very light gray
+  logoBackground: [255, 255, 255] as [number, number, number], // White background for logo visibility
+  accent: [99, 102, 241] as [number, number, number], // Indigo accent color
+  tableHeader: [30, 64, 175] as [number, number, number], // Deep blue for table headers
+  divider: [229, 231, 235] as [number, number, number], // Light gray for dividers
 };
 
 // Enhanced configuration for better document layout

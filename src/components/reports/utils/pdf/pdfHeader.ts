@@ -1,3 +1,4 @@
+
 import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { pdfColors, pdfConfig, pdfFonts } from "./pdfStyles";
@@ -56,5 +57,5 @@ export function drawPdfHeader(doc: jsPDF, title: string): void {
   doc.text("TRANSPORTATION & LOGISTICS", centerX, 0.95, { align: "center" });
 
   // Reset text color for content
-  doc.setTextColor(...pdfColors.text);
+  doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
 }
