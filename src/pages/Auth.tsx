@@ -30,7 +30,8 @@ export default function Auth() {
 
       toast({
         title: "Welcome back!",
-        description: "Successfully signed in to Koormatics Transportation & Logistics",
+        description:
+          "Successfully signed in to Koormatics Transportation & Logistics",
       });
       navigate("/dashboard");
     } catch (error) {
@@ -60,11 +61,7 @@ export default function Auth() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-<<<<<<< HEAD
           backgroundImage: `url('/lovable-uploads/attached-login-bg.jpg')`,
-=======
-          backgroundImage: `url('/lovable-uploads/90e26b8c-902b-4a29-a699-a5c54235ba2d.png')`,
->>>>>>> cc553d83b438a7296767d44f901ad7e9a97c0a67
         }}
       >
         {/* Dark overlay for better readability */}
@@ -83,7 +80,7 @@ export default function Auth() {
               />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-              Koormatics Transportation & Logistics
+              Transportation & Logistics
             </h1>
           </div>
 
