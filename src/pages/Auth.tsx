@@ -31,7 +31,7 @@ export default function Auth() {
 
       toast({
         title: "Welcome back!",
-        description: "Successfully signed in to Koormatics Management System",
+        description: "Successfully signed in to Koormatics Transportation & Logistics",
       });
       navigate("/dashboard");
     } catch (error) {
@@ -57,29 +57,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-<<<<<<< HEAD
-      {/* Static Car Image Background */}
-      <div className="absolute inset-0">
-        <div
-          className="w-full h-full bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png')`,
-          }}
-        />
-        {/* Overlay for better contrast */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 via-blue-800/50 to-blue-900/70"></div>
-        <div className="absolute inset-0 bg-black/30"></div>
-=======
       {/* Black SUV Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1544829099-b9a0c5303bea?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`,
+          backgroundImage: `url('/lovable-uploads/90e26b8c-902b-4a29-a699-a5c54235ba2d.png')`,
         }}
       >
         {/* Dark overlay for better readability */}
         <div className="absolute inset-0 bg-black/60"></div>
->>>>>>> 0ef08f17b9e83761fe613b295ebd494a07378944
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
@@ -88,23 +74,14 @@ export default function Auth() {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
               <img
-<<<<<<< HEAD
-                src="/koormatics-logo.svg"
-                alt="Koormatics Logo"
-                className="h-20 object-contain filter drop-shadow-lg"
-=======
                 src="/lovable-uploads/4ac6bd3a-707d-4262-bc89-af00beb7077e.png"
                 alt="Koormatics Transportation & Logistics"
                 className="h-20 object-contain drop-shadow-lg"
->>>>>>> 0ef08f17b9e83761fe613b295ebd494a07378944
               />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
               Koormatics Transportation & Logistics
             </h1>
-            <p className="text-white/90 text-sm drop-shadow">
-              Fleet Management System
-            </p>
           </div>
 
           {/* Login Card */}
@@ -205,7 +182,7 @@ export default function Auth() {
                   ) : (
                     <div className="flex items-center gap-2">
                       <Lock className="h-4 w-4" />
-                      Sign In to Dashboard
+                      Sign In
                     </div>
                   )}
                 </Button>
@@ -226,7 +203,7 @@ export default function Auth() {
               © 2024 Koormatics Transportation & Logistics
             </p>
             <p className="text-white/60 text-xs drop-shadow">
-              All rights reserved | Fleet Management System
+              All rights reserved
             </p>
           </div>
         </div>
