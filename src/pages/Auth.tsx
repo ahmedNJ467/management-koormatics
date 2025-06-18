@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,6 +57,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+<<<<<<< HEAD
       {/* Static Car Image Background */}
       <div className="absolute inset-0">
         <div
@@ -67,19 +69,42 @@ export default function Auth() {
         {/* Overlay for better contrast */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 via-blue-800/50 to-blue-900/70"></div>
         <div className="absolute inset-0 bg-black/30"></div>
+=======
+      {/* Black SUV Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1544829099-b9a0c5303bea?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`,
+        }}
+      >
+        {/* Dark overlay for better readability */}
+        <div className="absolute inset-0 bg-black/60"></div>
+>>>>>>> 0ef08f17b9e83761fe613b295ebd494a07378944
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          {/* Koormatics Logo */}
+          {/* Company Logo and Branding */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
               <img
+<<<<<<< HEAD
                 src="/koormatics-logo.svg"
                 alt="Koormatics Logo"
                 className="h-20 object-contain filter drop-shadow-lg"
+=======
+                src="/lovable-uploads/4ac6bd3a-707d-4262-bc89-af00beb7077e.png"
+                alt="Koormatics Transportation & Logistics"
+                className="h-20 object-contain drop-shadow-lg"
+>>>>>>> 0ef08f17b9e83761fe613b295ebd494a07378944
               />
             </div>
+            <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
+              Koormatics Transportation & Logistics
+            </h1>
+            <p className="text-white/90 text-sm drop-shadow">
+              Fleet Management System
+            </p>
           </div>
 
           {/* Login Card */}
@@ -87,53 +112,53 @@ export default function Auth() {
             <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-slate-50 pb-6">
               <CardTitle className="text-gray-800 flex items-center justify-center gap-3 text-xl">
                 <Lock className="h-5 w-5 text-blue-600" />
-                Admin Login
+                Administrator Access
               </CardTitle>
+              <p className="text-sm text-gray-600 mt-2">
+                Sign in to manage your fleet operations
+              </p>
             </CardHeader>
             <CardContent className="p-8">
               <form onSubmit={handleAuth} className="space-y-6">
                 {/* Email Field */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-gray-700 font-medium">
-                    Email:
+                    Email Address
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="admin@koormatics.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="pl-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                      className="pl-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg transition-all duration-200"
                     />
                   </div>
                 </div>
 
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-gray-700 font-medium"
-                  >
-                    Password:
+                  <Label htmlFor="password" className="text-gray-700 font-medium">
+                    Password
                   </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="Enter your secure password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                      className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg transition-all duration-200"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -144,15 +169,8 @@ export default function Auth() {
                   </div>
                 </div>
 
-                {/* Language and Remember Me */}
+                {/* Options Row */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <select className="text-sm border border-gray-200 rounded-md px-3 py-2 bg-gray-50 text-gray-700 focus:border-blue-500 focus:outline-none">
-                      <option value="en">English</option>
-                      <option value="so">Somali</option>
-                      <option value="ar">Arabic</option>
-                    </select>
-                  </div>
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -162,43 +180,54 @@ export default function Auth() {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <Label htmlFor="remember" className="text-sm text-gray-600">
-                      Remember
+                      Remember me
                     </Label>
                   </div>
+                  <button
+                    type="button"
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                  >
+                    Forgot password?
+                  </button>
                 </div>
 
                 {/* Login Button */}
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 h-12 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 h-12 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Signing In...
+                      Authenticating...
                     </div>
                   ) : (
-                    "Log in"
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Sign In to Dashboard
+                    </div>
                   )}
                 </Button>
 
-                {/* Additional Links */}
-                <div className="flex justify-center space-x-4 text-sm">
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    Forgot password?
-                  </button>
+                {/* Security Notice */}
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">
+                    Secure connection protected by SSL encryption
+                  </p>
                 </div>
               </form>
             </CardContent>
           </Card>
 
-          {/* Bottom branding */}
-          <div className="text-center mt-6">
-            <p className="text-white/60 text-xs">© koormatics</p>
+          {/* Footer */}
+          <div className="text-center mt-6 space-y-2">
+            <p className="text-white/80 text-xs drop-shadow">
+              © 2024 Koormatics Transportation & Logistics
+            </p>
+            <p className="text-white/60 text-xs drop-shadow">
+              All rights reserved | Fleet Management System
+            </p>
           </div>
         </div>
       </div>
