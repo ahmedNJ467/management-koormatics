@@ -58,11 +58,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Black Luxury Vehicle Background Image */}
+      {/* Land Cruiser Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/lovable-uploads/22bbc0c7-9a78-466f-bff6-23f163b20cce.png')`,
+          backgroundImage: `url('/lovable-uploads/14ff090f-1304-4931-b1f4-f858de64682f.png')`,
         }}
       >
         {/* Dark overlay for better readability */}
