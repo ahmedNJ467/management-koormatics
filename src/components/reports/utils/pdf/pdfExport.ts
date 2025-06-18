@@ -1,3 +1,4 @@
+
 import jsPDF from "jspdf";
 import { autoTable } from "jspdf-autotable";
 import { format } from "date-fns";
@@ -268,7 +269,7 @@ function generateProfessionalTripsTable(
           textColor = [5, 150, 105];
         }
         if (bgColor) {
-          doc.setFillColor(...bgColor);
+          doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
           doc.rect(
             data.cell.x,
             data.cell.y,
@@ -277,7 +278,7 @@ function generateProfessionalTripsTable(
             "F"
           );
           if (textColor) {
-            doc.setTextColor(...textColor);
+            doc.setTextColor(textColor[0], textColor[1], textColor[2]);
             doc.setFont("helvetica", "bold");
           }
         }
@@ -527,7 +528,7 @@ function generateProfessionalVehiclesTable(
         }
 
         if (bgColor) {
-          doc.setFillColor(...bgColor);
+          doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
           doc.rect(
             data.cell.x,
             data.cell.y,
@@ -537,7 +538,7 @@ function generateProfessionalVehiclesTable(
           );
 
           if (textColor) {
-            doc.setTextColor(...textColor);
+            doc.setTextColor(textColor[0], textColor[1], textColor[2]);
             doc.setFont("helvetica", "bold");
           }
         }
@@ -564,7 +565,7 @@ function generateProfessionalVehiclesTable(
       doc.rect(startX, tableY, tableWidth, tableHeight, "S");
 
       // Add page number
-      const pageNumber = `Page ${doc.getCurrentPageInfo().pageNumber}`;
+      const pageNumber = `Page ${doc.getNumberOfPages()}`;
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
       doc.text(pageNumber, pageWidth / 2, (data as any).cursor.y + 10, {
@@ -663,7 +664,7 @@ function drawProfessionalFooter(
   doc.setTextColor(60, 60, 60);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const pageInfo = `Page ${doc.getCurrentPageInfo().pageNumber}`;
+  const pageInfo = `Page ${doc.getNumberOfPages()}`;
   const pageInfoWidth = doc.getTextWidth(pageInfo);
   doc.text(pageInfo, (pageWidth - pageInfoWidth) / 2, footerY + 2);
 

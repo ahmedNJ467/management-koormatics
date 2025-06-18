@@ -1,3 +1,4 @@
+
 import { format, isBefore, parseISO } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -96,7 +97,7 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
     const companyInfoText = [
         'Wadajir district.',
         'Airport Road, Mogadishu, Somalia',
@@ -107,12 +108,12 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
 
     doc.setFontSize(26);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...pdfColors.primary);
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
     doc.text("INVOICE", pageW - margin, 25, { align: 'right' });
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
     let yPosHeader = 35;
     doc.text(`Invoice #: ${formatInvoiceId(invoice.id)}`, pageW - margin, yPosHeader, { align: 'right' });
     yPosHeader += 6;
@@ -123,11 +124,11 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     let yPos = 15 + logoHeight + 5 + (companyInfoText.length * 5) + 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...pdfColors.primary);
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
     doc.text("BILL TO", margin, yPos);
     
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
     yPos += 5;
     doc.text(invoice.client_name, margin, yPos);
     yPos += 5;
@@ -157,8 +158,8 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
       ]),
       theme: 'grid',
       headStyles: { 
-        fillColor: pdfColors.headerBg, 
-        textColor: pdfColors.headerText,
+        fillColor: [pdfColors.headerBg[0], pdfColors.headerBg[1], pdfColors.headerBg[2]], 
+        textColor: [pdfColors.headerText[0], pdfColors.headerText[1], pdfColors.headerText[2]],
         fontStyle: 'bold'
       },
       styles: {
@@ -166,17 +167,17 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
         fontSize: 9,
         cellPadding: 3,
         overflow: 'linebreak',
-        textColor: pdfColors.text,
-        lineColor: pdfColors.border
+        textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]],
+        lineColor: [pdfColors.border[0], pdfColors.border[1], pdfColors.border[2]]
       },
       alternateRowStyles: {
-        fillColor: pdfColors.rowAlt
+        fillColor: [pdfColors.rowAlt[0], pdfColors.rowAlt[1], pdfColors.rowAlt[2]]
       },
       didDrawPage: function (data) {
-        const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
-        const pageCount = (doc as any).internal.getNumberOfPages();
+        const pageNumber = doc.getNumberOfPages();
+        const pageCount = doc.getNumberOfPages();
         doc.setFontSize(8);
-        doc.setTextColor(...pdfColors.text);
+        doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
         doc.text('Thank you for your business!', margin, doc.internal.pageSize.height - 10);
         doc.text(`Page ${pageNumber} of ${pageCount}`, pageW - margin, doc.internal.pageSize.height - 10, { align: 'right' });
       }
@@ -196,7 +197,7 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
 
     doc.text('Subtotal:', totalCol1, yPosTotals, { align: 'right' });
     doc.text(formatCurrency(subtotal), totalCol2, yPosTotals, { align: 'right' });
@@ -214,29 +215,29 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
       yPosTotals += 7;
     }
     
-    doc.setDrawColor(...pdfColors.border);
+    doc.setDrawColor(pdfColors.border[0], pdfColors.border[1], pdfColors.border[2]);
     doc.line(totalCol1 - 5, yPosTotals - 3, totalCol2, yPosTotals - 3);
 
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...pdfColors.primary);
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
     doc.text('Total:', totalCol1, yPosTotals, { align: 'right' });
     doc.text(formatCurrency(totalAmount), totalCol2, yPosTotals, { align: 'right' });
     yPosTotals += 7;
     
     if (invoice.paid_amount > 0) {
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...pdfColors.text);
+      doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
       doc.text('Amount Paid:', totalCol1, yPosTotals, { align: 'right' });
       doc.text(`-${formatCurrency(invoice.paid_amount)}`, totalCol2, yPosTotals, { align: 'right' });
       yPosTotals += 7;
 
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...pdfColors.primary);
+      doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
       doc.text('Balance Due:', totalCol1, yPosTotals, { align: 'right' });
       doc.text(formatCurrency(balanceDue), totalCol2, yPosTotals, { align: 'right' });
     } else {
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...pdfColors.primary);
+      doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
       doc.text('Balance Due:', totalCol1, yPosTotals, { align: 'right' });
       doc.text(formatCurrency(balanceDue), totalCol2, yPosTotals, { align: 'right' });
     }
@@ -246,10 +247,10 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     if (invoice.notes) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...pdfColors.primary);
+      doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
       doc.text('Notes:', margin, yPosTotals);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...pdfColors.text);
+      doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
       const splitNotes = doc.splitTextToSize(invoice.notes, pageW - (margin * 2));
       doc.text(splitNotes, margin, yPosTotals + 5);
     }
@@ -264,7 +265,7 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...pdfColors.text);
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
     
     const commText = `Please use the following communication for your payment : ${formatInvoiceId(invoice.id)}`;
     doc.text(commText, margin, yPosTotals);

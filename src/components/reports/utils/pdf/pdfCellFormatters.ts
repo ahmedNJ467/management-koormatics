@@ -1,3 +1,4 @@
+
 import jsPDF from "jspdf";
 import { pdfColors, pdfFonts } from "./pdfStyles";
 
@@ -88,7 +89,7 @@ export function formatStatusCell(
 
     // Apply highlighting with template-style formatting
     if (shouldHighlight) {
-      doc.setFillColor(...highlightColor);
+      doc.setFillColor(highlightColor[0], highlightColor[1], highlightColor[2]);
       doc.rect(
         data.cell.x,
         data.cell.y,
