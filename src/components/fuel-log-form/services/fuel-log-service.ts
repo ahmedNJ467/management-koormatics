@@ -1,5 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import type { FuelLog } from "@/lib/types";
+import type { FuelLog, TankFill } from "@/lib/types";
 import { FuelLogFormValues } from "../schemas/fuel-log-schema";
 
 export async function getVehicles() {
@@ -133,7 +134,15 @@ export async function getTankFills(tankId: string) {
   return data;
 }
 
-export async function addTankFill(fill: Omit<TankFill, "id" | "created_at">) {
+export async function addTankFill(fill: {
+  tank_id: string;
+  fill_date: string;
+  amount: number;
+  cost_per_liter?: number;
+  total_cost?: number;
+  supplier?: string;
+  notes?: string;
+}) {
   const { data, error } = await supabase
     .from("tank_fills")
     .insert([fill])

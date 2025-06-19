@@ -1,4 +1,3 @@
-
 import { format, isBefore, parseISO } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";

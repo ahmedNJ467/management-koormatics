@@ -8,25 +8,10 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
 
-// Peace Business Group Logo - Placeholder for now (will be updated with actual image)
-const loadImageAsBase64 = async (imageFile: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(imageFile);
-  });
-};
+// Use the uploaded Peace Business Group images - swapped positions
+const STAMP_IMAGE = "/lovable-uploads/43e9df25-a96b-4a06-84fa-aede435f256d.png"; // Now used as stamp
+const LOGO_IMAGE = "/lovable-uploads/cf1ef038-a300-45ad-a5f6-cafaa41ed89f.png"; // Now used as logo
 
-// Peace Business Group Logo - Professional dove in shield design
-const LOGO_BASE64 =
-  "data:image/png;base64,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";
-
-// Peace Business Group Stamp
-const STAMP_BASE64 =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAAACXBIWXMAAAsTAAALEwEAmpwYAAABRmlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAeKADAAQAAAABAAAAeAAAAAD+S1x5AAAABWlDQ1BJQ0MgcHJvZmlsZQAAeJxjYGBSSCwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAABVJREFUeJztxUEBAAAMAJDAZ3F+/4IAjwAAAAAAAAAAAAAAAAAAAAAAAAAANgHKAZvAAGXOAAAAAElFTkSuQmCC";
-
-const DEFAULT_LOGO = "/og-image.png"; // fallback logo (should be PNG)
 const DEFAULT_COMPANY = {
   companyName: "PEACE BUSINESS GROUP",
   companyAddress: "Airport Road, Wadajir District, Mogadishu, Somalia",
@@ -102,6 +87,27 @@ const InvitationLetter = () => {
     }));
   };
 
+  const loadImageAsBase64 = (imagePath: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/png"));
+        } else {
+          reject(new Error("Could not get canvas context"));
+        }
+      };
+      img.onerror = reject;
+      img.src = imagePath;
+    });
+  };
+
   const generatePDF = async () => {
     // Validate required fields
     if (!formData.visitorName.trim()) {
@@ -136,62 +142,24 @@ const InvitationLetter = () => {
       const pageHeight = doc.internal.pageSize.getHeight();
       let y = 40;
 
-      // Add Peace Business Group logo - Professional design
+      // Load and add Peace Business Group logo (now using the stamp image as logo)
       try {
-        doc.addImage(LOGO_BASE64, "PNG", 40, y, 80, 80);
+        const logoBase64 = await loadImageAsBase64(LOGO_IMAGE);
+        doc.addImage(logoBase64, "PNG", 40, y, 120, 80);
       } catch (logoError) {
-        console.log("Logo loading error, using professional fallback");
-        // Professional shield with dove design
-        const logoX = 40;
-        const logoY = y;
-        const logoSize = 80;
-
-        // Draw gradient-like shield background
-        doc.setFillColor(65, 146, 218); // Primary blue
-        const shieldPath = [
-          [logoX + 20, logoY + 10],
-          [logoX + 60, logoY + 10],
-          [logoX + 65, logoY + 15],
-          [logoX + 65, logoY + 50],
-          [logoX + 55, logoY + 70],
-          [logoX + 40, logoY + 75],
-          [logoX + 25, logoY + 70],
-          [logoX + 15, logoY + 50],
-          [logoX + 15, logoY + 15],
-          [logoX + 20, logoY + 10],
-        ];
-
-        // Create shield shape
-        doc.setLineWidth(0);
-        const lines = shieldPath
-          .slice(1)
-          .map((point) => [
-            point[0] - shieldPath[0][0],
-            point[1] - shieldPath[0][1],
-          ]);
-        doc.lines(lines, shieldPath[0][0], shieldPath[0][1], null, "F");
-
-        // Add dove silhouette
-        doc.setFillColor(255, 255, 255);
-        // Dove body
-        doc.ellipse(logoX + 40, logoY + 45, 15, 10, "F");
-        // Dove head
-        doc.circle(logoX + 50, logoY + 35, 6, "F");
-        // Wing detail
-        doc.ellipse(logoX + 35, logoY + 40, 8, 12, "F");
-
-        // Add subtle "PBG" text
+        console.log("Logo loading error:", logoError);
+        // Fallback text if image fails to load
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(255, 255, 255);
-        doc.text("PBG", logoX + 32, logoY + 65);
+        doc.setFontSize(12);
+        doc.setTextColor(65, 146, 218);
+        doc.text("PEACE BUSINESS GROUP", 40, y + 40);
       }
 
       // Professional company header
       doc.setFont("times", "bold");
       doc.setFontSize(26);
       doc.setTextColor(65, 146, 218);
-      doc.text("PEACE BUSINESS GROUP", 135, y + 35);
+      doc.text("PEACE BUSINESS GROUP", 170, y + 35);
 
       // Professional subtitle with proper spacing
       doc.setFont("times", "normal");
@@ -199,15 +167,15 @@ const InvitationLetter = () => {
       doc.setTextColor(80, 80, 80);
       doc.text(
         "Airport Road, Wadajir District, Mogadishu, Somalia",
-        135,
+        170,
         y + 52
       );
 
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text("Email: reservations@peacebusinessgroup.com", 135, y + 66);
-      doc.text("Alternative: movcon@peacebusinessgroup.com", 135, y + 78);
-      doc.text("Phone: +252 61-94-94973 / +252 61-94-94974", 135, y + 90);
+      doc.text("Email: reservations@peacebusinessgroup.com", 170, y + 66);
+      doc.text("Alternative: movcon@peacebusinessgroup.com", 170, y + 78);
+      doc.text("Phone: +252 61-94-94973 / +252 61-94-94974", 170, y + 90);
 
       // Elegant divider line
       y += 110;
@@ -279,6 +247,7 @@ The details of the visitor are as follows:`;
       const splitText = doc.splitTextToSize(bodyText, pageWidth - 80);
       doc.text(splitText, 40, y);
       y += splitText.length * 14 + 25;
+
       autoTable(doc, {
         startY: y,
         head: [
@@ -362,15 +331,16 @@ The details of the visitor are as follows:`;
       y += 12;
       doc.text("Peace Business Group", 40, y);
 
-      // Add professional company stamp/seal
+      // Add Peace Business Group stamp/seal (now using the logo image as stamp)
       try {
-        doc.addImage(STAMP_BASE64, "PNG", 380, y - 60, 100, 70);
+        const stampBase64 = await loadImageAsBase64(STAMP_IMAGE);
+        doc.addImage(stampBase64, "PNG", 380, y - 80, 120, 120);
       } catch (stampError) {
-        console.log("Stamp loading error, using professional seal");
-        // Professional circular seal design
-        const sealX = 430;
-        const sealY = y - 25;
-        const sealRadius = 35;
+        console.log("Stamp loading error:", stampError);
+        // Fallback circular seal design
+        const sealX = 440;
+        const sealY = y - 20;
+        const sealRadius = 40;
 
         // Outer circle
         doc.setFillColor(65, 146, 218);
@@ -385,16 +355,9 @@ The details of the visitor are as follows:`;
         doc.setTextColor(255, 255, 255);
         doc.setFont("times", "bold");
         doc.setFontSize(8);
-
-        // Curved text effect (simplified)
-        doc.text("PEACE BUSINESS", sealX - 20, sealY - 10);
-        doc.text("GROUP", sealX - 10, sealY);
-        doc.text("SOMALIA", sealX - 12, sealY + 10);
-
-        // Date
-        const currentDate = new Date().getFullYear();
-        doc.setFontSize(6);
-        doc.text(`EST. ${currentDate}`, sealX - 12, sealY + 20);
+        doc.text("PEACE BUSINESS", sealX - 25, sealY - 10);
+        doc.text("GROUP", sealX - 15, sealY);
+        doc.text("SOMALIA", sealX - 18, sealY + 10);
       }
 
       doc.setTextColor(0, 0, 0);
@@ -424,6 +387,7 @@ The details of the visitor are as follows:`;
         const textX = (pageWidth - textWidth) / 2; // Center the text
         doc.text(line, textX, y + index * 12);
       });
+
       const fileName = `invitation-letter-${formData.visitorName.replace(
         /[^a-zA-Z0-9]/g,
         "-"
