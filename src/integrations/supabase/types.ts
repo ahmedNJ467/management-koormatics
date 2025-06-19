@@ -447,6 +447,7 @@ export type Database = {
           mileage: number
           notes: string | null
           previous_mileage: number | null
+          tank_id: string | null
           updated_at: string | null
           vehicle_id: string
           volume: number
@@ -461,6 +462,7 @@ export type Database = {
           mileage: number
           notes?: string | null
           previous_mileage?: number | null
+          tank_id?: string | null
           updated_at?: string | null
           vehicle_id: string
           volume: number
@@ -475,11 +477,19 @@ export type Database = {
           mileage?: number
           notes?: string | null
           previous_mileage?: number | null
+          tank_id?: string | null
           updated_at?: string | null
           vehicle_id?: string
           volume?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fuel_logs_tank_id_fkey"
+            columns: ["tank_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_tanks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fuel_logs_vehicle_id_fkey"
             columns: ["vehicle_id"]
@@ -488,6 +498,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fuel_tanks: {
+        Row: {
+          capacity: number
+          created_at: string | null
+          fuel_type: string
+          id: string
+          name: string
+        }
+        Insert: {
+          capacity: number
+          created_at?: string | null
+          fuel_type: string
+          id?: string
+          name: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string | null
+          fuel_type?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       invoices: {
         Row: {
@@ -738,6 +772,50 @@ export type Database = {
           },
         ]
       }
+      tank_fills: {
+        Row: {
+          amount: number
+          cost_per_liter: number | null
+          created_at: string | null
+          fill_date: string
+          id: string
+          notes: string | null
+          supplier: string | null
+          tank_id: string | null
+          total_cost: number | null
+        }
+        Insert: {
+          amount: number
+          cost_per_liter?: number | null
+          created_at?: string | null
+          fill_date: string
+          id?: string
+          notes?: string | null
+          supplier?: string | null
+          tank_id?: string | null
+          total_cost?: number | null
+        }
+        Update: {
+          amount?: number
+          cost_per_liter?: number | null
+          created_at?: string | null
+          fill_date?: string
+          id?: string
+          notes?: string | null
+          supplier?: string | null
+          tank_id?: string | null
+          total_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tank_fills_tank_id_fkey"
+            columns: ["tank_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_tanks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_assignments: {
         Row: {
           assigned_at: string
@@ -951,11 +1029,13 @@ export type Database = {
           dropoff_location: string | null
           flight_number: string | null
           id: string
+          invitation_documents: Json | null
           invoice_id: string | null
           is_recurring: boolean | null
           log_sheet_url: string | null
           notes: string | null
           passengers: string[] | null
+          passport_documents: Json | null
           pickup_location: string | null
           return_time: string | null
           service_type: Database["public"]["Enums"]["service_type"] | null
@@ -976,11 +1056,13 @@ export type Database = {
           dropoff_location?: string | null
           flight_number?: string | null
           id?: string
+          invitation_documents?: Json | null
           invoice_id?: string | null
           is_recurring?: boolean | null
           log_sheet_url?: string | null
           notes?: string | null
           passengers?: string[] | null
+          passport_documents?: Json | null
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null
@@ -1001,11 +1083,13 @@ export type Database = {
           dropoff_location?: string | null
           flight_number?: string | null
           id?: string
+          invitation_documents?: Json | null
           invoice_id?: string | null
           is_recurring?: boolean | null
           log_sheet_url?: string | null
           notes?: string | null
           passengers?: string[] | null
+          passport_documents?: Json | null
           pickup_location?: string | null
           return_time?: string | null
           service_type?: Database["public"]["Enums"]["service_type"] | null
