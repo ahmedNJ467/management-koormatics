@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,12 +48,19 @@ export default function Auth() {
     }
   };
 
-  // Check if user is already logged in
-  supabase.auth.onAuthStateChange((_event, session) => {
-    if (session) {
-      navigate("/dashboard");
-    }
-  });
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">

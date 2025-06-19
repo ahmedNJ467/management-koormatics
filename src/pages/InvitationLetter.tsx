@@ -30,8 +30,8 @@ const DEFAULT_LOGO = "/og-image.png"; // fallback logo (should be PNG)
 const DEFAULT_COMPANY = {
   companyName: "PEACE BUSINESS GROUP",
   companyAddress: "Airport Road, Wadajir District, Mogadishu, Somalia",
-  companyEmail: "movcon@peacebusinessgroup.com",
-  companyPhone: "+252 61-94-94974",
+  companyEmail: "reservations@peacebusinessgroup.com",
+  companyPhone: "+252 61-94-94973 / +252 61-94-94974",
   stampText: "PEACE BUSINESS GROUP",
 };
 
@@ -205,9 +205,9 @@ const InvitationLetter = () => {
 
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text("Email: bashir@peacebusinessgroup.com", 135, y + 66);
-      doc.text("Website: www.peacebusinessgroup.com", 135, y + 78);
-      doc.text("Mobile: +252 61 - 8178782", 135, y + 90);
+      doc.text("Email: reservations@peacebusinessgroup.com", 135, y + 66);
+      doc.text("Alternative: movcon@peacebusinessgroup.com", 135, y + 78);
+      doc.text("Phone: +252 61-94-94973 / +252 61-94-94974", 135, y + 90);
 
       // Elegant divider line
       y += 110;
@@ -400,37 +400,29 @@ The details of the visitor are as follows:`;
       doc.setTextColor(0, 0, 0);
       y += 40;
 
-      // Contact information
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      const contactText = `Peace Hotels, Mogadishu Somalia +252619494973 / +252619494974
-reservations@peacebusinessgroup.com or movcon@peacebusinessgroup.com
-Close to Mogadishu airport, Wadajir-Mogadishu`;
-
-      const contactLines = contactText.split("\n");
-      contactLines.forEach((line, index) => {
-        doc.text(line, 40, y + index * 12);
-      });
-
-      y += contactLines.length * 12 + 20;
-
-      // Bottom line
-      doc.setDrawColor(108, 168, 221);
-      doc.setLineWidth(2);
+      // Contact information section with improved design
+      doc.setDrawColor(65, 146, 218);
+      doc.setLineWidth(1);
       doc.line(40, y, pageWidth - 40, y);
 
-      y += 15;
+      y += 20;
 
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(108, 168, 221);
-      const footerText = `Peace Hotels Inc. Mogadishu Somalia. www.peacehotelsom.com
-Off Aden Adde Airport Road, Wadajir, Mogadishu, SOMALIA
-Tel: +252 61-94-94974 E-mail: movcon@peacebusinessgroup.com`;
+      // Simplified footer with essential information only
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80, 80, 80);
 
-      const footerLines = footerText.split("\n");
-      footerLines.forEach((line, index) => {
-        doc.text(line, 40, y + index * 10);
+      // Center the contact information
+      const contactInfo = [
+        "Peace Business Group - Airport Road, Wadajir District, Mogadishu, Somalia",
+        "Phone: +252 61-94-94973 / +252 61-94-94974",
+        "Email: reservations@peacebusinessgroup.com | movcon@peacebusinessgroup.com",
+      ];
+
+      contactInfo.forEach((line, index) => {
+        const textWidth = doc.getTextWidth(line);
+        const textX = (pageWidth - textWidth) / 2; // Center the text
+        doc.text(line, textX, y + index * 12);
       });
       const fileName = `invitation-letter-${formData.visitorName.replace(
         /[^a-zA-Z0-9]/g,
