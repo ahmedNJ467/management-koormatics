@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,9 +8,9 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
 
-// Use the uploaded Peace Business Group images
-const LOGO_IMAGE = "/lovable-uploads/43e9df25-a96b-4a06-84fa-aede435f256d.png";
-const STAMP_IMAGE = "/lovable-uploads/cf1ef038-a300-45ad-a5f6-cafaa41ed89f.png";
+// Use the uploaded Peace Business Group images - swapped positions
+const STAMP_IMAGE = "/lovable-uploads/43e9df25-a96b-4a06-84fa-aede435f256d.png"; // Now used as stamp
+const LOGO_IMAGE = "/lovable-uploads/cf1ef038-a300-45ad-a5f6-cafaa41ed89f.png"; // Now used as logo
 
 const DEFAULT_COMPANY = {
   companyName: "PEACE BUSINESS GROUP",
@@ -143,7 +142,7 @@ const InvitationLetter = () => {
       const pageHeight = doc.internal.pageSize.getHeight();
       let y = 40;
 
-      // Load and add Peace Business Group logo
+      // Load and add Peace Business Group logo (now using the stamp image as logo)
       try {
         const logoBase64 = await loadImageAsBase64(LOGO_IMAGE);
         doc.addImage(logoBase64, "PNG", 40, y, 120, 80);
@@ -332,7 +331,7 @@ The details of the visitor are as follows:`;
       y += 12;
       doc.text("Peace Business Group", 40, y);
 
-      // Add Peace Business Group stamp/seal
+      // Add Peace Business Group stamp/seal (now using the logo image as stamp)
       try {
         const stampBase64 = await loadImageAsBase64(STAMP_IMAGE);
         doc.addImage(stampBase64, "PNG", 380, y - 80, 120, 120);
