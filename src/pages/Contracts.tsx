@@ -478,74 +478,6 @@ export default function Contracts() {
         </div>
       </div>
 
-      {/* Analytics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Contracts
-            </CardTitle>
-            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-              {totalContracts}
-            </div>
-            <p className="text-xs text-blue-600 dark:text-blue-400">
-              {activeContracts} active • {pendingContracts} pending
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Contracts
-            </CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-              {activeContracts}
-            </div>
-            <p className="text-xs text-green-600 dark:text-green-400">
-              {Math.round((activeContracts / totalContracts) * 100) || 0}% of
-              total contracts
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border-amber-200 dark:border-amber-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-            <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-              {soonToExpire}
-            </div>
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              Within 30 days
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expired</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-              {expiredContracts}
-            </div>
-            <p className="text-xs text-red-600 dark:text-red-400">
-              {terminatedContracts} terminated
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {!isStorageAvailable && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -562,7 +494,7 @@ export default function Contracts() {
         </Alert>
       )}
 
-      {/* Comprehensive Analytics Dashboard */}
+      {/* Analytics Dashboard */}
       <ContractsSummaryDashboard contracts={contracts} />
 
       {/* Enhanced Filters */}
