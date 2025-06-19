@@ -58,10 +58,10 @@ export function TripForm({
       setSelectedClientId(editTrip.client_id);
       setSelectedDate(editTrip.date);
       setSelectedTime(editTrip.time || "");
-
+      
       const clientType = editTrip.client_type || "individual";
       setSelectedClientType(clientType);
-
+      
       if (clientType === "organization") {
         // Get passengers from both dedicated passengers array and notes
         const extractedPassengers = editTrip.notes
@@ -70,12 +70,12 @@ export function TripForm({
         const arrayPassengers = Array.isArray(editTrip.passengers)
           ? editTrip.passengers
           : [];
-
+        
         // Combine both sources and remove duplicates
         const allPassengers = [
           ...new Set([...arrayPassengers, ...extractedPassengers]),
         ];
-
+        
         setPassengers(allPassengers.length > 0 ? allPassengers : [""]);
       } else {
         setPassengers([""]);
@@ -90,13 +90,13 @@ export function TripForm({
 
   const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId);
-
+    
     if (!clientId) {
       setSelectedClientType("");
       setPassengers([""]);
       return;
     }
-
+    
     const selectedClient = clients?.find((client) => client.id === clientId);
     if (selectedClient) {
       setSelectedClientType(selectedClient.type || "individual");
@@ -160,7 +160,7 @@ export function TripForm({
             value={editTrip.vehicle_type || ""}
           />
         )}
-
+        
         <ClientVehicleDriverSelects
           clients={clients}
           editTrip={editTrip}
@@ -169,7 +169,7 @@ export function TripForm({
           handleClientChange={handleClientChange}
           setServiceType={setServiceType}
         />
-
+        
         {!editTrip && (
           <div className="space-y-2">
             <Label htmlFor="vehicle_type">Vehicle Type</Label>
@@ -185,33 +185,33 @@ export function TripForm({
           </div>
         )}
 
-        <PassengerManagement
-          passengers={passengers}
-          setPassengers={setPassengers}
-          newPassenger={newPassenger}
-          setNewPassenger={setNewPassenger}
-          addPassenger={addPassenger}
-          updatePassenger={updatePassenger}
-          removePassenger={removePassenger}
-          handleKeyDown={handleKeyDown}
-        />
+          <PassengerManagement
+            passengers={passengers}
+            setPassengers={setPassengers}
+            newPassenger={newPassenger}
+            setNewPassenger={setNewPassenger}
+            addPassenger={addPassenger}
+            updatePassenger={updatePassenger}
+            removePassenger={removePassenger}
+            handleKeyDown={handleKeyDown}
+          />
 
         <DocumentUploads
           passengers={passengers}
-          serviceType={serviceType}
-          editTrip={editTrip}
+          serviceType={serviceType} 
+          editTrip={editTrip} 
         />
 
         <FlightDetails serviceType={serviceType} editTrip={editTrip} />
 
-        <DateTimeFields
-          editTrip={editTrip}
+        <DateTimeFields 
+          editTrip={editTrip} 
           serviceType={serviceType}
           onDateTimeChange={handleDateTimeChange}
         />
 
         <LocationFields editTrip={editTrip} />
-
+        
         <AmountField editTrip={editTrip} />
 
         <NotesField editTrip={editTrip} />
@@ -236,16 +236,16 @@ export function TripForm({
 // Helper function to parse passengers from notes (to be moved to utils)
 function parsePassengers(notes: string): string[] {
   if (!notes) return [];
-
+  
   // This regex looks for patterns like "Passengers: John Doe, Jane Smith"
   const passengersMatch = notes.match(/Passengers?:?\s*([^.]+)/i);
-
+  
   if (passengersMatch && passengersMatch[1]) {
     return passengersMatch[1]
       .split(",")
       .map((name) => name.trim())
       .filter((name) => name.length > 0);
   }
-
+  
   return [];
 }
