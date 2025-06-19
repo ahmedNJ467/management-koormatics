@@ -182,7 +182,7 @@ export default function Vehicles() {
   }, []);
 
   const hasActiveFilters =
-    searchTerm || typeFilter !== "all" || statusFilter !== "all";
+    searchTerm !== "" || typeFilter !== "all" || statusFilter !== "all";
 
   return (
     <div className="space-y-6 animate-fade-in">
