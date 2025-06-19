@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver } from "@/lib/types";
@@ -16,7 +22,12 @@ interface DriverFormDialogProps {
   onDriverDeleted?: () => void;
 }
 
-export function DriverFormDialog({ open, onOpenChange, driver, onDriverDeleted }: DriverFormDialogProps) {
+export function DriverFormDialog({
+  open,
+  onOpenChange,
+  driver,
+  onDriverDeleted,
+}: DriverFormDialogProps) {
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const {
@@ -45,7 +56,9 @@ export function DriverFormDialog({ open, onOpenChange, driver, onDriverDeleted }
         status: driver.status,
       });
       setAvatarPreview(driver.avatar_url);
-      setDocumentName(driver.document_url ? driver.document_url.split('/').pop() : null);
+      setDocumentName(
+        driver.document_url ? driver.document_url.split("/").pop() : null
+      );
     } else {
       form.reset({
         name: "",
@@ -65,7 +78,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onDriverDeleted }
     try {
       let avatarUrl = driver?.avatar_url || null;
       let documentUrl = driver?.document_url || null;
-      
+
       const driverData = {
         name: values.name,
         license_number: values.license_number,
@@ -99,10 +112,20 @@ export function DriverFormDialog({ open, onOpenChange, driver, onDriverDeleted }
 
       try {
         if (avatarFile) {
-          avatarUrl = await uploadDriverFile(avatarFile, 'driver-avatars', driverId, 'avatar');
+          avatarUrl = await uploadDriverFile(
+            avatarFile,
+            "driver-avatars",
+            driverId,
+            "avatar"
+          );
         }
         if (documentFile) {
-          documentUrl = await uploadDriverFile(documentFile, 'driver-documents', driverId, 'document');
+          documentUrl = await uploadDriverFile(
+            documentFile,
+            "driver-documents",
+            driverId,
+            "document"
+          );
         }
 
         if (avatarUrl || documentUrl) {
@@ -120,21 +143,25 @@ export function DriverFormDialog({ open, onOpenChange, driver, onDriverDeleted }
         console.error("File upload error:", fileError);
         toast({
           title: "File upload failed",
-          description: "Driver was saved but there was an error uploading files.",
+          description:
+            "Driver was saved but there was an error uploading files.",
           variant: "destructive",
         });
       }
 
       toast({
         title: `Driver ${driver ? "updated" : "created"} successfully`,
-        description: `${values.name} has been ${driver ? "updated" : "added"} to the system.`,
+        description: `${values.name} has been ${
+          driver ? "updated" : "added"
+        } to the system.`,
       });
       onOpenChange(false);
     } catch (error) {
       console.error("Error:", error);
       toast({
         title: `Failed to ${driver ? "update" : "create"} driver`,
-        description: error instanceof Error ? error.message : "Failed to save driver",
+        description:
+          error instanceof Error ? error.message : "Failed to save driver",
         variant: "destructive",
       });
     } finally {
@@ -145,11 +172,14 @@ export function DriverFormDialog({ open, onOpenChange, driver, onDriverDeleted }
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{driver ? "Edit Driver" : "Add New Driver"}</DialogTitle>
+            <DialogTitle>
+              {driver ? "Edit Driver" : "Add New Driver"}
+            </DialogTitle>
             <DialogDescription>
-              Enter the driver's information below. Required fields are marked with an asterisk.
+              Enter the driver's information below. Required fields are marked
+              with an asterisk.
             </DialogDescription>
           </DialogHeader>
           <DriverFormContent

@@ -5,7 +5,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FuelLog } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { fuelLogSchema, FuelLogFormValues } from "./schemas/fuel-log-schema";
-import { getVehicles, getLatestMileage, saveFuelLog, getFuelLogById } from "./services/fuel-log-service";
+import {
+  getVehicles,
+  getLatestMileage,
+  saveFuelLog,
+  getFuelLogById,
+} from "./services/fuel-log-service";
 import { useFuelCalculations } from "./hooks/use-fuel-calculations";
 
 export { fuelLogSchema, type FuelLogFormValues };
@@ -18,36 +23,41 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
 
   // Fetch vehicles for select dropdown
   const { data: vehicles } = useQuery({
-    queryKey: ['vehicles'],
+    queryKey: ["vehicles"],
     queryFn: getVehicles,
   });
 
   // Initialize form with default values or existing fuel log data
   const form = useForm<FuelLogFormValues>({
     resolver: zodResolver(fuelLogSchema),
-    defaultValues: fuelLog ? {
-      vehicle_id: fuelLog.vehicle_id,
-      date: fuelLog.date,
-      fuel_type: fuelLog.fuel_type,
-      volume: fuelLog.volume,
-      price_per_liter: fuelLog.volume > 0 ? fuelLog.cost / fuelLog.volume : 0,
-      cost: fuelLog.cost,
-      previous_mileage: fuelLog.previous_mileage || 0,
-      current_mileage: fuelLog.current_mileage || 0,
-      mileage: fuelLog.mileage || 0,
-      notes: fuelLog.notes || "",
-    } : {
-      vehicle_id: "",
-      date: new Date().toISOString().split('T')[0],
-      fuel_type: "diesel",
-      volume: 0,
-      price_per_liter: 0,
-      cost: 0,
-      previous_mileage: 0,
-      current_mileage: 0,
-      mileage: 0,
-      notes: "",
-    },
+    defaultValues: fuelLog
+      ? {
+          vehicle_id: fuelLog.vehicle_id,
+          date: fuelLog.date,
+          fuel_type: fuelLog.fuel_type,
+          volume: fuelLog.volume,
+          price_per_liter:
+            fuelLog.volume > 0 ? fuelLog.cost / fuelLog.volume : 0,
+          cost: fuelLog.cost,
+          previous_mileage: fuelLog.previous_mileage || 0,
+          current_mileage: fuelLog.current_mileage || 0,
+          mileage: fuelLog.mileage || 0,
+          notes: fuelLog.notes || "",
+          filled_by: fuelLog.filled_by || "",
+        }
+      : {
+          vehicle_id: "",
+          date: new Date().toISOString().split("T")[0],
+          fuel_type: "diesel",
+          volume: 0,
+          price_per_liter: 0,
+          cost: 0,
+          previous_mileage: 0,
+          current_mileage: 0,
+          mileage: 0,
+          notes: "",
+          filled_by: "",
+        },
   });
 
   // Apply calculations for cost and mileage
@@ -58,25 +68,28 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   // Load previous mileage when vehicle changes
   useEffect(() => {
     if (!vehicleId) return;
-    
+
     const fetchMileage = async () => {
       try {
         console.log("Vehicle ID changed to:", vehicleId);
-        
+
         // If editing existing fuel log, don't override the previous mileage
         if (fuelLog && fuelLog.vehicle_id === vehicleId) {
-          console.log("Editing existing fuel log, keeping previous mileage:", fuelLog.previous_mileage);
+          console.log(
+            "Editing existing fuel log, keeping previous mileage:",
+            fuelLog.previous_mileage
+          );
           return;
         }
-        
+
         // Otherwise, get the latest mileage for this vehicle
         console.log("Fetching latest mileage for vehicle:", vehicleId);
         const lastMileage = await getLatestMileage(vehicleId);
         console.log("Fetched last mileage:", lastMileage);
-        
+
         // Set previous mileage to the last recorded mileage
         form.setValue("previous_mileage", lastMileage);
-        
+
         // Clear current mileage so user can fill it in with new value
         if (!fuelLog) {
           form.setValue("current_mileage", 0);
@@ -85,7 +98,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
         console.error("Error fetching latest mileage:", error);
       }
     };
-    
+
     fetchMileage();
   }, [vehicleId, form, fuelLog]);
 
@@ -94,13 +107,13 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     setIsSubmitting(true);
     try {
       const result = await saveFuelLog(values, fuelLog?.id);
-      
+
       // Invalidate and refetch the query to ensure the UI updates
-      queryClient.invalidateQueries({ queryKey: ['fuel-logs'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["fuel-logs"] });
+
       toast({
         title: result.isNewRecord ? "Fuel log created" : "Fuel log updated",
-        description: result.isNewRecord 
+        description: result.isNewRecord
           ? "A new fuel log has been created successfully."
           : "The fuel log has been updated successfully.",
       });
@@ -111,7 +124,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       console.error("Error:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save fuel log",
+        description:
+          error instanceof Error ? error.message : "Failed to save fuel log",
         variant: "destructive",
       });
     } finally {
@@ -125,6 +139,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     isSubmitting,
     handleSubmit,
     shouldCloseDialog,
-    resetCloseDialog: () => setShouldCloseDialog(false)
+    resetCloseDialog: () => setShouldCloseDialog(false),
   };
 }

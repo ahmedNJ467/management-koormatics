@@ -1,6 +1,13 @@
-
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
+import { parseISO, isValid } from "date-fns";
 import type { UseFormReturn } from "react-hook-form";
 import type { DriverFormValues } from "./types";
 
@@ -10,7 +17,7 @@ interface DriverFieldsProps {
 
 export function DriverFields({ form }: DriverFieldsProps) {
   return (
-    <>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <FormField
         control={form.control}
         name="name"
@@ -33,6 +40,7 @@ export function DriverFields({ form }: DriverFieldsProps) {
             <FormControl>
               <Input placeholder="+1234567890" {...field} />
             </FormControl>
+            <p className="text-xs text-muted-foreground mt-1">Phone or email</p>
             <FormMessage />
           </FormItem>
         )}
@@ -70,8 +78,22 @@ export function DriverFields({ form }: DriverFieldsProps) {
           <FormItem>
             <FormLabel>License Expiry</FormLabel>
             <FormControl>
-              <Input type="date" {...field} />
+              <DatePicker
+                date={
+                  field.value
+                    ? isValid(new Date(field.value))
+                      ? new Date(field.value)
+                      : undefined
+                    : undefined
+                }
+                onDateChange={(date) => {
+                  field.onChange(date ? date.toISOString().split("T")[0] : "");
+                }}
+              />
             </FormControl>
+            <p className="text-xs text-muted-foreground mt-1">
+              Set a reminder before expiry
+            </p>
             <FormMessage />
           </FormItem>
         )}
@@ -96,6 +118,6 @@ export function DriverFields({ form }: DriverFieldsProps) {
           </FormItem>
         )}
       />
-    </>
+    </div>
   );
 }

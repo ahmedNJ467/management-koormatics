@@ -1,9 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { UseFormReturn } from "react-hook-form";
@@ -12,7 +25,15 @@ import { SparePart } from "@/components/spare-parts/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
-import { X } from "lucide-react";
+import {
+  X,
+  Package,
+  Calendar,
+  Wrench,
+  FileText,
+  AlertCircle,
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 interface MaintenanceFormContentProps {
   form: UseFormReturn<any>;
@@ -31,9 +52,9 @@ export function MaintenanceFormContent({
   onDelete,
   onSubmit,
 }: MaintenanceFormContentProps) {
-  const [selectedParts, setSelectedParts] = useState<{id: string, quantity: number}[]>(
-    maintenance?.spare_parts || []
-  );
+  const [selectedParts, setSelectedParts] = useState<
+    { id: string; quantity: number }[]
+  >(maintenance?.spare_parts || []);
 
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
@@ -64,116 +85,136 @@ export function MaintenanceFormContent({
   });
 
   const handlePartSelection = (partId: string) => {
-    const isSelected = selectedParts.some(p => p.id === partId);
-    
+    const isSelected = selectedParts.some((p) => p.id === partId);
+
     if (isSelected) {
-      setSelectedParts(selectedParts.filter(p => p.id !== partId));
+      setSelectedParts(selectedParts.filter((p) => p.id !== partId));
     } else {
       setSelectedParts([...selectedParts, { id: partId, quantity: 1 }]);
     }
   };
 
   const handlePartQuantityChange = (partId: string, quantity: number) => {
-    setSelectedParts(selectedParts.map(p => 
-      p.id === partId ? { ...p, quantity } : p
-    ));
+    setSelectedParts(
+      selectedParts.map((p) => (p.id === partId ? { ...p, quantity } : p))
+    );
   };
 
   const handleFormSubmit = (values: any) => {
     // Add selected parts to the form values
     const formValues = {
       ...values,
-      spare_parts: selectedParts
+      spare_parts: selectedParts,
     };
     onSubmit(formValues);
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="vehicle_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Vehicle*</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a vehicle" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {vehicles?.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.make} {vehicle.model} - {vehicle.registration}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form
+        onSubmit={form.handleSubmit(handleFormSubmit)}
+        className="space-y-6"
+      >
+        {/* Vehicle & Basic Information Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-semibold">
+            <Wrench className="h-5 w-5" />
+            <span>Vehicle & Basic Information</span>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="date"
+            name="vehicle_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date*</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
+                <FormLabel className="text-base">Vehicle *</FormLabel>
+                <FormDescription>
+                  Select the vehicle that requires maintenance
+                </FormDescription>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Choose a vehicle..." />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {vehicles?.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.make} {vehicle.model} - {vehicle.registration}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="next_scheduled"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Next Scheduled</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">
+                    Maintenance Date *
+                  </FormLabel>
+                  <FormDescription>
+                    When was/is the maintenance performed
+                  </FormDescription>
+                  <FormControl>
+                    <Input type="date" className="h-11" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="next_scheduled"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">Next Scheduled</FormLabel>
+                  <FormDescription>
+                    When is the next maintenance due
+                  </FormDescription>
+                  <FormControl>
+                    <Input type="date" className="h-11" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description*</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter maintenance description" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Separator />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Maintenance Details Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-semibold">
+            <FileText className="h-5 w-5" />
+            <span>Maintenance Details</span>
+          </div>
+
           <FormField
             control={form.control}
-            name="expense"
+            name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>External Expense (USD)*</FormLabel>
+                <FormLabel className="text-base">Description *</FormLabel>
+                <FormDescription>
+                  Brief description of the maintenance work performed
+                </FormDescription>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    min="0"
+                  <Input
+                    placeholder="e.g., Oil change, brake pad replacement, engine tune-up..."
+                    className="h-11"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />
@@ -181,132 +222,264 @@ export function MaintenanceFormContent({
             )}
           />
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="expense"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">
+                    External Expense (USD) *
+                  </FormLabel>
+                  <FormDescription>
+                    Cost of external services or parts
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      className="h-11"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value) || 0)
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">Status</FormLabel>
+                  <FormDescription>
+                    Current status of the maintenance
+                  </FormDescription>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="status"
+            name="service_provider"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormLabel className="text-base">Service Provider</FormLabel>
+                <FormDescription>
+                  Name of the service provider or mechanic
+                </FormDescription>
+                <FormControl>
+                  <Input
+                    placeholder="e.g., ABC Auto Service, John's Garage..."
+                    className="h-11"
+                    {...field}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="service_provider"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Service Provider</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter service provider name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Separator />
 
-        {/* Spare Parts Selection */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-medium">Use Spare Parts</h3>
-          <div className="grid grid-cols-1 gap-3 max-h-[200px] overflow-y-auto">
-            {spareParts?.length ? (
-              spareParts.map((part) => (
-                <Card key={part.id} className={`border ${selectedParts.some(p => p.id === part.id) ? 'border-primary' : ''}`}>
-                  <CardHeader className="p-3 pb-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <Checkbox 
-                          id={`part-${part.id}`}
-                          checked={selectedParts.some(p => p.id === part.id)}
-                          onCheckedChange={() => handlePartSelection(part.id)}
-                        />
-                        <label htmlFor={`part-${part.id}`} className="font-medium cursor-pointer">
-                          {part.name}
-                        </label>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        Available: {part.quantity}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-1">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        {part.part_number} - {part.category}
-                      </div>
-                      {selectedParts.some(p => p.id === part.id) && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">Quantity:</span>
-                          <Input
-                            type="number"
-                            min="1"
-                            max={part.quantity}
-                            className="w-20 h-8"
-                            value={selectedParts.find(p => p.id === part.id)?.quantity || 1}
-                            onChange={(e) => handlePartQuantityChange(part.id, parseInt(e.target.value))}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="text-muted-foreground text-center py-6">
-                No spare parts available in inventory
-              </div>
-            )}
+        {/* Spare Parts Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-semibold">
+            <Package className="h-5 w-5" />
+            <span>Spare Parts Used</span>
           </div>
+
+          <div className="text-sm text-muted-foreground">
+            Select spare parts from inventory that were used in this maintenance
+          </div>
+
+          <Card className="border-dashed">
+            <CardContent className="p-4">
+              {spareParts?.length ? (
+                <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto">
+                  {spareParts.map((part) => (
+                    <Card
+                      key={part.id}
+                      className={`border transition-colors ${
+                        selectedParts.some((p) => p.id === part.id)
+                          ? "border-primary bg-primary/5"
+                          : "hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <Checkbox
+                              id={`part-${part.id}`}
+                              checked={selectedParts.some(
+                                (p) => p.id === part.id
+                              )}
+                              onCheckedChange={() =>
+                                handlePartSelection(part.id)
+                              }
+                              className="mt-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <label
+                                htmlFor={`part-${part.id}`}
+                                className="font-medium cursor-pointer block"
+                              >
+                                {part.name}
+                              </label>
+                              <div className="text-sm text-muted-foreground mt-1">
+                                <div>Part #: {part.part_number}</div>
+                                <div>Category: {part.category}</div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span>Available:</span>
+                                  <span
+                                    className={`font-medium ${
+                                      part.quantity <=
+                                      (part.min_stock_level || 5)
+                                        ? "text-orange-600"
+                                        : "text-green-600"
+                                    }`}
+                                  >
+                                    {part.quantity} units
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {selectedParts.some((p) => p.id === part.id) && (
+                            <div className="flex items-center gap-2 ml-4">
+                              <span className="text-sm font-medium">Qty:</span>
+                              <Input
+                                type="number"
+                                min="1"
+                                max={part.quantity}
+                                className="w-20 h-8 text-center"
+                                value={
+                                  selectedParts.find((p) => p.id === part.id)
+                                    ?.quantity || 1
+                                }
+                                onChange={(e) =>
+                                  handlePartQuantityChange(
+                                    part.id,
+                                    parseInt(e.target.value) || 1
+                                  )
+                                }
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    No spare parts available in inventory
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add spare parts to inventory to use them in maintenance
+                    records
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Enter any additional notes"
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Separator />
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          {maintenance && (
-            <Button 
+        {/* Notes Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-semibold">
+            <FileText className="h-5 w-5" />
+            <span>Additional Notes</span>
+          </div>
+
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base">Notes</FormLabel>
+                <FormDescription>
+                  Any additional information about the maintenance
+                </FormDescription>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter any additional notes, observations, or special instructions..."
+                    className="min-h-[120px] resize-none"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Form Actions */}
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex gap-2">
+            <Button
               type="button"
-              variant="destructive"
-              onClick={onDelete}
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
             >
-              Delete
+              Cancel
             </Button>
-          )}
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : maintenance ? "Update Record" : "Add Record"}
+            {maintenance && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={onDelete}
+                disabled={isSubmitting}
+              >
+                Delete Record
+              </Button>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="min-w-[120px]"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                Saving...
+              </>
+            ) : (
+              <>{maintenance ? "Update Record" : "Add Record"}</>
+            )}
           </Button>
         </div>
       </form>
