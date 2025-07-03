@@ -593,5 +593,5 @@ function getSeverityColor(severity: string): [number, number, number] {
     severe: [255, 108, 55],    // Orange
     critical: [220, 53, 69],   // Red
   };
-  return colors[severity as keyof typeof colors] || [108, 117, 125];
+  return (colors[severity as keyof typeof colors] || [108, 117, 125]) as [number, number, number];
 }

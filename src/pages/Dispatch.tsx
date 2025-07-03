@@ -224,8 +224,7 @@ export default function Dispatch() {
     try {
       logActivity({
         title: `Message sent to driver for trip ${tripToMessage.id}`,
-        description: `Message: "${newMessage}"`,
-        type: "communication",
+        type: "communication" as any,
       });
 
       toast({

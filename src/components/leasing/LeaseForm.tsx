@@ -231,7 +231,7 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
           ...data,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        } as any);
         if (error) throw error;
       }
     },
