@@ -1,3 +1,4 @@
+
 import { Vehicle } from "./vehicle";
 
 export type FuelType = "petrol" | "diesel" | "cng";
@@ -15,6 +16,7 @@ export interface FuelLog {
   current_mileage: number;
   mileage: number;
   notes?: string;
+  tank_id?: string;
   created_at?: string;
   updated_at?: string;
 }

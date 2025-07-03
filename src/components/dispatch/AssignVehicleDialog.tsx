@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -31,6 +32,13 @@ interface AssignVehicleDialogProps {
   trip: DisplayTrip | null;
   onClose: () => void;
   onVehicleAssigned: () => void;
+}
+
+interface EnhancedVehicle extends Vehicle {
+  isAvailable: boolean;
+  conflicts?: any[];
+  reason?: string;
+  isCompatible: boolean;
 }
 
 export function AssignVehicleDialog({
@@ -82,8 +90,14 @@ export function AssignVehicleDialog({
     }
   }, [selectedVehicle, trip, trips]);
 
-  const enhancedVehicles = vehicles.map((vehicle) => {
-    if (!trip) return { ...vehicle, isAvailable: true, reason: undefined };
+  const enhancedVehicles: EnhancedVehicle[] = vehicles.map((vehicle) => {
+    if (!trip) return { 
+      ...vehicle, 
+      isAvailable: true, 
+      reason: undefined,
+      isCompatible: true,
+      conflicts: []
+    };
 
     // Check availability using time-based logic
     const availability = isVehicleAvailableForTimeSlot(
