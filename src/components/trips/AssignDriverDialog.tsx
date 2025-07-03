@@ -78,8 +78,8 @@ export function AssignDriverDialog({
             driver.id,
             tripToAssign.date,
             tripToAssign.time || "00:00",
-            tripToAssign.return_time,
             allTrips,
+            tripToAssign.return_time,
             tripToAssign.id,
             { bufferHours: 1 }
           );
@@ -115,8 +115,8 @@ export function AssignDriverDialog({
         selectedDriver,
         tripToAssign.date,
         tripToAssign.time || "00:00",
-        tripToAssign.return_time,
         allTrips,
+        tripToAssign.return_time,
         tripToAssign.id,
         { bufferHours: 1 }
       );

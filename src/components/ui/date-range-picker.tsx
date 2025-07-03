@@ -15,15 +15,21 @@ import {
 
 interface DateRangePickerProps {
   value?: DateRange
-  onChange: (date: DateRange | undefined) => void
+  date?: DateRange
+  onChange?: (date: DateRange | undefined) => void
+  onDateChange?: (date: DateRange | undefined) => void
   className?: string
 }
 
 export function DateRangePicker({
   value,
+  date,
   onChange,
+  onDateChange,
   className,
 }: DateRangePickerProps) {
+  const actualValue = value || date;
+  const actualOnChange = onChange || onDateChange;
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
@@ -33,18 +39,18 @@ export function DateRangePicker({
             variant={"outline"}
             className={cn(
               "w-[300px] justify-start text-left font-normal",
-              !value && "text-muted-foreground"
+              !actualValue && "text-muted-foreground"
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {value?.from ? (
-              value.to ? (
+            {actualValue?.from ? (
+              actualValue.to ? (
                 <>
-                  {format(value.from, "LLL dd, y")} -{" "}
-                  {format(value.to, "LLL dd, y")}
+                  {format(actualValue.from, "LLL dd, y")} -{" "}
+                  {format(actualValue.to, "LLL dd, y")}
                 </>
               ) : (
-                format(value.from, "LLL dd, y")
+                format(actualValue.from, "LLL dd, y")
               )
             ) : (
               <span>Pick a date range</span>
@@ -55,9 +61,9 @@ export function DateRangePicker({
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={value?.from}
-            selected={value}
-            onSelect={onChange}
+            defaultMonth={actualValue?.from}
+            selected={actualValue}
+            onSelect={actualOnChange}
             numberOfMonths={2}
           />
         </PopoverContent>

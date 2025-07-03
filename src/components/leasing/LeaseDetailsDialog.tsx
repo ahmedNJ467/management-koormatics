@@ -35,20 +35,22 @@ interface VehicleLease {
   lessee_address: string;
   lease_start_date: string;
   lease_end_date: string;
-  monthly_rate: number;
-  security_deposit: number;
-  mileage_limit: number;
-  excess_mileage_rate: number;
+  monthly_rate?: number;
+  daily_rate?: number;
+  security_deposit?: number;
+  mileage_limit?: number;
+  excess_mileage_rate?: number;
   lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
   payment_status: "current" | "overdue" | "partial" | "paid_ahead";
-  contract_number: string;
+  contract_number?: string;
+  contract_id?: string;
   notes?: string;
   insurance_required: boolean;
   maintenance_included: boolean;
   driver_included: boolean;
   fuel_included: boolean;
   assigned_driver_id?: string;
-  early_termination_fee: number;
+  early_termination_fee?: number;
   created_at: string;
   updated_at: string;
   vehicle?: {
@@ -178,7 +180,7 @@ export function LeaseDetailsDialog({
     if (!isValid(startDate) || !isValid(endDate)) return 0;
 
     const months = differenceInDays(endDate, startDate) / 30.44; // Average days per month
-    return Math.round(months * lease.monthly_rate);
+    return Math.round(months * (lease.monthly_rate || lease.daily_rate || 0));
   })();
 
   return (
@@ -197,7 +199,7 @@ export function LeaseDetailsDialog({
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span className="text-lg">
-                  Contract {lease.contract_number}
+                  Contract {lease.contract_number || lease.contract_id || "N/A"}
                 </span>
                 <div className="flex gap-2">
                   {getStatusBadge(lease.lease_status)}
@@ -220,10 +222,10 @@ export function LeaseDetailsDialog({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
-                    ${lease.monthly_rate.toLocaleString()}
+                    ${(lease.monthly_rate || lease.daily_rate || 0).toLocaleString()}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Monthly Rate
+                    {lease.monthly_rate ? "Monthly Rate" : "Daily Rate"}
                   </div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -236,7 +238,7 @@ export function LeaseDetailsDialog({
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">
-                    {lease.mileage_limit.toLocaleString()}
+                    {(lease.mileage_limit || 0).toLocaleString()}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Miles/Year
@@ -370,7 +372,7 @@ export function LeaseDetailsDialog({
                     Security Deposit
                   </div>
                   <div className="font-medium">
-                    ${lease.security_deposit.toLocaleString()}
+                    ${(lease.security_deposit || 0).toLocaleString()}
                   </div>
                 </div>
                 <div>
@@ -378,7 +380,7 @@ export function LeaseDetailsDialog({
                     Excess Mileage Rate
                   </div>
                   <div className="font-medium">
-                    ${lease.excess_mileage_rate}/mile
+                    ${lease.excess_mileage_rate || 0}/mile
                   </div>
                 </div>
                 <div>
@@ -386,7 +388,7 @@ export function LeaseDetailsDialog({
                     Early Termination Fee
                   </div>
                   <div className="font-medium">
-                    ${lease.early_termination_fee.toLocaleString()}
+                    ${(lease.early_termination_fee || 0).toLocaleString()}
                   </div>
                 </div>
               </CardContent>

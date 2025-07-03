@@ -4,6 +4,7 @@ export * from './driver';
 export * from './vehicle';
 export * from './maintenance';
 export * from './fuel-log';
+export type { FuelType } from './fuel';
 export * from './quotation';
 export * from './client';
 export * from './trip';

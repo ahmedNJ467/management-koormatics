@@ -179,7 +179,7 @@ function calculateExpectedEndTime(trip: DisplayTrip, tripDate: Date): Date {
     case "round_trip":
       estimatedDurationHours = 4;
       break;
-    case "full_day_hire":
+    case "full_day":
     case "full_day":
       estimatedDurationHours = 8;
       break;
@@ -223,8 +223,8 @@ export function isDriverAvailableForTimeSlot(
   driverId: string,
   targetDate: string,
   targetTime: string,
-  targetReturnTime?: string,
   trips: DisplayTrip[],
+  targetReturnTime?: string,
   excludeTripId?: string,
   options: AvailabilityOptions = {}
 ): {
@@ -298,8 +298,8 @@ export function isVehicleAvailableForTimeSlot(
   vehicleId: string,
   targetDate: string,
   targetTime: string,
-  targetReturnTime?: string,
   trips: DisplayTrip[],
+  targetReturnTime?: string,
   excludeTripId?: string,
   options: AvailabilityOptions = {}
 ): {
