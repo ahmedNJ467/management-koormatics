@@ -15,6 +15,7 @@ import {
   Car,
   FileText,
   Download,
+  Shield,
 } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OverdueIndicator } from "./OverdueIndicator";
+import { useTripsData } from "@/hooks/use-trips-data";
 
 interface DispatchTripsProps {
   trips: DisplayTrip[];
@@ -41,6 +43,7 @@ interface DispatchTripsProps {
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
   onAssignVehicle: (trip: DisplayTrip) => void;
+  onAssignEscort?: (trip: DisplayTrip) => void;
   onGenerateInvoice: (trip: DisplayTrip) => void;
 }
 
@@ -51,8 +54,76 @@ export function DispatchTrips({
   onCompleteTrip,
   onUpdateStatus,
   onAssignVehicle,
+  onAssignEscort,
   onGenerateInvoice,
 }: DispatchTripsProps) {
+  // Get vehicles data to show escort vehicle details
+  const { vehicles = [] } = useTripsData();
+
+  // Debug logging for security escort functionality
+  console.log("DispatchTrips render:", {
+    totalTrips: trips?.length || 0,
+    securityEscortTrips:
+      trips?.filter((t) => t.has_security_escort)?.length || 0,
+    tripsWithSecurityEscort:
+      trips
+        ?.filter((t) => t.has_security_escort)
+        ?.map((t) => ({
+          id: t.id,
+          has_security_escort: t.has_security_escort,
+          escort_count: t.escort_count,
+          escort_status: t.escort_status,
+          escort_vehicle_ids: t.escort_vehicle_ids,
+        })) || [],
+    onAssignEscortCallback: typeof onAssignEscort,
+    vehiclesAvailable: vehicles?.length || 0,
+    vehiclesSample:
+      vehicles?.slice(0, 3).map((v) => ({
+        id: v.id,
+        make: v.make,
+        model: v.model,
+        registration: v.registration,
+        is_escort_assigned: v.is_escort_assigned,
+      })) || [],
+  });
+
+  // Additional debug for escort vehicle lookup issues
+  const escortTrips =
+    trips?.filter(
+      (t) => t.has_security_escort && t.escort_vehicle_ids?.length > 0
+    ) || [];
+  if (escortTrips.length > 0) {
+    console.log("🔍 ESCORT VEHICLE DEBUGGING:", {
+      escortTrips: escortTrips.map((trip) => ({
+        tripId: trip.id,
+        escortVehicleIds: trip.escort_vehicle_ids,
+        escortCount: trip.escort_count,
+        escortStatus: trip.escort_status,
+      })),
+      allVehicleIds: vehicles?.map((v) => v.id) || [],
+      vehicleIdMatches: escortTrips.map((trip) => ({
+        tripId: trip.id,
+        escortIds: trip.escort_vehicle_ids,
+        foundVehicles:
+          trip.escort_vehicle_ids?.map((escortId) => {
+            const vehicle = vehicles?.find((v) => v.id === escortId);
+            return {
+              searchId: escortId,
+              found: !!vehicle,
+              vehicle: vehicle
+                ? {
+                    id: vehicle.id,
+                    make: vehicle.make,
+                    model: vehicle.model,
+                    registration: vehicle.registration,
+                  }
+                : null,
+            };
+          }) || [],
+      })),
+    });
+  }
+
   // Ensure we have an array to work with
   const safeTrips = Array.isArray(trips) ? trips.filter(Boolean) : [];
 
@@ -281,8 +352,16 @@ export function DispatchTrips({
                 {/* Overdue indicator */}
                 <OverdueIndicator trip={trip} className="ml-2" />
               </div>
-              <div className="text-sm text-muted-foreground">
-                Trip ID: {safeFormatId(trip.id)}
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <span>Trip ID: {safeFormatId(trip.id)}</span>
+                {(trip as { _isTestData?: boolean })._isTestData && (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs bg-blue-100 text-blue-800"
+                  >
+                    TEST DATA
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -377,6 +456,27 @@ export function DispatchTrips({
                   </div>
                 </div>
 
+                {/* Security Escort Information */}
+                {trip.has_security_escort && (
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">
+                      Security Escort:
+                    </span>
+                    <div className="text-foreground flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">
+                        🛡️ Required
+                      </Badge>
+                      <span className="text-sm">
+                        {trip.escort_count || 1} escort vehicle
+                        {(trip.escort_count || 1) > 1 ? "s" : ""}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        Dispatch Assignment
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-sm">
                   <span className="font-medium text-muted-foreground">
                     Driver:
@@ -401,6 +501,140 @@ export function DispatchTrips({
                 </div>
               </div>
             </div>
+
+            {/* Security Escort Details */}
+            {trip.has_security_escort && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="flex items-start gap-2 text-sm">
+                  <Shield className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium text-red-900 dark:text-red-100">
+                        Security Escort Required
+                      </div>
+                      {trip.escort_status === "fully_assigned" && (
+                        <Badge
+                          variant="default"
+                          className="bg-green-600 text-xs"
+                        >
+                          ✓ Assigned
+                        </Badge>
+                      )}
+                      {trip.escort_status === "partially_assigned" && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-yellow-600 text-white text-xs"
+                        >
+                          Partial
+                        </Badge>
+                      )}
+                      {trip.escort_status === "not_assigned" && (
+                        <Badge variant="destructive" className="text-xs">
+                          Not Assigned
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-700 dark:text-red-300">
+                          Escort vehicles needed:
+                        </span>
+                        <Badge variant="destructive" className="text-xs">
+                          {trip.escort_count || 1} vehicle
+                          {(trip.escort_count || 1) > 1 ? "s" : ""}
+                        </Badge>
+                      </div>
+
+                      {/* Show assigned escorts */}
+                      {trip.escort_vehicle_ids &&
+                        trip.escort_vehicle_ids.length > 0 && (
+                          <div className="space-y-1">
+                            <div className="text-xs text-red-700 dark:text-red-300">
+                              <span className="font-medium">Assigned: </span>
+                              {trip.escort_vehicle_ids.length} of{" "}
+                              {trip.escort_count || 1} vehicles
+                            </div>
+                            <div className="space-y-1 ml-2">
+                              {trip.escort_vehicle_ids.map(
+                                (vehicleId, index) => {
+                                  // Find the vehicle details from available vehicles
+                                  let vehicle = vehicles?.find(
+                                    (v) => v.id === vehicleId
+                                  );
+
+                                  // If not found in current vehicles list, try to get from trip data
+                                  if (!vehicle && trip.vehicle_details) {
+                                    // Check if this might be the main vehicle being used as escort
+                                    const mainVehicleMatch =
+                                      trip.vehicle_details.match(/^(.+?)\s*\(/);
+                                    if (mainVehicleMatch) {
+                                      vehicle = {
+                                        id: vehicleId,
+                                        make:
+                                          mainVehicleMatch[1].split(" ")[0] ||
+                                          "Unknown",
+                                        model:
+                                          mainVehicleMatch[1]
+                                            .split(" ")
+                                            .slice(1)
+                                            .join(" ") || "Vehicle",
+                                        registration:
+                                          trip.vehicle_details.match(
+                                            /\(([^)]+)\)/
+                                          )?.[1] || "Unknown",
+                                        type: "unknown",
+                                      } as any;
+                                    }
+                                  }
+
+                                  // Create a display name for the vehicle
+                                  const displayName = vehicle
+                                    ? `${vehicle.make} ${vehicle.model} (${vehicle.registration})`
+                                    : `Vehicle ${vehicleId.slice(0, 8)}...`;
+
+                                  return (
+                                    <div
+                                      key={vehicleId}
+                                      className="flex items-center gap-2 text-xs"
+                                    >
+                                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                      <span className="text-red-600 dark:text-red-400">
+                                        Escort {index + 1}: {displayName}
+                                      </span>
+                                      {vehicle?.type &&
+                                        vehicle.type !== "unknown" && (
+                                          <Badge
+                                            variant={
+                                              vehicle.type === "armoured"
+                                                ? "default"
+                                                : "secondary"
+                                            }
+                                            className="text-xs px-1 py-0"
+                                          >
+                                            {vehicle.type === "armoured"
+                                              ? "Armoured"
+                                              : "Soft Skin"}
+                                          </Badge>
+                                        )}
+                                    </div>
+                                  );
+                                }
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                      {trip.escort_status !== "fully_assigned" && (
+                        <div className="text-red-600 dark:text-red-400 text-xs">
+                          ⚠️ Escort vehicles must be assigned by dispatch center
+                          before trip departure
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Flight Information */}
             {(trip.type === "airport_pickup" ||
@@ -589,12 +823,12 @@ export function DispatchTrips({
                 onClick={() => onAssignDriver(trip)}
                 className={
                   trip.driver_id
-                    ? "bg-blue-500 hover:bg-blue-600"
+                    ? "bg-green-500 hover:bg-green-600"
                     : "bg-primary"
                 }
               >
                 <User className="h-4 w-4 mr-1" />
-                Assign Driver
+                {trip.driver_id ? "Driver Assigned" : "Assign Driver"}
               </Button>
 
               <Button
@@ -602,13 +836,26 @@ export function DispatchTrips({
                 onClick={() => onAssignVehicle(trip)}
                 className={
                   trip.vehicle_id
-                    ? "bg-blue-500 hover:bg-blue-600"
+                    ? "bg-green-500 hover:bg-green-600"
                     : "bg-primary"
                 }
               >
                 <Car className="h-4 w-4 mr-1" />
-                Assign Vehicle
+                {trip.vehicle_id ? "Vehicle Assigned" : "Assign Vehicle"}
               </Button>
+
+              {/* Security Escort Assignment Button */}
+              {trip.has_security_escort && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => onAssignEscort && onAssignEscort(trip)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Shield className="h-4 w-4 mr-1" />
+                  Assign Escorts
+                </Button>
+              )}
 
               <Button
                 size="sm"

@@ -26,6 +26,9 @@ import CombinedAnalytics from "./pages/CombinedAnalytics";
 import Dispatch from "./pages/Dispatch";
 import NotFound from "./pages/NotFound";
 import InvitationLetter from "./pages/InvitationLetter";
+import VehicleInspections from "./pages/VehicleInspections";
+import VehicleIncidentReports from "./pages/VehicleIncidentReports";
+import VehicleLeasing from "./pages/VehicleLeasing";
 import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
@@ -64,6 +67,15 @@ const App = () => (
               />
               <Route path="dispatch" element={<Dispatch />} />
               <Route path="invitation-letter" element={<InvitationLetter />} />
+              <Route
+                path="vehicle-inspections"
+                element={<VehicleInspections />}
+              />
+              <Route
+                path="vehicle-incident-reports"
+                element={<VehicleIncidentReports />}
+              />
+              <Route path="vehicle-leasing" element={<VehicleLeasing />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

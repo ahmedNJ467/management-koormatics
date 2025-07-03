@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Navigation,
   Mail,
+  Shield,
+  CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -34,6 +36,16 @@ const navigationGroups = [
       { name: "Maintenance", href: "/maintenance", icon: Wrench },
       { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
       { name: "Spare Parts", href: "/spare-parts", icon: Package },
+      {
+        name: "Vehicle Inspections",
+        href: "/vehicle-inspections",
+        icon: FileText,
+      },
+      {
+        name: "Incident Reports",
+        href: "/vehicle-incident-reports",
+        icon: Shield,
+      },
     ],
   },
   {
@@ -41,6 +53,7 @@ const navigationGroups = [
     items: [
       { name: "Dispatch", href: "/dispatch", icon: Navigation },
       { name: "Trips", href: "/trips", icon: Calendar },
+      { name: "Vehicle Leasing", href: "/vehicle-leasing", icon: CreditCard },
       { name: "Clients", href: "/clients", icon: Users2 },
       { name: "Contracts", href: "/contracts", icon: File },
       { name: "Quotations", href: "/quotations", icon: FileText },

@@ -16,6 +16,7 @@ interface DispatchBoardProps {
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
   onAssignVehicle: (trip: DisplayTrip) => void;
+  onAssignEscort?: (trip: DisplayTrip) => void;
   onGenerateInvoice: (trip: DisplayTrip) => void;
 }
 
@@ -28,6 +29,7 @@ export function DispatchBoard({
   onCompleteTrip,
   onUpdateStatus,
   onAssignVehicle,
+  onAssignEscort,
   onGenerateInvoice,
 }: DispatchBoardProps) {
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -111,6 +113,7 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignVehicle={onAssignVehicle}
+                  onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
@@ -122,6 +125,7 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignVehicle={onAssignVehicle}
+                  onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
@@ -133,6 +137,7 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignVehicle={onAssignVehicle}
+                  onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
@@ -144,6 +149,7 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignVehicle={onAssignVehicle}
+                  onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
@@ -158,7 +164,14 @@ export function DispatchBoard({
             <CardTitle className="text-card-foreground">Availability</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <DriverStatus drivers={drivers} vehicles={vehicles} trips={trips} />
+            <DriverStatus
+              key={`${trips.length}-${
+                trips.filter((t) => t.status === "cancelled").length
+              }`}
+              drivers={drivers}
+              vehicles={vehicles}
+              trips={trips}
+            />
           </CardContent>
         </Card>
       </div>

@@ -9,13 +9,27 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DisplayTrip } from "@/lib/types/trip";
+import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
 import { TripStatusSelect } from "@/components/trips/TripStatusSelect";
 import { FlightDetailsFields } from "@/components/trips/FlightDetailsFields";
 import { RecurringTripFields } from "@/components/trips/RecurringTripFields";
+import { ConvoyTripForm } from "@/components/trips/convoy/ConvoyTripForm";
 import { serviceTypeMap } from "@/components/trips/trip-operations";
-import { FormField, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormField,
+  FormControl,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { format, parseISO } from "date-fns";
@@ -36,32 +50,41 @@ interface TripFormProps {
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }
 
-export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }: TripFormProps) {
+export function TripForm({
+  clients,
+  vehicles,
+  drivers,
+  editTrip,
+  handleSubmit,
+}: TripFormProps) {
   const [selectedClient, setSelectedClient] = useState<string>("");
-  const [selectedClientType, setSelectedClientType] = useState<"organization" | "individual" | undefined>(undefined);
+  const [selectedClientType, setSelectedClientType] = useState<
+    "organization" | "individual" | undefined
+  >(undefined);
   const [serviceType, setServiceType] = useState("airport_pickup");
-  
+
   const methods = useForm();
   const { register, watch, setValue, reset, control } = methods;
-  
+
   const isRecurring = watch("is_recurring");
   const watchServiceType = watch("service_type");
   const watchClientId = watch("client_id");
-  
+
   // Function to get client type
   const getClientType = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId);
     return client?.type;
   };
-  
+
   // Initialize service type based on trip type if editing
   useEffect(() => {
     if (editTrip) {
       // Find the UI service type from the DB service type
-      const uiServiceType = reverseServiceTypeMap[editTrip.type] || editTrip.type;
+      const uiServiceType =
+        reverseServiceTypeMap[editTrip.type] || editTrip.type;
       setValue("service_type", uiServiceType);
       setServiceType(uiServiceType);
-      
+
       // Set all other form fields
       setValue("client_id", editTrip.client_id);
       setValue("vehicle_id", editTrip.vehicle_id);
@@ -74,42 +97,56 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
       setValue("special_notes", editTrip.notes || "");
       setValue("is_recurring", editTrip.is_recurring || false);
       setValue("status", editTrip.status);
-      
+
       // Set flight details if available
-      if (editTrip.flight_number) setValue("flight_number", editTrip.flight_number);
+      if (editTrip.flight_number)
+        setValue("flight_number", editTrip.flight_number);
       if (editTrip.airline) setValue("airline", editTrip.airline);
       if (editTrip.terminal) setValue("terminal", editTrip.terminal);
-      
+
       // Set passenger data if available for organization clients
       if (editTrip.passengers && editTrip.passengers.length > 0) {
-        setValue("passengers", editTrip.passengers.join('\n'));
+        setValue("passengers", editTrip.passengers.join("\n"));
       }
-      
+
       // Set selected client and type
       setSelectedClient(editTrip.client_id);
-      setSelectedClientType(getClientType(editTrip.client_id) as "organization" | "individual" | undefined);
+      setSelectedClientType(
+        getClientType(editTrip.client_id) as
+          | "organization"
+          | "individual"
+          | undefined
+      );
     }
   }, [editTrip, setValue]);
-  
+
   // Update client type when client changes
   useEffect(() => {
     if (watchClientId) {
       const clientType = getClientType(watchClientId);
       setSelectedClient(watchClientId);
-      setSelectedClientType(clientType as "organization" | "individual" | undefined);
+      setSelectedClientType(
+        clientType as "organization" | "individual" | undefined
+      );
     }
   }, [watchClientId, clients]);
-  
+
   // Update service type when it changes
   useEffect(() => {
     if (watchServiceType) {
       setServiceType(watchServiceType);
     }
   }, [watchServiceType]);
-  
-  const isAirportService = serviceType === "airport_pickup" || serviceType === "airport_dropoff";
-  const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(serviceType);
-  
+
+  const isAirportService =
+    serviceType === "airport_pickup" || serviceType === "airport_dropoff";
+  const needsReturnTime = [
+    "round_trip",
+    "security_escort",
+    "full_day_hire",
+  ].includes(serviceType);
+  const isConvoyService = serviceType === "convoy";
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -133,7 +170,7 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="vehicle_id">Vehicle</Label>
             <Select
@@ -152,7 +189,7 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="driver_id">Driver</Label>
             <Select
@@ -172,18 +209,22 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
             </Select>
           </div>
         </div>
-        
+
         <Separator />
-        
+
         {/* Trip Details */}
         <div className="space-y-4">
           <h3 className="font-medium">Trip Details</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="service_type">Service Type</Label>
               <Select
-                defaultValue={editTrip?.type ? (reverseServiceTypeMap[editTrip.type] || editTrip.type) : "airport_pickup"}
+                defaultValue={
+                  editTrip?.type
+                    ? reverseServiceTypeMap[editTrip.type] || editTrip.type
+                    : "airport_pickup"
+                }
                 onValueChange={(value) => setValue("service_type", value)}
               >
                 <SelectTrigger id="service_type">
@@ -192,13 +233,16 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
                 <SelectContent>
                   {serviceTypeOptions.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {tripTypeDisplayMap[type] ||
+                        type
+                          .replace(/_/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
             <FormField
               control={control}
               name="date"
@@ -208,14 +252,16 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
                   <FormControl>
                     <DatePicker
                       date={field.value ? parseISO(field.value) : undefined}
-                      onDateChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                      onDateChange={(date) =>
+                        field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                      }
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={control}
               name="time"
@@ -223,16 +269,13 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
                 <FormItem className="space-y-2">
                   <FormLabel>Time</FormLabel>
                   <FormControl>
-                    <TimePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
+                    <TimePicker value={field.value} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             {needsReturnTime && (
               <FormField
                 control={control}
@@ -252,7 +295,7 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
               />
             )}
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="pickup_location">Pickup Location</Label>
@@ -274,10 +317,18 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
             </div>
           </div>
         </div>
-        
+
         {/* Flight Details for Airport Services */}
         {isAirportService && <FlightDetailsFields />}
-        
+
+        {/* Convoy Details for Convoy Service */}
+        {isConvoyService && (
+          <div className="space-y-4">
+            <h3 className="font-medium">Convoy Configuration</h3>
+            <ConvoyTripForm />
+          </div>
+        )}
+
         {/* Passenger Information for Organization Clients */}
         {selectedClientType === "organization" && (
           <div className="space-y-4">
@@ -296,7 +347,7 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
             </div>
           </div>
         )}
-        
+
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="special_notes">Special Notes</Label>
@@ -308,15 +359,15 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
             />
           </div>
         </div>
-        
+
         {/* Status Selection for Editing */}
         {editTrip && (
-          <TripStatusSelect 
-            status={watch("status") || editTrip.status || "scheduled"} 
-            onChange={(value) => setValue("status", value)} 
+          <TripStatusSelect
+            status={watch("status") || editTrip.status || "scheduled"}
+            onChange={(value) => setValue("status", value)}
           />
         )}
-        
+
         {/* Recurring Trip Options */}
         {!editTrip && (
           <div className="space-y-4">
@@ -332,13 +383,13 @@ export function TripForm({ clients, vehicles, drivers, editTrip, handleSubmit }:
                 This is a recurring trip
               </Label>
             </div>
-            
+
             {isRecurring && <RecurringTripFields />}
           </div>
         )}
-        
+
         <Separator />
-        
+
         <div className="flex justify-end space-x-2">
           <Button type="submit">
             {editTrip ? "Update Trip" : "Book Trip"}

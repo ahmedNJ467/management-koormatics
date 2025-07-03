@@ -1,18 +1,19 @@
-
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { DisplayTrip } from "@/lib/types/trip";
+import { UIServiceType } from "./types";
 
 interface LocationFieldsProps {
   editTrip: DisplayTrip | null;
+  serviceType?: UIServiceType;
 }
 
-export function LocationFields({ editTrip }: LocationFieldsProps) {
+export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
   return (
     <div className="grid grid-cols-1 gap-4">
       <div className="space-y-2">
         <Label htmlFor="pickup_location">Pickup Location</Label>
-        <Input 
+        <Input
           id="pickup_location"
           name="pickup_location"
           placeholder="Enter pickup location"
@@ -22,7 +23,7 @@ export function LocationFields({ editTrip }: LocationFieldsProps) {
 
       <div className="space-y-2">
         <Label htmlFor="dropoff_location">Dropoff Location</Label>
-        <Input 
+        <Input
           id="dropoff_location"
           name="dropoff_location"
           placeholder="Enter dropoff location"

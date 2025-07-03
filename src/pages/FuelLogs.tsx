@@ -64,6 +64,7 @@ import {
   getTankFills,
   getTankDispensed,
   addTankFill,
+  broadcastTankUpdate,
 } from "@/components/fuel-log-form/services/fuel-log-service";
 import {
   Dialog,
@@ -237,9 +238,14 @@ export default function FuelLogs() {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ["fuel-logs"] });
+
+      // Broadcast tank update to refresh tank progress
+      broadcastTankUpdate();
+
       toast({
         title: "Fuel log deleted",
-        description: "The fuel log has been deleted successfully.",
+        description:
+          "The fuel log has been deleted successfully. Tank levels updated.",
       });
     } catch (error) {
       console.error("Error:", error);
@@ -351,8 +357,9 @@ export default function FuelLogs() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [allTankFills, setAllTankFills] = useState([]);
 
-  useEffect(() => {
-    async function fetchTankData() {
+  // Function to fetch and update tank data
+  const fetchTankData = async () => {
+    try {
       const tanks = await getFuelTanks();
       setTanks(tanks);
       const stats = {};
@@ -379,8 +386,27 @@ export default function FuelLogs() {
 
       setTankStats(stats);
       setAllTankFills(allFills);
+    } catch (error) {
+      console.error("Error fetching tank data:", error);
     }
+  };
+
+  useEffect(() => {
     fetchTankData();
+  }, []);
+
+  // Listen for tank update events from fuel log form
+  useEffect(() => {
+    const handleTankUpdate = () => {
+      console.log("Tank update event received, refreshing tank data...");
+      fetchTankData();
+    };
+
+    window.addEventListener("tankDataUpdate", handleTankUpdate);
+
+    return () => {
+      window.removeEventListener("tankDataUpdate", handleTankUpdate);
+    };
   }, []);
 
   useEffect(() => {

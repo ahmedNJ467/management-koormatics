@@ -1,10 +1,10 @@
-
 import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -23,28 +23,38 @@ interface VehicleDetailsDialogProps {
 export function VehicleDetailsDialog({
   selectedVehicle,
   onClose,
-  onDelete
+  onDelete,
 }: VehicleDetailsDialogProps) {
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"view" | "edit">("view");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleNextImage = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedVehicle?.vehicle_images) return;
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === selectedVehicle.vehicle_images.length - 1 ? 0 : prevIndex + 1
-    );
-  }, [selectedVehicle]);
+  const handleNextImage = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!selectedVehicle?.vehicle_images) return;
+      setCurrentImageIndex((prevIndex) =>
+        prevIndex === selectedVehicle.vehicle_images.length - 1
+          ? 0
+          : prevIndex + 1
+      );
+    },
+    [selectedVehicle]
+  );
 
-  const handlePrevImage = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedVehicle?.vehicle_images) return;
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === 0 ? selectedVehicle.vehicle_images.length - 1 : prevIndex - 1
-    );
-  }, [selectedVehicle]);
+  const handlePrevImage = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!selectedVehicle?.vehicle_images) return;
+      setCurrentImageIndex((prevIndex) =>
+        prevIndex === 0
+          ? selectedVehicle.vehicle_images.length - 1
+          : prevIndex - 1
+      );
+    },
+    [selectedVehicle]
+  );
 
   const selectThumbnail = useCallback((index: number) => {
     setCurrentImageIndex(index);
@@ -52,7 +62,7 @@ export function VehicleDetailsDialog({
 
   const handleEditComplete = useCallback(() => {
     setViewMode("view");
-    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
   }, [queryClient]);
 
   const handleClose = useCallback(() => {
@@ -84,10 +94,13 @@ export function VehicleDetailsDialog({
             <DialogTitle className="pr-10">
               Vehicle Details - {formatVehicleId(selectedVehicle.id)}
             </DialogTitle>
+            <DialogDescription>
+              View and manage vehicle information, images, and details.
+            </DialogDescription>
           </DialogHeader>
 
           {viewMode === "view" && (
-            <VehicleDetailsContent 
+            <VehicleDetailsContent
               selectedVehicle={selectedVehicle}
               currentImageIndex={currentImageIndex}
               handlePrevImage={handlePrevImage}
@@ -129,18 +142,19 @@ export function VehicleDetailsDialog({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Vehicle</DialogTitle>
+            <DialogDescription>
+              Confirm vehicle deletion - this action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
           <p className="text-muted-foreground">
-            Are you sure you want to delete this vehicle? This action cannot be undone.
+            Are you sure you want to delete this vehicle? This action cannot be
+            undone.
           </p>
           <div className="flex justify-end space-x-4 mt-4">
             <Button variant="outline" onClick={handleDeleteCancel}>
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteExecute}
-            >
+            <Button variant="destructive" onClick={handleDeleteExecute}>
               Delete
             </Button>
           </div>

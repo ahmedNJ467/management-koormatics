@@ -1107,7 +1107,12 @@ export type Database = {
           date: string;
           driver_id: string | null;
           dropoff_location: string | null;
+          escort_assigned_at: string | null;
+          escort_count: number | null;
+          escort_status: string | null;
+          escort_vehicle_ids: Json | null;
           flight_number: string | null;
+          has_security_escort: boolean | null;
           id: string;
           invitation_documents: Json | null;
           invoice_id: string | null;
@@ -1134,7 +1139,12 @@ export type Database = {
           date: string;
           driver_id?: string | null;
           dropoff_location?: string | null;
+          escort_assigned_at?: string | null;
+          escort_count?: number | null;
+          escort_status?: string | null;
+          escort_vehicle_ids?: Json | null;
           flight_number?: string | null;
+          has_security_escort?: boolean | null;
           id?: string;
           invitation_documents?: Json | null;
           invoice_id?: string | null;
@@ -1161,7 +1171,12 @@ export type Database = {
           date?: string;
           driver_id?: string | null;
           dropoff_location?: string | null;
+          escort_assigned_at?: string | null;
+          escort_count?: number | null;
+          escort_status?: string | null;
+          escort_vehicle_ids?: Json | null;
           flight_number?: string | null;
+          has_security_escort?: boolean | null;
           id?: string;
           invitation_documents?: Json | null;
           invoice_id?: string | null;
@@ -1247,8 +1262,11 @@ export type Database = {
         Row: {
           color: string | null;
           created_at: string | null;
+          escort_assigned_at: string | null;
+          escort_trip_id: string | null;
           id: string;
           insurance_expiry: string | null;
+          is_escort_assigned: boolean | null;
           make: string;
           model: string;
           notes: string | null;
@@ -1262,8 +1280,11 @@ export type Database = {
         Insert: {
           color?: string | null;
           created_at?: string | null;
+          escort_assigned_at?: string | null;
+          escort_trip_id?: string | null;
           id?: string;
           insurance_expiry?: string | null;
+          is_escort_assigned?: boolean | null;
           make: string;
           model: string;
           notes?: string | null;
@@ -1277,8 +1298,11 @@ export type Database = {
         Update: {
           color?: string | null;
           created_at?: string | null;
+          escort_assigned_at?: string | null;
+          escort_trip_id?: string | null;
           id?: string;
           insurance_expiry?: string | null;
+          is_escort_assigned?: boolean | null;
           make?: string;
           model?: string;
           notes?: string | null;

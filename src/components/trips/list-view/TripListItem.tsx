@@ -1,18 +1,25 @@
-
 import { format } from "date-fns";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { 
-  FileText, MoreHorizontal, MapPin, ArrowRight, Users
+import {
+  FileText,
+  MoreHorizontal,
+  MapPin,
+  ArrowRight,
+  Users,
 } from "lucide-react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { TripTypeIcon } from "../TripTypeIcon";
 import { parsePassengers } from "../utils";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { TripItemActions } from "./TripItemActions";
 import { OverdueIndicator } from "../../dispatch/OverdueIndicator";
@@ -59,36 +66,42 @@ export const getStatusColor = (status: TripStatus): string => {
 
 export const formatStatus = (status: TripStatus): string => {
   if (!status) return "Unknown";
-  return status.replace(/_/g, " ")
+  return status
+    .replace(/_/g, " ")
     .split(" ")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
 
 // Format trip type for display
-export const formatTripType = (type: string, uiServiceType?: string): string => {
+export const formatTripType = (
+  type: string,
+  uiServiceType?: string,
+  notes?: string
+): string => {
   if (!type) return "Unknown";
-  
+
   if (uiServiceType) {
     // Custom labels for UI service types
     const labels: Record<string, string> = {
-      "airport_pickup": "Airport Pickup",
-      "airport_dropoff": "Airport Dropoff",
-      "round_trip": "Round Trip",
-      "security_escort": "Security Escort",
-      "one_way": "One Way Transfer",
-      "full_day_hire": "Full Day Hire"
+      airport_pickup: "Airport Pickup",
+      airport_dropoff: "Airport Dropoff",
+      round_trip: "Round Trip",
+      one_way: "One Way Transfer",
+      full_day_hire: "Full Day Hire",
+      half_day: "Half Day",
     };
-    
+
     if (uiServiceType in labels) {
       return labels[uiServiceType];
     }
   }
-  
+
   // Fallback
-  return type.replace(/_/g, " ")
+  return type
+    .replace(/_/g, " ")
     .split(" ")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
 
@@ -119,26 +132,32 @@ export function TripListItem({
   setAssignVehicleOpen,
   setTripToDelete,
   setDeleteDialogOpen,
-  updateTripStatus
+  updateTripStatus,
 }: TripListItemProps) {
   // Get passengers from both the dedicated passengers array and notes
-  const passengersFromArray = Array.isArray(trip.passengers) ? trip.passengers : [];
+  const passengersFromArray = Array.isArray(trip.passengers)
+    ? trip.passengers
+    : [];
   const passengersFromNotes = parsePassengers(trip.notes);
-  
+
   // Combine both sources, remove duplicates
-  const allPassengers = [...new Set([...passengersFromArray, ...passengersFromNotes])];
+  const allPassengers = [
+    ...new Set([...passengersFromArray, ...passengersFromNotes]),
+  ];
   const hasPassengers = allPassengers.length > 0;
 
   return (
     <TableRow key={trip.id} className="group">
-      <TableCell className="font-medium">
-        {formatTripId(trip.id)}
-      </TableCell>
+      <TableCell className="font-medium">{formatTripId(trip.id)}</TableCell>
       <TableCell>
         <div className="font-medium">{formatDate(trip.date)}</div>
-        <div className="text-sm text-muted-foreground">{formatTime(trip.time)}</div>
+        <div className="text-sm text-muted-foreground">
+          {formatTime(trip.time)}
+        </div>
         {trip.return_time && (
-          <div className="text-xs text-muted-foreground">Return: {formatTime(trip.return_time)}</div>
+          <div className="text-xs text-muted-foreground">
+            Return: {formatTime(trip.return_time)}
+          </div>
         )}
         <OverdueIndicator trip={trip} className="mt-1" />
       </TableCell>
@@ -146,19 +165,21 @@ export function TripListItem({
         <div className="font-medium">{trip.client_name}</div>
         {trip.client_type === "organization" && (
           <div className="flex flex-col gap-1">
-            <Badge variant="outline" className="text-xs">Organization</Badge>
+            <Badge variant="outline" className="text-xs">
+              Organization
+            </Badge>
             {hasPassengers && (
               <div className="mt-1 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
                   {allPassengers.length === 1 ? (
                     <span title={allPassengers[0]}>
-                      {allPassengers[0].length > 15 
-                        ? `${allPassengers[0].substring(0, 15)}...` 
+                      {allPassengers[0].length > 15
+                        ? `${allPassengers[0].substring(0, 15)}...`
                         : allPassengers[0]}
                     </span>
                   ) : (
-                    <span title={allPassengers.join(', ')}>
+                    <span title={allPassengers.join(", ")}>
                       {allPassengers.length} passengers
                     </span>
                   )}
@@ -166,12 +187,21 @@ export function TripListItem({
                 {allPassengers.length > 1 && (
                   <div className="mt-1 text-xs text-muted-foreground ml-4">
                     {allPassengers.slice(0, 2).map((passenger, i) => (
-                      <div key={i} className="truncate max-w-[120px]" title={passenger}>
-                        - {passenger.length > 15 ? `${passenger.substring(0, 15)}...` : passenger}
+                      <div
+                        key={i}
+                        className="truncate max-w-[120px]"
+                        title={passenger}
+                      >
+                        -{" "}
+                        {passenger.length > 15
+                          ? `${passenger.substring(0, 15)}...`
+                          : passenger}
                       </div>
                     ))}
                     {allPassengers.length > 2 && (
-                      <div className="text-xs italic">+ {allPassengers.length - 2} more</div>
+                      <div className="text-xs italic">
+                        + {allPassengers.length - 2} more
+                      </div>
                     )}
                   </div>
                 )}
@@ -183,7 +213,7 @@ export function TripListItem({
       <TableCell>
         <div className="flex items-center gap-1">
           <TripTypeIcon type={trip.type} />
-          {formatTripType(trip.type, trip.ui_service_type)} 
+          {formatTripType(trip.type, trip.ui_service_type, trip.notes)}
         </div>
       </TableCell>
       <TableCell className="max-w-[200px]">
@@ -207,7 +237,7 @@ export function TripListItem({
               <AvatarImage src={trip.driver_avatar} alt={trip.driver_name} />
             ) : (
               <AvatarFallback className="bg-primary/10 text-primary">
-                {trip.driver_name?.charAt(0) || 'D'}
+                {trip.driver_name?.charAt(0) || "D"}
               </AvatarFallback>
             )}
           </Avatar>
@@ -228,15 +258,11 @@ export function TripListItem({
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setViewTrip(trip)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setViewTrip(trip)}>
             <FileText className="h-4 w-4" />
             <span className="sr-only">View details</span>
           </Button>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -245,7 +271,7 @@ export function TripListItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <TripItemActions 
+              <TripItemActions
                 trip={trip}
                 setViewTrip={setViewTrip}
                 setEditTrip={setEditTrip}

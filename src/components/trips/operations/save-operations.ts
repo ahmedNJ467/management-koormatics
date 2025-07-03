@@ -31,6 +31,7 @@ export const handleSaveTrip = async (
   const formData = new FormData(form);
 
   const uiServiceType = formData.get("service_type") as string;
+
   const tripType: TripType = (serviceTypeMap[uiServiceType] ||
     "other") as TripType;
   const dbServiceType: DbServiceType = mapTripTypeToDbServiceType(tripType);
@@ -38,11 +39,9 @@ export const handleSaveTrip = async (
 
   const timeValue = formData.get("time") as string;
   const returnTimeValue = formData.get("return_time") as string;
-  const needsReturnTime = [
-    "round_trip",
-    "security_escort",
-    "full_day_hire",
-  ].includes(uiServiceType);
+  const needsReturnTime = ["round_trip", "full_day_hire"].includes(
+    uiServiceType
+  );
 
   const flightNumber =
     uiServiceType === "airport_pickup" || uiServiceType === "airport_dropoff"
@@ -113,8 +112,25 @@ export const handleSaveTrip = async (
     | "soft_skin"
     | null;
 
+  // Get security escort fields
+  console.log("FormData security escort values:", {
+    has_security_escort: formData.get("has_security_escort"),
+    escort_count: formData.get("escort_count"),
+  });
+
+  const hasSecurityEscort = formData.get("has_security_escort") === "true";
+  const escortCount = hasSecurityEscort
+    ? parseInt(formData.get("escort_count") as string) || 1
+    : 0;
+
   console.log("Saving trip with client type:", clientType);
   console.log("Saving trip with passengers:", passengers);
+  console.log(
+    "Saving trip with security escort:",
+    hasSecurityEscort,
+    "count:",
+    escortCount
+  );
 
   try {
     if (editTrip) {
@@ -141,6 +157,8 @@ export const handleSaveTrip = async (
             passportDocuments.length > 0 ? passportDocuments : null,
           invitation_documents:
             invitationDocuments.length > 0 ? invitationDocuments : null,
+          has_security_escort: hasSecurityEscort,
+          escort_count: escortCount,
         })
         .eq("id", editTrip.id);
 
@@ -190,6 +208,8 @@ export const handleSaveTrip = async (
         trip.vehicle_id = null;
         trip.time = timeValue || null;
         trip.return_time = needsReturnTime ? returnTimeValue || null : null;
+        trip.has_security_escort = hasSecurityEscort;
+        trip.escort_count = escortCount;
       });
 
       const { data, error } = await supabase
@@ -237,6 +257,8 @@ export const handleSaveTrip = async (
         vehicle_type: vehicleType,
         driver_id: null,
         vehicle_id: null,
+        has_security_escort: hasSecurityEscort,
+        escort_count: escortCount,
       };
 
       const { data, error } = await supabase
@@ -270,6 +292,7 @@ export const handleSaveTrip = async (
     }
 
     queryClient.invalidateQueries({ queryKey: ["trips"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
   } catch (error) {
     console.error("Error saving trip:", error);
     toast({

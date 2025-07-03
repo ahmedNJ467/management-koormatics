@@ -8,6 +8,7 @@ import { VehicleStatusField } from "./vehicle-status-field";
 import { VehicleNotesField } from "./vehicle-notes-field";
 import { VehicleImagesField } from "./vehicle-images-field";
 import { VehicleFormActions } from "./vehicle-form-actions";
+import { VehicleFuelTypeField } from "./vehicle-fuel-type-field";
 import { Separator } from "@/components/ui/separator";
 
 interface VehicleFormProps {
@@ -40,6 +41,7 @@ export function VehicleForm({
       model: vehicle?.model || "",
       registration: vehicle?.registration || "",
       status: vehicle?.status || "active",
+      fuel_type: vehicle?.fuel_type || "petrol",
       year: vehicle?.year,
       color: vehicle?.color || "",
       vin: vehicle?.vin || "",
@@ -70,6 +72,7 @@ export function VehicleForm({
           <h3 className="text-lg font-semibold mb-2">Basic Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <VehicleTypeField form={form} />
+            <VehicleFuelTypeField form={form} />
             <VehicleBasicInfoFields form={form} />
           </div>
         </div>
@@ -90,6 +93,7 @@ export function VehicleForm({
             <VehicleNotesField form={form} />
           </div>
         </div>
+        <Separator />
         <VehicleFormActions
           onCancel={onCancel}
           isSubmitting={isSubmitting}

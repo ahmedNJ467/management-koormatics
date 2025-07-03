@@ -2,28 +2,35 @@ import { Trip, DisplayTrip } from "@/lib/types/trip";
 import { UIServiceType } from "./types";
 
 // Mapping between UI service types and display strings
-export const serviceTypeMap: { [key: string]: string } = {
+export const serviceTypeDisplayMap: { [key: string]: string } = {
   airport_pickup: "Airport Pickup",
   airport_dropoff: "Airport Dropoff",
   round_trip: "Round Trip",
-  security_escort: "Security Escort",
   one_way: "One Way Transfer",
   full_day_hire: "Full Day Hire",
+  half_day: "Half Day",
 };
 
-export function prepareFormData(formData: FormData, selectedClientType: string, passengers: string[]) {
+export function prepareFormData(
+  formData: FormData,
+  selectedClientType: string,
+  passengers: string[]
+) {
   // Convert amount to number
   const amountValue = formData.get("amount") as string;
   if (amountValue) {
     const numericAmount = parseFloat(amountValue);
-    formData.set("amount", isNaN(numericAmount) ? "0" : numericAmount.toString());
+    formData.set(
+      "amount",
+      isNaN(numericAmount) ? "0" : numericAmount.toString()
+    );
   }
-  
+
   // Handle passengers for organization clients
   if (selectedClientType === "organization") {
     // Clean up passengers list (remove empty entries)
-    const cleanPassengers = passengers.filter(p => p.trim());
-    
+    const cleanPassengers = passengers.filter((p) => p.trim());
+
     // Store passengers as JSON string in the form data
     if (cleanPassengers.length > 0) {
       formData.set("passengers", JSON.stringify(cleanPassengers));
@@ -40,12 +47,12 @@ export function formatUIServiceType(trip: DisplayTrip | Trip): UIServiceType {
       return "airport_dropoff";
     case "round_trip":
       return "round_trip";
-    case "security_escort":
-      return "security_escort";
     case "one_way_transfer":
       return "one_way";
     case "full_day":
       return "full_day_hire";
+    case "half_day":
+      return "half_day";
     default:
       return "airport_pickup";
   }

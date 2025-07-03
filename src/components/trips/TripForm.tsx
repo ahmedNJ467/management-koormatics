@@ -6,14 +6,20 @@ import { DocumentUploads } from "./form/DocumentUploads";
 import { FlightDetails } from "./form/FlightDetails";
 import { RecurringTripFields } from "./form/RecurringTripFields";
 import { TripStatusField } from "./form/TripStatusField";
-import { ClientVehicleDriverSelects } from "./form/ClientVehicleDriverSelects";
+import { ClientServiceSelects } from "./form/ClientServiceSelects";
 import { LocationFields } from "./form/LocationFields";
 import { DateTimeFields } from "./form/DateTimeFields";
 import { NotesField } from "./form/NotesField";
 import { FormFooter } from "./form/FormFooter";
 import { AmountField } from "./form/AmountField";
+import { SecurityEscortToggle } from "./form/SecurityEscortToggle";
 import { formatUIServiceType } from "./form/utils";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -21,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MapPin, Clock } from "lucide-react";
 import { VehicleType } from "@/lib/types";
 
 export function TripForm({
@@ -48,6 +55,8 @@ export function TripForm({
   const [selectedTime, setSelectedTime] = useState<string>(
     editTrip?.time || ""
   );
+  const [hasSecurityEscort, setHasSecurityEscort] = useState<boolean>(false);
+  const [escortCount, setEscortCount] = useState<number>(1);
 
   useEffect(() => {
     if (editTrip) {
@@ -58,10 +67,10 @@ export function TripForm({
       setSelectedClientId(editTrip.client_id);
       setSelectedDate(editTrip.date);
       setSelectedTime(editTrip.time || "");
-      
+
       const clientType = editTrip.client_type || "individual";
       setSelectedClientType(clientType);
-      
+
       if (clientType === "organization") {
         // Get passengers from both dedicated passengers array and notes
         const extractedPassengers = editTrip.notes
@@ -70,33 +79,39 @@ export function TripForm({
         const arrayPassengers = Array.isArray(editTrip.passengers)
           ? editTrip.passengers
           : [];
-        
+
         // Combine both sources and remove duplicates
         const allPassengers = [
           ...new Set([...arrayPassengers, ...extractedPassengers]),
         ];
-        
+
         setPassengers(allPassengers.length > 0 ? allPassengers : [""]);
       } else {
         setPassengers([""]);
       }
+
+      // Initialize security escort from editTrip data
+      setHasSecurityEscort(editTrip.has_security_escort || false);
+      setEscortCount(editTrip.escort_count || 1);
     } else {
       setServiceType("airport_pickup");
       setSelectedClientId("");
       setSelectedClientType("");
       setPassengers([""]);
+      setHasSecurityEscort(false);
+      setEscortCount(1);
     }
   }, [editTrip]);
 
   const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId);
-    
+
     if (!clientId) {
       setSelectedClientType("");
       setPassengers([""]);
       return;
     }
-    
+
     const selectedClient = clients?.find((client) => client.id === clientId);
     if (selectedClient) {
       setSelectedClientType(selectedClient.type || "individual");
@@ -153,6 +168,16 @@ export function TripForm({
           name="passengers"
           value={JSON.stringify(validPassengers)}
         />
+        <input
+          type="hidden"
+          name="has_security_escort"
+          value={hasSecurityEscort.toString()}
+        />
+        <input
+          type="hidden"
+          name="escort_count"
+          value={escortCount.toString()}
+        />
         {editTrip && (
           <input
             type="hidden"
@@ -160,8 +185,8 @@ export function TripForm({
             value={editTrip.vehicle_type || ""}
           />
         )}
-        
-        <ClientVehicleDriverSelects
+
+        <ClientServiceSelects
           clients={clients}
           editTrip={editTrip}
           selectedClientId={selectedClientId}
@@ -169,7 +194,7 @@ export function TripForm({
           handleClientChange={handleClientChange}
           setServiceType={setServiceType}
         />
-        
+
         {!editTrip && (
           <div className="space-y-2">
             <Label htmlFor="vehicle_type">Vehicle Type</Label>
@@ -185,33 +210,40 @@ export function TripForm({
           </div>
         )}
 
-          <PassengerManagement
-            passengers={passengers}
-            setPassengers={setPassengers}
-            newPassenger={newPassenger}
-            setNewPassenger={setNewPassenger}
-            addPassenger={addPassenger}
-            updatePassenger={updatePassenger}
-            removePassenger={removePassenger}
-            handleKeyDown={handleKeyDown}
-          />
+        <SecurityEscortToggle
+          hasSecurityEscort={hasSecurityEscort}
+          setHasSecurityEscort={setHasSecurityEscort}
+          escortCount={escortCount}
+          setEscortCount={setEscortCount}
+        />
+
+        <PassengerManagement
+          passengers={passengers}
+          setPassengers={setPassengers}
+          newPassenger={newPassenger}
+          setNewPassenger={setNewPassenger}
+          addPassenger={addPassenger}
+          updatePassenger={updatePassenger}
+          removePassenger={removePassenger}
+          handleKeyDown={handleKeyDown}
+        />
 
         <DocumentUploads
           passengers={passengers}
-          serviceType={serviceType} 
-          editTrip={editTrip} 
+          serviceType={serviceType}
+          editTrip={editTrip}
         />
 
         <FlightDetails serviceType={serviceType} editTrip={editTrip} />
 
-        <DateTimeFields 
-          editTrip={editTrip} 
+        <DateTimeFields
+          editTrip={editTrip}
           serviceType={serviceType}
           onDateTimeChange={handleDateTimeChange}
         />
 
-        <LocationFields editTrip={editTrip} />
-        
+        <LocationFields editTrip={editTrip} serviceType={serviceType} />
+
         <AmountField editTrip={editTrip} />
 
         <NotesField editTrip={editTrip} />
@@ -236,16 +268,16 @@ export function TripForm({
 // Helper function to parse passengers from notes (to be moved to utils)
 function parsePassengers(notes: string): string[] {
   if (!notes) return [];
-  
+
   // This regex looks for patterns like "Passengers: John Doe, Jane Smith"
   const passengersMatch = notes.match(/Passengers?:?\s*([^.]+)/i);
-  
+
   if (passengersMatch && passengersMatch[1]) {
     return passengersMatch[1]
       .split(",")
       .map((name) => name.trim())
       .filter((name) => name.length > 0);
   }
-  
+
   return [];
 }
