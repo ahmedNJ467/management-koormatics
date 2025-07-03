@@ -242,7 +242,7 @@ export function VehicleInspectionForm({
         // Create new inspection
         const { error } = await supabase
           .from("vehicle_inspections")
-          .insert([values]);
+          .insert(values as any);
 
         if (error) throw error;
 

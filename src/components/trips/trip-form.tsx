@@ -21,7 +21,7 @@ import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
 import { TripStatusSelect } from "@/components/trips/TripStatusSelect";
 import { FlightDetailsFields } from "@/components/trips/FlightDetailsFields";
 import { RecurringTripFields } from "@/components/trips/RecurringTripFields";
-import { ConvoyTripForm } from "@/components/trips/convoy/ConvoyTripForm";
+// import { ConvoyTripForm } from "@/components/trips/convoy/ConvoyTripForm";
 import { serviceTypeMap } from "@/components/trips/trip-operations";
 import {
   FormField,
@@ -325,7 +325,8 @@ export function TripForm({
         {isConvoyService && (
           <div className="space-y-4">
             <h3 className="font-medium">Convoy Configuration</h3>
-            <ConvoyTripForm />
+            {/* <ConvoyTripForm /> */}
+            <p className="text-muted-foreground">Convoy configuration coming soon...</p>
           </div>
         )}
 

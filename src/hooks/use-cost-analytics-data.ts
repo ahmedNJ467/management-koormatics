@@ -110,7 +110,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           .select('id, amount, date, status, vehicle_id, vehicles(make, model, registration)')
           .gte('date', `${selectedYear}-01-01`)
           .lte('date', `${selectedYear}-12-31`)
-          .in('status', ['completed', 'paid']);
+          .in('status', ['completed'] as any);
         
         if (error) {
           console.error("Trips data fetch error:", error);
@@ -311,7 +311,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           .select('id, amount, date, status, vehicle_id, vehicles(make, model, registration)')
           .gte('date', `${comparisonYear}-01-01`)
           .lte('date', `${comparisonYear}-12-31`)
-          .in('status', ['completed', 'paid']);
+          .in('status', ['completed'] as any);
         
         if (error) {
           console.error("Comparison trips data fetch error:", error);

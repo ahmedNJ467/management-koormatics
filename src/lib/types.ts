@@ -1,4 +1,3 @@
-
 // This file re-exports all types from the different modules for easy import
 
 // Trip types

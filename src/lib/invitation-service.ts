@@ -91,7 +91,7 @@ export const saveInvitationLetter = async (
     const userId = await getCurrentUserId();
 
     if (!userId) {
-      toast.error("You must be logged in to save invitation letters");
+      console.error("You must be logged in to save invitation letters");
       return null;
     }
 
@@ -105,14 +105,14 @@ export const saveInvitationLetter = async (
 
     if (error) {
       console.error("Error saving invitation letter:", error);
-      toast.error("Failed to save invitation letter to database");
+      console.error("Failed to save invitation letter to database");
       return null;
     }
 
     return data;
   } catch (error) {
     console.error("Error saving invitation letter:", error);
-    toast.error("Failed to save invitation letter");
+    console.error("Failed to save invitation letter");
     return null;
   }
 };
@@ -134,7 +134,7 @@ export const getInvitationLetters = async (): Promise<InvitationLetter[]> => {
 
     if (error) {
       console.error("Error fetching invitation letters:", error);
-      toast.error("Failed to load invitation letters");
+      console.error("Failed to load invitation letters");
       return [];
     }
 
@@ -155,15 +155,15 @@ export const deleteInvitationLetter = async (id: string): Promise<boolean> => {
 
     if (error) {
       console.error("Error deleting invitation letter:", error);
-      toast.error("Failed to delete invitation letter");
+      console.error("Failed to delete invitation letter");
       return false;
     }
 
-    toast.success("Invitation letter deleted successfully");
+    console.log("Invitation letter deleted successfully");
     return true;
   } catch (error) {
     console.error("Error deleting invitation letter:", error);
-    toast.error("Failed to delete invitation letter");
+    console.error("Failed to delete invitation letter");
     return false;
   }
 };
@@ -253,7 +253,7 @@ export const migrateLocalStorageToDatabase = async (): Promise<void> => {
     }
 
     if (successCount > 0) {
-      toast.success(
+      console.log(
         `Successfully migrated ${successCount} invitation letters to database`
       );
       localStorage.removeItem("invitationLetterHistory");

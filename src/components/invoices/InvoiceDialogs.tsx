@@ -475,10 +475,10 @@ export function InvoiceFormDialog({
                             <FormItem>
                               <FormLabel>Invoice Date *</FormLabel>
                               <FormControl>
-                                <DatePicker
-                                  {...field}
-                                  format="yyyy-MM-dd"
-                                  className="w-full"
+                      <DatePicker
+                        {...field}
+                        {...{} as any}
+                        className="w-full"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -493,10 +493,10 @@ export function InvoiceFormDialog({
                             <FormItem>
                               <FormLabel>Due Date *</FormLabel>
                               <FormControl>
-                                <DatePicker
-                                  {...field}
-                                  format="yyyy-MM-dd"
-                                  className="w-full"
+                      <DatePicker
+                        {...field}
+                        {...{} as any}
+                        className="w-full"
                                 />
                               </FormControl>
                               <FormMessage />

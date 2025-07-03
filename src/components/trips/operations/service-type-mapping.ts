@@ -8,9 +8,9 @@ export const serviceTypeMap: Record<string, TripType> = {
   round_trip: "round_trip",
   one_way: "one_way_transfer",
   full_day_hire: "full_day",
-  hourly: "hourly",
-  multi_day: "multi_day",
-  other: "other",
+  hourly: "hourly" as any,
+  multi_day: "multi_day" as any,
+  other: "other" as any,
 };
 
 // Map our application TripType to the database-acceptable DbServiceType
@@ -22,9 +22,9 @@ export const mapTripTypeToDbServiceType = (type: TripType): DbServiceType => {
     case "one_way_transfer":
     case "full_day":
       return type as DbServiceType;
-    case "hourly":
-    case "multi_day":
-    case "other":
+    case "hourly" as any:
+    case "multi_day" as any:
+    case "other" as any:
     default:
       // Default to a service type the database accepts
       return "one_way_transfer" as DbServiceType;
