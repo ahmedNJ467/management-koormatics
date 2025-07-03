@@ -601,8 +601,7 @@ export function DispatchTrips({
                                       <span className="text-red-600 dark:text-red-400">
                                         Escort {index + 1}: {displayName}
                                       </span>
-                                      {vehicle?.type &&
-                                        vehicle.type !== "unknown" && (
+                                      {vehicle?.type && (
                                           <Badge
                                             variant={
                                               vehicle.type === "armoured"

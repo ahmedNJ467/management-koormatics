@@ -36,9 +36,9 @@ export function VehicleSelect({ form, vehicles }: VehicleSelectProps) {
 
     // Find the selected vehicle and auto-populate fuel_type
     const selectedVehicle = vehicles?.find((v) => v.id === vehicleId);
-    if (selectedVehicle?.fuel_type) {
+    if ((selectedVehicle as any)?.fuel_type) {
       const validFuelTypes = ["petrol", "diesel", "cng"] as const;
-      const fuelType = selectedVehicle.fuel_type.toLowerCase();
+      const fuelType = (selectedVehicle as any).fuel_type.toLowerCase();
       if (validFuelTypes.includes(fuelType as any)) {
         form.setValue("fuel_type", fuelType as "petrol" | "diesel" | "cng");
       }
@@ -65,9 +65,9 @@ export function VehicleSelect({ form, vehicles }: VehicleSelectProps) {
               {vehicles?.map((vehicle) => (
                 <SelectItem key={vehicle.id} value={vehicle.id}>
                   {vehicle.make} {vehicle.model} - {vehicle.registration}
-                  {vehicle.fuel_type && (
+                  {(vehicle as any).fuel_type && (
                     <span className="text-muted-foreground ml-2">
-                      ({vehicle.fuel_type})
+                      ({(vehicle as any).fuel_type})
                     </span>
                   )}
                 </SelectItem>

@@ -245,7 +245,7 @@ export const handleSaveTrip = async (
         pickup_location: (formData.get("pickup_location") as string) || null,
         dropoff_location: (formData.get("dropoff_location") as string) || null,
         notes: notes || null,
-        status: "scheduled",
+        status: "scheduled" as any,
         flight_number: flightNumber,
         airline: airline,
         terminal: terminal,

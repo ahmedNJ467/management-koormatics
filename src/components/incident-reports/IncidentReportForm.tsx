@@ -197,9 +197,9 @@ export function IncidentReportForm({
                 try {
                   return Object.entries(JSON.parse(report.damage_details)).map(
                     ([name, severity]) => ({
-                      id: name.toLowerCase().replace(/\s+/g, "-"),
-                      name,
-                      severity: severity as "minor" | "moderate" | "severe",
+                      id: name.toLowerCase().replace(/\s+/g, "-") || Math.random().toString(),
+                      name: name || "",
+                      severity: (severity as "minor" | "moderate" | "severe") || "minor",
                     })
                   );
                 } catch (error) {
@@ -208,7 +208,14 @@ export function IncidentReportForm({
                 }
               })()
             : [],
-          incident_images: [],
+          incident_images: [] as {
+            id: string;
+            file: any;
+            preview: string;
+            name: string;
+            size: number;
+            type: string;
+          }[],
         }
       : {
           vehicle_id: "",
@@ -233,8 +240,19 @@ export function IncidentReportForm({
           follow_up_required: false,
           follow_up_date: "",
           notes: "",
-          damage_details: [],
-          incident_images: [],
+          damage_details: [] as {
+            id: string;
+            name: string;
+            severity: "minor" | "moderate" | "severe";
+          }[],
+          incident_images: [] as {
+            id: string;
+            file: any;
+            preview: string;
+            name: string;
+            size: number;
+            type: string;
+          }[],
         },
   });
 
@@ -246,15 +264,26 @@ export function IncidentReportForm({
       const { incident_images, damage_details, ...formValues } = values;
 
       const cleanedValues = {
-        ...formValues,
+        vehicle_id: values.vehicle_id,
         driver_id: values.driver_id === "none" ? null : values.driver_id,
+        incident_date: values.incident_date,
         incident_time: values.incident_time || null,
+        incident_type: values.incident_type,
+        severity: values.severity,
+        status: values.status,
+        location: values.location,
+        description: values.description,
+        injuries_reported: values.injuries_reported,
         police_report_number: values.police_report_number || null,
         insurance_claim_number: values.insurance_claim_number || null,
         estimated_damage_cost: values.estimated_damage_cost || null,
         actual_repair_cost: values.actual_repair_cost || null,
+        third_party_involved: values.third_party_involved,
         third_party_details: values.third_party_details || null,
         witness_details: values.witness_details || null,
+        photos_attached: values.photos_attached,
+        reported_by: values.reported_by,
+        follow_up_required: values.follow_up_required,
         follow_up_date: values.follow_up_date || null,
         notes: values.notes || null,
         damage_details:
@@ -811,7 +840,11 @@ export function IncidentReportForm({
           render={({ field }) => (
             <FormItem>
               <CarDamageSelector
-                value={field.value || []}
+                value={(field.value || []).map(part => ({
+                  id: part.id || Math.random().toString(),
+                  name: part.name || "",
+                  severity: part.severity || "minor"
+                }))}
                 onChange={field.onChange}
               />
               <FormMessage />
@@ -826,7 +859,14 @@ export function IncidentReportForm({
           render={({ field }) => (
             <FormItem>
               <ImageUpload
-                value={field.value || []}
+                value={(field.value || []).map(img => ({
+                  id: img.id || Math.random().toString(),
+                  file: img.file,
+                  preview: img.preview || "",
+                  name: img.name || "",
+                  size: img.size || 0,
+                  type: img.type || ""
+                }))}
                 onChange={field.onChange}
                 maxImages={10}
                 maxFileSize={5}
