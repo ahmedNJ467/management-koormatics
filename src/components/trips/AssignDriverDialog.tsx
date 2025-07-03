@@ -1,10 +1,22 @@
-
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
@@ -12,6 +24,7 @@ import { Driver } from "@/lib/types";
 import { UserCheck, AlertCircle, Clock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { isDriverAvailableForTimeSlot } from "@/lib/utils/availability-utils";
 
 interface AssignDriverDialogProps {
   open: boolean;
@@ -24,12 +37,18 @@ export function AssignDriverDialog({
   open,
   tripToAssign,
   onClose,
-  onDriverAssigned
+  onDriverAssigned,
 }: AssignDriverDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
-  const [drivers, setDrivers] = useState<(Driver & { isAvailable: boolean })[]>([]);
+  const [drivers, setDrivers] = useState<
+    (Driver & {
+      isAvailable: boolean;
+      conflicts?: DisplayTrip[];
+      reason?: string;
+    })[]
+  >([]);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [assignmentNote, setAssignmentNote] = useState("");
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
@@ -41,34 +60,35 @@ export function AssignDriverDialog({
   useEffect(() => {
     const fetchDrivers = async () => {
       if (!open) return;
-      
+
       const { data, error } = await supabase
         .from("drivers")
         .select("*")
         .eq("status", "active");
-      
+
       if (!error && data && tripToAssign) {
         // Filter out the current trip from conflicts check
-        const otherTrips = allTrips.filter(trip => trip.id !== tripToAssign.id);
-        
-        // Check each driver's availability
-        const driversWithAvailability = data.map(driver => {
-          // Check if driver is already assigned to another trip on the same day/time
-          const conflicts = otherTrips.filter(trip => {
-            if (trip.driver_id !== driver.id) return false;
-            if (trip.date !== tripToAssign.date) return false;
-            
-            // Convert time strings to minutes
-            const selectedTripTime = convertTimeToMinutes(tripToAssign.time || "");
-            const existingTripTime = convertTimeToMinutes(trip.time || "");
-            
-            // Consider a trip within 1 hour as a conflict
-            return Math.abs(selectedTripTime - existingTripTime) < 60;
-          });
+        const otherTrips = allTrips.filter(
+          (trip) => trip.id !== tripToAssign.id
+        );
+
+        // Check each driver's availability using time-based logic
+        const driversWithAvailability = data.map((driver) => {
+          const availability = isDriverAvailableForTimeSlot(
+            driver.id,
+            tripToAssign.date,
+            tripToAssign.time || "00:00",
+            tripToAssign.return_time,
+            allTrips,
+            tripToAssign.id,
+            { bufferHours: 1 }
+          );
 
           return {
             ...driver,
-            isAvailable: conflicts.length === 0
+            isAvailable: availability.isAvailable,
+            conflicts: availability.conflicts,
+            reason: availability.reason,
           };
         });
 
@@ -79,7 +99,7 @@ export function AssignDriverDialog({
     };
 
     fetchDrivers();
-    
+
     // Reset form state when dialog opens
     if (open) {
       setSelectedDriver("");
@@ -91,24 +111,23 @@ export function AssignDriverDialog({
   // Check for scheduling conflicts when driver is selected
   useEffect(() => {
     if (selectedDriver && tripToAssign) {
-      // Filter out the current trip from conflicts check
-      const otherTrips = allTrips.filter(trip => trip.id !== tripToAssign.id);
-      
-      // Check if driver is already assigned to another trip on the same day/time
-      const conflicts = otherTrips.filter(trip => {
-        if (trip.driver_id !== selectedDriver) return false;
-        if (trip.date !== tripToAssign.date) return false;
-        
-        // Convert time strings to minutes
-        const selectedTripTime = convertTimeToMinutes(tripToAssign.time || "");
-        const existingTripTime = convertTimeToMinutes(trip.time || "");
-        
-        // Consider a trip within 1 hour as a conflict
-        return Math.abs(selectedTripTime - existingTripTime) < 60;
-      });
+      const availability = isDriverAvailableForTimeSlot(
+        selectedDriver,
+        tripToAssign.date,
+        tripToAssign.time || "00:00",
+        tripToAssign.return_time,
+        allTrips,
+        tripToAssign.id,
+        { bufferHours: 1 }
+      );
 
-      if (conflicts.length > 0) {
-        setConflictWarning(`Warning: This driver is already assigned to ${conflicts.length} other trip(s) at a similar time.`);
+      if (!availability.isAvailable && availability.conflicts.length > 0) {
+        setConflictWarning(
+          `Warning: ${
+            availability.reason ||
+            `This driver has ${availability.conflicts.length} conflicting trip(s)`
+          }`
+        );
       } else {
         setConflictWarning(null);
       }
@@ -119,9 +138,9 @@ export function AssignDriverDialog({
 
   const handleAssign = async () => {
     if (!tripToAssign || !selectedDriver) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       // Create assignment record with valid status value
       const { error: assignmentError } = await supabase
@@ -130,7 +149,7 @@ export function AssignDriverDialog({
           trip_id: tripToAssign.id,
           driver_id: selectedDriver,
           notes: assignmentNote,
-          status: "pending" // Using "pending" instead of "assigned"
+          status: "pending", // Using "pending" instead of "assigned"
         });
 
       if (assignmentError) throw assignmentError;
@@ -138,29 +157,31 @@ export function AssignDriverDialog({
       // Update trip with new driver ID
       const { error: updateError } = await supabase
         .from("trips")
-        .update({ 
+        .update({
           driver_id: selectedDriver,
-          status: tripToAssign.status // Keep the current status
+          status: tripToAssign.status, // Keep the current status
         })
         .eq("id", tripToAssign.id);
 
       if (updateError) throw updateError;
-      
+
       toast({
         title: "Driver assigned",
         description: "Driver has been successfully assigned to the trip",
       });
-      
-      // Invalidate trips query to refresh the data
+
+      // Invalidate trips and vehicles queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["trips"] });
-      
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+
       onDriverAssigned();
       handleClose();
     } catch (error) {
       console.error("Error assigning driver:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to assign driver",
+        description:
+          error instanceof Error ? error.message : "Failed to assign driver",
         variant: "destructive",
       });
     } finally {
@@ -184,8 +205,8 @@ export function AssignDriverDialog({
   // Helper function to convert time string (HH:MM) to minutes for easier comparison
   function convertTimeToMinutes(timeString: string): number {
     if (!timeString) return 0;
-    
-    const [hours, minutes] = timeString.split(':').map(Number);
+
+    const [hours, minutes] = timeString.split(":").map(Number);
     return hours * 60 + minutes;
   }
 
@@ -198,30 +219,33 @@ export function AssignDriverDialog({
             Assign Driver
           </DialogTitle>
           <DialogDescription className="text-slate-400">
-            Assign a driver to trip {tripToAssign ? formatTripId(tripToAssign.id) : ""}
+            Assign a driver to trip{" "}
+            {tripToAssign ? formatTripId(tripToAssign.id) : ""}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-5 py-4">
           <div className="space-y-2">
-            <Label htmlFor="driver" className="text-slate-300">Select Driver</Label>
+            <Label htmlFor="driver" className="text-slate-300">
+              Select Driver ({drivers.length} available)
+            </Label>
             <Select value={selectedDriver} onValueChange={setSelectedDriver}>
               <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-300 focus:ring-purple-500 rounded-md">
                 <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 {drivers.map((driver) => (
-                  <SelectItem 
-                    key={driver.id} 
-                    value={driver.id} 
+                  <SelectItem
+                    key={driver.id}
+                    value={driver.id}
                     className="text-slate-300 hover:bg-slate-700 focus:bg-slate-700"
                   >
                     <div className="flex items-center justify-between w-full">
                       <span>{driver.name}</span>
                       <Badge
                         className={`ml-2 ${
-                          driver.isAvailable 
-                            ? "bg-green-500 hover:bg-green-600" 
+                          driver.isAvailable
+                            ? "bg-green-500 hover:bg-green-600"
                             : "bg-amber-500 hover:bg-amber-600"
                         } text-white text-xs`}
                       >
@@ -242,7 +266,9 @@ export function AssignDriverDialog({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-slate-300">Assignment Notes</Label>
+            <Label htmlFor="notes" className="text-slate-300">
+              Assignment Notes
+            </Label>
             <Textarea
               id="notes"
               placeholder="Add any notes about this assignment..."
@@ -254,15 +280,15 @@ export function AssignDriverDialog({
         </div>
 
         <DialogFooter className="border-t border-slate-800 pt-4">
-          <Button 
-            variant="outline" 
-            onClick={handleClose} 
+          <Button
+            variant="outline"
+            onClick={handleClose}
             className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-slate-200 rounded-full"
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleAssign} 
+          <Button
+            onClick={handleAssign}
             disabled={!selectedDriver || isLoading}
             className="bg-purple-600 hover:bg-purple-700 text-white rounded-full"
           >

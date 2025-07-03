@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Clock,
   Car as CarIcon,
+  Fuel,
 } from "lucide-react";
 import { Vehicle } from "@/lib/types";
 
@@ -94,6 +95,34 @@ export const VehicleDetailsContent = memo(
       const expiry = new Date(expiryDate);
       const now = new Date();
       return expiry < now;
+    };
+
+    const getFuelTypeDisplay = (fuelType: string | undefined) => {
+      if (!fuelType) return "N/A";
+
+      const fuelTypeMap = {
+        petrol: "Petrol",
+        diesel: "Diesel",
+        hybrid: "Hybrid",
+        electric: "Electric",
+      };
+
+      return fuelTypeMap[fuelType as keyof typeof fuelTypeMap] || fuelType;
+    };
+
+    const getFuelTypeColor = (fuelType: string | undefined) => {
+      switch (fuelType) {
+        case "electric":
+          return "text-green-600";
+        case "hybrid":
+          return "text-blue-600";
+        case "diesel":
+          return "text-orange-600";
+        case "petrol":
+          return "text-gray-600";
+        default:
+          return "text-muted-foreground";
+      }
     };
 
     return (
@@ -235,6 +264,21 @@ export const VehicleDetailsContent = memo(
                   <p className="text-sm font-medium">
                     {selectedVehicle.color || "N/A"}
                   </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Fuel Type
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Fuel className="h-4 w-4 text-muted-foreground" />
+                    <p
+                      className={`text-sm font-medium ${getFuelTypeColor(
+                        selectedVehicle.fuel_type
+                      )}`}
+                    >
+                      {getFuelTypeDisplay(selectedVehicle.fuel_type)}
+                    </p>
+                  </div>
                 </div>
               </div>
               <Separator />

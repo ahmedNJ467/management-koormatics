@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { DisplayTrip } from "@/lib/types/trip";
 import { QueryClient } from "@tanstack/react-query";
@@ -6,17 +5,14 @@ import { QueryClient } from "@tanstack/react-query";
 // Delete trip function that handles the database operation
 export const deleteTripFromDatabase = async (tripId: string) => {
   if (!tripId) throw new Error("No trip ID provided");
-  
+
   try {
     // Delete related records first to avoid orphaned data
     await supabase.from("trip_messages").delete().eq("trip_id", tripId);
     await supabase.from("trip_assignments").delete().eq("trip_id", tripId);
-    
+
     // Then delete the trip
-    const { error } = await supabase
-      .from("trips")
-      .delete()
-      .eq("id", tripId);
+    const { error } = await supabase.from("trips").delete().eq("id", tripId);
 
     if (error) throw error;
     return true;
@@ -35,7 +31,7 @@ export const deleteTrip = async (
   setEditTrip: (trip: DisplayTrip | null) => void,
   setDeleteDialogOpen: (open: boolean) => void,
   setTripToDelete: (id: string | null) => void,
-  toast: (props: { 
+  toast: (props: {
     title: string;
     description: string;
     variant?: "default" | "destructive";
@@ -43,7 +39,7 @@ export const deleteTrip = async (
   queryClient: QueryClient
 ) => {
   if (!tripToDelete) return;
-  
+
   // First, reset dialog state to avoid UI freezing
   // It's important to close the dialog early
   setDeleteDialogOpen(false);
@@ -64,7 +60,7 @@ export const deleteTrip = async (
 
     // Update the data
     queryClient.invalidateQueries({ queryKey: ["trips"] });
-    
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
   } catch (error) {
     console.error("Error deleting trip:", error);
     toast({

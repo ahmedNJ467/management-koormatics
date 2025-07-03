@@ -1,6 +1,10 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { TripForm } from "@/components/trips/TripForm";
 import { TripDetailView } from "@/components/trips/TripDetailView";
 import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
@@ -49,7 +53,9 @@ interface TripDialogsProps {
   setActiveTab: (tab: string) => void;
   setAssignVehicleOpen: (open: boolean) => void;
   setTripToAssignVehicle: (trip: DisplayTrip | null) => void;
-  handleTripFormSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  handleTripFormSubmit: (
+    event: React.FormEvent<HTMLFormElement>
+  ) => Promise<void>;
   handleDriverAssignment: () => Promise<void>;
   handleMessageSend: () => Promise<void>;
   queryClient: QueryClient;
@@ -95,7 +101,7 @@ export function TripDialogs({
   handleTripFormSubmit,
   handleDriverAssignment,
   handleMessageSend,
-  queryClient
+  queryClient,
 }: TripDialogsProps) {
   const onViewTripOpenChange = (open: boolean) => {
     if (!open) {
@@ -104,9 +110,10 @@ export function TripDialogs({
   };
 
   const handleTripDeleted = () => {
-    // Invalidate trips query to refresh the list
+    // Invalidate trips and vehicles queries to refresh the list
     queryClient.invalidateQueries({ queryKey: ["trips"] });
-    
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+
     // Close any open dialogs showing the deleted trip
     if (viewTrip && viewTrip.id === tripToDelete) {
       setViewTrip(null);
@@ -119,16 +126,18 @@ export function TripDialogs({
   return (
     <>
       {/* Trip Form Dialog (Edit & Create) */}
-      <Dialog 
-        open={!!editTrip || bookingOpen} 
-        onOpenChange={(open) => !open && (setEditTrip(null), setBookingOpen(false))}
-      > 
+      <Dialog
+        open={!!editTrip || bookingOpen}
+        onOpenChange={(open) =>
+          !open && (setEditTrip(null), setBookingOpen(false))
+        }
+      >
         <DialogContent className="sm:max-w-2xl max-h-[90vh]">
-          <DialogTitle>
-            {editTrip ? "Edit Trip" : "Book New Trip"}
-          </DialogTitle>
+          <DialogTitle>{editTrip ? "Edit Trip" : "Book New Trip"}</DialogTitle>
           <DialogDescription>
-            {editTrip ? "Update the trip details below." : "Enter the trip details to book a new trip."}
+            {editTrip
+              ? "Update the trip details below."
+              : "Enter the trip details to book a new trip."}
           </DialogDescription>
           <TripForm
             editTrip={editTrip}
@@ -189,8 +198,11 @@ export function TripDialogs({
         }}
         onDriverAssigned={() => {
           queryClient.invalidateQueries({ queryKey: ["trips"] });
+          queryClient.invalidateQueries({ queryKey: ["vehicles"] });
           if (viewTrip) {
-            queryClient.invalidateQueries({ queryKey: ["tripAssignments", viewTrip.id] });
+            queryClient.invalidateQueries({
+              queryKey: ["tripAssignments", viewTrip.id],
+            });
           }
         }}
       />

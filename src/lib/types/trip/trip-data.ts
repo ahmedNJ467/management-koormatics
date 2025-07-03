@@ -32,6 +32,11 @@ export interface DbTrip {
     url: string;
     passenger_name: string;
   }[];
+  has_security_escort?: boolean; // Whether trip requires security escort
+  escort_count?: number; // Number of escort vehicles (max 2)
+  escort_vehicle_ids?: string[]; // Array of assigned escort vehicle IDs
+  escort_status?: "not_assigned" | "partially_assigned" | "fully_assigned"; // Escort assignment status
+  escort_assigned_at?: string; // Timestamp when escorts were assigned
 }
 
 export interface Trip {
@@ -72,6 +77,11 @@ export interface Trip {
     url: string;
     passenger_name: string;
   }[];
+  has_security_escort?: boolean; // Whether trip requires security escort
+  escort_count?: number; // Number of escort vehicles (max 2)
+  escort_vehicle_ids?: string[]; // Array of assigned escort vehicle IDs
+  escort_status?: "not_assigned" | "partially_assigned" | "fully_assigned"; // Escort assignment status
+  escort_assigned_at?: string; // Timestamp when escorts were assigned
 }
 
 export interface DisplayTrip extends Trip {

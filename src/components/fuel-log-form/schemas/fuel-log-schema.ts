@@ -4,7 +4,7 @@ export const fuelLogSchema = z
   .object({
     vehicle_id: z.string().min(1, "Vehicle is required"),
     date: z.string().min(1, "Date is required"),
-    fuel_type: z.enum(["petrol", "diesel", "cng"]),
+    fuel_type: z.enum(["petrol", "diesel", "hybrid", "electric", "cng"]),
     volume: z.number().min(0.01, "Volume must be greater than 0"),
     price_per_liter: z
       .number()
@@ -18,9 +18,7 @@ export const fuelLogSchema = z
       .min(0, "Current mileage must be a positive number"),
     mileage: z.number().min(0, "Mileage must be a positive number"),
     notes: z.string().optional(),
-    filled_by: z
-      .string()
-      .min(1, "Name of person who filled the fuel is required"),
+    // filled_by: z.string().optional(), // Column doesn't exist in database yet
     tank_id: z.string().uuid().optional(),
   })
   .refine((data) => data.current_mileage >= data.previous_mileage, {

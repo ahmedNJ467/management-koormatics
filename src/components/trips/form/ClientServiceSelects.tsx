@@ -1,6 +1,11 @@
-
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Client } from "@/lib/types";
 import { UIServiceType } from "./types";
 import { DisplayTrip } from "@/lib/types/trip";
@@ -14,7 +19,7 @@ interface SelectsProps {
   setServiceType: (value: UIServiceType) => void;
 }
 
-export function ClientVehicleDriverSelects({
+export function ClientServiceSelects({
   clients,
   editTrip,
   selectedClientId,
@@ -26,9 +31,9 @@ export function ClientVehicleDriverSelects({
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label htmlFor="client_id">Client</Label>
-        <Select 
-          name="client_id" 
-          defaultValue={editTrip?.client_id} 
+        <Select
+          name="client_id"
+          value={selectedClientId || editTrip?.client_id}
           onValueChange={handleClientChange}
           required
         >
@@ -47,10 +52,12 @@ export function ClientVehicleDriverSelects({
 
       <div className="space-y-2">
         <Label htmlFor="service_type">Service Type</Label>
-        <Select 
-          name="service_type" 
+        <Select
+          name="service_type"
           value={serviceType}
-          onValueChange={(value: string) => setServiceType(value as UIServiceType)}
+          onValueChange={(value: string) =>
+            setServiceType(value as UIServiceType)
+          }
           required
         >
           <SelectTrigger id="service_type">
@@ -62,7 +69,7 @@ export function ClientVehicleDriverSelects({
             <SelectItem value="one_way">One Way Transfer</SelectItem>
             <SelectItem value="round_trip">Round Trip</SelectItem>
             <SelectItem value="full_day_hire">Full Day Hire</SelectItem>
-            <SelectItem value="security_escort">Security Escort</SelectItem>
+            <SelectItem value="half_day">Half Day</SelectItem>
           </SelectContent>
         </Select>
       </div>

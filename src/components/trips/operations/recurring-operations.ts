@@ -1,4 +1,3 @@
-
 import { addDays, addMonths, addWeeks } from "date-fns";
 
 export const createRecurringTrips = async (
@@ -20,7 +19,7 @@ export const createRecurringTrips = async (
       tripDate = addMonths(baseDate, i);
     }
 
-    const needsReturnTime = ["round_trip", "security_escort", "full_day_hire"].includes(
+    const needsReturnTime = ["round_trip", "full_day_hire"].includes(
       formData.get("service_type") as string
     );
 
@@ -31,12 +30,14 @@ export const createRecurringTrips = async (
       driver_id: formData.get("driver_id") as string,
       date: tripDate.toISOString().split("T")[0],
       time: formData.get("time") as string,
-      return_time: needsReturnTime ? (formData.get("return_time") as string) : null,
+      return_time: needsReturnTime
+        ? (formData.get("return_time") as string)
+        : null,
       service_type: formData.get("service_type") as string,
       amount: 0, // Default amount
-      pickup_location: formData.get("pickup_location") as string || null,
-      dropoff_location: formData.get("dropoff_location") as string || null,
-      notes: formData.get("special_notes") as string || null,
+      pickup_location: (formData.get("pickup_location") as string) || null,
+      dropoff_location: (formData.get("dropoff_location") as string) || null,
+      notes: (formData.get("special_notes") as string) || null,
       is_recurring: true,
       // We don't set flight details or status here as they'll be set by the calling function
     });

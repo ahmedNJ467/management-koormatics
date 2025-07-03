@@ -1,4 +1,3 @@
-
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useTripsData } from "@/hooks/use-trips-data";
@@ -11,21 +10,30 @@ import { TripSearch } from "@/components/trips/TripSearch";
 import { TripListView } from "@/components/trips/list-view/TripListView";
 import { TripCalendarView } from "@/components/trips/TripCalendarView";
 import { TripDialogs } from "@/components/trips/TripDialogs";
+import { TripForm } from "@/components/trips/trip-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useTripState } from "@/components/trips/hooks/use-trip-state";
 import { useTripFilters } from "@/components/trips/hooks/use-trip-filters";
 
-import { 
-  updateTripStatus, 
-  deleteTrip, 
-  handleSaveTrip, 
-  handleAssignDriver, 
-  handleSendMessage 
+import {
+  updateTripStatus,
+  deleteTrip,
+  handleSaveTrip,
+  handleAssignDriver,
+  handleSendMessage,
 } from "@/components/trips/trip-operations";
+
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Trips() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Use custom hook for all trip-related state
   const {
     searchTerm,
@@ -40,7 +48,7 @@ export default function Trips() {
     setBookingOpen,
     assignOpen,
     setAssignOpen,
-    messageOpen, 
+    messageOpen,
     setMessageOpen,
     tripToAssign,
     setTripToAssign,
@@ -50,7 +58,7 @@ export default function Trips() {
     setAssignDriver,
     assignNote,
     setAssignNote,
-    newMessage, 
+    newMessage,
     setNewMessage,
     deleteDialogOpen,
     setDeleteDialogOpen,
@@ -59,43 +67,84 @@ export default function Trips() {
     activeTab,
     setActiveTab,
     calendarView,
-    setCalendarView
+    setCalendarView,
   } = useTripState();
 
   const [assignVehicleOpen, setAssignVehicleOpen] = useState(false);
-  const [tripToAssignVehicle, setTripToAssignVehicle] = useState<DisplayTrip | null>(null);
+  const [tripToAssignVehicle, setTripToAssignVehicle] =
+    useState<DisplayTrip | null>(null);
 
   // Fetch all data
   const { trips, isLoading, clients, vehicles, drivers } = useTripsData();
-  
+
   // Filter trips based on search and status filter
   const { filteredTrips } = useTripFilters(trips, searchTerm, statusFilter);
-  
+
   // Fetch trip details data when a trip is viewed
   const { messages, assignments } = useTripDetails(viewTrip);
 
   // Helper function to wrap toast for passing to operations
-  const toastWrapper = (props: { 
-    title: string; 
+  const toastWrapper = (props: {
+    title: string;
     description: string;
     variant?: "default" | "destructive";
   }) => toast(props);
 
   // Handle operations with the refactored functions
-  const handleTripStatusUpdate = (tripId: string, status: TripStatus) => 
-    updateTripStatus(tripId, status, viewTrip, setViewTrip, toastWrapper, queryClient);
-    
-  const handleTripDelete = () => 
-    deleteTrip(tripToDelete, viewTrip, editTrip, setViewTrip, setEditTrip, setDeleteDialogOpen, setTripToDelete, toastWrapper, queryClient);
-  
-  const handleTripFormSubmit = (event: React.FormEvent<HTMLFormElement>) => 
-    handleSaveTrip(event, editTrip, setEditTrip, setBookingOpen, toastWrapper, queryClient);
-  
-  const handleDriverAssignment = () => 
-    handleAssignDriver(tripToAssign, assignDriver, assignNote, setAssignOpen, setTripToAssign, setAssignDriver, setAssignNote, toastWrapper, queryClient);
-  
-  const handleMessageSend = () => 
-    handleSendMessage(tripToMessage || viewTrip, newMessage, setNewMessage, toastWrapper, queryClient);
+  const handleTripStatusUpdate = (tripId: string, status: TripStatus) =>
+    updateTripStatus(
+      tripId,
+      status,
+      viewTrip,
+      setViewTrip,
+      toastWrapper,
+      queryClient
+    );
+
+  const handleTripDelete = () =>
+    deleteTrip(
+      tripToDelete,
+      viewTrip,
+      editTrip,
+      setViewTrip,
+      setEditTrip,
+      setDeleteDialogOpen,
+      setTripToDelete,
+      toastWrapper,
+      queryClient
+    );
+
+  const handleTripFormSubmit = (event: React.FormEvent<HTMLFormElement>) =>
+    handleSaveTrip(
+      event,
+      editTrip,
+      setEditTrip,
+      setBookingOpen,
+      toastWrapper,
+      queryClient
+    );
+
+  const handleDriverAssignment = () =>
+    handleAssignDriver(
+      tripToAssign,
+      assignDriver,
+      assignNote,
+      setAssignOpen,
+      setTripToAssign,
+      setAssignDriver,
+      setAssignNote,
+      toastWrapper,
+      queryClient
+    );
+
+  const handleMessageSend = () =>
+    handleSendMessage(
+      tripToMessage || viewTrip,
+      newMessage,
+      setNewMessage,
+      toastWrapper,
+      queryClient
+    );
 
   if (isLoading) {
     return (
@@ -113,28 +162,28 @@ export default function Trips() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <TripHeader 
-        calendarView={calendarView} 
-        setCalendarView={setCalendarView} 
-        setBookingOpen={setBookingOpen} 
+      <TripHeader
+        calendarView={calendarView}
+        setCalendarView={setCalendarView}
+        setBookingOpen={setBookingOpen}
       />
 
       {/* Search and Filter */}
-      <TripSearch 
-        searchTerm={searchTerm} 
-        statusFilter={statusFilter} 
-        setSearchTerm={setSearchTerm} 
-        setStatusFilter={setStatusFilter} 
+      <TripSearch
+        searchTerm={searchTerm}
+        statusFilter={statusFilter}
+        setSearchTerm={setSearchTerm}
+        setStatusFilter={setStatusFilter}
       />
 
       {/* Calendar or List View */}
       {calendarView ? (
-        <TripCalendarView 
-          filteredTrips={filteredTrips} 
-          setViewTrip={setViewTrip} 
+        <TripCalendarView
+          filteredTrips={filteredTrips}
+          setViewTrip={setViewTrip}
         />
       ) : (
-        <TripListView 
+        <TripListView
           filteredTrips={filteredTrips}
           setViewTrip={setViewTrip}
           setEditTrip={setEditTrip}

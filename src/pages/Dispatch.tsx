@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTripsData } from "@/hooks/use-trips-data";
@@ -8,6 +8,8 @@ import { AssignDriverDialog } from "@/components/trips/AssignDriverDialog";
 import { TripMessageDialog } from "@/components/trips/TripMessageDialog";
 import { CompleteTripDialog } from "@/components/dispatch/CompleteTripDialog";
 import { AssignVehicleDialog } from "@/components/dispatch/AssignVehicleDialog";
+import { AssignEscortDialog } from "@/components/dispatch/AssignEscortDialog";
+
 import { logActivity } from "@/utils/activity-logger";
 import { useOverdueTrips } from "@/hooks/use-overdue-trips";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +49,15 @@ export default function Dispatch() {
   const queryClient = useQueryClient();
   const { trips = [], isLoading, drivers = [], vehicles = [] } = useTripsData();
 
+  // Add a refresh trigger state to force re-renders
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Force refetch when component mounts to ensure fresh data
+  useEffect(() => {
+    queryClient.refetchQueries({ queryKey: ["trips"] });
+    queryClient.refetchQueries({ queryKey: ["vehicles"] });
+  }, [queryClient, refreshTrigger]);
+
   // State for dialogs
   const [assignOpen, setAssignOpen] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
@@ -60,21 +71,26 @@ export default function Dispatch() {
   const [assignVehicleOpen, setAssignVehicleOpen] = useState(false);
   const [tripToAssignVehicle, setTripToAssignVehicle] =
     useState<DisplayTrip | null>(null);
+  const [assignEscortOpen, setAssignEscortOpen] = useState(false);
+  const [tripToAssignEscort, setTripToAssignEscort] =
+    useState<DisplayTrip | null>(null);
 
   // New state for enhanced features
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
 
-  // Pass all trips to DispatchBoard - it will handle the filtering internally
-  const dispatchTrips = Array.isArray(trips)
-    ? trips.filter((trip) => trip && typeof trip === "object")
-    : [];
+  // Memoize dispatch trips to avoid dependency warnings
+  const dispatchTrips = useMemo(() => {
+    return Array.isArray(trips)
+      ? trips.filter((trip) => trip && typeof trip === "object")
+      : [];
+  }, [trips]);
 
   // Add overdue trip monitoring
   useOverdueTrips(dispatchTrips);
 
-  // Enhanced analytics calculations
+  // Enhanced analytics calculations with memoized dispatchTrips
   const analytics = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -165,12 +181,26 @@ export default function Dispatch() {
   }, [dispatchTrips, searchTerm, statusFilter]);
 
   // Handle refresh
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ["trips"] });
-      await queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      // Clear all query caches
+      queryClient.clear();
+
+      // Then refetch everything
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["trips"] }),
+        queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+        queryClient.refetchQueries({ queryKey: ["drivers"] }),
+        queryClient.refetchQueries({ queryKey: ["clients"] }),
+      ]);
+
+      // Small delay to ensure data propagation
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Force a component re-render
+      setRefreshTrigger((prev) => prev + 1);
+
       toast({
         title: "Refreshed",
         description: "Dispatch data has been updated",
@@ -185,22 +215,22 @@ export default function Dispatch() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [queryClient, toast, setRefreshTrigger]);
 
   // Handle sending a message to driver
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!tripToMessage || !newMessage.trim()) return;
 
     try {
       logActivity({
         title: `Message sent to driver for trip ${tripToMessage.id}`,
-        type: "trip",
-        relatedId: tripToMessage.id.toString(),
+        description: `Message: "${newMessage}"`,
+        type: "communication",
       });
 
       toast({
-        title: "Message sent",
-        description: "Your message has been sent successfully",
+        title: "Message Sent",
+        description: "Message has been sent to the driver",
       });
 
       setNewMessage("");
@@ -213,134 +243,204 @@ export default function Dispatch() {
         variant: "destructive",
       });
     }
-  };
+  }, [tripToMessage, newMessage, toast]);
 
-  // Handle driver assignment from dispatch
-  const handleDriverAssigned = () => {
-    if (tripToAssign) {
-      logActivity({
-        title: `Driver assigned to trip ${tripToAssign.id}`,
-        type: "trip",
-        relatedId: tripToAssign.id.toString(),
-      });
-    }
-
+  const handleDriverAssigned = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["trips"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    setAssignOpen(false);
     toast({
-      title: "Driver assigned",
-      description: "The driver has been successfully assigned to the trip",
+      title: "Driver Assigned",
+      description: "Driver has been successfully assigned to the trip",
     });
-  };
+  }, [queryClient, toast]);
 
-  const handleVehicleAssigned = () => {
-    // The dialog handles success messages and query invalidation.
-  };
+  const handleVehicleAssigned = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["trips"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    setAssignVehicleOpen(false);
+    toast({
+      title: "Vehicle Assigned",
+      description: "Vehicle has been successfully assigned to the trip",
+    });
+  }, [queryClient, toast]);
 
-  const handleUpdateTripStatus = async (tripId: string, status: TripStatus) => {
-    const { error } = await supabase
-      .from("trips")
-      .update({ status })
-      .eq("id", tripId);
+  const handleEscortAssigned = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["trips"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    setAssignEscortOpen(false);
+    toast({
+      title: "Escort Vehicles Assigned",
+      description:
+        "Security escort vehicles have been successfully assigned to the trip",
+    });
+  }, [queryClient, toast]);
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update trip status.",
-        variant: "destructive",
-      });
-      console.error("Error updating trip status:", error);
-    } else {
-      toast({
-        title: "Success",
-        description: `Trip status updated to ${status.replace("_", " ")}.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
-    }
-  };
+  const handleUpdateTripStatus = useCallback(
+    async (tripId: string, status: TripStatus) => {
+      try {
+        const { error } = await supabase
+          .from("trips")
+          .update({ status })
+          .eq("id", tripId);
 
-  const handleGenerateInvoice = async (trip: DisplayTrip) => {
-    if (trip.invoice_id) {
-      toast({
-        title: "Invoice Already Exists",
-        description: "An invoice has already been generated for this trip.",
-      });
-      return;
-    }
+        if (error) throw error;
 
-    try {
-      await generateInvoiceForTrip(trip);
-      toast({
-        title: "Invoice Generated",
-        description: "Invoice has been successfully generated.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-    } catch (error: any) {
-      console.error("Error generating invoice:", error);
-      toast({
-        title: "Error",
-        description: `Failed to generate invoice: ${error.message}`,
-        variant: "destructive",
-      });
-    }
-  };
+        // If the status is being changed to cancelled, we need to be extra aggressive
+        // about clearing caches to ensure vehicle availability is immediately updated
+        if (status === "cancelled") {
+          // Clear all query caches
+          queryClient.clear();
 
-  const handleConfirmCompleteTrip = async (
-    trip: DisplayTrip,
-    logSheet: File
-  ) => {
-    const fileExt = logSheet.name.split(".").pop();
-    const fileName = `${trip.id}-${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+          // Then refetch everything
+          await Promise.all([
+            queryClient.refetchQueries({ queryKey: ["trips"] }),
+            queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+            queryClient.refetchQueries({ queryKey: ["drivers"] }),
+            queryClient.refetchQueries({ queryKey: ["clients"] }),
+          ]);
 
-    const { error: uploadError } = await supabase.storage
-      .from("log_sheets")
-      .upload(filePath, logSheet);
+          // Small delay to ensure data propagation
+          await new Promise((resolve) => setTimeout(resolve, 100));
 
-    if (uploadError) {
-      throw new Error(`Failed to upload log sheet: ${uploadError.message}`);
-    }
+          // Force a component re-render
+          setRefreshTrigger((prev) => prev + 1);
+        } else {
+          // For other status changes, use the normal invalidation
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["trips"] }),
+            queryClient.invalidateQueries({ queryKey: ["vehicles"] }),
+            queryClient.invalidateQueries({ queryKey: ["drivers"] }),
+          ]);
 
-    const { data: urlData } = supabase.storage
-      .from("log_sheets")
-      .getPublicUrl(filePath);
+          // Also refetch immediately to ensure fresh data
+          await Promise.all([
+            queryClient.refetchQueries({ queryKey: ["trips"] }),
+            queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+          ]);
+        }
 
-    if (!urlData.publicUrl) {
-      throw new Error("Could not get public URL for the uploaded file.");
-    }
-    const log_sheet_url = urlData.publicUrl;
+        toast({
+          title: "Trip Updated",
+          description: `Trip status changed to ${status}`,
+        });
+      } catch (error) {
+        console.error("Error updating trip status:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update trip status",
+          variant: "destructive",
+        });
+      }
+    },
+    [queryClient, toast, setRefreshTrigger]
+  );
 
-    const { error: tripUpdateError } = await supabase
-      .from("trips")
-      .update({ status: "completed", log_sheet_url })
-      .eq("id", trip.id);
+  const handleGenerateInvoice = useCallback(
+    async (trip: DisplayTrip) => {
+      try {
+        await generateInvoiceForTrip(trip);
+        await queryClient.invalidateQueries({ queryKey: ["invoices"] });
+        toast({
+          title: "Invoice Generated",
+          description: "Invoice has been generated successfully",
+        });
+      } catch (error: unknown) {
+        console.error("Error generating invoice:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        toast({
+          title: "Error",
+          description: `Failed to generate invoice: ${errorMessage}`,
+          variant: "destructive",
+        });
+      }
+    },
+    [queryClient, toast]
+  );
 
-    if (tripUpdateError) {
-      throw new Error(`Failed to update trip: ${tripUpdateError.message}`);
-    }
+  const handleConfirmCompleteTrip = useCallback(
+    async (trip: DisplayTrip, logSheet: File) => {
+      try {
+        if (!logSheet) {
+          toast({
+            title: "Error",
+            description: "Please upload a log sheet to complete the trip.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-    try {
-      await generateInvoiceForTrip({
-        ...trip,
-        status: "completed",
-        log_sheet_url,
-      });
-      toast({
-        title: "Trip Completed",
-        description:
-          "Log sheet uploaded, trip marked as completed, and invoice generated.",
-      });
-    } catch (invoiceError: any) {
-      toast({
-        title: "Trip Completed, Invoice Failed",
-        description: `Trip marked as completed, but invoice generation failed: ${invoiceError.message}`,
-        variant: "destructive",
-      });
-    }
+        const fileExt = logSheet.name.split(".").pop();
+        const fileName = `${trip.id}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
 
-    await queryClient.invalidateQueries({ queryKey: ["trips"] });
-    await queryClient.invalidateQueries({ queryKey: ["invoices"] });
-    setCompleteTripOpen(false);
-  };
+        const { error: uploadError } = await supabase.storage
+          .from("log_sheets")
+          .upload(filePath, logSheet);
+
+        if (uploadError) {
+          throw new Error(`Failed to upload log sheet: ${uploadError.message}`);
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("log_sheets")
+          .getPublicUrl(filePath);
+
+        if (!urlData.publicUrl) {
+          throw new Error("Could not get public URL for the uploaded file.");
+        }
+        const log_sheet_url = urlData.publicUrl;
+
+        const { error: tripUpdateError } = await supabase
+          .from("trips")
+          .update({ status: "completed", log_sheet_url })
+          .eq("id", trip.id);
+
+        if (tripUpdateError) {
+          throw new Error(`Failed to update trip: ${tripUpdateError.message}`);
+        }
+
+        try {
+          await generateInvoiceForTrip({
+            ...trip,
+            status: "completed",
+            log_sheet_url,
+          });
+          toast({
+            title: "Trip Completed",
+            description:
+              "Log sheet uploaded, trip marked as completed, and invoice generated.",
+          });
+        } catch (invoiceError: unknown) {
+          const errorMessage =
+            invoiceError instanceof Error
+              ? invoiceError.message
+              : "Unknown error occurred";
+          toast({
+            title: "Trip Completed, Invoice Failed",
+            description: `Trip marked as completed, but invoice generation failed: ${errorMessage}`,
+            variant: "destructive",
+          });
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ["trips"] });
+        await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+        await queryClient.invalidateQueries({ queryKey: ["invoices"] });
+        setCompleteTripOpen(false);
+      } catch (error) {
+        console.error("Error completing trip:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        toast({
+          title: "Error",
+          description: `Failed to complete trip: ${errorMessage}`,
+          variant: "destructive",
+        });
+      }
+    },
+    [queryClient, toast]
+  );
 
   if (isLoading) {
     return (
@@ -468,6 +568,32 @@ export default function Dispatch() {
         </div>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Search by location, client, or driver..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="scheduled">Scheduled</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Alerts Section */}
       {(analytics.overdueCount > 0 ||
         analytics.unassignedDrivers > 0 ||
@@ -528,6 +654,10 @@ export default function Dispatch() {
           setTripToAssignVehicle(trip);
           setAssignVehicleOpen(true);
         }}
+        onAssignEscort={(trip) => {
+          setTripToAssignEscort(trip);
+          setAssignEscortOpen(true);
+        }}
         onGenerateInvoice={handleGenerateInvoice}
       />
 
@@ -560,6 +690,13 @@ export default function Dispatch() {
         trip={tripToAssignVehicle}
         onClose={() => setAssignVehicleOpen(false)}
         onVehicleAssigned={handleVehicleAssigned}
+      />
+
+      <AssignEscortDialog
+        open={assignEscortOpen}
+        trip={tripToAssignEscort}
+        onClose={() => setAssignEscortOpen(false)}
+        onEscortAssigned={handleEscortAssigned}
       />
     </div>
   );

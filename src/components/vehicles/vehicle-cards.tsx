@@ -10,6 +10,7 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
+  Fuel,
 } from "lucide-react";
 import { Vehicle } from "@/lib/types";
 import { formatVehicleId } from "@/lib/utils";
@@ -77,6 +78,34 @@ export const VehicleCards = memo(
       const expiry = new Date(expiryDate);
       const now = new Date();
       return expiry < now;
+    };
+
+    const getFuelTypeDisplay = (fuelType: string | undefined) => {
+      if (!fuelType) return "N/A";
+
+      const fuelTypeMap = {
+        petrol: "Petrol",
+        diesel: "Diesel",
+        hybrid: "Hybrid",
+        electric: "Electric",
+      };
+
+      return fuelTypeMap[fuelType as keyof typeof fuelTypeMap] || fuelType;
+    };
+
+    const getFuelTypeColor = (fuelType: string | undefined) => {
+      switch (fuelType) {
+        case "electric":
+          return "text-green-600";
+        case "hybrid":
+          return "text-blue-600";
+        case "diesel":
+          return "text-orange-600";
+        case "petrol":
+          return "text-gray-600";
+        default:
+          return "text-muted-foreground";
+      }
     };
 
     if (!vehicles || !Array.isArray(vehicles)) {
@@ -190,6 +219,16 @@ export const VehicleCards = memo(
                         <span className="text-muted-foreground">Color:</span>
                         <span className="ml-1 font-medium">
                           {vehicle.color || "N/A"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Fuel:</span>
+                        <span
+                          className={`ml-1 font-medium ${getFuelTypeColor(
+                            vehicle.fuel_type
+                          )}`}
+                        >
+                          {getFuelTypeDisplay(vehicle.fuel_type)}
                         </span>
                       </div>
                     </div>

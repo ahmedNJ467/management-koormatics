@@ -10,6 +10,7 @@ import {
   getLatestMileage,
   saveFuelLog,
   getFuelLogById,
+  broadcastTankUpdate,
 } from "./services/fuel-log-service";
 import { useFuelCalculations } from "./hooks/use-fuel-calculations";
 
@@ -43,7 +44,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           current_mileage: fuelLog.current_mileage || 0,
           mileage: fuelLog.mileage || 0,
           notes: fuelLog.notes || "",
-          filled_by: fuelLog.filled_by || "",
+          tank_id: fuelLog.tank_id || "",
+          // filled_by: fuelLog.filled_by || "", // Column doesn't exist in database yet
         }
       : {
           vehicle_id: "",
@@ -56,7 +58,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           current_mileage: 0,
           mileage: 0,
           notes: "",
-          filled_by: "",
+          tank_id: "",
+          // filled_by: "", // Column doesn't exist in database yet
         },
   });
 
@@ -65,7 +68,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
 
   const vehicleId = form.watch("vehicle_id");
 
-  // Load previous mileage when vehicle changes
+  // Load previous mileage and set fuel type when vehicle changes
   useEffect(() => {
     if (!vehicleId) return;
 
@@ -94,38 +97,79 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
         if (!fuelLog) {
           form.setValue("current_mileage", 0);
         }
+
+        // Auto-populate fuel type if vehicle has one
+        const selectedVehicle = vehicles?.find((v) => v.id === vehicleId);
+        if (selectedVehicle?.fuel_type && !fuelLog) {
+          console.log(
+            `Auto-setting fuel type to: ${selectedVehicle.fuel_type}`
+          );
+          form.setValue("fuel_type", selectedVehicle.fuel_type as any);
+        }
       } catch (error) {
         console.error("Error fetching latest mileage:", error);
       }
     };
 
     fetchMileage();
-  }, [vehicleId, form, fuelLog]);
+  }, [vehicleId, form, fuelLog, vehicles]);
 
   // Handle form submission
   const handleSubmit = async (values: FuelLogFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
+      console.log("Form submission started with values:", values);
+
+      // Validate the form data
+      const validationResult = fuelLogSchema.safeParse(values);
+      if (!validationResult.success) {
+        console.error("Form validation failed:", validationResult.error);
+        throw new Error(
+          "Form validation failed: " + validationResult.error.message
+        );
+      }
+
+      console.log("Form validation passed, saving fuel log...");
       const result = await saveFuelLog(values, fuelLog?.id);
 
-      // Invalidate and refetch the query to ensure the UI updates
+      // Invalidate and refetch queries to ensure the UI updates
       queryClient.invalidateQueries({ queryKey: ["fuel-logs"] });
+
+      // Also invalidate tank-related queries to update fuel tank progress
+      queryClient.invalidateQueries({ queryKey: ["fuel-tanks"] });
+      queryClient.invalidateQueries({ queryKey: ["tank-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["tank-dispensed"] });
+
+      // Broadcast tank update event to refresh tank data in other components
+      broadcastTankUpdate();
 
       toast({
         title: result.isNewRecord ? "Fuel log created" : "Fuel log updated",
         description: result.isNewRecord
-          ? "A new fuel log has been created successfully."
-          : "The fuel log has been updated successfully.",
+          ? "A new fuel log has been created successfully. Tank levels updated."
+          : "The fuel log has been updated successfully. Tank levels updated.",
       });
 
       form.reset();
       setShouldCloseDialog(true);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Form submission error:", error);
+
+      // Provide more specific error messages
+      let errorMessage = "Failed to save fuel log";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error
+      ) {
+        errorMessage = (error as any).message;
+      }
+
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to save fuel log",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

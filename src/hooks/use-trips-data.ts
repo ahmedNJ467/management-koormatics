@@ -50,13 +50,71 @@ export function useTripsData() {
   const vehiclesQuery = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("id, make, model, registration, type")
-        .eq("status", "active")
-        .order("make");
-      if (error) throw error;
-      return data as Vehicle[];
+      // Try with escort fields first, fallback to basic fields if they don't exist
+      try {
+        console.log("🚗 Fetching vehicles with escort fields...");
+        const { data, error } = await supabase
+          .from("vehicles")
+          .select(
+            "id, make, model, registration, type, status, is_escort_assigned, escort_trip_id, escort_assigned_at"
+          )
+          .eq("status", "active") // Get all active vehicles regardless of escort assignment
+          .order("make");
+
+        if (error) {
+          console.error(
+            "❌ Error fetching vehicles with escort fields:",
+            error
+          );
+          throw error;
+        }
+
+        console.log("✅ Successfully fetched vehicles with escort fields:", {
+          count: data?.length || 0,
+          sample:
+            data?.slice(0, 2).map((v) => ({
+              id: v.id,
+              make: v.make,
+              model: v.model,
+              registration: v.registration,
+              is_escort_assigned: v.is_escort_assigned,
+              escort_trip_id: v.escort_trip_id,
+            })) || [],
+          escortAssignedCount:
+            data?.filter((v) => v.is_escort_assigned)?.length || 0,
+        });
+
+        return data as Vehicle[];
+      } catch (error) {
+        // Fallback to basic fields if escort fields don't exist yet
+        console.warn(
+          "⚠️ Escort fields not found in vehicles table, using basic query:",
+          error
+        );
+        const { data, error: fallbackError } = await supabase
+          .from("vehicles")
+          .select("id, make, model, registration, type, status")
+          .eq("status", "active") // Get all active vehicles
+          .order("make");
+
+        if (fallbackError) {
+          console.error("❌ Fallback query also failed:", fallbackError);
+          throw fallbackError;
+        }
+
+        console.log("✅ Fallback query successful:", {
+          count: data?.length || 0,
+          sample: data?.slice(0, 2) || [],
+        });
+
+        // Add default escort fields to maintain compatibility
+        return data.map((vehicle) => ({
+          ...vehicle,
+          is_escort_assigned: false,
+          escort_trip_id: null,
+          escort_assigned_at: null,
+        })) as Vehicle[];
+      }
     },
   });
 
@@ -85,6 +143,7 @@ export function useTripsData() {
           { event: "*", schema: "public", table: "trips" },
           () => {
             queryClient.invalidateQueries({ queryKey: ["trips"] });
+            queryClient.invalidateQueries({ queryKey: ["vehicles"] });
           }
         )
         .subscribe();

@@ -1,16 +1,35 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { FuelLog, TankFill } from "@/lib/types";
 import { FuelLogFormValues } from "../schemas/fuel-log-schema";
 
 export async function getVehicles() {
-  const { data, error } = await supabase
-    .from("vehicles")
-    .select("id, make, model, registration")
-    .order("make");
+  try {
+    // First try to get vehicles with fuel_type
+    const { data, error } = await supabase
+      .from("vehicles")
+      .select("id, make, model, registration, fuel_type")
+      .order("make");
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      // If error is about fuel_type column not existing, try without it
+      if (error.message?.includes("fuel_type") || error.code === "42703") {
+        console.log("fuel_type column not found, fetching vehicles without it");
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from("vehicles")
+          .select("id, make, model, registration")
+          .order("make");
+
+        if (fallbackError) throw fallbackError;
+        return fallbackData;
+      }
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching vehicles:", error);
+    throw error;
+  }
 }
 
 export async function getLatestMileage(vehicleId: string) {
@@ -62,56 +81,115 @@ export async function saveFuelLog(
   values: FuelLogFormValues,
   fuelLogId?: string
 ) {
-  const formattedValues = {
-    vehicle_id: values.vehicle_id,
-    date: values.date,
-    fuel_type: values.fuel_type as "petrol" | "diesel" | "cng",
-    volume: Number(values.volume),
-    cost: Number(values.cost),
-    previous_mileage: Number(values.previous_mileage),
-    current_mileage: Number(values.current_mileage),
-    mileage: Number(values.mileage),
-    notes: values.notes || null,
-    filled_by: values.filled_by,
-  };
+  try {
+    console.log("Saving fuel log with values:", values);
 
-  if (fuelLogId) {
-    const { data, error } = await supabase
-      .from("fuel_logs")
-      .update(formattedValues as any)
-      .eq("id", fuelLogId)
-      .select(
+    // Map fuel types to ensure compatibility with database
+    const mapFuelType = (fuelType: string) => {
+      // If hybrid or electric, fall back to petrol for now until DB is updated
+      if (fuelType === "hybrid" || fuelType === "electric") {
+        console.warn(
+          `Fuel type '${fuelType}' not supported in database, using 'petrol' as fallback`
+        );
+        return "petrol";
+      }
+      return fuelType;
+    };
+
+    const formattedValues = {
+      vehicle_id: values.vehicle_id,
+      date: values.date,
+      fuel_type: mapFuelType(values.fuel_type) as "petrol" | "diesel" | "cng",
+      volume: Number(values.volume),
+      cost: Number(values.cost),
+      previous_mileage: Number(values.previous_mileage),
+      current_mileage: Number(values.current_mileage),
+      mileage: Number(values.mileage),
+      notes: values.notes || null,
+      tank_id: values.tank_id || null, // Include tank_id for automatic deduction
+    };
+
+    console.log("Formatted values:", formattedValues);
+
+    if (fuelLogId) {
+      console.log("Updating existing fuel log:", fuelLogId);
+      const { data, error } = await supabase
+        .from("fuel_logs")
+        .update(formattedValues as any)
+        .eq("id", fuelLogId)
+        .select(
+          `
+          *,
+          vehicle:vehicles (
+            make,
+            model,
+            registration
+          )
         `
-        *,
-        vehicle:vehicles (
-          make,
-          model,
-          registration
         )
-      `
-      )
-      .single();
+        .single();
 
-    if (error) throw error;
-    return { isNewRecord: false, data };
-  } else {
-    const { data, error } = await supabase
-      .from("fuel_logs")
-      .insert(formattedValues as any)
-      .select(
+      if (error) {
+        console.error("Update fuel log error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
+      }
+
+      console.log("Fuel log updated successfully:", data);
+
+      // Refresh tank stats and broadcast update if tank is linked
+      if (values.tank_id) {
+        console.log("Refreshing tank stats after fuel log update");
+        broadcastTankUpdate();
+      }
+
+      return { isNewRecord: false, data };
+    } else {
+      console.log("Creating new fuel log");
+      const { data, error } = await supabase
+        .from("fuel_logs")
+        .insert(formattedValues as any)
+        .select(
+          `
+          *,
+          vehicle:vehicles (
+            make,
+            model,
+            registration
+          )
         `
-        *,
-        vehicle:vehicles (
-          make,
-          model,
-          registration
         )
-      `
-      )
-      .single();
+        .single();
 
-    if (error) throw error;
-    return { isNewRecord: true, data };
+      if (error) {
+        console.error("Insert fuel log error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
+      }
+
+      console.log("Fuel log created successfully:", data);
+
+      // Refresh tank stats and broadcast update if tank is linked
+      if (values.tank_id) {
+        console.log("Refreshing tank stats after fuel log creation");
+        broadcastTankUpdate();
+      }
+
+      return { isNewRecord: true, data };
+    }
+  } catch (error) {
+    console.error("saveFuelLog error:", error);
+    throw error;
   }
 }
 
@@ -160,4 +238,41 @@ export async function getTankDispensed(tankId: string) {
     .eq("tank_id", tankId);
   if (error) throw error;
   return data?.reduce((sum, log) => sum + (log.volume || 0), 0) || 0;
+}
+
+// Function to refresh tank statistics after fuel logs are updated
+export async function refreshTankStats() {
+  try {
+    const tanks = await getFuelTanks();
+    const stats = {};
+
+    for (const tank of tanks) {
+      const fills = await getTankFills(tank.id);
+      const dispensed = await getTankDispensed(tank.id);
+      const totalFilled = fills.reduce((sum, f) => sum + (f.amount || 0), 0);
+      const lastFill = fills[0];
+
+      stats[tank.id] = {
+        currentLevel: totalFilled - dispensed,
+        lastFillDate: lastFill?.fill_date,
+        lastFillAmount: lastFill?.amount,
+        totalFilled,
+        totalDispensed: dispensed,
+      };
+    }
+
+    return { tanks, stats };
+  } catch (error) {
+    console.error("Error refreshing tank stats:", error);
+    throw error;
+  }
+}
+
+// Broadcast tank update event
+export function broadcastTankUpdate() {
+  // Create a custom event to notify components that tank data should be refreshed
+  const event = new CustomEvent("tankDataUpdate", {
+    detail: { timestamp: Date.now() },
+  });
+  window.dispatchEvent(event);
 }

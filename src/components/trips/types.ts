@@ -1,10 +1,9 @@
-
 import { TripStatus, TripType } from "@/lib/types/trip";
 
 export interface TripMessageData {
   id: string;
   trip_id: string;
-  sender_type: 'admin' | 'driver' | 'client';
+  sender_type: "admin" | "driver" | "client";
   sender_name: string;
   message: string;
   timestamp: string;
@@ -18,7 +17,7 @@ export interface TripAssignmentData {
   trip_id: string;
   driver_id: string;
   assigned_at: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: "pending" | "accepted" | "rejected";
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -54,6 +53,8 @@ export interface DbTripData {
   notes?: string; // Keep notes for backward compatibility
   passengers?: string[]; // Add passengers array
   log_sheet_url?: string;
+  has_security_escort?: boolean; // Whether trip requires security escort
+  escort_count?: number; // Number of escort vehicles (max 2)
   // Joined data
   clients?: {
     name: string;
