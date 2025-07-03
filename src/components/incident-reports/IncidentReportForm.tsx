@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -284,7 +285,7 @@ export function IncidentReportForm({
         // Create new report
         const { error } = await supabase
           .from("vehicle_incident_reports")
-          .insert([cleanedValues]);
+          .insert(cleanedValues);
 
         if (error) throw error;
 
