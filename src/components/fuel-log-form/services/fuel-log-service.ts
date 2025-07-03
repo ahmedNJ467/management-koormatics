@@ -96,7 +96,8 @@ export async function saveFuelLog(
       return fuelType;
     };
 
-    const formattedValues = {
+    // Base values that are always included
+    const baseValues = {
       vehicle_id: values.vehicle_id,
       date: values.date,
       fuel_type: mapFuelType(values.fuel_type) as "petrol" | "diesel" | "cng",
@@ -107,6 +108,14 @@ export async function saveFuelLog(
       mileage: Number(values.mileage),
       notes: values.notes || null,
       tank_id: values.tank_id || null, // Include tank_id for automatic deduction
+    };
+
+    // Add price_per_liter if available (for future database compatibility)
+    const formattedValues = {
+      ...baseValues,
+      ...(values.price_per_liter && {
+        price_per_liter: Number(values.price_per_liter),
+      }),
     };
 
     console.log("Formatted values:", formattedValues);
