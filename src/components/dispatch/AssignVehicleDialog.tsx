@@ -69,8 +69,8 @@ export function AssignVehicleDialog({
         selectedVehicle,
         trip.date,
         trip.time || "00:00",
-        trip.return_time,
         trips,
+        trip.return_time,
         trip.id,
         { bufferHours: 1 }
       );
@@ -104,8 +104,8 @@ export function AssignVehicleDialog({
       vehicle.id,
       trip.date,
       trip.time || "00:00",
-      trip.return_time,
       trips,
+      trip.return_time,
       trip.id,
       { bufferHours: 1 }
     );

@@ -14,6 +14,7 @@ export * from './types/client';
 
 // Fuel log types
 export * from './types/fuel-log';
+export type { FuelType } from './types/fuel';
 
 // Maintenance types
 export * from './types/maintenance';
