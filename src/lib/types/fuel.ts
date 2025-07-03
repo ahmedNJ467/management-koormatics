@@ -1,7 +1,6 @@
+import { Vehicle } from "./vehicle";
 
-import { Vehicle } from './vehicle';
-
-export type FuelType = 'petrol' | 'diesel' | 'cng';
+export type FuelType = "petrol" | "diesel" | "cng";
 
 export interface FuelLog {
   id: string;
@@ -10,6 +9,7 @@ export interface FuelLog {
   date: string;
   fuel_type: FuelType;
   volume: number;
+  price_per_liter: number;
   cost: number;
   previous_mileage: number;
   current_mileage: number;
