@@ -25,7 +25,13 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   // Fetch vehicles for select dropdown
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
-    queryFn: getVehicles,
+    queryFn: async () => {
+      const result = await getVehicles();
+      return result.map(vehicle => ({
+        ...vehicle,
+        fuel_type: vehicle.fuel_type || 'diesel' // Ensure fuel_type is always present
+      }));
+    },
   });
 
   // Initialize form with default values or existing fuel log data
