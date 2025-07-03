@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { Driver } from "@/lib/types";
 import { Vehicle } from "@/lib/types/vehicle";
@@ -59,19 +60,21 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
     return vehicleAvailabilities.get(vehicleId) || { isAvailable: true };
   };
 
-  // Get specific assignment type for vehicles
+  // Get specific assignment type for vehicles with improved logic
   const getVehicleAssignmentType = (vehicleId: string) => {
-    // Check if assigned as primary vehicle
-    const hasActiveTrip = trips.some(
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    
+    // Check if assigned as primary vehicle to any active trip
+    const hasPrimaryAssignment = trips.some(
       (trip) =>
         trip.vehicle_id === vehicleId &&
         (trip.status === "in_progress" || trip.status === "scheduled")
     );
 
-    if (hasActiveTrip) return "Assigned";
+    if (hasPrimaryAssignment) return "Assigned";
 
-    // Check if assigned as escort
-    const isAssignedAsEscort = trips.some(
+    // Check if assigned as escort to any active trip
+    const hasEscortAssignment = trips.some(
       (trip) =>
         trip.escort_vehicle_ids &&
         Array.isArray(trip.escort_vehicle_ids) &&
@@ -79,13 +82,53 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
         (trip.status === "in_progress" || trip.status === "scheduled")
     );
 
-    if (isAssignedAsEscort) return "Escort";
+    if (hasEscortAssignment) return "Escort";
 
-    // Check database escort assignment status
-    const vehicle = vehicles.find((v) => v.id === vehicleId);
-    if (vehicle?.is_escort_assigned) return "Escort";
+    // Check database escort assignment status as fallback
+    // Only trust this if the escort_trip_id corresponds to an active trip
+    if (vehicle?.is_escort_assigned && vehicle?.escort_trip_id) {
+      const escortTripExists = trips.some(
+        (trip) => 
+          trip.id === vehicle.escort_trip_id &&
+          (trip.status === "in_progress" || trip.status === "scheduled")
+      );
+      
+      if (escortTripExists) return "Escort";
+    }
 
     return "Available";
+  };
+
+  // Get escort trip details for display
+  const getEscortTripDetails = (vehicleId: string) => {
+    // First check current active escort assignments
+    const escortTrip = trips.find(
+      (trip) =>
+        trip.escort_vehicle_ids &&
+        Array.isArray(trip.escort_vehicle_ids) &&
+        trip.escort_vehicle_ids.includes(vehicleId) &&
+        (trip.status === "in_progress" || trip.status === "scheduled")
+    );
+
+    if (escortTrip) {
+      return `Escorting: ${escortTrip.id.substring(0, 8).toUpperCase()}`;
+    }
+
+    // Fallback to database assignment if it matches an active trip
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    if (vehicle?.escort_trip_id) {
+      const dbEscortTrip = trips.find(
+        (trip) => 
+          trip.id === vehicle.escort_trip_id &&
+          (trip.status === "in_progress" || trip.status === "scheduled")
+      );
+      
+      if (dbEscortTrip) {
+        return `Escorting: ${dbEscortTrip.id.substring(0, 8).toUpperCase()}`;
+      }
+    }
+
+    return "Security Escort";
   };
 
   // Format phone number for display
@@ -209,22 +252,24 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                     {vehicle.registration}
                     {assignmentType === "Escort" && (
                       <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                        {getEscortTripDetails(vehicle.id)}
+                      </div>
+                    )}
+                    {assignmentType === "Assigned" && (
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                         {(() => {
-                          const escortTrip = trips.find(
+                          const assignedTrip = trips.find(
                             (trip) =>
-                              trip.escort_vehicle_ids &&
-                              Array.isArray(trip.escort_vehicle_ids) &&
-                              trip.escort_vehicle_ids.includes(vehicle.id)
+                              trip.vehicle_id === vehicle.id &&
+                              (trip.status === "in_progress" || trip.status === "scheduled")
                           );
-                          return escortTrip
-                            ? `Escorting: ${escortTrip.id
-                                .substring(0, 8)
-                                .toUpperCase()}`
-                            : "Security Escort";
+                          return assignedTrip
+                            ? `Primary: ${assignedTrip.id.substring(0, 8).toUpperCase()}`
+                            : "Primary Assignment";
                         })()}
                       </div>
                     )}
-                    {!availability.isAvailable && availability.reason && (
+                    {!availability.isAvailable && availability.reason && assignmentType === "Available" && (
                       <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {availability.reason}
@@ -237,16 +282,16 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                   <Badge
                     variant="outline"
                     className={`${
-                      availability.isAvailable
+                      assignmentType === "Available"
                         ? "bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/40"
                         : assignmentType === "Escort"
                         ? "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/40"
-                        : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40"
+                        : "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40"
                     }`}
                   >
-                    {availability.isAvailable ? "Available" : assignmentType}
+                    {assignmentType}
                   </Badge>
-                  {availability.availableAt && !availability.isAvailable && (
+                  {availability.availableAt && !availability.isAvailable && assignmentType === "Available" && (
                     <div className="text-xs text-muted-foreground">
                       Available:{" "}
                       {availability.availableAt.toLocaleTimeString("en-US", {
