@@ -45,7 +45,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           mileage: fuelLog.mileage || 0,
           notes: fuelLog.notes || "",
           tank_id: fuelLog.tank_id || "",
-          // filled_by: fuelLog.filled_by || "", // Column doesn't exist in database yet
         }
       : {
           vehicle_id: "",
@@ -59,7 +58,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           mileage: 0,
           notes: "",
           tank_id: "",
-          // filled_by: "", // Column doesn't exist in database yet
         },
   });
 
@@ -104,7 +102,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           console.log(
             `Auto-setting fuel type to: ${selectedVehicle.fuel_type}`
           );
-          form.setValue("fuel_type", selectedVehicle.fuel_type as any);
+          form.setValue("fuel_type", selectedVehicle.fuel_type as "petrol" | "diesel" | "cng");
         }
       } catch (error) {
         console.error("Error fetching latest mileage:", error);
