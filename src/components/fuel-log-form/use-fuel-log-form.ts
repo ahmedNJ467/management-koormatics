@@ -29,7 +29,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       const result = await getVehicles();
       return result.map(vehicle => ({
         ...vehicle,
-        fuel_type: vehicle.fuel_type || 'diesel' // Ensure fuel_type is always present
+        fuel_type: (vehicle as any).fuel_type || 'diesel' // Ensure fuel_type is always present
       }));
     },
   });
@@ -50,7 +50,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           current_mileage: fuelLog.current_mileage || 0,
           mileage: fuelLog.mileage || 0,
           notes: fuelLog.notes || "",
-          tank_id: fuelLog.tank_id || "",
+          tank_id: (fuelLog as any).tank_id || "",
         }
       : {
           vehicle_id: "",
@@ -104,11 +104,11 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
 
         // Auto-populate fuel type if vehicle has one
         const selectedVehicle = vehicles?.find((v) => v.id === vehicleId);
-        if (selectedVehicle?.fuel_type && !fuelLog) {
+        if ((selectedVehicle as any)?.fuel_type && !fuelLog) {
           console.log(
-            `Auto-setting fuel type to: ${selectedVehicle.fuel_type}`
+            `Auto-setting fuel type to: ${(selectedVehicle as any).fuel_type}`
           );
-          form.setValue("fuel_type", selectedVehicle.fuel_type as "petrol" | "diesel" | "cng");
+          form.setValue("fuel_type", (selectedVehicle as any).fuel_type as "petrol" | "diesel" | "cng");
         }
       } catch (error) {
         console.error("Error fetching latest mileage:", error);

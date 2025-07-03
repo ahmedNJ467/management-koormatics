@@ -105,7 +105,7 @@ export function useVehicleFormSubmit(
 
           // If the error is about fuel_type column not existing, try without it
           if (error.message?.includes("fuel_type") || error.code === "42703") {
-            const { fuel_type, ...dataWithoutFuelType } = formattedData;
+            const { fuel_type, ...dataWithoutFuelType } = dataToSend as any;
             console.log("Retrying without fuel_type:", dataWithoutFuelType);
 
             const { error: retryError } = await supabase
@@ -173,7 +173,7 @@ export function useVehicleFormSubmit(
 
           // If the error is about fuel_type column not existing, try without it
           if (error.message?.includes("fuel_type") || error.code === "42703") {
-            const { fuel_type, ...dataWithoutFuelType } = formattedData;
+            const { fuel_type, ...dataWithoutFuelType } = dataToSend as any;
             console.log(
               "Retrying insert without fuel_type:",
               dataWithoutFuelType
