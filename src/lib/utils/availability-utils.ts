@@ -180,7 +180,6 @@ function calculateExpectedEndTime(trip: DisplayTrip, tripDate: Date): Date {
       estimatedDurationHours = 4;
       break;
     case "full_day":
-    case "full_day":
       estimatedDurationHours = 8;
       break;
     case "half_day":
@@ -251,14 +250,17 @@ export function isDriverAvailableForTimeSlot(
   const conflicts: DisplayTrip[] = [];
 
   for (const trip of driverTrips) {
-    const tripDate = new Date(trip.date);
-    const tripDateOnly = new Date(tripDate.toDateString());
-    const targetDateOnly = new Date(targetDateObj.toDateString());
+    // Use more robust date comparison to avoid timezone issues
+    const tripDateStr = trip.date.split("T")[0]; // Get YYYY-MM-DD part only
+    const targetDateStr = targetDate.split("T")[0]; // Get YYYY-MM-DD part only
 
     // Only check trips on the same date
-    if (tripDateOnly.getTime() !== targetDateOnly.getTime()) {
+    if (tripDateStr !== targetDateStr) {
       continue;
     }
+
+    // Create date objects for time calculations
+    const tripDate = new Date(trip.date);
 
     const tripStartTime = parseTimeOnDate(trip.time || "00:00", tripDate);
     const tripEndTime = calculateExpectedEndTime(trip, tripDate);
@@ -283,6 +285,15 @@ export function isDriverAvailableForTimeSlot(
     conflicts.length > 0
       ? `Conflicts with ${conflicts.length} existing trip(s) (including ${bufferHours}h buffer)`
       : undefined;
+
+  console.log(`👨‍✈️ Driver ${driverId} availability result for ${targetDate}:`, {
+    isAvailable,
+    conflictsCount: conflicts.length,
+    conflictIds: conflicts.map((c) => c.id),
+    reason,
+    targetTime,
+    targetReturnTime,
+  });
 
   return {
     isAvailable,
@@ -320,6 +331,22 @@ export function isVehicleAvailableForTimeSlot(
       trip.id !== excludeTripId
   );
 
+  console.log(
+    `🚗 Checking vehicle ${vehicleId} availability for ${targetDate} at ${targetTime}:`,
+    {
+      totalTrips: trips.length,
+      vehicleTrips: vehicleTrips.length,
+      tripDates: vehicleTrips.map((t) => ({
+        id: t.id,
+        date: t.date,
+        time: t.time,
+      })),
+      excludeTripId,
+      targetDate,
+      targetTime,
+    }
+  );
+
   const targetDateObj = new Date(targetDate);
   const targetStartTime = parseTimeOnDate(targetTime, targetDateObj);
   const targetEndTime = targetReturnTime
@@ -329,14 +356,31 @@ export function isVehicleAvailableForTimeSlot(
   const conflicts: DisplayTrip[] = [];
 
   for (const trip of vehicleTrips) {
-    const tripDate = new Date(trip.date);
-    const tripDateOnly = new Date(tripDate.toDateString());
-    const targetDateOnly = new Date(targetDateObj.toDateString());
+    // Use more robust date comparison to avoid timezone issues
+    const tripDateStr = trip.date.split("T")[0]; // Get YYYY-MM-DD part only
+    const targetDateStr = targetDate.split("T")[0]; // Get YYYY-MM-DD part only
 
     // Only check trips on the same date
-    if (tripDateOnly.getTime() !== targetDateOnly.getTime()) {
+    if (tripDateStr !== targetDateStr) {
+      console.log(`🗓️ Skipping trip ${trip.id} - different date:`, {
+        tripDate: tripDateStr,
+        targetDate: targetDateStr,
+        vehicleId,
+        tripId: trip.id,
+      });
       continue;
     }
+
+    console.log(`⚠️ Checking conflict for vehicle ${vehicleId} on same date:`, {
+      tripDate: tripDateStr,
+      targetDate: targetDateStr,
+      tripTime: trip.time,
+      targetTime: targetTime,
+      tripId: trip.id,
+    });
+
+    // Create date objects for time calculations
+    const tripDate = new Date(trip.date);
 
     const tripStartTime = parseTimeOnDate(trip.time || "00:00", tripDate);
     const tripEndTime = calculateExpectedEndTime(trip, tripDate);
