@@ -294,101 +294,48 @@ const InvitationLetter = () => {
       const doc = new jsPDF({ unit: "pt", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
+      
+      const margin = 60;
+      const contentWidth = pageWidth - (margin * 2);
+      let y = 60;
 
-      // Modern gradient-like background with geometric shapes
-      doc.setFillColor(250, 251, 252);
+      // White background
+      doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-      // Modern header section with colored background
-      doc.setFillColor(37, 99, 235);
-      doc.rect(0, 0, pageWidth, 120, "F");
-
-      // Add subtle geometric accent
-      doc.setFillColor(59, 130, 246);
-      doc.triangle(pageWidth - 150, 0, pageWidth, 0, pageWidth, 100, "F");
-
-      let y = 35;
-
-      // Load and add Peace Business Group logo - Modern positioning
-      try {
-        const logoBase64 = await loadImageAsBase64(LOGO_IMAGE);
-        doc.addImage(logoBase64, "PNG", 40, y, 80, 50);
-      } catch (logoError) {
-        console.log("Logo loading error:", logoError);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(255, 255, 255);
-        doc.text("PEACE BUSINESS GROUP", 40, y + 25);
-      }
-
-      // Modern company name styling
+      // Header with company info
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(24);
-      doc.setTextColor(255, 255, 255);
-      doc.text("PEACE BUSINESS GROUP", 140, y + 20);
-
-      // Modern subtitle
+      doc.setFontSize(20);
+      doc.setTextColor(0, 0, 0);
+      doc.text("PEACE BUSINESS GROUP", margin, y);
+      
+      y += 25;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setTextColor(226, 232, 240);
-      doc.text(
-        "Premium Business Solutions & Hospitality Services",
-        140,
-        y + 38
-      );
+      doc.text("Airport Road, Wadajir District, Mogadishu, Somalia", margin, y);
+      
+      y += 15;
+      doc.text("Email: reservations@peacebusinessgroup.com", margin, y);
+      
+      y += 15;
+      doc.text("Phone: +252 61-94-94973 / +252 61-94-94974", margin, y);
 
-      // Contact info in modern layout
-      doc.setFontSize(8);
-      doc.setTextColor(203, 213, 225);
-      doc.text("Email: reservations@peacebusinessgroup.com", 140, y + 55);
-      doc.text("Phone: +252 61-94-94973 / +252 61-94-94974", 140, y + 68);
-      doc.text(
-        "Address: Airport Road, Wadajir District, Mogadishu",
-        140,
-        y + 81
-      );
-
-      // Additional company info in header space (where QR was)
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text("EST. 2024", pageWidth - 80, y + 50);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text("ISO Certified", pageWidth - 80, y + 65);
-      doc.text("Licensed Provider", pageWidth - 95, y + 78);
-
-      // Main content area with modern card-like design
-      y = 150;
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(30, y, pageWidth - 60, pageHeight - 200, 8, 8, "F");
-
-      doc.setFillColor(0, 0, 0, 0.1);
-      doc.roundedRect(32, y + 2, pageWidth - 60, pageHeight - 200, 8, 8, "F");
-
-      y += 40;
-
-      // Modern header with accent bar
-      doc.setFillColor(37, 99, 235);
-      doc.rect(50, y, 4, 25, "F");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.setTextColor(15, 23, 42);
-      doc.text("OFFICIAL INVITATION LETTER", 65, y + 18);
-
-      // Reference and date in modern style
       y += 50;
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(50, y, pageWidth - 100, 40, 6, 6, "F");
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(71, 85, 105);
-      doc.text("Reference Number:", 60, y + 16);
+      // Document title
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text(tempFormData.refNumber, 60, y + 30);
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      const titleText = "OFFICIAL INVITATION LETTER";
+      const titleWidth = doc.getTextWidth(titleText);
+      doc.text(titleText, (pageWidth - titleWidth) / 2, y);
+
+      y += 50;
+
+      // Reference and date
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.text(`Reference Number: ${tempFormData.refNumber}`, margin, y);
 
       const formattedDate = tempFormData.date
         ? new Date(tempFormData.date).toLocaleDateString("en-GB", {
@@ -397,105 +344,131 @@ const InvitationLetter = () => {
             year: "numeric",
           })
         : "";
+      
+      doc.text(`Date: ${formattedDate}`, pageWidth - margin - 150, y);
 
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Issue Date:", pageWidth - 150, y + 16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text(formattedDate, pageWidth - 150, y + 30);
+      y += 50;
 
-      // Recipient section
-      y += 70;
+      // TO section
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.setTextColor(15, 23, 42);
-      doc.text("TO:", 60, y);
+      doc.text("TO:", margin, y);
 
-      y += 20;
+      y += 25;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.setTextColor(51, 65, 85);
-      doc.text("The Director General", 60, y);
-      doc.text("Federal Government of Somalia", 60, y + 15);
-      doc.text("Immigration & Nationality Agency", 60, y + 30);
+      doc.text("The Director General", margin, y);
+      
+      y += 18;
+      doc.text("Federal Government of Somalia", margin, y);
+      
+      y += 18;
+      doc.text("Immigration & Nationality Agency", margin, y);
 
-      // Subject with modern styling
-      y += 60;
-      doc.setFillColor(239, 246, 255);
-      doc.roundedRect(50, y, pageWidth - 100, 35, 6, 6, "F");
+      y += 40;
+
+      // Subject
+      doc.setFillColor(240, 248, 255);
+      doc.rect(margin, y - 8, contentWidth, 25, "F");
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.setTextColor(37, 99, 235);
-      doc.text("SUBJECT:", 60, y + 15);
+      doc.setTextColor(0, 100, 200);
+      doc.text("SUBJECT:", margin + 10, y + 5);
+      
       doc.setFont("helvetica", "normal");
-      doc.text(
-        `INVITATION LETTER - ${tempFormData.purposeOfVisit.toUpperCase()}`,
-        120,
-        y + 15
-      );
+      doc.setTextColor(0, 0, 0);
+      const subjectText = `INVITATION LETTER - ${tempFormData.purposeOfVisit.toUpperCase()}`;
+      doc.text(subjectText, margin + 80, y + 5);
 
-      // Modern body text
-      y += 60;
+      y += 40;
+
+      // Body text
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.setTextColor(51, 65, 85);
+      doc.setTextColor(0, 0, 0);
 
-      const bodyText = `Dear Sir/Madam,
+      doc.text("Dear Sir/Madam,", margin, y);
+      y += 25;
 
-We would like to inform you that the below guest will be visiting Mogadishu and he will be accommodated in Peace Hotel Mogadishu located next to Adan Cade International Airport. Peace Business Group will be responsible for his accommodation and safety while visiting Mogadishu.
+      const bodyLines = [
+        "We would like to inform you that the below guest will be visiting Mogadishu and will be",
+        "accommodated in Peace Hotel Mogadishu located next to Adan Cade International Airport.",
+        "Peace Business Group will be responsible for his accommodation and safety while visiting",
+        "Mogadishu.",
+        "",
+        "For further clarification you may contact Peace Hotel.",
+        "",
+        "Guest Details:"
+      ];
 
-For further clarification you may contact peace hotel.
+      bodyLines.forEach(line => {
+        doc.text(line, margin, y);
+        y += 15;
+      });
 
-Guest Details:`;
+      y += 10;
 
-      const lines = doc.splitTextToSize(bodyText, pageWidth - 100);
-      doc.text(lines, 60, y);
-      y += lines.length * 10 + 15;
+      // Guest details box
+      const boxHeight = 120;
+      doc.setFillColor(248, 248, 248);
+      doc.rect(margin, y, contentWidth, boxHeight, "F");
+      
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(1);
+      doc.rect(margin, y, contentWidth, boxHeight);
 
-      // Compact visitor details card
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(50, y, pageWidth - 100, 100, 8, 8, "F");
-
-      y += 18;
+      const detailsStartY = y + 20;
+      const leftCol = margin + 20;
+      const rightCol = margin + (contentWidth / 2) + 10;
 
       // Left column
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      doc.setTextColor(71, 85, 105);
-      doc.text("Full Name:", 70, y);
+      doc.setTextColor(0, 0, 0);
+      
+      let detailY = detailsStartY;
+      doc.text("Full Name:", leftCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(tempFormData.visitorName.toUpperCase(), 70, y + 12);
+      doc.setFontSize(11);
+      doc.text(tempFormData.visitorName.toUpperCase(), leftCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Nationality:", 70, y + 28);
+      doc.setFontSize(10);
+      doc.text("Nationality:", leftCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(tempFormData.visitorNationality.toUpperCase(), 70, y + 40);
+      doc.setFontSize(11);
+      doc.text(tempFormData.visitorNationality.toUpperCase(), leftCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Organization:", 70, y + 56);
+      doc.setFontSize(10);
+      doc.text("Organization:", leftCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(tempFormData.visitorOrg, 70, y + 68);
+      doc.setFontSize(11);
+      doc.text(tempFormData.visitorOrg, leftCol, detailY);
 
       // Right column
+      detailY = detailsStartY;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Passport Number:", pageWidth / 2 + 20, y);
+      doc.setFontSize(10);
+      doc.text("Passport Number:", rightCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(tempFormData.visitorPassport, pageWidth / 2 + 20, y + 12);
+      doc.setFontSize(11);
+      doc.text(tempFormData.visitorPassport, rightCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Passport Expiry:", pageWidth / 2 + 20, y + 28);
+      doc.setFontSize(10);
+      doc.text("Passport Expiry:", rightCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(11);
       const passportExpiryFormatted = tempFormData.passportExpiry
         ? new Date(tempFormData.passportExpiry).toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -503,13 +476,15 @@ Guest Details:`;
             year: "numeric",
           })
         : "";
-      doc.text(passportExpiryFormatted, pageWidth / 2 + 20, y + 40);
+      doc.text(passportExpiryFormatted, rightCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Date of Visit:", pageWidth / 2 + 20, y + 56);
+      doc.setFontSize(10);
+      doc.text("Date of Visit:", rightCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(11);
       const visitDateFormatted = tempFormData.dateOfVisit
         ? new Date(tempFormData.dateOfVisit).toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -517,61 +492,66 @@ Guest Details:`;
             year: "numeric",
           })
         : "";
-      doc.text(visitDateFormatted, pageWidth / 2 + 20, y + 68);
+      doc.text(visitDateFormatted, rightCol, detailY);
 
-      // Closing section
-      y += 65;
+      // Move Y position after the box
+      y += boxHeight + 30;
+
+      // Closing paragraph
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.setTextColor(51, 65, 85);
+      doc.setTextColor(0, 0, 0);
 
-      const closingText = `We guarantee full compliance with immigration regulations and commitment to ensuring the visitor's departure within the specified timeframe.
+      const closingLines = [
+        "We guarantee full compliance with immigration regulations and commitment to ensuring the",
+        "visitor's departure within the specified timeframe.",
+        "",
+        "Thank you for your consideration.",
+        "",
+        "Yours sincerely,"
+      ];
 
-Thank you for your consideration.
-
-Yours sincerely,`;
-
-      const closingLines = doc.splitTextToSize(closingText, pageWidth - 100);
-      doc.text(closingLines, 60, y);
-      y += closingLines.length * 12 + 15;
-
-      // Compact signature section (STRICTLY one page only)
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(50, y, pageWidth - 100, 85, 8, 8, "F");
-
-      y += 18;
-
-      // Left side - Signature (compact layout)
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(15, 23, 42);
-      doc.text("Authorized Signature:", 70, y);
+      closingLines.forEach(line => {
+        doc.text(line, margin, y);
+        y += 15;
+      });
 
       y += 20;
+
+      // Signature section
+      const signatureBoxHeight = 80;
+      doc.setFillColor(250, 250, 250);
+      doc.rect(margin, y, contentWidth, signatureBoxHeight, "F");
+
+      const sigY = y + 20;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Authorized Signature:", margin + 20, sigY);
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.setTextColor(37, 99, 235);
-      doc.text("Mr. Bashir Osman", 70, y);
+      doc.setTextColor(0, 100, 200);
+      doc.text("Mr. Bashir Osman", margin + 20, sigY + 25);
 
-      y += 12;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(71, 85, 105);
-      doc.text("Chief Executive Officer", 70, y);
-      doc.text("Peace Business Group", 70, y + 10);
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Chief Executive Officer", margin + 20, sigY + 40);
+      doc.text("Peace Business Group", margin + 20, sigY + 55);
 
-      // Add Peace Business Group stamp/seal (compact positioning)
+      // Company stamp
       try {
         const stampBase64 = await loadImageAsBase64(STAMP_IMAGE);
-        doc.addImage(stampBase64, "PNG", pageWidth - 160, y - 40, 90, 90);
+        doc.addImage(stampBase64, "PNG", pageWidth - 140, sigY, 80, 80);
       } catch (stampError) {
         console.log("Stamp loading error:", stampError);
-        // Compact fallback stamp design
-        const sealX = pageWidth - 110;
-        const sealY = y - 15;
-        const sealRadius = 35;
+        // Fallback stamp
+        const sealX = pageWidth - 100;
+        const sealY = sigY + 25;
+        const sealRadius = 25;
 
-        doc.setFillColor(41, 128, 185);
+        doc.setFillColor(0, 100, 200);
         doc.circle(sealX, sealY, sealRadius, "F");
 
         doc.setDrawColor(255, 255, 255);
@@ -580,32 +560,28 @@ Yours sincerely,`;
 
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7);
-        doc.text("PEACE BUSINESS", sealX - 25, sealY - 6);
-        doc.text("GROUP", sealX - 12, sealY + 2);
-        doc.text("SOMALIA", sealX - 18, sealY + 10);
-
-        doc.setFontSize(5);
-        doc.text("EST. 2024", sealX - 12, sealY + 18);
+        doc.setFontSize(6);
+        doc.text("PEACE BUSINESS", sealX - 20, sealY - 3);
+        doc.text("GROUP", sealX - 8, sealY + 4);
+        doc.text("SOMALIA", sealX - 12, sealY + 11);
       }
 
-      // Simple footer with just verification note
+      // Footer
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
-      doc.setTextColor(108, 117, 125);
-      const verifyText =
-        "Official document digitally generated by Peace Business Group";
+      doc.setTextColor(100, 100, 100);
+      const verifyText = "Official document digitally generated by Peace Business Group";
       const verifyWidth = doc.getTextWidth(verifyText);
-      doc.text(verifyText, (pageWidth - verifyWidth) / 2, pageHeight - 20);
+      doc.text(verifyText, (pageWidth - verifyWidth) / 2, pageHeight - 40);
 
-      const fileName = `invitation-letter-${formData.visitorName.replace(
+      const fileName = `invitation-letter-${tempFormData.visitorName.replace(
         /[^a-zA-Z0-9]/g,
         "-"
       )}.pdf`;
       doc.save(fileName);
 
       setLoading(false);
-      toast.success("Invitation letter regenerated successfully!");
+      toast.success("PDF regenerated successfully!");
     } catch (error) {
       console.error("Error regenerating PDF:", error);
       setLoading(false);
@@ -742,104 +718,48 @@ Yours sincerely,`;
       const doc = new jsPDF({ unit: "pt", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
+      
+      const margin = 60;
+      const contentWidth = pageWidth - (margin * 2);
+      let y = 60;
 
-      // Modern gradient-like background with geometric shapes
-      doc.setFillColor(250, 251, 252); // Very light gray background
+      // White background
+      doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-      // Header section with logo-matching blue theme
-      doc.setFillColor(41, 128, 185); // Professional blue to match logo
-      doc.rect(0, 0, pageWidth, 120, "F");
-
-      // Add subtle geometric accent
-      doc.setFillColor(52, 152, 219); // Lighter complementary blue
-      doc.triangle(pageWidth - 150, 0, pageWidth, 0, pageWidth, 100, "F");
-
-      let y = 35;
-
-      // Load and add Peace Business Group logo - Modern positioning
-      try {
-        const logoBase64 = await loadImageAsBase64(LOGO_IMAGE);
-        doc.addImage(logoBase64, "PNG", 40, y, 80, 50); // Smaller, cleaner logo
-      } catch (logoError) {
-        console.log("Logo loading error:", logoError);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(255, 255, 255);
-        doc.text("PEACE BUSINESS GROUP", 40, y + 25);
-      }
-
-      // Modern company name styling
+      // Header with company info
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(24);
-      doc.setTextColor(255, 255, 255);
-      doc.text("PEACE BUSINESS GROUP", 140, y + 20);
-
-      // Modern subtitle
+      doc.setFontSize(20);
+      doc.setTextColor(0, 0, 0);
+      doc.text("PEACE BUSINESS GROUP", margin, y);
+      
+      y += 25;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setTextColor(226, 232, 240); // Light blue-gray
-      doc.text(
-        "Premium Business Solutions & Hospitality Services",
-        140,
-        y + 38
-      );
+      doc.text("Airport Road, Wadajir District, Mogadishu, Somalia", margin, y);
+      
+      y += 15;
+      doc.text("Email: reservations@peacebusinessgroup.com", margin, y);
+      
+      y += 15;
+      doc.text("Phone: +252 61-94-94973 / +252 61-94-94974", margin, y);
 
-      // Contact info in modern layout
-      doc.setFontSize(8);
-      doc.setTextColor(203, 213, 225);
-      doc.text("Email: reservations@peacebusinessgroup.com", 140, y + 55);
-      doc.text("Phone: +252 61-94-94973 / +252 61-94-94974", 140, y + 68);
-      doc.text(
-        "Address: Airport Road, Wadajir District, Mogadishu",
-        140,
-        y + 81
-      );
-
-      // Additional company info in header space (where QR was)
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text("EST. 2024", pageWidth - 80, y + 50);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text("ISO Certified", pageWidth - 80, y + 65);
-      doc.text("Licensed Provider", pageWidth - 95, y + 78);
-
-      // Main content area with compact design (single page layout)
-      y = 140;
-
-      // Compact card container for single page
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(30, y, pageWidth - 60, pageHeight - 100, 8, 8, "F");
-
-      // Subtle shadow effect
-      doc.setFillColor(0, 0, 0, 0.1);
-      doc.roundedRect(32, y + 2, pageWidth - 60, pageHeight - 100, 8, 8, "F");
-
-      y += 40;
-
-      // Modern header with accent bar
-      doc.setFillColor(37, 99, 235);
-      doc.rect(50, y, 4, 25, "F");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.setTextColor(44, 62, 80); // Dark blue-gray
-      doc.text("OFFICIAL INVITATION LETTER", 65, y + 18);
-
-      // Reference and date in professional style
       y += 50;
-      doc.setFillColor(236, 240, 241); // Light gray background
-      doc.roundedRect(50, y, pageWidth - 100, 40, 6, 6, "F");
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(93, 109, 126);
-      doc.text("Reference Number:", 60, y + 16);
+      // Document title
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(44, 62, 80);
-      doc.text(formData.refNumber, 60, y + 30);
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      const titleText = "OFFICIAL INVITATION LETTER";
+      const titleWidth = doc.getTextWidth(titleText);
+      doc.text(titleText, (pageWidth - titleWidth) / 2, y);
+
+      y += 50;
+
+      // Reference and date
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.text(`Reference Number: ${formData.refNumber}`, margin, y);
 
       const formattedDate = formData.date
         ? new Date(formData.date).toLocaleDateString("en-GB", {
@@ -848,106 +768,131 @@ Yours sincerely,`;
             year: "numeric",
           })
         : "";
+      
+      doc.text(`Date: ${formattedDate}`, pageWidth - margin - 150, y);
 
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Issue Date:", pageWidth - 150, y + 16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text(formattedDate, pageWidth - 150, y + 30);
+      y += 50;
 
-      // Recipient section
-      y += 70;
+      // TO section
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.setTextColor(15, 23, 42);
-      doc.text("TO:", 60, y);
+      doc.text("TO:", margin, y);
 
-      y += 20;
+      y += 25;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.setTextColor(51, 65, 85);
-      doc.text("The Director General", 60, y);
-      doc.text("Federal Government of Somalia", 60, y + 15);
-      doc.text("Immigration & Nationality Agency", 60, y + 30);
+      doc.text("The Director General", margin, y);
+      
+      y += 18;
+      doc.text("Federal Government of Somalia", margin, y);
+      
+      y += 18;
+      doc.text("Immigration & Nationality Agency", margin, y);
 
-      // Subject with modern styling
-      y += 60;
-      doc.setFillColor(239, 246, 255);
-      doc.roundedRect(50, y, pageWidth - 100, 35, 6, 6, "F");
+      y += 40;
+
+      // Subject
+      doc.setFillColor(240, 248, 255);
+      doc.rect(margin, y - 8, contentWidth, 25, "F");
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.setTextColor(37, 99, 235);
-      doc.text("SUBJECT:", 60, y + 15);
+      doc.setTextColor(0, 100, 200);
+      doc.text("SUBJECT:", margin + 10, y + 5);
+      
       doc.setFont("helvetica", "normal");
-      doc.text(
-        `INVITATION LETTER - ${formData.purposeOfVisit.toUpperCase()}`,
-        120,
-        y + 15
-      );
+      doc.setTextColor(0, 0, 0);
+      const subjectText = `INVITATION LETTER - ${formData.purposeOfVisit.toUpperCase()}`;
+      doc.text(subjectText, margin + 80, y + 5);
 
-      // Modern body text
-      y += 60;
+      y += 40;
+
+      // Body text
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.setTextColor(51, 65, 85);
+      doc.setTextColor(0, 0, 0);
 
-      const bodyText = `Dear Sir/Madam,
+      doc.text("Dear Sir/Madam,", margin, y);
+      y += 25;
 
-We would like to inform you that the below guest will be visiting Mogadishu and he will be accommodated in Peace Hotel Mogadishu located next to Adan Cade International Airport. Peace Business Group will be responsible for his accommodation and safety while visiting Mogadishu.
+      const bodyLines = [
+        "We would like to inform you that the below guest will be visiting Mogadishu and will be",
+        "accommodated in Peace Hotel Mogadishu located next to Adan Cade International Airport.",
+        "Peace Business Group will be responsible for his accommodation and safety while visiting",
+        "Mogadishu.",
+        "",
+        "For further clarification you may contact Peace Hotel.",
+        "",
+        "Guest Details:"
+      ];
 
-For further clarification you may contact peace hotel.
+      bodyLines.forEach(line => {
+        doc.text(line, margin, y);
+        y += 15;
+      });
 
-Guest Details:`;
+      y += 10;
 
-      const lines = doc.splitTextToSize(bodyText, pageWidth - 100);
-      doc.text(lines, 60, y);
-      y += lines.length * 10 + 15;
+      // Guest details box
+      const boxHeight = 120;
+      doc.setFillColor(248, 248, 248);
+      doc.rect(margin, y, contentWidth, boxHeight, "F");
+      
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(1);
+      doc.rect(margin, y, contentWidth, boxHeight);
 
-      // Compact visitor details card
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(50, y, pageWidth - 100, 100, 8, 8, "F");
-
-      // Guest information with compact layout
-      y += 18;
+      const detailsStartY = y + 20;
+      const leftCol = margin + 20;
+      const rightCol = margin + (contentWidth / 2) + 10;
 
       // Left column
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      doc.setTextColor(71, 85, 105);
-      doc.text("Full Name:", 70, y);
+      doc.setTextColor(0, 0, 0);
+      
+      let detailY = detailsStartY;
+      doc.text("Full Name:", leftCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(formData.visitorName.toUpperCase(), 70, y + 12);
+      doc.setFontSize(11);
+      doc.text(formData.visitorName.toUpperCase(), leftCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Nationality:", 70, y + 28);
+      doc.setFontSize(10);
+      doc.text("Nationality:", leftCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(formData.visitorNationality.toUpperCase(), 70, y + 40);
+      doc.setFontSize(11);
+      doc.text(formData.visitorNationality.toUpperCase(), leftCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Organization:", 70, y + 56);
+      doc.setFontSize(10);
+      doc.text("Organization:", leftCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(formData.visitorOrg, 70, y + 68);
+      doc.setFontSize(11);
+      doc.text(formData.visitorOrg, leftCol, detailY);
 
       // Right column
+      detailY = detailsStartY;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Passport Number:", pageWidth / 2 + 20, y);
+      doc.setFontSize(10);
+      doc.text("Passport Number:", rightCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
-      doc.text(formData.visitorPassport, pageWidth / 2 + 20, y + 12);
+      doc.setFontSize(11);
+      doc.text(formData.visitorPassport, rightCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Passport Expiry:", pageWidth / 2 + 20, y + 28);
+      doc.setFontSize(10);
+      doc.text("Passport Expiry:", rightCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(11);
       const passportExpiryFormatted = formData.passportExpiry
         ? new Date(formData.passportExpiry).toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -955,13 +900,15 @@ Guest Details:`;
             year: "numeric",
           })
         : "";
-      doc.text(passportExpiryFormatted, pageWidth / 2 + 20, y + 40);
+      doc.text(passportExpiryFormatted, rightCol, detailY);
 
+      detailY += 25;
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Date of Visit:", pageWidth / 2 + 20, y + 56);
+      doc.setFontSize(10);
+      doc.text("Date of Visit:", rightCol, detailY);
+      detailY += 15;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(11);
       const visitDateFormatted = formData.dateOfVisit
         ? new Date(formData.dateOfVisit).toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -969,61 +916,66 @@ Guest Details:`;
             year: "numeric",
           })
         : "";
-      doc.text(visitDateFormatted, pageWidth / 2 + 20, y + 68);
+      doc.text(visitDateFormatted, rightCol, detailY);
 
-      // Closing section
-      y += 65;
+      // Move Y position after the box
+      y += boxHeight + 30;
+
+      // Closing paragraph
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.setTextColor(51, 65, 85);
+      doc.setTextColor(0, 0, 0);
 
-      const closingText = `We guarantee full compliance with immigration regulations and commitment to ensuring the visitor's departure within the specified timeframe.
+      const closingLines = [
+        "We guarantee full compliance with immigration regulations and commitment to ensuring the",
+        "visitor's departure within the specified timeframe.",
+        "",
+        "Thank you for your consideration.",
+        "",
+        "Yours sincerely,"
+      ];
 
-Thank you for your consideration.
-
-Yours sincerely,`;
-
-      const closingLines = doc.splitTextToSize(closingText, pageWidth - 100);
-      doc.text(closingLines, 60, y);
-      y += closingLines.length * 12 + 15;
-
-      // Compact signature section (STRICTLY one page only)
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(50, y, pageWidth - 100, 85, 8, 8, "F");
-
-      y += 18;
-
-      // Left side - Signature (compact layout)
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(15, 23, 42);
-      doc.text("Authorized Signature:", 70, y);
+      closingLines.forEach(line => {
+        doc.text(line, margin, y);
+        y += 15;
+      });
 
       y += 20;
+
+      // Signature section
+      const signatureBoxHeight = 80;
+      doc.setFillColor(250, 250, 250);
+      doc.rect(margin, y, contentWidth, signatureBoxHeight, "F");
+
+      const sigY = y + 20;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Authorized Signature:", margin + 20, sigY);
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.setTextColor(37, 99, 235);
-      doc.text("Mr. Bashir Osman", 70, y);
+      doc.setTextColor(0, 100, 200);
+      doc.text("Mr. Bashir Osman", margin + 20, sigY + 25);
 
-      y += 12;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(71, 85, 105);
-      doc.text("Chief Executive Officer", 70, y);
-      doc.text("Peace Business Group", 70, y + 10);
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Chief Executive Officer", margin + 20, sigY + 40);
+      doc.text("Peace Business Group", margin + 20, sigY + 55);
 
-      // Add Peace Business Group stamp/seal (compact positioning)
+      // Company stamp
       try {
         const stampBase64 = await loadImageAsBase64(STAMP_IMAGE);
-        doc.addImage(stampBase64, "PNG", pageWidth - 160, y - 40, 90, 90);
+        doc.addImage(stampBase64, "PNG", pageWidth - 140, sigY, 80, 80);
       } catch (stampError) {
         console.log("Stamp loading error:", stampError);
-        // Compact fallback stamp design
-        const sealX = pageWidth - 110;
-        const sealY = y - 15;
-        const sealRadius = 35;
+        // Fallback stamp
+        const sealX = pageWidth - 100;
+        const sealY = sigY + 25;
+        const sealRadius = 25;
 
-        doc.setFillColor(41, 128, 185);
+        doc.setFillColor(0, 100, 200);
         doc.circle(sealX, sealY, sealRadius, "F");
 
         doc.setDrawColor(255, 255, 255);
@@ -1032,23 +984,19 @@ Yours sincerely,`;
 
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7);
-        doc.text("PEACE BUSINESS", sealX - 25, sealY - 6);
-        doc.text("GROUP", sealX - 12, sealY + 2);
-        doc.text("SOMALIA", sealX - 18, sealY + 10);
-
-        doc.setFontSize(5);
-        doc.text("EST. 2024", sealX - 12, sealY + 18);
+        doc.setFontSize(6);
+        doc.text("PEACE BUSINESS", sealX - 20, sealY - 3);
+        doc.text("GROUP", sealX - 8, sealY + 4);
+        doc.text("SOMALIA", sealX - 12, sealY + 11);
       }
 
-      // Simple footer with just verification note
+      // Footer
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
-      doc.setTextColor(108, 117, 125);
-      const verifyText =
-        "Official document digitally generated by Peace Business Group";
+      doc.setTextColor(100, 100, 100);
+      const verifyText = "Official document digitally generated by Peace Business Group";
       const verifyWidth = doc.getTextWidth(verifyText);
-      doc.text(verifyText, (pageWidth - verifyWidth) / 2, pageHeight - 20);
+      doc.text(verifyText, (pageWidth - verifyWidth) / 2, pageHeight - 40);
 
       const fileName = `invitation-letter-${formData.visitorName.replace(
         /[^a-zA-Z0-9]/g,
