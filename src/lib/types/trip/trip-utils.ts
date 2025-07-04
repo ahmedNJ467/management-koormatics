@@ -43,7 +43,7 @@ export function mapDatabaseFieldsToTrip(dbTrip: any): DisplayTrip {
     driver_avatar: driverAvatar,
     driver_contact: driverContact,
     display_type: displayType,
-    type: tripData.service_type || "other", // Legacy field
+    type: tripData.service_type || "one_way_transfer", // Legacy field, default to valid TripType
     special_notes: tripData.notes, // Ensure notes is available as special_notes for backward compatibility
     passengers: tripData.passengers || [],
     // Explicitly include security escort fields

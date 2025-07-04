@@ -356,7 +356,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                     )}
                     {!availability.isAvailable &&
                       availability.reason &&
-                      assignmentType === "Available" && (
+                      badgeText === "Available" && (
                         <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {availability.reason}
@@ -370,7 +370,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                   </Badge>
                   {availability.availableAt &&
                     !availability.isAvailable &&
-                    assignmentType === "Available" && (
+                    badgeText === "Available" && (
                       <div className="text-xs text-muted-foreground">
                         Available:{" "}
                         {availability.availableAt.toLocaleTimeString("en-US", {
