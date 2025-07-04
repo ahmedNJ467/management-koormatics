@@ -58,7 +58,6 @@ export function useTripsData() {
           .select(
             "id, make, model, registration, type, status, is_escort_assigned, escort_trip_id, escort_assigned_at"
           )
-          .eq("status", "active") // Get all active vehicles regardless of escort assignment
           .order("make");
 
         if (error) {
@@ -77,11 +76,17 @@ export function useTripsData() {
               make: v.make,
               model: v.model,
               registration: v.registration,
+              status: v.status,
               is_escort_assigned: v.is_escort_assigned,
               escort_trip_id: v.escort_trip_id,
             })) || [],
           escortAssignedCount:
             data?.filter((v) => v.is_escort_assigned)?.length || 0,
+          statusBreakdown:
+            data?.reduce((acc, v) => {
+              acc[v.status] = (acc[v.status] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>) || {},
         });
 
         return data as Vehicle[];
@@ -94,7 +99,6 @@ export function useTripsData() {
         const { data, error: fallbackError } = await supabase
           .from("vehicles")
           .select("id, make, model, registration, type, status")
-          .eq("status", "active") // Get all active vehicles
           .order("make");
 
         if (fallbackError) {

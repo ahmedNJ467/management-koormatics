@@ -264,16 +264,30 @@ export default function Dispatch() {
     });
   }, [queryClient, toast]);
 
-  const handleEscortAssigned = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["trips"] });
-    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+  const handleEscortAssigned = useCallback(async () => {
+    // Use aggressive cache clearing and refetching to ensure UI updates
+    queryClient.clear();
+
+    // Then refetch everything
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ["trips"] }),
+      queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+      queryClient.refetchQueries({ queryKey: ["drivers"] }),
+    ]);
+
+    // Small delay to ensure data propagation
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Force a component re-render
+    setRefreshTrigger((prev) => prev + 1);
+
     setAssignEscortOpen(false);
     toast({
       title: "Escort Vehicles Assigned",
       description:
         "Security escort vehicles have been successfully assigned to the trip",
     });
-  }, [queryClient, toast]);
+  }, [queryClient, toast, setRefreshTrigger]);
 
   const handleUpdateTripStatus = useCallback(
     async (tripId: string, status: TripStatus) => {

@@ -165,9 +165,11 @@ export function DispatchBoard({
           </CardHeader>
           <CardContent className="pt-6">
             <DriverStatus
-              key={`${trips.length}-${
+              key={`${trips.length}-${vehicles.length}-${
                 trips.filter((t) => t.status === "cancelled").length
-              }`}
+              }-${
+                trips.filter((t) => t.escort_vehicle_ids?.length > 0).length
+              }-${vehicles.filter((v) => v.is_escort_assigned).length}`}
               drivers={drivers}
               vehicles={vehicles}
               trips={trips}

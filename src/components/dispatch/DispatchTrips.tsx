@@ -470,9 +470,6 @@ export function DispatchTrips({
                         {trip.escort_count || 1} escort vehicle
                         {(trip.escort_count || 1) > 1 ? "s" : ""}
                       </span>
-                      <Badge variant="outline" className="text-xs">
-                        Dispatch Assignment
-                      </Badge>
                     </div>
                   </div>
                 )}
@@ -602,19 +599,19 @@ export function DispatchTrips({
                                         Escort {index + 1}: {displayName}
                                       </span>
                                       {vehicle?.type && (
-                                          <Badge
-                                            variant={
-                                              vehicle.type === "armoured"
-                                                ? "default"
-                                                : "secondary"
-                                            }
-                                            className="text-xs px-1 py-0"
-                                          >
-                                            {vehicle.type === "armoured"
-                                              ? "Armoured"
-                                              : "Soft Skin"}
-                                          </Badge>
-                                        )}
+                                        <Badge
+                                          variant={
+                                            vehicle.type === "armoured"
+                                              ? "default"
+                                              : "secondary"
+                                          }
+                                          className="text-xs px-1 py-0"
+                                        >
+                                          {vehicle.type === "armoured"
+                                            ? "Armoured"
+                                            : "Soft Skin"}
+                                        </Badge>
+                                      )}
                                     </div>
                                   );
                                 }

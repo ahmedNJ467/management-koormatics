@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -91,13 +90,14 @@ export function AssignVehicleDialog({
   }, [selectedVehicle, trip, trips]);
 
   const enhancedVehicles: EnhancedVehicle[] = vehicles.map((vehicle) => {
-    if (!trip) return { 
-      ...vehicle, 
-      isAvailable: true, 
-      reason: undefined,
-      isCompatible: true,
-      conflicts: []
-    };
+    if (!trip)
+      return {
+        ...vehicle,
+        isAvailable: true,
+        reason: undefined,
+        isCompatible: true,
+        conflicts: [],
+      };
 
     // Check availability using time-based logic
     const availability = isVehicleAvailableForTimeSlot(
@@ -218,43 +218,29 @@ export function AssignVehicleDialog({
                   <SelectValue placeholder="Select a vehicle" />
                 </SelectTrigger>
                 <SelectContent>
-                  {enhancedVehicles.map((vehicle) => (
-                    <SelectItem
-                      key={vehicle.id}
-                      value={vehicle.id}
-                      disabled={!vehicle.isCompatible}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span
-                          className={
-                            !vehicle.isCompatible ? "text-muted-foreground" : ""
-                          }
-                        >
-                          {vehicle.make} {vehicle.model} ({vehicle.registration}
-                          ){!vehicle.isCompatible && " - Incompatible Type"}
-                        </span>
-                        <div className="flex gap-1">
-                          {!vehicle.isCompatible && (
+                  {enhancedVehicles
+                    .filter((vehicle) => vehicle.isCompatible)
+                    .map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>
+                            {vehicle.make} {vehicle.model} (
+                            {vehicle.registration})
+                          </span>
+                          <div className="flex gap-1">
                             <Badge
-                              variant="outline"
-                              className="bg-gray-500/10 text-gray-600 border-gray-500/20 text-xs"
+                              className={`${
+                                vehicle.isAvailable
+                                  ? "bg-green-500 hover:bg-green-600"
+                                  : "bg-amber-500 hover:bg-amber-600"
+                              } text-white text-xs`}
                             >
-                              Wrong Type
+                              {vehicle.isAvailable ? "Available" : "Busy"}
                             </Badge>
-                          )}
-                          <Badge
-                            className={`${
-                              vehicle.isAvailable
-                                ? "bg-green-500 hover:bg-green-600"
-                                : "bg-amber-500 hover:bg-amber-600"
-                            } text-white text-xs`}
-                          >
-                            {vehicle.isAvailable ? "Available" : "Busy"}
-                          </Badge>
+                          </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

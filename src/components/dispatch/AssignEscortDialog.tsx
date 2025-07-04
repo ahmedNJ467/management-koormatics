@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logActivity } from "@/utils/activity-logger";
 import { Vehicle } from "@/lib/types";
 import { Shield, AlertTriangle, Car } from "lucide-react";
+import { isVehicleAvailableForTimeSlot } from "@/lib/utils/availability-utils";
 
 interface AssignEscortDialogProps {
   open: boolean;
@@ -39,7 +40,7 @@ export function AssignEscortDialog({
   onClose,
   onEscortAssigned,
 }: AssignEscortDialogProps) {
-  const { vehicles = [] } = useTripsData();
+  const { vehicles = [], trips = [] } = useTripsData();
   const [selectedEscorts, setSelectedEscorts] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -63,33 +64,27 @@ export function AssignEscortDialog({
     }
   }, [trip, open, maxEscorts]);
 
-  // Filter available vehicles (exclude the main trip vehicle, already selected escorts, and vehicles assigned to other trips)
+  // Filter available vehicles (exclude the main trip vehicle, already selected escorts, and vehicles assigned to other trips at conflicting times)
   const getAvailableVehicles = (currentIndex: number) => {
     const excludeIds = [
       trip?.vehicle_id, // Main trip vehicle
       ...selectedEscorts.filter((id, index) => index !== currentIndex && id), // Other selected escorts
     ].filter(Boolean);
 
-    console.log("Available vehicles for escort assignment:", {
-      totalVehicles: vehicles?.length || 0,
-      vehicles: vehicles,
-      excludeIds,
-      currentIndex,
-    });
-
-    // Filter vehicles that are:
-    // 1. Not the main trip vehicle
-    // 2. Not already selected as other escorts in this dialog
-    // 3. Not assigned as escorts to other trips (unless assigned to this trip)
     return (vehicles || []).filter((vehicle) => {
       if (excludeIds.includes(vehicle.id)) return false;
-
-      // Allow vehicles that are already assigned as escorts to THIS trip
-      if (vehicle.is_escort_assigned && vehicle.escort_trip_id !== trip?.id) {
-        return false;
-      }
-
-      return true;
+      // Time-based availability check
+      if (!trip) return false;
+      const availability = isVehicleAvailableForTimeSlot(
+        vehicle.id,
+        trip.date,
+        trip.time || "00:00",
+        trips,
+        trip.return_time,
+        trip.id,
+        { bufferHours: 1 }
+      );
+      return availability.isAvailable;
     });
   };
 
@@ -153,9 +148,18 @@ export function AssignEscortDialog({
 
       return { escortVehicles: validEscorts };
     },
-    onSuccess: ({ escortVehicles }) => {
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    onSuccess: async ({ escortVehicles }) => {
+      // Invalidate and refetch all related queries to ensure UI updates
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["vehicles"] }),
+        queryClient.refetchQueries({ queryKey: ["trips"] }),
+        queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+      ]);
+
+      // Small delay to ensure data propagates
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       toast({
         title: "Escort Vehicles Assigned",
         description: `${escortVehicles.length} escort vehicle(s) have been assigned to the trip.`,

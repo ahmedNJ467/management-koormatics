@@ -61,41 +61,76 @@ export function AssignDriverDialog({
     const fetchDrivers = async () => {
       if (!open) return;
 
-      const { data, error } = await supabase
-        .from("drivers")
-        .select("*")
-        .eq("status", "active");
+      const { data, error } = await supabase.from("drivers").select("*");
 
-      if (!error && data && tripToAssign) {
-        // Filter out the current trip from conflicts check
-        const otherTrips = allTrips.filter(
-          (trip) => trip.id !== tripToAssign.id
+      console.log("AssignDriverDialog - Drivers loaded:", {
+        driversCount: data?.length || 0,
+        error,
+        tripToAssign: tripToAssign?.id,
+        tripDate: tripToAssign?.date,
+        tripTime: tripToAssign?.time,
+        tripReturnTime: tripToAssign?.return_time,
+        drivers: data?.map((d) => ({
+          id: d.id,
+          name: d.name,
+          status: d.status,
+        })),
+      });
+
+      if (error) {
+        console.error("Error loading drivers:", error);
+        setDrivers([]);
+        return;
+      }
+
+      if (!data) {
+        console.warn("No drivers data received");
+        setDrivers([]);
+        return;
+      }
+
+      if (!tripToAssign) {
+        console.warn("No trip to assign");
+        setDrivers([]);
+        return;
+      }
+
+      // Filter out the current trip from conflicts check
+      const otherTrips = allTrips.filter(
+        (trip) => trip.id !== tripToAssign.id
+      );
+
+      // Check each driver's availability using time-based logic
+      const driversWithAvailability = data.map((driver) => {
+        const availability = isDriverAvailableForTimeSlot(
+          driver.id,
+          tripToAssign.date,
+          tripToAssign.time || "00:00",
+          allTrips,
+          tripToAssign.return_time,
+          tripToAssign.id,
+          { bufferHours: 1 }
         );
 
-        // Check each driver's availability using time-based logic
-        const driversWithAvailability = data.map((driver) => {
-          const availability = isDriverAvailableForTimeSlot(
-            driver.id,
-            tripToAssign.date,
-            tripToAssign.time || "00:00",
-            allTrips,
-            tripToAssign.return_time,
-            tripToAssign.id,
-            { bufferHours: 1 }
-          );
+        return {
+          ...driver,
+          isAvailable: availability.isAvailable,
+          conflicts: availability.conflicts,
+          reason: availability.reason,
+        };
+      });
 
-          return {
-            ...driver,
-            isAvailable: availability.isAvailable,
-            conflicts: availability.conflicts,
-            reason: availability.reason,
-          };
-        });
+      console.log("AssignDriverDialog - Drivers with availability:", {
+        totalDrivers: driversWithAvailability.length,
+        availableDrivers: driversWithAvailability.filter(d => d.isAvailable).length,
+        drivers: driversWithAvailability.map(d => ({
+          name: d.name,
+          isAvailable: d.isAvailable,
+          reason: d.reason,
+        })),
+      });
 
-        setDrivers(driversWithAvailability);
-      } else {
-        setDrivers([]);
-      }
+      setDrivers(driversWithAvailability);
     };
 
     fetchDrivers();
