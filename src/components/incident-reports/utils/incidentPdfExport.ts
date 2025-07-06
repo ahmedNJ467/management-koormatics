@@ -58,12 +58,12 @@ export const exportIncidentReportToPDF = (incident: IncidentReportData) => {
     drawIncidentReportHeader(doc, pageWidth, incident);
 
     // Draw incident details
-    let currentY = drawIncidentBasicInfo(doc, incident, 45);
-    currentY = drawIncidentClassification(doc, incident, currentY + 15);
-    currentY = drawIncidentDescription(doc, incident, currentY + 15);
-    currentY = drawIncidentParties(doc, incident, currentY + 15);
-    currentY = drawIncidentFinancials(doc, incident, currentY + 15);
-    currentY = drawIncidentFollowUp(doc, incident, currentY + 15);
+    let currentY = drawIncidentBasicInfo(doc, incident, 50);
+    currentY = drawIncidentClassification(doc, incident, currentY + 20);
+    currentY = drawIncidentDescription(doc, incident, currentY + 20);
+    currentY = drawIncidentParties(doc, incident, currentY + 20);
+    currentY = drawIncidentFinancials(doc, incident, currentY + 20);
+    currentY = drawIncidentFollowUp(doc, incident, currentY + 20);
 
     // Check if we need a new page
     if (currentY > pageHeight - 40) {
@@ -287,165 +287,183 @@ function drawIncidentBasicInfo(doc: jsPDF, incident: IncidentReportData, startY:
   const rightCol = 110;
   let currentY = startY;
 
-  // Section title
+  // Section title with proper spacing
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126); // Professional blue
+  doc.setFontSize(14);
+  doc.setTextColor(30, 64, 175); // Professional blue
   doc.text("INCIDENT INFORMATION", leftCol, currentY);
-  currentY += 10;
+  currentY += 15;
 
-  // Basic info boxes
-  doc.setFillColor(248, 249, 250);
-  doc.rect(leftCol, currentY, 85, 25, "F");
-  doc.rect(rightCol, currentY, 85, 25, "F");
+  // Info boxes with better positioning
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(leftCol, currentY, 85, 30, 3, 3, "FD");
+  doc.roundedRect(rightCol, currentY, 85, 30, 3, 3, "FD");
 
-  // Left column
+  // Left column - Date & Location
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(33, 37, 41);
-  doc.text("DATE & TIME", leftCol + 3, currentY + 5);
+  doc.setFontSize(10);
+  doc.setTextColor(75, 85, 99);
+  doc.text("DATE & TIME", leftCol + 5, currentY + 8);
   
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(11);
+  doc.setTextColor(17, 24, 39);
   const incidentDateTime = `${format(new Date(incident.incident_date), "dd MMM yyyy")}${incident.incident_time ? ` at ${incident.incident_time}` : ""}`;
-  doc.text(incidentDateTime, leftCol + 3, currentY + 10);
+  doc.text(incidentDateTime, leftCol + 5, currentY + 14);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("LOCATION", leftCol + 3, currentY + 15);
+  doc.setFontSize(10);
+  doc.setTextColor(75, 85, 99);
+  doc.text("LOCATION", leftCol + 5, currentY + 20);
   
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  const locationText = incident.location.length > 35 ? incident.location.substring(0, 35) + "..." : incident.location;
-  doc.text(locationText, leftCol + 3, currentY + 20);
+  doc.setFontSize(11);
+  doc.setTextColor(17, 24, 39);
+  const locationText = incident.location.length > 30 ? incident.location.substring(0, 30) + "..." : incident.location;
+  doc.text(locationText, leftCol + 5, currentY + 26);
 
-  // Right column
+  // Right column - Vehicle & Driver
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("VEHICLE", rightCol + 3, currentY + 5);
+  doc.setFontSize(10);
+  doc.setTextColor(75, 85, 99);
+  doc.text("VEHICLE", rightCol + 5, currentY + 8);
   
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(11);
+  doc.setTextColor(17, 24, 39);
   const vehicleInfo = incident.vehicle 
     ? `${incident.vehicle.make} ${incident.vehicle.model} (${incident.vehicle.registration})`
     : "Vehicle information not available";
-  doc.text(vehicleInfo, rightCol + 3, currentY + 10);
+  const vehicleText = vehicleInfo.length > 30 ? vehicleInfo.substring(0, 30) + "..." : vehicleInfo;
+  doc.text(vehicleText, rightCol + 5, currentY + 14);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("DRIVER", rightCol + 3, currentY + 15);
+  doc.setFontSize(10);
+  doc.setTextColor(75, 85, 99);
+  doc.text("DRIVER", rightCol + 5, currentY + 20);
   
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  const driverInfo = incident.driver 
-    ? incident.driver.name
-    : "No driver assigned";
-  doc.text(driverInfo, rightCol + 3, currentY + 20);
+  doc.setFontSize(11);
+  doc.setTextColor(17, 24, 39);
+  const driverInfo = incident.driver ? incident.driver.name : "No driver assigned";
+  doc.text(driverInfo, rightCol + 5, currentY + 26);
 
-  return currentY + 25;
+  return currentY + 35;
 }
 
 function drawIncidentClassification(doc: jsPDF, incident: IncidentReportData, startY: number): number {
   const leftCol = 20;
   let currentY = startY;
 
-  // Section title
+  // Section title with proper spacing
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126); // Professional blue
+  doc.setFontSize(14);
+  doc.setTextColor(30, 64, 175); // Professional blue
   doc.text("CLASSIFICATION", leftCol, currentY);
-  currentY += 8;
+  currentY += 15;
 
-  // Classification badges
+  // Modern classification badges with better spacing
   const badges = [
-    { label: "TYPE", value: incident.incident_type, color: [52, 144, 220] },
+    { label: "TYPE", value: incident.incident_type, color: [59, 130, 246] }, // Blue-500
     { label: "SEVERITY", value: incident.severity, color: getSeverityColor(incident.severity) },
   ];
 
   let xPos = leftCol;
   badges.forEach(badge => {
-    // Badge background
+    // Modern badge design
     doc.setFillColor(badge.color[0], badge.color[1], badge.color[2]);
-    doc.roundedRect(xPos, currentY, 40, 12, 2, 2, "F");
+    doc.roundedRect(xPos, currentY, 50, 16, 4, 4, "F");
     
-    // Badge text
+    // Badge text with better positioning
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text(badge.label, xPos + 20, currentY + 4, { align: "center" });
-    doc.setFontSize(10);
-    doc.text(badge.value.toUpperCase(), xPos + 20, currentY + 9, { align: "center" });
+    doc.setFontSize(9);
+    doc.text(badge.label, xPos + 25, currentY + 6, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(badge.value.toUpperCase(), xPos + 25, currentY + 12, { align: "center" });
     
-    xPos += 50;
+    xPos += 60;
   });
 
-  return currentY + 15;
+  return currentY + 25;
 }
 
 function drawIncidentDescription(doc: jsPDF, incident: IncidentReportData, startY: number): number {
   const leftCol = 20;
-  const rightCol = 195;
+  const rightCol = 190;
   let currentY = startY;
 
-  // Section title
+  // Section title with proper spacing
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126); // Professional blue
+  doc.setFontSize(14);
+  doc.setTextColor(30, 64, 175); // Professional blue
   doc.text("DESCRIPTION", leftCol, currentY);
-  currentY += 8;
+  currentY += 15;
 
-  // Description box
-  doc.setFillColor(248, 249, 250);
-  doc.rect(leftCol, currentY, rightCol - leftCol, 30, "F");
-  doc.setDrawColor(220, 220, 220);
-  doc.rect(leftCol, currentY, rightCol - leftCol, 30, "S");
+  // Modern description box
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(leftCol, currentY, rightCol - leftCol, 35, 3, 3, "FD");
 
-  // Description text
+  // Description text with proper padding
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(33, 37, 41);
+  doc.setFontSize(11);
+  doc.setTextColor(17, 24, 39);
   
-  const splitDescription = doc.splitTextToSize(incident.description, rightCol - leftCol - 6);
-  doc.text(splitDescription, leftCol + 3, currentY + 8);
+  const maxWidth = rightCol - leftCol - 10;
+  const splitDescription = doc.splitTextToSize(incident.description, maxWidth);
+  doc.text(splitDescription, leftCol + 5, currentY + 10);
 
-  return currentY + 35;
+  return currentY + 45;
 }
 
 function drawIncidentParties(doc: jsPDF, incident: IncidentReportData, startY: number): number {
   const leftCol = 20;
   let currentY = startY;
 
-  // Section title
+  // Section title with proper spacing
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126); // Professional blue
+  doc.setFontSize(14);
+  doc.setTextColor(30, 64, 175); // Professional blue
   doc.text("PARTIES INVOLVED", leftCol, currentY);
-  currentY += 8;
+  currentY += 15;
 
-  // Flags
+  // Modern flag indicators with better spacing
   const flags = [
-    { label: "Injuries Reported", value: incident.injuries_reported, color: incident.injuries_reported ? [220, 53, 69] : [108, 117, 125] },
-    { label: "Third Party Involved", value: incident.third_party_involved, color: incident.third_party_involved ? [255, 193, 7] : [108, 117, 125] },
-    { label: "Photos Attached", value: incident.photos_attached, color: incident.photos_attached ? [40, 167, 69] : [108, 117, 125] },
+    { label: "Injuries Reported", value: incident.injuries_reported, color: incident.injuries_reported ? [239, 68, 68] : [156, 163, 175] },
+    { label: "Third Party Involved", value: incident.third_party_involved, color: incident.third_party_involved ? [245, 158, 11] : [156, 163, 175] },
+    { label: "Photos Attached", value: incident.photos_attached, color: incident.photos_attached ? [34, 197, 94] : [156, 163, 175] },
   ];
 
   flags.forEach((flag, index) => {
-    const xPos = leftCol + (index * 60);
+    const xPos = leftCol + (index * 65);
     
-    // Flag indicator
+    // Modern flag design
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(xPos, currentY, 60, 20, 3, 3, "FD");
+    
+    // Flag indicator with modern styling
     doc.setFillColor(flag.color[0], flag.color[1], flag.color[2]);
-    doc.circle(xPos + 3, currentY + 3, 2, "F");
+    doc.circle(xPos + 8, currentY + 6, 3, "F");
     
-    // Flag text
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(33, 37, 41);
-    doc.text(flag.label, xPos + 8, currentY + 4);
+    // Flag text with better typography
     doc.setFont("helvetica", "bold");
-    doc.text(flag.value ? "YES" : "NO", xPos + 8, currentY + 8);
+    doc.setFontSize(9);
+    doc.setTextColor(75, 85, 99);
+    doc.text(flag.label, xPos + 5, currentY + 12);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(flag.value ? flag.color[0] : 156, flag.value ? flag.color[1] : 163, flag.value ? flag.color[2] : 175);
+    doc.text(flag.value ? "YES" : "NO", xPos + 5, currentY + 17);
   });
 
-  return currentY + 15;
+  return currentY + 30;
 }
 
 function drawIncidentFinancials(doc: jsPDF, incident: IncidentReportData, startY: number): number {
@@ -453,57 +471,59 @@ function drawIncidentFinancials(doc: jsPDF, incident: IncidentReportData, startY
   const rightCol = 110;
   let currentY = startY;
 
-  // Section title
+  // Section title with proper spacing
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126); // Professional blue
+  doc.setFontSize(14);
+  doc.setTextColor(30, 64, 175); // Professional blue
   doc.text("FINANCIAL IMPACT", leftCol, currentY);
-  currentY += 10;
+  currentY += 15;
 
-  // Financial boxes
-  doc.setFillColor(248, 249, 250);
-  doc.rect(leftCol, currentY, 85, 20, "F");
-  doc.rect(rightCol, currentY, 85, 20, "F");
+  // Modern financial boxes
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(leftCol, currentY, 85, 25, 3, 3, "FD");
+  doc.roundedRect(rightCol, currentY, 85, 25, 3, 3, "FD");
 
-  // Left: Estimated cost
+  // Left: Estimated cost with modern styling
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(33, 37, 41);
-  doc.text("ESTIMATED DAMAGE COST", leftCol + 3, currentY + 5);
+  doc.setFontSize(10);
+  doc.setTextColor(75, 85, 99);
+  doc.text("ESTIMATED DAMAGE COST", leftCol + 5, currentY + 8);
   
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(220, 53, 69);
+  doc.setFontSize(16);
+  doc.setTextColor(239, 68, 68); // Red-500 for cost
   const estimatedCost = incident.estimated_damage_cost ? `$${incident.estimated_damage_cost.toFixed(2)}` : "Not assessed";
-  doc.text(estimatedCost, leftCol + 3, currentY + 15);
+  doc.text(estimatedCost, leftCol + 5, currentY + 18);
 
-  // Right: Actual cost
+  // Right: Actual cost with modern styling
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(33, 37, 41);
-  doc.text("ACTUAL REPAIR COST", rightCol + 3, currentY + 5);
+  doc.setFontSize(10);
+  doc.setTextColor(75, 85, 99);
+  doc.text("ACTUAL REPAIR COST", rightCol + 5, currentY + 8);
   
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(incident.actual_repair_cost ? 40 : 108, incident.actual_repair_cost ? 167 : 117, incident.actual_repair_cost ? 69 : 125);
+  doc.setFontSize(16);
+  doc.setTextColor(incident.actual_repair_cost ? 34 : 156, incident.actual_repair_cost ? 197 : 163, incident.actual_repair_cost ? 94 : 175);
   const actualCost = incident.actual_repair_cost ? `$${incident.actual_repair_cost.toFixed(2)}` : "Pending";
-  doc.text(actualCost, rightCol + 3, currentY + 15);
+  doc.text(actualCost, rightCol + 5, currentY + 18);
 
-  return currentY + 25;
+  return currentY + 35;
 }
 
 function drawIncidentFollowUp(doc: jsPDF, incident: IncidentReportData, startY: number): number {
   const leftCol = 20;
   let currentY = startY;
 
-  // Section title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126); // Professional blue
+  // Section title with proper spacing
+  doc.setFont("helvetica", "bold");  
+  doc.setFontSize(14);
+  doc.setTextColor(30, 64, 175); // Professional blue
   doc.text("FOLLOW-UP & REFERENCES", leftCol, currentY);
-  currentY += 10;
+  currentY += 18;
 
-  // Info grid
+  // Modern info grid with better spacing
   const infoItems = [
     { label: "Reported By", value: incident.reported_by },
     { label: "Police Report #", value: incident.police_report_number || "Not applicable" },
@@ -518,24 +538,31 @@ function drawIncidentFollowUp(doc: jsPDF, incident: IncidentReportData, startY: 
   
   infoItems.forEach((item, index) => {
     if (index % 2 === 0 && index > 0) {
-      yPos += 12;
+      yPos += 18;
       xPos = leftCol;
     }
     
+    // Modern info box
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(xPos, yPos, 90, 15, 2, 2, "FD");
+    
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125);
-    doc.text(item.label.toUpperCase(), xPos, yPos);
+    doc.setFontSize(9);
+    doc.setTextColor(75, 85, 99);
+    doc.text(item.label.toUpperCase(), xPos + 3, yPos + 6);
     
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(33, 37, 41);
-    doc.text(item.value, xPos, yPos + 5);
+    doc.setFontSize(10);
+    doc.setTextColor(17, 24, 39);
+    const valueText = item.value.length > 25 ? item.value.substring(0, 25) + "..." : item.value;
+    doc.text(valueText, xPos + 3, yPos + 12);
     
     xPos += 95;
   });
 
-  return yPos + 15;
+  return yPos + 25;
 }
 
 function drawIncidentSummaryStats(doc: jsPDF, incidents: IncidentReportData[], startY: number) {
