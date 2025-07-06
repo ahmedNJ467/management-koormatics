@@ -58,7 +58,7 @@ export const exportIncidentReportToPDF = (incident: IncidentReportData) => {
     drawIncidentReportHeader(doc, pageWidth, incident);
 
     // Draw incident details
-    let currentY = drawIncidentBasicInfo(doc, incident, 40);
+    let currentY = drawIncidentBasicInfo(doc, incident, 45);
     currentY = drawIncidentClassification(doc, incident, currentY + 15);
     currentY = drawIncidentDescription(doc, incident, currentY + 15);
     currentY = drawIncidentParties(doc, incident, currentY + 15);
@@ -122,39 +122,65 @@ export const exportIncidentReportsListToPDF = (incidents: IncidentReportData[]) 
 };
 
 function drawIncidentReportHeader(doc: jsPDF, pageWidth: number, incident: IncidentReportData) {
-  // Header background
-  doc.setFillColor(220, 53, 69);
-  doc.rect(0, 0, pageWidth, 25, "F");
+  // Modern professional header background
+  doc.setFillColor(25, 54, 126); // Professional deep blue
+  doc.rect(0, 0, pageWidth, 30, "F");
 
-  // Company logo area
+  // Accent stripe at top
+  doc.setFillColor(52, 144, 220); // Bright blue accent
+  doc.rect(0, 0, pageWidth, 3, "F");
+
+  // Company logo area with white background
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(15, 5, 50, 15, 2, 2, "F");
+  doc.roundedRect(15, 6, 60, 18, 3, 3, "F");
 
-  // Company name
-  doc.setTextColor(220, 53, 69);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("KOORMATICS", 18, 11);
+  // Add Koormatics logo
+  try {
+    doc.addImage(
+      "/koormatics-logo.svg",
+      "SVG",
+      18,
+      8,
+      54,
+      14
+    );
+  } catch (e) {
+    console.error("Error adding logo to PDF:", e);
+    // Fallback to text
+    doc.setTextColor(25, 54, 126);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("KOORMATICS", 20, 14);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("Fleet Management", 20, 18);
+  }
 
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.text("Fleet Management", 18, 15);
-
-  // Main title
+  // Main title - center aligned
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   const title = "VEHICLE INCIDENT REPORT";
   const titleWidth = doc.getTextWidth(title);
-  doc.text(title, (pageWidth - titleWidth) / 2, 15);
+  doc.text(title, (pageWidth - titleWidth) / 2, 18);
 
-  // Incident ID and status
+  // Professional subtitle
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const incidentId = `Report ID: ${incident.id.slice(0, 8).toUpperCase()}`;
-  doc.text(incidentId, pageWidth - 15, 12, { align: "right" });
+  const subtitle = "SAFETY & FLEET MANAGEMENT DIVISION";
+  const subtitleWidth = doc.getTextWidth(subtitle);
+  doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 24);
 
-  // Status badge
+  // Report ID and timestamp
+  doc.setFontSize(9);
+  doc.setTextColor(220, 220, 220);
+  const reportId = `Report ID: ${incident.id.slice(0, 8).toUpperCase()}`;
+  doc.text(reportId, pageWidth - 15, 10, { align: "right" });
+  
+  const timestamp = `Generated: ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
+  doc.text(timestamp, pageWidth - 15, 15, { align: "right" });
+
+  // Modern status badge
   const statusColors = {
     reported: [108, 117, 125],
     investigating: [255, 193, 7],
@@ -164,44 +190,71 @@ function drawIncidentReportHeader(doc: jsPDF, pageWidth: number, incident: Incid
   const statusColor = statusColors[incident.status as keyof typeof statusColors] || [108, 117, 125];
   
   doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-  doc.roundedRect(pageWidth - 45, 16, 30, 6, 1, 1, "F");
+  doc.roundedRect(pageWidth - 50, 20, 35, 8, 2, 2, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text(incident.status.toUpperCase(), pageWidth - 30, 20, { align: "center" });
+  doc.text(incident.status.toUpperCase(), pageWidth - 32.5, 25, { align: "center" });
 }
 
 function drawIncidentListHeader(doc: jsPDF, pageWidth: number) {
-  // Header background
-  doc.setFillColor(220, 53, 69);
-  doc.rect(0, 0, pageWidth, 25, "F");
+  // Modern professional header background
+  doc.setFillColor(25, 54, 126); // Professional deep blue
+  doc.rect(0, 0, pageWidth, 30, "F");
 
-  // Company info
+  // Accent stripe at top
+  doc.setFillColor(52, 144, 220); // Bright blue accent
+  doc.rect(0, 0, pageWidth, 3, "F");
+
+  // Company logo area with white background
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(15, 5, 50, 15, 2, 2, "F");
+  doc.roundedRect(15, 6, 60, 18, 3, 3, "F");
 
-  doc.setTextColor(220, 53, 69);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("KOORMATICS", 18, 11);
+  // Add Koormatics logo
+  try {
+    doc.addImage(
+      "/koormatics-logo.svg",
+      "SVG",
+      18,
+      8,
+      54,
+      14
+    );
+  } catch (e) {
+    console.error("Error adding logo to PDF:", e);
+    // Fallback to text
+    doc.setTextColor(25, 54, 126);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("KOORMATICS", 20, 14);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("Fleet Management", 20, 18);
+  }
 
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.text("Fleet Management", 18, 15);
-
-  // Main title
+  // Main title - center aligned
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   const title = "INCIDENT REPORTS SUMMARY";
   const titleWidth = doc.getTextWidth(title);
-  doc.text(title, (pageWidth - titleWidth) / 2, 15);
+  doc.text(title, (pageWidth - titleWidth) / 2, 18);
 
-  // Date stamp
+  // Professional subtitle
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
+  const subtitle = "SAFETY & FLEET MANAGEMENT DIVISION";
+  const subtitleWidth = doc.getTextWidth(subtitle);
+  doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 24);
+
+  // Date stamp
+  doc.setFontSize(9);
+  doc.setTextColor(220, 220, 220);
   const dateStamp = format(new Date(), "EEEE, MMMM do, yyyy");
-  doc.text(dateStamp, pageWidth - 15, 17, { align: "right" });
+  doc.text(dateStamp, pageWidth - 15, 12, { align: "right" });
+  
+  const timestamp = `Generated: ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
+  doc.text(timestamp, pageWidth - 15, 17, { align: "right" });
 }
 
 function drawIncidentBasicInfo(doc: jsPDF, incident: IncidentReportData, startY: number): number {
@@ -212,7 +265,7 @@ function drawIncidentBasicInfo(doc: jsPDF, incident: IncidentReportData, startY:
   // Section title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(220, 53, 69);
+  doc.setTextColor(25, 54, 126); // Professional blue
   doc.text("INCIDENT INFORMATION", leftCol, currentY);
   currentY += 10;
 
@@ -274,7 +327,7 @@ function drawIncidentClassification(doc: jsPDF, incident: IncidentReportData, st
   // Section title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(220, 53, 69);
+  doc.setTextColor(25, 54, 126); // Professional blue
   doc.text("CLASSIFICATION", leftCol, currentY);
   currentY += 8;
 
@@ -312,7 +365,7 @@ function drawIncidentDescription(doc: jsPDF, incident: IncidentReportData, start
   // Section title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(220, 53, 69);
+  doc.setTextColor(25, 54, 126); // Professional blue
   doc.text("DESCRIPTION", leftCol, currentY);
   currentY += 8;
 
@@ -340,7 +393,7 @@ function drawIncidentParties(doc: jsPDF, incident: IncidentReportData, startY: n
   // Section title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(220, 53, 69);
+  doc.setTextColor(25, 54, 126); // Professional blue
   doc.text("PARTIES INVOLVED", leftCol, currentY);
   currentY += 8;
 
@@ -378,7 +431,7 @@ function drawIncidentFinancials(doc: jsPDF, incident: IncidentReportData, startY
   // Section title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(220, 53, 69);
+  doc.setTextColor(25, 54, 126); // Professional blue
   doc.text("FINANCIAL IMPACT", leftCol, currentY);
   currentY += 10;
 
@@ -421,7 +474,7 @@ function drawIncidentFollowUp(doc: jsPDF, incident: IncidentReportData, startY: 
   // Section title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(220, 53, 69);
+  doc.setTextColor(25, 54, 126); // Professional blue
   doc.text("FOLLOW-UP & REFERENCES", leftCol, currentY);
   currentY += 10;
 
@@ -533,7 +586,7 @@ function generateIncidentReportsTable(doc: jsPDF, incidents: IncidentReportData[
       valign: "middle",
     },
     headStyles: {
-      fillColor: [220, 53, 69],
+      fillColor: [25, 54, 126], // Professional blue
       textColor: [255, 255, 255],
       fontStyle: "bold",
       halign: "center",
@@ -563,7 +616,7 @@ function drawIncidentReportFooter(doc: jsPDF, pageWidth: number, pageHeight: num
   doc.rect(0, footerY - 5, pageWidth, 25, "F");
 
   // Company info
-  doc.setTextColor(220, 53, 69);
+  doc.setTextColor(25, 54, 126); // Professional blue
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.text("KOORMATICS", 20, footerY);
@@ -571,7 +624,7 @@ function drawIncidentReportFooter(doc: jsPDF, pageWidth: number, pageHeight: num
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
-  doc.text("Fleet Management & Safety Division", 20, footerY + 4);
+  doc.text("Safety & Fleet Management Division", 20, footerY + 4);
 
   // Page number
   doc.setTextColor(60, 60, 60);
