@@ -60,6 +60,8 @@ export interface Contract {
   start_date: string;
   end_date: string;
   created_at: string;
+  /** A human-friendly identifier like C240701-1234 generated when a contract is created */
+  contract_number: string;
   contract_file?: string;
 }
 

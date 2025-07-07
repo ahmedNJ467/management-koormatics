@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { type Client } from "./use-clients-query";
 
@@ -6,19 +5,24 @@ export function useClientFiltering(clients: Client[] = []) {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<string>("active");
-  
-  const activeClients = clients?.filter(client => !client.is_archived) || [];
-  const archivedClients = clients?.filter(client => client.is_archived) || [];
+  const [withContractsOnly, setWithContractsOnly] = useState<boolean>(false);
+
+  const activeClients = clients?.filter((client) => !client.is_archived) || [];
+  const archivedClients = clients?.filter((client) => client.is_archived) || [];
 
   const getFilteredClients = (clientList: Client[]) => {
     return clientList.filter((client) => {
-      const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch =
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.email?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesType = typeFilter === "all" || client.type === typeFilter;
-      
-      return matchesSearch && matchesType;
+
+      const matchesContract =
+        !withContractsOnly || !!client.has_active_contract;
+
+      return matchesSearch && matchesType && matchesContract;
     });
   };
 
@@ -32,9 +36,11 @@ export function useClientFiltering(clients: Client[] = []) {
     setTypeFilter,
     activeTab,
     setActiveTab,
+    withContractsOnly,
+    setWithContractsOnly,
     activeClients,
     archivedClients,
     filteredActiveClients,
-    filteredArchivedClients
+    filteredArchivedClients,
   };
 }

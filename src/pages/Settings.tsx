@@ -1,28 +1,32 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Globe, Bell, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const settingsSections = [
   {
-    title: "Company Information",
+    title: "Company",
     icon: Building2,
-    description: "Manage your company details and business information",
+    description: "Company profile, logo, and legal info",
+    link: "/settings/company",
   },
   {
-    title: "Regional Settings",
+    title: "Regional",
     icon: Globe,
-    description: "Configure timezone, currency, and language preferences",
+    description: "Locale, timezone & currency",
+    link: "/settings/regional",
   },
   {
     title: "Notifications",
     icon: Bell,
-    description: "Set up email and system notification preferences",
+    description: "Email, in-app & mobile notifications",
+    link: "/settings/notifications",
   },
   {
     title: "Security & Access",
     icon: Shield,
-    description: "Manage user roles, permissions, and security settings",
+    description: "Users, roles & permissions",
+    link: "/settings/security",
   },
 ];
 
@@ -35,26 +39,33 @@ export default function Settings() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {settingsSections.map((section) => (
-          <Card key={section.title} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center gap-4">
-              <div className="rounded-lg bg-secondary/10 p-2">
-                <section.icon className="h-6 w-6 text-secondary" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">{section.title}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                {section.description}
-              </p>
-              <Button variant="outline" className="w-full">
-                Configure
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {settingsSections.map((section) => {
+          const Wrapper: any = section.link ? Link : "div";
+          return (
+            <Wrapper to={section.link} key={section.title} className="block focus:outline-none">
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full">
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <div className="rounded-md bg-secondary/20 p-3">
+                    <section.icon className="h-6 w-6 text-secondary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold">{section.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <p className="text-sm text-muted-foreground mb-6 min-h-[40px]">
+                    {section.description}
+                  </p>
+                  {section.link && (
+                    <Button variant="secondary" className="w-full">
+                      Manage
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </Wrapper>
+          );
+        })}
       </div>
     </div>
   );

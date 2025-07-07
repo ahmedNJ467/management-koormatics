@@ -18,6 +18,8 @@ interface ClientFiltersProps {
   setSearchTerm: (term: string) => void;
   typeFilter: string;
   setTypeFilter: (type: string) => void;
+  withContractsOnly: boolean;
+  setWithContractsOnly: (value: boolean) => void;
 }
 
 export function ClientFilters({
@@ -25,10 +27,13 @@ export function ClientFilters({
   setSearchTerm,
   typeFilter,
   setTypeFilter,
+  withContractsOnly,
+  setWithContractsOnly,
 }: ClientFiltersProps) {
   const currentFilters = {
     search: searchTerm,
     type: typeFilter,
+    contracts: withContractsOnly,
   };
 
   const handleApplyPreset = (filters: Record<string, any>) => {
@@ -44,12 +49,14 @@ export function ClientFilters({
   const clearAllFilters = () => {
     setSearchTerm("");
     setTypeFilter("all");
+    setWithContractsOnly(false);
   };
 
   // Count active filters
   const activeFiltersCount = [
     searchTerm && searchTerm.trim() !== "",
     typeFilter && typeFilter !== "all",
+    withContractsOnly,
   ].filter(Boolean).length;
 
   const hasActiveFilters = activeFiltersCount > 0;
@@ -178,6 +185,20 @@ export function ClientFilters({
                     </Button>
                   </Badge>
                 )}
+
+                {withContractsOnly && (
+                  <Badge variant="secondary" className="gap-1">
+                    <CheckCircle className="h-3 w-3" /> With Contracts
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setWithContractsOnly(false)}
+                      className="h-4 w-4 p-0 ml-1 hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
               </div>
 
               <Button
@@ -228,12 +249,9 @@ export function ClientFilters({
         <Separator orientation="vertical" className="h-6" />
 
         <Button
-          variant="outline"
+          variant={withContractsOnly ? "default" : "outline"}
           size="sm"
-          onClick={() => {
-            // This would filter for clients with active contracts - we'd need to add this filter state
-            // For now, it's just a visual placeholder
-          }}
+          onClick={() => setWithContractsOnly(!withContractsOnly)}
           className="h-8"
         >
           <CheckCircle className="h-3 w-3 mr-1" />

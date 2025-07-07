@@ -101,6 +101,9 @@ interface VehicleLease {
     name: string;
     phone: string;
   };
+  contract?: {
+    contract_number: string | null;
+  };
 }
 
 export default function VehicleLeasing() {
@@ -136,6 +139,9 @@ export default function VehicleLeasing() {
           assigned_driver:drivers (
             name,
             phone
+          ),
+          contract:contracts (
+            contract_number
           )
         `
         )
@@ -203,11 +209,15 @@ export default function VehicleLeasing() {
           : "";
         const registration = lease.vehicle?.registration?.toLowerCase() || "";
         const lesseeName = lease.lessee_name.toLowerCase();
+        const contractNumber = (
+          lease.contract?.contract_number || ""
+        ).toLowerCase();
 
         if (
           !vehicleName.includes(searchLower) &&
           !registration.includes(searchLower) &&
-          !lesseeName.includes(searchLower)
+          !lesseeName.includes(searchLower) &&
+          !contractNumber.includes(searchLower)
         ) {
           return false;
         }
@@ -677,7 +687,9 @@ export default function VehicleLeasing() {
                         <TableCell>
                           <div className="space-y-1">
                             <div className="font-medium text-blue-600">
-                              Contract #{lease.contract_id || "N/A"}
+                              Contract{" "}
+                              {lease.contract?.contract_number ||
+                                "#" + (lease.contract_id?.slice(0, 8) || "N/A")}
                             </div>
                             <div className="text-sm">
                               {lease.vehicle

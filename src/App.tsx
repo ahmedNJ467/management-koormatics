@@ -30,6 +30,9 @@ import VehicleInspections from "./pages/VehicleInspections";
 import VehicleIncidentReports from "./pages/VehicleIncidentReports";
 import VehicleLeasing from "./pages/VehicleLeasing";
 import Auth from "./pages/Auth";
+import SettingsSecurity from "./pages/SettingsSecurity";
+import Forbidden from "./pages/Forbidden";
+import AccessGuard from "@/components/auth/AccessGuard";
 
 const queryClient = new QueryClient();
 
@@ -44,38 +47,31 @@ const App = () => (
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/*" element={<Layout />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="vehicles" element={<Vehicles />} />
-              <Route path="drivers" element={<Drivers />} />
-              <Route path="trips" element={<Trips />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="maintenance" element={<Maintenance />} />
-              <Route path="fuel-logs" element={<FuelLogs />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="quotations" element={<Quotations />} />
-              <Route path="invoices" element={<Invoices />} />
-              <Route path="spare-parts" element={<SpareParts />} />
-              <Route path="contracts" element={<Contracts />} />
-              <Route path="alerts" element={<Alerts />} />
-              <Route path="trip-analytics" element={<TripAnalytics />} />
-              <Route path="cost-analytics" element={<CostAnalytics />} />
-              <Route
-                path="combined-analytics"
-                element={<CombinedAnalytics />}
-              />
-              <Route path="dispatch" element={<Dispatch />} />
-              <Route path="invitation-letter" element={<InvitationLetter />} />
-              <Route
-                path="vehicle-inspections"
-                element={<VehicleInspections />}
-              />
-              <Route
-                path="vehicle-incident-reports"
-                element={<VehicleIncidentReports />}
-              />
-              <Route path="vehicle-leasing" element={<VehicleLeasing />} />
+              <Route path="dashboard" element={<AccessGuard><Dashboard /></AccessGuard>} />
+              <Route path="vehicles" element={<AccessGuard><Vehicles /></AccessGuard>} />
+              <Route path="drivers" element={<AccessGuard><Drivers /></AccessGuard>} />
+              <Route path="trips" element={<AccessGuard><Trips /></AccessGuard>} />
+              <Route path="clients" element={<AccessGuard><Clients /></AccessGuard>} />
+              <Route path="maintenance" element={<AccessGuard><Maintenance /></AccessGuard>} />
+              <Route path="fuel-logs" element={<AccessGuard><FuelLogs /></AccessGuard>} />
+              <Route path="reports" element={<AccessGuard><Reports /></AccessGuard>} />
+              <Route path="settings" element={<AccessGuard><Settings /></AccessGuard>} />
+              <Route path="settings/security" element={<AccessGuard><SettingsSecurity /></AccessGuard>} />
+              <Route path="403" element={<Forbidden />} />
+              <Route path="profile" element={<AccessGuard><Profile /></AccessGuard>} />
+              <Route path="quotations" element={<AccessGuard><Quotations /></AccessGuard>} />
+              <Route path="invoices" element={<AccessGuard><Invoices /></AccessGuard>} />
+              <Route path="spare-parts" element={<AccessGuard><SpareParts /></AccessGuard>} />
+              <Route path="contracts" element={<AccessGuard><Contracts /></AccessGuard>} />
+              <Route path="alerts" element={<AccessGuard><Alerts /></AccessGuard>} />
+              <Route path="trip-analytics" element={<AccessGuard><TripAnalytics /></AccessGuard>} />
+              <Route path="cost-analytics" element={<AccessGuard><CostAnalytics /></AccessGuard>} />
+              <Route path="combined-analytics" element={<AccessGuard><CombinedAnalytics /></AccessGuard>} />
+              <Route path="dispatch" element={<AccessGuard><Dispatch /></AccessGuard>} />
+              <Route path="invitation-letter" element={<AccessGuard><InvitationLetter /></AccessGuard>} />
+              <Route path="vehicle-inspections" element={<AccessGuard><VehicleInspections /></AccessGuard>} />
+              <Route path="vehicle-incident-reports" element={<AccessGuard><VehicleIncidentReports /></AccessGuard>} />
+              <Route path="vehicle-leasing" element={<AccessGuard><VehicleLeasing /></AccessGuard>} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

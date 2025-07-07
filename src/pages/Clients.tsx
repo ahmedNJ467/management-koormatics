@@ -49,6 +49,8 @@ export default function Clients() {
     setSearchTerm,
     typeFilter,
     setTypeFilter,
+    withContractsOnly,
+    setWithContractsOnly,
     activeTab,
     setActiveTab,
     activeClients,
@@ -329,6 +331,8 @@ export default function Clients() {
             setSearchTerm={setSearchTerm}
             typeFilter={typeFilter}
             setTypeFilter={setTypeFilter}
+            withContractsOnly={withContractsOnly}
+            setWithContractsOnly={setWithContractsOnly}
           />
         </CardContent>
       </Card>

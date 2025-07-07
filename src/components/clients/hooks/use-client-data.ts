@@ -1,4 +1,3 @@
-
 import { useClientRealtime } from "./use-client-realtime";
 import { useClientsQuery, type Client } from "./use-clients-query";
 import { useContactCounts, useMemberCounts } from "./use-client-counts";
@@ -21,6 +20,8 @@ export function useClientData() {
     setSearchTerm,
     typeFilter,
     setTypeFilter,
+    withContractsOnly,
+    setWithContractsOnly,
     activeTab,
     setActiveTab,
     activeClients,
@@ -38,6 +39,8 @@ export function useClientData() {
     setSearchTerm,
     typeFilter,
     setTypeFilter,
+    withContractsOnly,
+    setWithContractsOnly,
     activeTab,
     setActiveTab,
     activeClients,

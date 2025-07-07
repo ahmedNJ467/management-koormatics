@@ -258,6 +258,7 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
     // TEMPORARY FIX: Map new schema to old database schema
     const submitData = {
       vehicle_id: data.vehicle_id,
+      contract_id: data.contract_id,
       lessee_name: data.lessee_name,
       lessee_email: data.lessee_email,
       lessee_phone: data.lessee_phone,
@@ -265,7 +266,8 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
       lease_start_date: data.lease_start_date,
       lease_end_date: data.lease_end_date,
 
-      // Map daily_rate to monthly_rate (multiply by 30)
+      // Store both daily_rate and monthly_rate
+      daily_rate: data.daily_rate,
       monthly_rate: (data.daily_rate || 0) * 30,
 
       // Set default values for required old fields
@@ -549,10 +551,17 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                       type="number"
                       step="0.01"
                       placeholder="50.00"
-                      {...field}
+                      value={field.value ?? ""}
                       onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || 0)
+                        field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value)
+                        )
                       }
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
                   </FormControl>
                   <FormDescription>

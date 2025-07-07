@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Contract } from "@/pages/Contracts";
 
@@ -6,20 +5,20 @@ import { Contract } from "@/pages/Contracts";
 export const createContractsDirectory = async (): Promise<boolean> => {
   try {
     console.log("Creating contracts directory in documents bucket");
-    
+
     // Try to create the contracts folder by uploading a placeholder file
     const { error } = await supabase.storage
       .from("documents")
-      .upload('contracts/.folder', new Blob([''], { type: 'text/plain' }), {
-        contentType: 'text/plain',
-        upsert: true
+      .upload("contracts/.folder", new Blob([""], { type: "text/plain" }), {
+        contentType: "text/plain",
+        upsert: true,
       });
-      
-    if (error && !error.message.includes('already exists')) {
+
+    if (error && !error.message.includes("already exists")) {
       console.warn("Could not create contracts folder:", error);
       return false;
     }
-    
+
     console.log("Contracts directory created or verified successfully");
     return true;
   } catch (error) {
@@ -40,6 +39,16 @@ export const fetchContracts = async (): Promise<Contract[]> => {
   }
 
   return data as Contract[];
+};
+
+// Utility to generate a friendly contract number, e.g. C240701-1234
+const generateContractNumber = (): string => {
+  const now = new Date();
+  const yy = now.getFullYear().toString().slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const random = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+  return `C${yy}${mm}${dd}-${random}`;
 };
 
 export const addContract = async (
@@ -67,6 +76,7 @@ export const addContract = async (
     start_date: newContract.start_date,
     end_date: newContract.end_date,
     created_at: new Date().toISOString(),
+    contract_number: generateContractNumber(),
   };
 
   console.log("Inserting contract data:", contractToInsert);
@@ -86,28 +96,38 @@ export const addContract = async (
   if (contractFile && data.id) {
     try {
       // Validate file
-      if (contractFile.size > 10 * 1024 * 1024) { // 10MB limit
+      if (contractFile.size > 10 * 1024 * 1024) {
+        // 10MB limit
         throw new Error("File size exceeds 10MB limit");
       }
 
       // Create the contracts folder if it doesn't exist
       const dirCreated = await createContractsDirectory();
       if (!dirCreated) {
-        console.warn("Could not create contracts directory, will attempt upload anyway");
+        console.warn(
+          "Could not create contracts directory, will attempt upload anyway"
+        );
       }
 
       const fileExt = contractFile.name.split(".").pop() || "pdf";
       const fileName = `${data.id}.${fileExt}`;
       const filePath = `contracts/${fileName}`;
 
-      console.log("Uploading file:", filePath, "Type:", contractFile.type, "Size:", contractFile.size);
+      console.log(
+        "Uploading file:",
+        filePath,
+        "Type:",
+        contractFile.type,
+        "Size:",
+        contractFile.size
+      );
 
       // Upload the actual file
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("documents")
         .upload(filePath, contractFile, {
           upsert: true,
-          contentType: contractFile.type || 'application/octet-stream'
+          contentType: contractFile.type || "application/octet-stream",
         });
 
       if (uploadError) {
@@ -148,7 +168,10 @@ export const updateContract = async (
 
   // Cast to proper type to ensure type safety
   if (updatedContract.status) {
-    updatedContract.status = updatedContract.status as "active" | "pending" | "expired";
+    updatedContract.status = updatedContract.status as
+      | "active"
+      | "pending"
+      | "expired";
   }
 
   // Update the contract data first
@@ -168,28 +191,38 @@ export const updateContract = async (
   if (contractFile) {
     try {
       // Validate file
-      if (contractFile.size > 10 * 1024 * 1024) { // 10MB limit
+      if (contractFile.size > 10 * 1024 * 1024) {
+        // 10MB limit
         throw new Error("File size exceeds 10MB limit");
       }
 
       // Create the contracts folder if it doesn't exist
       const dirCreated = await createContractsDirectory();
       if (!dirCreated) {
-        console.warn("Could not create contracts directory, will attempt upload anyway");
+        console.warn(
+          "Could not create contracts directory, will attempt upload anyway"
+        );
       }
 
       const fileExt = contractFile.name.split(".").pop() || "pdf";
       const fileName = `${contractId}.${fileExt}`;
       const filePath = `contracts/${fileName}`;
 
-      console.log("Uploading new file for contract:", filePath, "File type:", contractFile.type, "Size:", contractFile.size);
-      
+      console.log(
+        "Uploading new file for contract:",
+        filePath,
+        "File type:",
+        contractFile.type,
+        "Size:",
+        contractFile.size
+      );
+
       // Upload directly with upsert
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("documents")
-        .upload(filePath, contractFile, { 
+        .upload(filePath, contractFile, {
           upsert: true,
-          contentType: contractFile.type || 'application/octet-stream'
+          contentType: contractFile.type || "application/octet-stream",
         });
 
       if (uploadError) {
@@ -207,7 +240,10 @@ export const updateContract = async (
           .eq("id", contractId);
 
         if (updateError) {
-          console.error("Error updating contract with new file path:", updateError);
+          console.error(
+            "Error updating contract with new file path:",
+            updateError
+          );
           throw updateError;
         }
       }

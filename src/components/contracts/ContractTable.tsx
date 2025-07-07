@@ -126,7 +126,7 @@ const ContractTable = ({
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
-                      {contract.name}
+                      {contract.contract_number} — {contract.name}
                     </CardTitle>
                     <CardDescription className="flex items-center gap-1 mt-1">
                       <User className="h-3 w-3" />
@@ -241,6 +241,7 @@ const ContractTable = ({
       <Table>
         <TableHeader className="sticky top-0 bg-background z-10">
           <TableRow>
+            <TableHead>No.</TableHead>
             <TableHead>Contract Name</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Status</TableHead>
@@ -269,6 +270,9 @@ const ContractTable = ({
                   isExpiringSoon ? "bg-amber-50/50 dark:bg-amber-950/20" : ""
                 }`}
               >
+                <TableCell className="font-medium text-muted-foreground">
+                  {contract.contract_number}
+                </TableCell>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     {contract.contract_file && (

@@ -149,7 +149,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
       }
     }
 
-    return "Security Escort";
+    return "";
   };
 
   // Format phone number for display
@@ -288,7 +288,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                 nextTrip.time || ""
               }`;
             }
-            for (const trip of trips) {
+            isCurrentlyOnTrip = trips.some((trip) => {
               if (
                 (trip.vehicle_id === vehicle.id ||
                   (trip.escort_vehicle_ids &&
@@ -296,26 +296,26 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                     trip.escort_vehicle_ids.includes(vehicle.id))) &&
                 (trip.status === "in_progress" || trip.status === "scheduled")
               ) {
-                const tripDate = new Date(trip.date);
-                if (tripDate.getTime() === today.getTime()) {
-                  // Parse trip start and end times
-                  const startTime = trip.time || "00:00";
-                  const endTime = trip.return_time || "23:59";
-                  const [startHour, startMin] = startTime
-                    .split(":")
-                    .map(Number);
-                  const [endHour, endMin] = endTime.split(":").map(Number);
-                  const tripStart = new Date(tripDate);
-                  tripStart.setHours(startHour, startMin, 0, 0);
-                  const tripEnd = new Date(tripDate);
-                  tripEnd.setHours(endHour, endMin, 0, 0);
-                  if (now >= tripStart && now <= tripEnd) {
-                    isCurrentlyOnTrip = true;
-                    break;
-                  }
+                const tripDateStr = trip.date.split("T")[0];
+                const startStr = trip.time
+                  ? `${tripDateStr} ${trip.time}`
+                  : null;
+                const endStr = trip.return_time
+                  ? `${tripDateStr} ${trip.return_time}`
+                  : null;
+                const tripStart = startStr ? new Date(startStr) : null;
+                const tripEnd = endStr ? new Date(endStr) : null;
+                if (
+                  tripStart &&
+                  tripEnd &&
+                  now >= tripStart &&
+                  now <= tripEnd
+                ) {
+                  return true;
                 }
               }
-            }
+              return false;
+            });
             let badgeText = isCurrentlyOnTrip ? "On a Trip" : "Available";
             let badgeClass = isCurrentlyOnTrip
               ? "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40"
@@ -341,7 +341,12 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {vehicle.registration}
-                    {getEscortTripDetails(vehicle.id)}
+                    {(() => {
+                      const escortInfo = getEscortTripDetails(vehicle.id);
+                      return escortInfo ? (
+                        <span className="ml-1">{escortInfo}</span>
+                      ) : null;
+                    })()}
                     {bookedDateTime && (
                       <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                         <Clock className="h-3 w-3" />

@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,37 +26,36 @@ export interface Client {
 
 export function useClientsQuery() {
   return useQuery({
-    queryKey: ['clients'],
+    queryKey: ["clients"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('name');
-      
+        .from("clients")
+        .select("*")
+        .order("name");
+
       if (error) throw error;
-      
-      // Get clients with active contracts using the status field
+
+      // Get clients that have active contracts (status = 'active')
       const { data: activeContractData, error: contractError } = await supabase
-        .from('trips')
-        .select('client_id')
-        .eq('status', 'in_progress') // Use status column directly
-        .is('invoice_id', null); // Not invoiced yet
-      
+        .from("contracts")
+        .select("client_name")
+        .eq("status", "active");
+
       if (contractError) {
         console.error("Error fetching active contracts:", contractError);
       }
-      
-      // Get unique client IDs with active contracts
+
+      // Use a Set for efficient look-ups of client names that have active contracts
       const clientsWithActiveContracts = new Set(
-        activeContractData?.map(trip => trip.client_id) || []
+        activeContractData?.map((contract) => contract.client_name) || []
       );
-      
+
       // Add has_active_contract flag to clients
-      const clientsWithFlag = (data || []).map(client => ({
+      const clientsWithFlag = (data || []).map((client) => ({
         ...client,
-        has_active_contract: clientsWithActiveContracts.has(client.id)
+        has_active_contract: clientsWithActiveContracts.has(client.name),
       }));
-      
+
       return clientsWithFlag as Client[];
     },
   });
