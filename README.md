@@ -202,3 +202,7 @@ For support and questions:
 **Built with ❤️ for efficient fleet management**
 
 🚛 **Koormatics** - Your trusted fleet management partner
+
+## 📚 Full Documentation
+
+Looking for in-depth guides? Head over to the 🤓 [docs directory](../docs/) for complete setup, architecture, and API details.
