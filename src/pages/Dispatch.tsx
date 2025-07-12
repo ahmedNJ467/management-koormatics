@@ -43,6 +43,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { OperationMetrics } from "@/components/dispatch/OperationMetrics";
+import { LiveMap } from "@/components/dispatch/LiveMap";
+import { QuickActions } from "@/components/dispatch/QuickActions";
+import { OperationCenter } from "@/components/dispatch/OperationCenter";
 
 export default function Dispatch() {
   const { toast } = useToast();
@@ -483,36 +487,65 @@ export default function Dispatch() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in p-6">
-      {/* Enhanced Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight">
-            Dispatch Center
-          </h2>
-          <p className="text-muted-foreground">
-            Manage trips, assign resources, and monitor fleet operations •{" "}
-            {format(new Date(), "EEEE, MMMM d, yyyy")}
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+      {/* Enhanced Header with Operation Room Styling */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 p-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Operation Center
+            </h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Fleet Command & Control • {format(new Date(), "EEEE, MMMM d, yyyy")}
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="gap-2"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+              ● ONLINE
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="gap-2"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Analytics - Compact Inline Display */}
+      <div className="space-y-6 p-6">
+        {/* Operation Metrics Dashboard */}
+        <OperationMetrics trips={dispatchTrips} drivers={drivers} vehicles={vehicles} />
+
+        {/* Quick Actions and Search */}
+        <QuickActions
+          onRefresh={handleRefresh}
+          onSearchChange={setSearchTerm}
+          onFilterChange={setStatusFilter}
+          refreshing={refreshing}
+          searchTerm={searchTerm}
+          currentFilter={statusFilter}
+        />
+
+        {/* Live Operations Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <LiveMap trips={dispatchTrips} />
+          </div>
+          <div>
+            <OperationCenter trips={dispatchTrips} onRefresh={handleRefresh} />
+          </div>
+        </div>
+
+        {/* Legacy Analytics - Compact Inline Display */}
       <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 py-4">
         {/* Today's Trips */}
         <div className="flex items-center gap-2">
@@ -711,6 +744,7 @@ export default function Dispatch() {
         onClose={() => setAssignEscortOpen(false)}
         onEscortAssigned={handleEscortAssigned}
       />
+      </div>
     </div>
   );
 }
