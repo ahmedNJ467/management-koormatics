@@ -75,8 +75,8 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={()=>onOpenChange(false)}>Cancel</Button>
-          <Button onClick={()=>addUserMutation.mutate()} disabled={addUserMutation.isLoading}>
-            {addUserMutation.isLoading ? "Creating..." : "Create"}
+          <Button onClick={()=>addUserMutation.mutate()} disabled={addUserMutation.isPending}>
+            {addUserMutation.isPending ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>
