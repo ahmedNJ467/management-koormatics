@@ -103,6 +103,21 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
                 </div>
               )}
 
+              {/* Render intermediate stops, if any */}
+              {Array.isArray(viewTrip.stops) && viewTrip.stops.length > 0 && (
+                viewTrip.stops.map((stop, index) => (
+                  <div key={index} className="flex items-start">
+                    <MapPin className="h-4 w-4 mt-0.5 text-yellow-400 mr-2" />
+                    <div>
+                      <div className="text-xs text-slate-500">
+                        Stop {index + 1}
+                      </div>
+                      <div className="text-slate-100">{stop}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+
               {viewTrip.dropoff_location && (
                 <div className="flex items-start">
                   <MapPin className="h-4 w-4 mt-0.5 text-red-400 mr-2" />

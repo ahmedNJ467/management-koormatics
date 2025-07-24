@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -47,47 +47,61 @@ export function AssignVehicleDialog({
   onVehicleAssigned,
 }: AssignVehicleDialogProps) {
   const { vehicles = [], trips = [] } = useTripsData();
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
+  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const requirements = useMemo(() => {
+    if (!trip) return [] as ("armoured"|"soft_skin")[];
+    return [
+      ...Array(trip.armoured_count || 0).fill("armoured" as const),
+      ...Array(trip.soft_skin_count || 0).fill("soft_skin" as const),
+    ];
+  }, [trip]);
+
   useEffect(() => {
-    if (trip?.vehicle_id) {
-      setSelectedVehicle(trip.vehicle_id);
-    } else {
-      setSelectedVehicle("");
-    }
+    if (!trip) return;
+    const totalNeeded =
+      (trip.soft_skin_count || 0) + (trip.armoured_count || 0);
+    // Pre-fill with already assigned vehicles if array exists
+    const preassigned =
+      trip.assigned_vehicle_ids && trip.assigned_vehicle_ids.length > 0
+        ? trip.assigned_vehicle_ids
+        : trip.vehicle_id
+        ? [trip.vehicle_id]
+        : [];
+    const initial = [...preassigned];
+    while (initial.length < totalNeeded) initial.push("");
+    setSelectedVehicles(initial.slice(0, totalNeeded));
     setConflictWarning(null);
   }, [trip]);
 
   // Check for conflicts when vehicle is selected
   useEffect(() => {
-    if (selectedVehicle && trip) {
-      const availability = isVehicleAvailableForTimeSlot(
-        selectedVehicle,
-        trip.date,
-        trip.time || "00:00",
-        trips,
-        trip.return_time,
-        trip.id,
-        { bufferHours: 1 }
-      );
-
-      if (!availability.isAvailable && availability.conflicts.length > 0) {
-        setConflictWarning(
-          `Warning: ${
-            availability.reason ||
-            `This vehicle has ${availability.conflicts.length} conflicting trip(s)`
-          }`
+    if (trip) {
+      let warning: string | null = null;
+      selectedVehicles.filter(Boolean).forEach((vehId) => {
+        const availability = isVehicleAvailableForTimeSlot(
+          vehId,
+          trip.date,
+          trip.time || "00:00",
+          trips,
+          trip.return_time,
+          trip.id,
+          { bufferHours: 1 }
         );
-      } else {
-        setConflictWarning(null);
-      }
+        if (!availability.isAvailable && availability.conflicts.length > 0) {
+          warning =
+            warning ||
+            `Some selected vehicles have conflicts (${availability.conflicts.length}).`;
+        }
+      });
+      setConflictWarning(warning);
     } else {
       setConflictWarning(null);
     }
-  }, [selectedVehicle, trip, trips]);
+  }, [selectedVehicles, trip, trips]);
 
   const enhancedVehicles: EnhancedVehicle[] = vehicles.map((vehicle) => {
     if (!trip)
@@ -123,17 +137,31 @@ export function AssignVehicleDialog({
     };
   });
 
+  const getAvailableVehicles = (currentIndex: number) => {
+    const excludeIds = selectedVehicles.filter((id, idx) => idx !== currentIndex && id);
+    const requiredType = requirements[currentIndex];
+    return enhancedVehicles.filter(
+      (v) =>
+        !excludeIds.includes(v.id) &&
+        v.isCompatible &&
+        (!requiredType || v.type === requiredType)
+    );
+  };
+
   const mutation = useMutation({
     mutationFn: async ({
       tripId,
-      vehicleId,
+      vehicleIds,
     }: {
       tripId: string;
-      vehicleId: string;
+      vehicleIds: string[];
     }) => {
       const { error } = await supabase
         .from("trips")
-        .update({ vehicle_id: vehicleId })
+        .update({
+          vehicle_id: vehicleIds[0], // Assuming the first selected vehicle is the primary one
+          assigned_vehicle_ids: vehicleIds,
+        })
         .eq("id", tripId);
 
       if (error) throw error;
@@ -177,8 +205,11 @@ export function AssignVehicleDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trip || !selectedVehicle) return;
-    mutation.mutate({ tripId: trip.id, vehicleId: selectedVehicle });
+    if (!trip || selectedVehicles.length === 0) return;
+    mutation.mutate({
+      tripId: trip.id,
+      vehicleIds: selectedVehicles.filter(Boolean),
+    });
   };
 
   return (
@@ -206,44 +237,50 @@ export function AssignVehicleDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="vehicle">
-                Vehicle ({enhancedVehicles.length} total)
-              </Label>
-              <Select
-                onValueChange={setSelectedVehicle}
-                value={selectedVehicle}
-              >
-                <SelectTrigger id="vehicle">
-                  <SelectValue placeholder="Select a vehicle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {enhancedVehicles
-                    .filter((vehicle) => vehicle.isCompatible)
-                    .map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        <div className="flex items-center justify-between w-full">
-                          <span>
-                            {vehicle.make} {vehicle.model} (
-                            {vehicle.registration})
-                          </span>
-                          <div className="flex gap-1">
-                            <Badge
-                              className={`${
-                                vehicle.isAvailable
-                                  ? "bg-green-500 hover:bg-green-600"
-                                  : "bg-amber-500 hover:bg-amber-600"
-                              } text-white text-xs`}
-                            >
-                              {vehicle.isAvailable ? "Available" : "Busy"}
-                            </Badge>
+            {selectedVehicles.map((val, idx) => (
+              <div key={idx} className="space-y-2">
+                <Label htmlFor={`vehicle-${idx}`}>
+                  Vehicle {idx + 1} – {requirements[idx]?.replace("_", " ") || "any"} ({enhancedVehicles.length} total)
+                </Label>
+                <Select
+                  onValueChange={(value) => {
+                    const newSelectedVehicles = [...selectedVehicles];
+                    newSelectedVehicles[idx] = value;
+                    setSelectedVehicles(newSelectedVehicles);
+                  }}
+                  value={val}
+                >
+                  <SelectTrigger id={`vehicle-${idx}`}>
+                    <SelectValue placeholder="Select a vehicle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableVehicles(idx)
+                      .filter((vehicle) => vehicle.isCompatible)
+                      .map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>
+                              {vehicle.make} {vehicle.model} (
+                              {vehicle.registration})
+                            </span>
+                            <div className="flex gap-1">
+                              <Badge
+                                className={`${
+                                  vehicle.isAvailable
+                                    ? "bg-green-500 hover:bg-green-600"
+                                    : "bg-amber-500 hover:bg-amber-600"
+                                } text-white text-xs`}
+                              >
+                                {vehicle.isAvailable ? "Available" : "Busy"}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
             {conflictWarning && (
               <div className="bg-amber-900/30 border border-amber-500/50 text-amber-200 p-3 rounded-md flex items-start gap-2">
                 <div className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0">
@@ -259,7 +296,7 @@ export function AssignVehicleDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!selectedVehicle || mutation.isPending}
+              disabled={selectedVehicles.filter(Boolean).length !== requirements.length || mutation.isPending}
             >
               {mutation.isPending ? "Assigning..." : "Assign Vehicle"}
             </Button>

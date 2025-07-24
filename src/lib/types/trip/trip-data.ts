@@ -26,6 +26,9 @@ export interface DbTrip {
   passengers?: string[]; // Array of passenger names for organization clients
   log_sheet_url?: string;
   vehicle_type?: "armoured" | "soft_skin";
+  soft_skin_count?: number;
+  armoured_count?: number;
+  assigned_vehicle_ids?: string[];
   passport_documents?: { name: string; url: string; passenger_name: string }[];
   invitation_documents?: {
     name: string;
@@ -37,6 +40,9 @@ export interface DbTrip {
   escort_vehicle_ids?: string[]; // Array of assigned escort vehicle IDs
   escort_status?: "not_assigned" | "partially_assigned" | "fully_assigned"; // Escort assignment status
   escort_assigned_at?: string; // Timestamp when escorts were assigned
+
+  // Intermediate stops between pickup and dropoff
+  stops?: string[];
 }
 
 export interface Trip {
@@ -71,6 +77,9 @@ export interface Trip {
   passengers?: string[]; // Array of passenger names for organization clients
   log_sheet_url?: string;
   vehicle_type?: "armoured" | "soft_skin";
+  soft_skin_count?: number;
+  armoured_count?: number;
+  assigned_vehicle_ids?: string[];
   passport_documents?: { name: string; url: string; passenger_name: string }[];
   invitation_documents?: {
     name: string;
@@ -82,6 +91,9 @@ export interface Trip {
   escort_vehicle_ids?: string[]; // Array of assigned escort vehicle IDs
   escort_status?: "not_assigned" | "partially_assigned" | "fully_assigned"; // Escort assignment status
   escort_assigned_at?: string; // Timestamp when escorts were assigned
+
+  // Intermediate stops between pickup and dropoff
+  stops?: string[];
 }
 
 export interface DisplayTrip extends Trip {
@@ -95,4 +107,10 @@ export interface DisplayTrip extends Trip {
   special_notes?: string; // Alternative to notes
   ui_service_type?: string; // UI-friendly display of type
   display_type?: string; // Formatted display of trip type
+
+  // Intermediate stops between pickup and dropoff
+  stops?: string[];
+  soft_skin_count?: number;
+  armoured_count?: number;
+  assigned_vehicle_ids?: string[];
 }

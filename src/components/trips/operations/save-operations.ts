@@ -88,6 +88,12 @@ export const handleSaveTrip = async (
   const passportDocsValue = formData.get("passport_documents");
   const invitationDocsValue = formData.get("invitation_documents");
 
+  // Parse intermediate stops (array of strings). Inputs are named stops[]
+  const rawStops = formData.getAll("stops[]") as string[];
+  const stops = rawStops
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
   if (passportDocsValue) {
     try {
       passportDocuments = JSON.parse(passportDocsValue as string);
@@ -107,10 +113,16 @@ export const handleSaveTrip = async (
   const amountValue = formData.get("amount") as string;
   const amount = amountValue ? parseFloat(amountValue) : 0;
 
-  const vehicleType = formData.get("vehicle_type") as
-    | "armoured"
-    | "soft_skin"
-    | null;
+  // Parse vehicle count inputs
+  const softSkinCount = parseInt(formData.get("soft_skin_count") as string) || 0;
+  const armouredCount = parseInt(formData.get("armoured_count") as string) || 0;
+
+  // Sanitize vehicle_type – convert empty string to null so Postgres enum isn't violated
+  const vehicleTypeField = formData.get("vehicle_type") as string | null;
+  const vehicleType =
+    vehicleTypeField === "armoured" || vehicleTypeField === "soft_skin"
+      ? (vehicleTypeField as "armoured" | "soft_skin")
+      : null;
 
   // Get security escort fields
   console.log("FormData security escort values:", {
@@ -125,6 +137,7 @@ export const handleSaveTrip = async (
 
   console.log("Saving trip with client type:", clientType);
   console.log("Saving trip with passengers:", passengers);
+  console.log("Saving trip with stops:", stops);
   console.log(
     "Saving trip with security escort:",
     hasSecurityEscort,
@@ -159,6 +172,9 @@ export const handleSaveTrip = async (
             invitationDocuments.length > 0 ? invitationDocuments : null,
           has_security_escort: hasSecurityEscort,
           escort_count: escortCount,
+          soft_skin_count: softSkinCount,
+          armoured_count: armouredCount,
+          stops: stops.length > 0 ? stops : null,
         })
         .eq("id", editTrip.id);
 
@@ -210,6 +226,9 @@ export const handleSaveTrip = async (
         trip.return_time = needsReturnTime ? returnTimeValue || null : null;
         trip.has_security_escort = hasSecurityEscort;
         trip.escort_count = escortCount;
+        trip.soft_skin_count = softSkinCount;
+        trip.armoured_count = armouredCount;
+        trip.stops = stops.length > 0 ? stops : null;
       });
 
       const { data, error } = await supabase
@@ -259,6 +278,9 @@ export const handleSaveTrip = async (
         vehicle_id: null,
         has_security_escort: hasSecurityEscort,
         escort_count: escortCount,
+        soft_skin_count: softSkinCount,
+        armoured_count: armouredCount,
+        stops: stops.length > 0 ? stops : null,
       };
 
       const { data, error } = await supabase

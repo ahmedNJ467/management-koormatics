@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { OverdueIndicator } from "./OverdueIndicator";
 import { useTripsData } from "@/hooks/use-trips-data";
+import { vehicleAssignmentStatus } from "@/lib/types/trip/trip-utils";
 
 interface DispatchTripsProps {
   trips: DisplayTrip[];
@@ -380,6 +381,23 @@ export function DispatchTrips({
                   </div>
                 </div>
 
+                {/* Render intermediate stops, if any */}
+                {Array.isArray(trip.stops) &&
+                  trip.stops.length > 0 &&
+                  trip.stops.map((stop, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+                      <div className="flex-1">
+                        <div className="font-medium text-yellow-500">
+                          Stop {idx + 1}
+                        </div>
+                        <div className="text-foreground">
+                          {safeFormatText(stop)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
                 <div className="flex items-start gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                   <div className="flex-1">
@@ -426,33 +444,32 @@ export function DispatchTrips({
 
                 <div className="text-sm">
                   <span className="font-medium text-muted-foreground">
-                    Vehicle:
+                    Vehicles:
                   </span>
                   <div className="text-foreground">
-                    {trip.vehicle_id ? (
-                      <span>
-                        {safeFormatText(
-                          trip.vehicle_details,
-                          "Unknown Vehicle"
-                        )}
-                        {trip.vehicle_type && (
-                          <Badge
-                            variant={
-                              trip.vehicle_type === "armoured"
-                                ? "default"
-                                : "secondary"
-                            }
-                            className="text-xs ml-2"
-                          >
-                            {trip.vehicle_type === "armoured"
-                              ? "Armoured"
-                              : "Soft Skin"}
+                    {(() => {
+                      const { state, totalNeeded, totalAssigned } =
+                        vehicleAssignmentStatus(trip);
+                      if (state === "none") {
+                        return (
+                          <Badge variant="destructive" className="text-xs">
+                            Unassigned
                           </Badge>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-amber-600">Unassigned</span>
-                    )}
+                        );
+                      }
+                      if (state === "partial") {
+                        return (
+                          <Badge variant="secondary" className="text-xs">
+                            {totalNeeded - totalAssigned} left
+                          </Badge>
+                        );
+                      }
+                      return (
+                        <Badge variant="default" className="text-xs">
+                          Assigned
+                        </Badge>
+                      );
+                    })()}
                   </div>
                 </div>
 

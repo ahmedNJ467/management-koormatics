@@ -52,6 +52,12 @@ export function mapDatabaseFieldsToTrip(dbTrip: any): DisplayTrip {
     escort_vehicle_ids: tripData.escort_vehicle_ids || [],
     escort_status: tripData.escort_status || "not_assigned",
     escort_assigned_at: tripData.escort_assigned_at,
+
+    // Stops array
+    stops: tripData.stops || [],
+    soft_skin_count: tripData.soft_skin_count || 0,
+    armoured_count: tripData.armoured_count || 0,
+    assigned_vehicle_ids: tripData.assigned_vehicle_ids || [],
   };
 
   return trip;
@@ -75,3 +81,14 @@ export function validateTripStatus(status: string): TripStatus {
 
 // Re-export extractFlightInfo for backward compatibility
 export { extractFlightInfo } from "@/components/trips/utils";
+
+// Determine how many vehicles are required vs assigned for a trip
+export function vehicleAssignmentStatus(trip: DisplayTrip) {
+  const totalNeeded = (trip.soft_skin_count || 0) + (trip.armoured_count || 0);
+  const totalAssigned = trip.assigned_vehicle_ids?.length || 0;
+
+  if (totalAssigned === 0) return { state: "none" as const, totalNeeded, totalAssigned };
+  if (totalAssigned < totalNeeded)
+    return { state: "partial" as const, totalNeeded, totalAssigned };
+  return { state: "full" as const, totalNeeded, totalAssigned };
+}

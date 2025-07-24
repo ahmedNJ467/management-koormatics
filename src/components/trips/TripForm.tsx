@@ -195,18 +195,32 @@ export function TripForm({
           setServiceType={setServiceType}
         />
 
+        {/* Vehicle requirements for new trips */}
         {!editTrip && (
-          <div className="space-y-2">
-            <Label htmlFor="vehicle_type">Vehicle Type</Label>
-            <Select name="vehicle_type" required>
-              <SelectTrigger id="vehicle_type">
-                <SelectValue placeholder="Select vehicle type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="soft_skin">Soft Skin</SelectItem>
-                <SelectItem value="armoured">Armoured</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-4">
+            <h3 className="font-medium">Vehicle Requirements</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="soft_skin_count">Soft Skin Vehicles</Label>
+                <Input
+                  id="soft_skin_count"
+                  name="soft_skin_count"
+                  type="number"
+                  min="0"
+                  defaultValue="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="armoured_count">Armoured Vehicles</Label>
+                <Input
+                  id="armoured_count"
+                  name="armoured_count"
+                  type="number"
+                  min="0"
+                  defaultValue="0"
+                />
+              </div>
+            </div>
           </div>
         )}
 
