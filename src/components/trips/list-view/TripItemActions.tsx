@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { generateInvoiceForTrip } from "@/lib/invoice-utils";
 
 interface TripItemActionsProps {
   trip: DisplayTrip;
@@ -61,32 +60,7 @@ export function TripItemActions({
     isTestData,
   });
 
-  const handleGenerateInvoice = async () => {
-    if (isTestData) {
-      toast({
-        title: "Test Data",
-        description: "Cannot generate invoice for test data",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await generateInvoiceForTrip(trip);
-      toast({
-        title: "Success",
-        description: `Invoice generated for trip ${trip.id.substring(0, 8)}.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-    } catch (error: any) {
-      toast({
-        title: "Error generating invoice",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
+  // Removed invoice generation from Trips; handled in Trip Finance
 
   const handleStatusUpdate = async (newStatus: TripStatus) => {
     if (isTestData) {
@@ -154,12 +128,7 @@ export function TripItemActions({
         Assign Vehicle
       </DropdownMenuItem>
 
-      {trip.status === "completed" && !trip.invoice_id && (
-        <DropdownMenuItem onClick={handleGenerateInvoice}>
-          <FileText className="h-4 w-4 mr-2" />
-          Generate Invoice
-        </DropdownMenuItem>
-      )}
+      {/* Invoice generation removed */}
 
       <DropdownMenuSeparator />
 

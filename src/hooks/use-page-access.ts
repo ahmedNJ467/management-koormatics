@@ -13,10 +13,10 @@ export const usePageAccess = () => {
         .from("vw_user_pages")
         .select("pages")
         .eq("user_id", uid)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return (data?.pages as string[]) || [];
     },
   });
-}; 
+};

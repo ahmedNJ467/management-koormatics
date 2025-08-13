@@ -1,8 +1,8 @@
-
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { EditIcon, Trash2Icon, XCircle } from "lucide-react";
 import { DisplayTrip } from "@/lib/types/trip";
+// Completing trips from Trips is disabled; use Dispatch instead
 
 interface TripDetailActionsProps {
   viewTrip: DisplayTrip;
@@ -11,12 +11,14 @@ interface TripDetailActionsProps {
   setDeleteDialogOpen: (open: boolean) => void;
 }
 
-export function TripDetailActions({ 
-  viewTrip, 
-  setEditTrip, 
-  setTripToDelete, 
-  setDeleteDialogOpen 
+export function TripDetailActions({
+  viewTrip,
+  setEditTrip,
+  setTripToDelete,
+  setDeleteDialogOpen,
 }: TripDetailActionsProps) {
+  // No completion from Trips page
+
   return (
     <DialogFooter className="flex flex-wrap gap-2 mt-6 sm:justify-between border-t pt-4 border-border">
       <div className="flex gap-2">
@@ -28,8 +30,9 @@ export function TripDetailActions({
           <EditIcon className="h-4 w-4 mr-2" />
           Edit Trip
         </Button>
+        {/* Completion disabled here; managed from Dispatch */}
         <Button
-          variant="outline" 
+          variant="outline"
           className="border-red-500 bg-red-500/10 text-red-600 hover:bg-red-500/20 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded-full px-4"
           onClick={() => {
             setTripToDelete(viewTrip.id);
@@ -41,8 +44,8 @@ export function TripDetailActions({
         </Button>
       </div>
       <DialogClose asChild>
-        <Button 
-          variant="secondary" 
+        <Button
+          variant="secondary"
           className="bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border rounded-full px-4"
         >
           <XCircle className="h-4 w-4 mr-2" />

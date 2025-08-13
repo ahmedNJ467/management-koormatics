@@ -11,6 +11,7 @@ import {
 import { pdfColors } from "@/components/reports/utils/pdf/pdfStyles";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
 
 export const formatStatus = (status: InvoiceStatus | undefined): string => {
   if (!status) return "Unknown";
@@ -32,7 +33,7 @@ export const formatCurrency = (amount: number): string => {
 export const formatDate = (dateStr: string): string => {
   if (!dateStr) return "";
   try {
-    return format(new Date(dateStr), "MMM d, yyyy");
+    return format(new Date(dateStr), "dd/MM/yyyy");
   } catch (e) {
     return "Invalid Date";
   }
@@ -76,7 +77,7 @@ export const prepareForSupabase = (items: InvoiceItem[]): Json => {
   return items as unknown as Json;
 };
 
-export const generateInvoicePDF = (invoice: DisplayInvoice) => {
+export const generateInvoicePDF = async (invoice: DisplayInvoice) => {
   const doc = new jsPDF({
     orientation: "p",
     unit: "mm",
@@ -88,12 +89,30 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
 
   doc.setFont("helvetica");
 
-  const logoPath = "/lovable-uploads/6996f29f-4f5b-4a22-ba41-51dc5c98afb7.png";
-  const logoAspectRatio = 123 / 622;
-  const logoWidth = 50;
-  const logoHeight = logoWidth * logoAspectRatio;
+  // Koormatics branding (load SVG via <img> to avoid CSP connect-src issues)
+  const logoUrl = "/koormatics-logo.svg";
+  const logoWidth = 42;
+  const logoHeight = 12;
   try {
-    doc.addImage(logoPath, "PNG", margin, 15, logoWidth, logoHeight);
+    const pngDataUrl: string = await new Promise((resolve, reject) => {
+      const img = new Image();
+      // Same-origin asset; no need for crossOrigin but set for safety
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        // Render at target PDF display size for crispness
+        const targetScale = 3; // higher DPI
+        canvas.width = Math.max(1, Math.floor(logoWidth * targetScale));
+        canvas.height = Math.max(1, Math.floor(logoHeight * targetScale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas 2D context unavailable"));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = (err) => reject(err);
+      img.src = logoUrl;
+    });
+    doc.addImage(pngDataUrl, "PNG", margin, 15, logoWidth, logoHeight);
   } catch (e) {
     console.error("Error adding logo:", e);
     doc.setFontSize(16);
@@ -112,69 +131,160 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
   ];
   doc.text(companyInfoText, margin, 15 + logoHeight + 5);
 
-  doc.setFontSize(26);
+  // Header ribbon redesign
+  doc.setFillColor(
+    pdfColors.headerBg[0],
+    pdfColors.headerBg[1],
+    pdfColors.headerBg[2]
+  );
+  doc.rect(margin, 12, pageW - margin * 2, 12, "F");
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(
-    pdfColors.primary[0],
-    pdfColors.primary[1],
-    pdfColors.primary[2]
+    pdfColors.headerText[0],
+    pdfColors.headerText[1],
+    pdfColors.headerText[2]
   );
-  doc.text("INVOICE", pageW - margin, 25, { align: "right" });
-
-  doc.setFontSize(10);
+  doc.text("Koormatics Invoice", pageW - margin - 2, 20, { align: "right" });
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
-  let yPosHeader = 35;
-  doc.text(
-    `Invoice #: ${formatInvoiceId(invoice.id)}`,
-    pageW - margin,
-    yPosHeader,
-    { align: "right" }
-  );
-  yPosHeader += 6;
-  doc.text(`Date: ${formatDate(invoice.date)}`, pageW - margin, yPosHeader, {
-    align: "right",
-  });
-  yPosHeader += 6;
-  doc.text(
-    `Due Date: ${formatDate(invoice.due_date)}`,
-    pageW - margin,
-    yPosHeader,
-    { align: "right" }
-  );
-
-  let yPos = 15 + logoHeight + 5 + companyInfoText.length * 5 + 10;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
   doc.setTextColor(
-    pdfColors.primary[0],
-    pdfColors.primary[1],
-    pdfColors.primary[2]
+    pdfColors.headerText[0],
+    pdfColors.headerText[1],
+    pdfColors.headerText[2]
   );
-  doc.text("BILL TO", margin, yPos);
+  doc.text("Official Tax Document", pageW - margin - 2, 27, { align: "right" });
 
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
-  yPos += 5;
-  doc.text(invoice.client_name, margin, yPos);
-  yPos += 5;
-  if (invoice.client_address) {
-    const addressLines = doc.splitTextToSize(invoice.client_address, 80);
-    doc.text(addressLines, margin, yPos);
-    yPos += doc.getTextDimensions(addressLines).h;
-  }
-  if (invoice.client_email) {
-    doc.text(invoice.client_email, margin, yPos);
-    yPos += 5;
-  }
-  if (invoice.client_phone) {
-    doc.text(invoice.client_phone, margin, yPos);
-  }
+  // Two professional info cards: Bill To (left) and Invoice Info (right)
+  let yPos = 15 + logoHeight + 5 + companyInfoText.length * 5 + 8;
+  const cardGap = 6;
+  const cardW = (pageW - margin * 2 - cardGap) / 2;
 
-  const tableStartY = Math.max(yPos, 70) + 15;
+  // Card styles
+  const drawCard = (
+    x: number,
+    y: number,
+    w: number,
+    title: string,
+    rows: Array<[string, string]>
+  ) => {
+    doc.setDrawColor(
+      pdfColors.border[0],
+      pdfColors.border[1],
+      pdfColors.border[2]
+    );
+    doc.setFillColor(
+      pdfColors.rowAlt[0],
+      pdfColors.rowAlt[1],
+      pdfColors.rowAlt[2]
+    );
+    const headerH = 8;
+    // Header bar
+    doc.roundedRect(x, y, w, headerH, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(
+      pdfColors.primary[0],
+      pdfColors.primary[1],
+      pdfColors.primary[2]
+    );
+    doc.setFontSize(10);
+    doc.text(title, x + 3, y + 5.5);
+    // Body
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
+    let rowY = y + headerH + 5;
+    const labelW = 28;
+    rows.forEach(([label, value]) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(label, x + 3, rowY);
+      doc.setFont("helvetica", "normal");
+      const wrapped = doc.splitTextToSize(value || "", w - labelW - 6);
+      doc.text(wrapped, x + labelW, rowY);
+      rowY += Math.max(6, doc.getTextDimensions(wrapped).h + 2);
+    });
+    return rowY;
+  };
+
+  const leftRows: Array<[string, string]> = [
+    ["Client", invoice.client_name || ""],
+  ];
+  if (invoice.client_address)
+    leftRows.push(["Address", invoice.client_address]);
+  if (invoice.client_email) leftRows.push(["Email", invoice.client_email]);
+  if (invoice.client_phone) leftRows.push(["Phone", invoice.client_phone]);
+
+  const rightRows: Array<[string, string]> = [
+    ["Invoice #", formatInvoiceId(invoice.id)],
+    ["Date", formatDate(invoice.date)],
+    ["Due Date", formatDate(invoice.due_date)],
+    ["Status", formatStatus(invoice.status)],
+  ];
+
+  const leftCardBottom = drawCard(margin, yPos, cardW, "Bill To", leftRows);
+  const rightCardBottom = drawCard(
+    margin + cardW + cardGap,
+    yPos,
+    cardW,
+    "Invoice Info",
+    rightRows
+  );
+
+  // Build trip details into the first line item description (no separate table)
+  let tableStartY = Math.max(leftCardBottom, rightCardBottom) + 8;
+  try {
+    const { data: trips } = await supabase
+      .from("trips")
+      .select(
+        "id, date, pickup_location, dropoff_location, service_type, vehicle_type, soft_skin_count, armoured_count, has_security_escort, escort_count"
+      )
+      .eq("invoice_id", invoice.id);
+
+    if (trips && trips.length > 0) {
+      const tripLines = trips.map((t: any) => {
+        const tripId = (t.id || "").toString().substring(0, 8).toUpperCase();
+        const serviceLabel =
+          tripTypeDisplayMap[t.service_type] ||
+          (t.service_type || "").replace(/_/g, " ");
+        const route = `${t.pickup_location || "N/A"} → ${
+          t.dropoff_location || "N/A"
+        }`;
+        const vehicleBits: string[] = [];
+        if (t.vehicle_type)
+          vehicleBits.push(
+            t.vehicle_type === "armoured" ? "Armoured" : "Soft Skin"
+          );
+        if (t.soft_skin_count)
+          vehicleBits.push(`Soft Skin: ${t.soft_skin_count}`);
+        if (t.armoured_count) vehicleBits.push(`Armoured: ${t.armoured_count}`);
+        const vehicleInfo = vehicleBits.join(" | ") || "N/A";
+        const escortInfo = t.has_security_escort
+          ? `${t.escort_count || 1} escort vehicle(s)`
+          : "None";
+        return `Trip from ${t.pickup_location || "N/A"} to ${
+          t.dropoff_location || "N/A"
+        } on ${formatDate(t.date)} — Service: ${serviceLabel}; Vehicle: ${
+          vehicleInfo || "N/A"
+        }; Escort: ${escortInfo} (Trip ID: ${tripId})`;
+      });
+
+      const detailsBlock = tripLines.join("\n\n");
+      (invoice as any).items = [
+        {
+          description: detailsBlock,
+          quantity: "",
+          unit_price: "",
+          amount: 0,
+        } as any,
+        ...invoice.items,
+      ];
+    }
+  } catch {}
 
   autoTable(doc, {
     startY: tableStartY,
+    margin: { left: margin, right: margin },
+    tableWidth: "auto",
     head: [["Description", "Qty", "Unit Price", "Amount"]],
     body: invoice.items.map((item) => [
       item.description,
@@ -197,12 +307,15 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
       fontStyle: "bold",
     },
     columnStyles: {
-      0: { fontStyle: "normal" },
+      0: { fontStyle: "normal", cellWidth: "auto" },
+      1: { halign: "center", cellWidth: 14 },
+      2: { halign: "right", cellWidth: 24 },
+      3: { halign: "right", cellWidth: 28 },
     },
     styles: {
       font: "helvetica",
       fontSize: 9,
-      cellPadding: 3,
+      cellPadding: 2,
       overflow: "linebreak",
       textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]],
       lineColor: [
@@ -250,7 +363,8 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
   const totalAmount = invoice.total_amount;
   const balanceDue = totalAmount - (invoice.paid_amount || 0);
 
-  const totalCol1 = pageW - margin - 50;
+  const totalsCardW = 80;
+  const totalCol1 = pageW - margin - totalsCardW + 30;
   const totalCol2 = pageW - margin;
 
   doc.setFontSize(10);
@@ -284,6 +398,7 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
     yPosTotals += 7;
   }
 
+  // totals separator
   doc.setDrawColor(
     pdfColors.border[0],
     pdfColors.border[1],
@@ -360,59 +475,50 @@ export const generateInvoicePDF = (invoice: DisplayInvoice) => {
 
   yPosTotals += 10;
 
+  // Footer: professional payment and terms columns
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
 
-  const commText = `Please use the following communication for your payment : ${formatInvoiceId(
+  const commText = `Please quote this reference with your payment: ${formatInvoiceId(
     invoice.id
   )}`;
   doc.text(commText, margin, yPosTotals);
-  yPosTotals += 10;
+  yPosTotals += 8;
+
+  const colW = (pageW - margin * 2 - 8) / 2;
+  const leftX = margin;
+  const rightX = margin + colW + 8;
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text("Terms and conditions", margin, yPosTotals);
+  doc.text("Bank Details", leftX, yPosTotals);
+  doc.text("Terms and Conditions", rightX, yPosTotals);
   yPosTotals += 5;
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  const terms = [
-    "1. The quotation provided is valid for a period of thirty (30) days from the date of issue unless otherwise stated",
-    "2. For all clients without an account or contract with us, a 50% down payment of the quoted amount, payable by cash or",
-    "   bank transfer, is required to confirm bookings.",
-    "3. Payment for services is due upon receipt of invoice, unless otherwise specified.",
-  ];
-  doc.text(terms, margin, yPosTotals);
-  yPosTotals += terms.length * 3.5 + 5;
-
-  doc.text('"Thank you for your business."', margin, yPosTotals);
-  yPosTotals += 10;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Dahabshil Bank", margin, yPosTotals);
-  yPosTotals += 4;
-  doc.setFont("helvetica", "normal");
-  const dahabshilDetails = [
+  const bankLines = [
+    "Dahabshil Bank",
     "Account Name: Peace Business Group",
     "Account Number: 104 102 369",
-    "Swift Codes: EABDDJJD",
+    "Swift Code: EABDDJJD",
     "Branch: Mogadishu, Somalia",
-    "IBAN:SO600002301301008035901",
-  ];
-  doc.text(dahabshilDetails, margin, yPosTotals);
-  yPosTotals += dahabshilDetails.length * 3.5 + 5;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Premier Bank", margin, yPosTotals);
-  yPosTotals += 4;
-  doc.setFont("helvetica", "normal");
-  const premierDetails = [
+    "IBAN: SO600002301301008035901",
+    "",
+    "Premier Bank",
     "Account Name: Peace Business Group",
     "Account Number: 020600296001",
     "IBAN: SO600005002020600296001",
   ];
-  doc.text(premierDetails, margin, yPosTotals);
+  doc.text(bankLines, leftX, yPosTotals);
+
+  const terms = [
+    "1. Invoices are due upon receipt unless otherwise specified.",
+    "2. Late payments may be subject to additional charges.",
+    "3. Services are provided as per agreed terms of engagement.",
+  ];
+  doc.text(terms, rightX, yPosTotals);
 
   doc.save(`Invoice-${formatInvoiceId(invoice.id)}.pdf`);
 

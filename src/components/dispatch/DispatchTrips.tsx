@@ -52,7 +52,7 @@ interface DispatchTripsProps {
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
   onAssignEscort?: (trip: DisplayTrip) => void;
-  onGenerateInvoice: (trip: DisplayTrip) => void;
+  // Removed invoice generation from dispatch
   vehicles?: Vehicle[];
 }
 
@@ -62,7 +62,6 @@ export function DispatchTrips({
   onCompleteTrip,
   onUpdateStatus,
   onAssignEscort,
-  onGenerateInvoice,
   vehicles: vehiclesProp,
 }: DispatchTripsProps) {
   const getStatusBadgeClass = (status: TripStatus): string => {
@@ -673,14 +672,7 @@ export function DispatchTrips({
                           </DropdownMenuItem>
                         )}
 
-                        {trip.status === "completed" && (
-                          <DropdownMenuItem
-                            onClick={() => onGenerateInvoice(trip)}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Generate Invoice
-                          </DropdownMenuItem>
-                        )}
+                        {/* Invoice generation removed; handled in Trip Finance */}
 
                         {trip.status !== "cancelled" && (
                           <DropdownMenuItem

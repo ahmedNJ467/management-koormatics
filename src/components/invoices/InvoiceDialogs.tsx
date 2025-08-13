@@ -180,7 +180,9 @@ export function InvoiceFormDialog({
       if (!selectedClientId) return [];
       const { data, error } = await supabase
         .from("trips")
-        .select(`*`)
+        .select(
+          `id, date, pickup_location, dropoff_location, service_type, vehicle_type, soft_skin_count, armoured_count, has_security_escort, escort_count, amount`
+        )
         .eq("client_id", selectedClientId)
         .is("invoice_id", null);
       if (error) throw error;
@@ -475,10 +477,10 @@ export function InvoiceFormDialog({
                             <FormItem>
                               <FormLabel>Invoice Date *</FormLabel>
                               <FormControl>
-                      <DatePicker
-                        {...field}
-                        {...{} as any}
-                        className="w-full"
+                                <DatePicker
+                                  {...field}
+                                  {...({} as any)}
+                                  className="w-full"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -493,10 +495,10 @@ export function InvoiceFormDialog({
                             <FormItem>
                               <FormLabel>Due Date *</FormLabel>
                               <FormControl>
-                      <DatePicker
-                        {...field}
-                        {...{} as any}
-                        className="w-full"
+                                <DatePicker
+                                  {...field}
+                                  {...({} as any)}
+                                  className="w-full"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -612,12 +614,47 @@ export function InvoiceFormDialog({
                               id={`trip-${trip.id}`}
                               checked={selectedTrips.includes(trip.id)}
                               onCheckedChange={(checked) => {
-                                const description = `Trip: ${
-                                  trip.pickup_location
-                                } → ${trip.dropoff_location} (${format(
+                                const serviceLabel = (trip.service_type || "")
+                                  .replace(/_/g, " ")
+                                  .replace(/\b\w/g, (l: string) =>
+                                    l.toUpperCase()
+                                  );
+                                const vehicleBits: string[] = [];
+                                if (trip.vehicle_type)
+                                  vehicleBits.push(
+                                    trip.vehicle_type === "armoured"
+                                      ? "Armoured"
+                                      : "Soft Skin"
+                                  );
+                                if (trip.soft_skin_count)
+                                  vehicleBits.push(
+                                    `Soft Skin: ${trip.soft_skin_count}`
+                                  );
+                                if (trip.armoured_count)
+                                  vehicleBits.push(
+                                    `Armoured: ${trip.armoured_count}`
+                                  );
+                                const vehicleInfo =
+                                  vehicleBits.join(" | ") || "N/A";
+                                const escortInfo = trip.has_security_escort
+                                  ? `${
+                                      trip.escort_count || 1
+                                    } escort vehicle(s)`
+                                  : "None";
+                                const description = `Trip from ${
+                                  trip.pickup_location || "N/A"
+                                } to ${
+                                  trip.dropoff_location || "N/A"
+                                } on ${format(
                                   new Date(trip.date),
-                                  "MMM d, yyyy"
-                                )})`;
+                                  "dd/MM/yyyy"
+                                )} — Service: ${serviceLabel}; Vehicle: ${
+                                  vehicleInfo || "N/A"
+                                }; Escort: ${escortInfo} (Trip ID: ${String(
+                                  trip.id
+                                )
+                                  .substring(0, 8)
+                                  .toUpperCase()})`;
                                 if (checked) {
                                   setSelectedTrips([...selectedTrips, trip.id]);
                                   setInvoiceItems((items) => [

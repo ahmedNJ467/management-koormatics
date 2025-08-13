@@ -17,9 +17,18 @@ export const updateTripStatus = async (
 ) => {
   try {
     // Now we update the status field directly instead of storing in notes
+    const updatePayload: Record<string, any> = { status };
+    // If marking completed and there's no actual end/dropoff time, stamp it now
+    if (
+      status === "completed" &&
+      !(viewTrip?.actual_dropoff_time || viewTrip?.actual_end_time)
+    ) {
+      updatePayload.actual_dropoff_time = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from("trips")
-      .update({ status })
+      .update(updatePayload)
       .eq("id", tripId);
 
     if (error) throw error;

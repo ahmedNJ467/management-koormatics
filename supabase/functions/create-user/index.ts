@@ -10,16 +10,19 @@ const supabaseAdmin = createClient(
 
 serve(async (req) => {
   // Handle CORS preflight
+  const origin = req.headers.get("origin") || "*";
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, Content-Type, Authorization, X-Client-Info",
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  } as const;
   if (req.method === "OPTIONS") {
     return new Response("", {
-      headers: {
-        // For local dev you may restrict to http://localhost:8080
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers":
-          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
-        "Access-Control-Max-Age": "86400",
-      },
+      headers: corsHeaders,
       status: 204,
     });
   }
@@ -27,12 +30,7 @@ serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers":
-          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
 
@@ -40,24 +38,23 @@ serve(async (req) => {
     const { email, password, role_slug, full_name } = await req.json();
 
     if (!email || !password || !role_slug) {
-      return new Response(JSON.stringify({ error: "email, password and role_slug are required" }), {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers":
-            "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
-        },
-      });
+      return new Response(
+        JSON.stringify({ error: "email, password and role_slug are required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     // 1. Create auth user (email confirmation disabled → immediately confirmed)
-    const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name },
-    });
+    const { data: userData, error: createError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name },
+      });
 
     if (createError || !userData.user) {
       throw createError || new Error("Failed to create user");
@@ -72,25 +69,21 @@ serve(async (req) => {
       throw roleError;
     }
 
-    return new Response(JSON.stringify({ user_id: userData.user.id, email, role_slug }), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers":
-          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
-      },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({ user_id: userData.user.id, email, role_slug }),
+      {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 200,
+      }
+    );
   } catch (err) {
     console.error("create-user error", err);
-    return new Response(JSON.stringify({ error: (err as any).message || String(err) }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers":
-          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
-      },
-    });
+    return new Response(
+      JSON.stringify({ error: (err as any).message || String(err) }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
   }
-}); 
+});

@@ -25,12 +25,13 @@ interface AddUserDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+import { MANAGER_ROLE_OPTIONS } from "@/constants/roles";
+
 // Manager roles aligned with domain access
-const roles = [
-  { slug: "fleet_manager", name: "Fleet manager" },
-  { slug: "operations_manager", name: "Operations manager" },
-  { slug: "finance_manager", name: "Finance manager" },
-];
+const roles = MANAGER_ROLE_OPTIONS.map((r) => ({
+  slug: r.value,
+  name: r.label,
+}));
 
 const AddUserDialog: React.FC<AddUserDialogProps> = ({
   open,
@@ -39,7 +40,6 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    full_name: "",
     role_slug: roles[0].slug,
   });
 
@@ -80,8 +80,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
       setFormData({
         email: "",
         password: "",
-        full_name: "",
-        role_slug: "viewer",
+        role_slug: roles[0].slug,
       });
     },
     onError: (err: any) =>
@@ -106,12 +105,6 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
           Provide essential details and assign a manager role.
         </DialogDescription>
         <div className="space-y-3">
-          <Input
-            name="full_name"
-            placeholder="Full name"
-            value={formData.full_name}
-            onChange={handleChange}
-          />
           <Input
             name="email"
             placeholder="Email"
@@ -165,7 +158,6 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
             onClick={() => addUserMutation.mutate()}
             disabled={
               addUserMutation.isPending ||
-              !formData.full_name.trim() ||
               !formData.email.trim() ||
               formData.password.length < 8
             }

@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MANAGER_ROLE_OPTIONS } from "@/constants/roles";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,11 +33,7 @@ export default function SettingsSecurity() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const ROLE_OPTIONS = [
-    { value: "fleet_manager", label: "Fleet manager" },
-    { value: "operations_manager", label: "Operations manager" },
-    { value: "finance_manager", label: "Finance manager" },
-  ] as const;
+  const ROLE_OPTIONS = MANAGER_ROLE_OPTIONS;
 
   const saveRole = async (userId: string, roleSlug: string | null) => {
     try {
@@ -89,39 +86,32 @@ export default function SettingsSecurity() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Email</TableHead>
-                  <TableHead>Name</TableHead>
+                  {/* Removed Name column */}
                   <TableHead>Assigned role</TableHead>
                   <TableHead>Joined</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((u) => {
-                  const current =
+                  const nonSuper =
                     u.roles.find((r) => r !== "super_admin") || null;
+                  const isSuperOnly =
+                    u.roles.includes("super_admin") && !nonSuper;
+                  const current = isSuperOnly ? "super_admin" : nonSuper;
+                  const currentLabel =
+                    current === "super_admin"
+                      ? "Super admin"
+                      : current
+                      ? ROLE_OPTIONS.find((r) => r.value === current)?.label ||
+                        current
+                      : "No role";
                   return (
                     <TableRow key={u.user_id}>
                       <TableCell>{u.email}</TableCell>
-                      <TableCell>{u.full_name}</TableCell>
+                      {/* Removed Name cell */}
                       <TableCell>
-                        <div className="max-w-[220px]">
-                          <Select
-                            defaultValue={current ?? "none"}
-                            onValueChange={(val) =>
-                              saveRole(u.user_id, val === "none" ? null : val)
-                            }
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="No role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No role</SelectItem>
-                              {ROLE_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                        <div className="max-w-[220px] text-sm text-foreground/90">
+                          {currentLabel}
                         </div>
                       </TableCell>
                       <TableCell>

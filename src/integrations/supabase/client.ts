@@ -31,7 +31,11 @@ const FUNCTIONS_URL = (() => {
   }
 })();
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  // Direct edge function calls to the dedicated Functions domain
-  ...(FUNCTIONS_URL ? { functions: { url: FUNCTIONS_URL } } : {}),
-});
+export const supabase = createClient<Database>(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    // Direct edge function calls to the dedicated Functions domain
+    ...(FUNCTIONS_URL ? { functions: { url: FUNCTIONS_URL } } : {}),
+  }
+);

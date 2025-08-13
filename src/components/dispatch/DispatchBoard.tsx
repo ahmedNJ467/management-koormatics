@@ -16,7 +16,6 @@ interface DispatchBoardProps {
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
   onAssignEscort?: (trip: DisplayTrip) => void;
-  onGenerateInvoice: (trip: DisplayTrip) => void;
 }
 
 export function DispatchBoard({
@@ -28,7 +27,6 @@ export function DispatchBoard({
   onCompleteTrip,
   onUpdateStatus,
   onAssignEscort,
-  onGenerateInvoice,
 }: DispatchBoardProps) {
   const [activeTab, setActiveTab] = useState("upcoming");
 
@@ -107,7 +105,6 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignEscort={onAssignEscort}
-                  onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
               <TabsContent value="in-progress" className="mt-2">
@@ -118,7 +115,6 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignEscort={onAssignEscort}
-                  onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
               <TabsContent value="scheduled" className="mt-2">
@@ -129,7 +125,6 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignEscort={onAssignEscort}
-                  onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
               <TabsContent value="completed" className="mt-2">
@@ -140,7 +135,6 @@ export function DispatchBoard({
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
                   onAssignEscort={onAssignEscort}
-                  onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
             </Tabs>

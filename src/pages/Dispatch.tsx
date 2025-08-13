@@ -11,7 +11,6 @@ import { AssignEscortDialog } from "@/components/dispatch/AssignEscortDialog";
 import { logActivity } from "@/utils/activity-logger";
 import { useOverdueTrips } from "@/hooks/use-overdue-trips";
 import { supabase } from "@/integrations/supabase/client";
-import { generateInvoiceForTrip } from "@/lib/invoice-utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Activity, Clock } from "lucide-react";
@@ -291,35 +290,7 @@ export default function Dispatch() {
     [queryClient, toast, setRefreshTrigger]
   );
 
-  const handleGenerateInvoice = useCallback(
-    async (trip: DisplayTrip) => {
-      try {
-        if (trip.invoice_id) {
-          toast({
-            title: "Invoice already exists",
-            description: "This trip is already linked to an invoice.",
-          });
-          return;
-        }
-        await generateInvoiceForTrip(trip);
-        await queryClient.invalidateQueries({ queryKey: ["invoices"] });
-        toast({
-          title: "Invoice Generated",
-          description: "Invoice has been generated successfully",
-        });
-      } catch (error: unknown) {
-        console.error("Error generating invoice:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error occurred";
-        toast({
-          title: "Error",
-          description: `Failed to generate invoice: ${errorMessage}`,
-          variant: "destructive",
-        });
-      }
-    },
-    [queryClient, toast]
-  );
+  // Removed invoice generation from Dispatch; handled in Trip Finance
 
   const handleConfirmCompleteTrip = useCallback(
     async (trip: DisplayTrip, logSheet: File) => {
@@ -363,32 +334,14 @@ export default function Dispatch() {
           throw new Error(`Failed to update trip: ${tripUpdateError.message}`);
         }
 
-        try {
-          await generateInvoiceForTrip({
-            ...trip,
-            status: "completed",
-            log_sheet_url,
-          });
-          toast({
-            title: "Trip Completed",
-            description:
-              "Log sheet uploaded, trip marked as completed, and invoice generated.",
-          });
-        } catch (invoiceError: unknown) {
-          const errorMessage =
-            invoiceError instanceof Error
-              ? invoiceError.message
-              : "Unknown error occurred";
-          toast({
-            title: "Trip Completed, Invoice Failed",
-            description: `Trip marked as completed, but invoice generation failed: ${errorMessage}`,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Trip Completed",
+          description: "Log sheet uploaded and trip marked as completed.",
+        });
 
         await queryClient.invalidateQueries({ queryKey: ["trips"] });
         await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
-        await queryClient.invalidateQueries({ queryKey: ["invoices"] });
+        // Invoice flow handled via Trip Finance; no invoice invalidation here
         setCompleteTripOpen(false);
       } catch (error) {
         console.error("Error completing trip:", error);
@@ -490,7 +443,7 @@ export default function Dispatch() {
             setTripToAssignEscort(trip);
             setAssignEscortOpen(true);
           }}
-          onGenerateInvoice={handleGenerateInvoice}
+          // Invoice generation removed
         />
 
         <TripMessageDialog
