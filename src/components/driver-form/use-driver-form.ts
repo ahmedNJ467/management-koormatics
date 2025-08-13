@@ -10,8 +10,10 @@ export function useDriverForm(driver?: Driver) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [airportIdFile, setAirportIdFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string | null>(null);
+  const [airportIdName, setAirportIdName] = useState<string | null>(null);
 
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverSchema),
@@ -22,6 +24,7 @@ export function useDriverForm(driver?: Driver) {
       license_type: driver?.license_type ?? "",
       license_expiry: driver?.license_expiry ?? "",
       status: driver?.status ?? "active",
+      is_vip: driver?.is_vip ?? false,
     },
   });
 
@@ -47,18 +50,36 @@ export function useDriverForm(driver?: Driver) {
     setDocumentName(null);
   };
 
+  const handleAirportIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAirportIdFile(file);
+      setAirportIdName(file.name);
+    }
+  };
+
+  const clearAirportId = () => {
+    setAirportIdFile(null);
+    setAirportIdName(null);
+  };
+
   return {
     form,
     isSubmitting,
     setIsSubmitting,
     avatarFile,
     documentFile,
+    airportIdFile,
     avatarPreview,
     setAvatarPreview,
     documentName,
     setDocumentName,
+    airportIdName,
+    setAirportIdName,
     handleAvatarChange,
     handleDocumentChange,
     clearDocument,
+    handleAirportIdChange,
+    clearAirportId,
   };
 }

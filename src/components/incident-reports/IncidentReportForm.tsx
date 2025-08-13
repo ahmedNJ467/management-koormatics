@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import {
   AlertTriangle,
@@ -40,9 +39,143 @@ import {
   Shield,
   Calendar,
   Clock,
+  Trash2,
 } from "lucide-react";
-import { CarDamageSelector } from "./CarDamageSelector";
+
 import { ImageUpload } from "./ImageUpload";
+
+function ExistingIncidentImages({
+  incidentId,
+  position = "bottom" as "top" | "bottom",
+}: {
+  incidentId: string;
+  position?: "top" | "bottom";
+}) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data } = useQuery({
+    queryKey: ["incident-images", incidentId],
+    enabled: !!incidentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicle_incident_images")
+        .select("image_url, name")
+        .eq("incident_id", incidentId);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  if (!data || data.length === 0) return null;
+
+  const getFileNameFromUrl = (url: string): string | null => {
+    try {
+      const u = new URL(url);
+      const parts = u.pathname.split("/");
+      return parts[parts.length - 1] || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleRemove = async (img: {
+    image_url: string;
+    name?: string | null;
+  }) => {
+    const fileName = img.name || getFileNameFromUrl(img.image_url);
+    if (!fileName) {
+      toast({
+        title: "Unable to remove",
+        description: "Missing filename.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const confirmDelete = window.confirm(
+      "Remove this photo from the incident?"
+    );
+    if (!confirmDelete) return;
+    // Remove from storage
+    const storagePath = `incidents/${incidentId}/${fileName}`;
+    const { error: storageErr } = await supabase.storage
+      .from("images")
+      .remove([storagePath]);
+    if (storageErr) {
+      console.error(storageErr);
+      toast({
+        title: "Failed to remove photo",
+        description: storageErr.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    // Remove from DB
+    const { error: dbErr } = await supabase
+      .from("vehicle_incident_images")
+      .delete()
+      .eq("incident_id", incidentId)
+      .eq("name", fileName);
+    if (dbErr) {
+      console.error(dbErr);
+      toast({
+        title: "Failed to update database",
+        description: dbErr.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    // If no images left, update photos_attached=false
+    const { count } = await supabase
+      .from("vehicle_incident_images")
+      .select("id", { count: "exact", head: true })
+      .eq("incident_id", incidentId);
+    if ((count ?? 0) === 0) {
+      await supabase
+        .from("vehicle_incident_reports")
+        .update({ photos_attached: false })
+        .eq("id", incidentId);
+    }
+    await queryClient.invalidateQueries({
+      queryKey: ["incident-images", incidentId],
+    });
+    toast({ title: "Photo removed" });
+  };
+  return (
+    <div className="mt-4">
+      <div className="text-sm font-medium mb-2">Existing Photos</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {data.map((img: any, idx: number) => (
+          <div
+            key={idx}
+            className="group relative border rounded-lg overflow-hidden"
+          >
+            <div className="aspect-square bg-muted">
+              <img
+                src={img.image_url}
+                alt={img.name || `Photo ${idx + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => handleRemove(img)}
+                className="absolute top-2 right-2 inline-flex items-center gap-1 rounded bg-red-600 text-white text-xs px-2 py-1 opacity-90 hover:opacity-100"
+                title="Remove photo"
+              >
+                <Trash2 className="h-3 w-3" /> Remove
+              </button>
+            </div>
+            {img.name && (
+              <div className="px-2 py-1 text-xs text-muted-foreground truncate">
+                {img.name}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const incidentReportSchema = z
   .object({
@@ -77,15 +210,7 @@ const incidentReportSchema = z
     follow_up_required: z.boolean(),
     follow_up_date: z.string().optional(),
     notes: z.string().optional(),
-    damage_details: z
-      .array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          severity: z.enum(["minor", "moderate", "severe"]),
-        })
-      )
-      .optional(),
+
     incident_images: z
       .array(
         z.object({
@@ -192,22 +317,7 @@ export function IncidentReportForm({
           follow_up_required: report.follow_up_required,
           follow_up_date: report.follow_up_date || "",
           notes: report.notes || "",
-          damage_details: report.damage_details
-            ? (() => {
-                try {
-                  return Object.entries(JSON.parse(report.damage_details)).map(
-                    ([name, severity]) => ({
-                      id: name.toLowerCase().replace(/\s+/g, "-") || Math.random().toString(),
-                      name: name || "",
-                      severity: (severity as "minor" | "moderate" | "severe") || "minor",
-                    })
-                  );
-                } catch (error) {
-                  console.warn("Failed to parse damage_details:", error);
-                  return [];
-                }
-              })()
-            : [],
+
           incident_images: [] as {
             id: string;
             file: any;
@@ -240,11 +350,7 @@ export function IncidentReportForm({
           follow_up_required: false,
           follow_up_date: "",
           notes: "",
-          damage_details: [] as {
-            id: string;
-            name: string;
-            severity: "minor" | "moderate" | "severe";
-          }[],
+
           incident_images: [] as {
             id: string;
             file: any;
@@ -261,7 +367,8 @@ export function IncidentReportForm({
     try {
       // Clean up the data - remove empty strings and zero values for optional fields
       // Remove incident_images as it's not a database field
-      const { incident_images, damage_details, ...formValues } = values;
+      const { incident_images, ...formValues } = values;
+      const imagesToUpload = (incident_images || []).filter((img) => img?.file);
 
       const cleanedValues = {
         vehicle_id: values.vehicle_id,
@@ -281,20 +388,12 @@ export function IncidentReportForm({
         third_party_involved: values.third_party_involved,
         third_party_details: values.third_party_details || null,
         witness_details: values.witness_details || null,
-        photos_attached: values.photos_attached,
+        // If new images present, ensure photos_attached true
+        photos_attached: imagesToUpload.length > 0 || values.photos_attached,
         reported_by: values.reported_by,
         follow_up_required: values.follow_up_required,
         follow_up_date: values.follow_up_date || null,
         notes: values.notes || null,
-        damage_details:
-          damage_details && damage_details.length > 0
-            ? JSON.stringify(
-                damage_details.reduce((acc, part) => {
-                  acc[part.name] = part.severity;
-                  return acc;
-                }, {} as Record<string, string>)
-              )
-            : null,
       };
 
       if (report) {
@@ -306,17 +405,111 @@ export function IncidentReportForm({
 
         if (error) throw error;
 
+        // Upload images for existing report and insert DB rows
+        if (imagesToUpload.length > 0) {
+          const insertedImageRows: { image_url: string; name?: string }[] = [];
+          for (const img of imagesToUpload) {
+            const file = img.file as File;
+            const safeName = `${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2)}-${(file.name || "image").replace(
+              /[^a-zA-Z0-9_.-]/g,
+              "_"
+            )}`;
+            const path = `incidents/${report.id}/${safeName}`;
+            const { error: uploadErr } = await supabase.storage
+              .from("images")
+              .upload(path, file, {
+                cacheControl: "3600",
+                upsert: true,
+                contentType: file.type || "image/jpeg",
+              });
+            if (uploadErr) {
+              console.error("Image upload failed:", uploadErr);
+              continue;
+            }
+            const { data } = supabase.storage.from("images").getPublicUrl(path);
+            if (data?.publicUrl) {
+              insertedImageRows.push({
+                image_url: data.publicUrl,
+                name: file.name,
+              });
+            }
+          }
+          if (insertedImageRows.length > 0) {
+            await supabase.from("vehicle_incident_images").insert(
+              insertedImageRows.map((r) => ({
+                incident_id: report.id,
+                image_url: r.image_url,
+                name: r.name || null,
+              }))
+            );
+            await supabase
+              .from("vehicle_incident_reports")
+              .update({ photos_attached: true })
+              .eq("id", report.id);
+          }
+        }
+
         toast({
           title: "Incident report updated",
           description: "The incident report has been updated successfully.",
         });
       } else {
         // Create new report
-        const { error } = await supabase
+        const { data: created, error } = await supabase
           .from("vehicle_incident_reports")
-          .insert(cleanedValues);
+          .insert(cleanedValues)
+          .select("id")
+          .single();
 
         if (error) throw error;
+
+        // Upload images for new report and insert DB rows
+        if (created?.id && imagesToUpload.length > 0) {
+          const insertedImageRows: { image_url: string; name?: string }[] = [];
+          for (const img of imagesToUpload) {
+            const file = img.file as File;
+            const safeName = `${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2)}-${(file.name || "image").replace(
+              /[^a-zA-Z0-9_.-]/g,
+              "_"
+            )}`;
+            const path = `incidents/${created.id}/${safeName}`;
+            const { error: uploadErr } = await supabase.storage
+              .from("images")
+              .upload(path, file, {
+                cacheControl: "3600",
+                upsert: true,
+                contentType: file.type || "image/jpeg",
+              });
+            if (uploadErr) {
+              console.error("Image upload failed:", uploadErr);
+              continue;
+            }
+            const { data } = supabase.storage.from("images").getPublicUrl(path);
+            if (data?.publicUrl) {
+              insertedImageRows.push({
+                image_url: data.publicUrl,
+                name: file.name,
+              });
+            }
+          }
+          if (insertedImageRows.length > 0) {
+            await supabase.from("vehicle_incident_images").insert(
+              insertedImageRows.map((r) => ({
+                incident_id: created.id,
+                image_url: r.image_url,
+                name: r.name || null,
+              }))
+            );
+            await supabase
+              .from("vehicle_incident_reports")
+              .update({ photos_attached: true })
+              .eq("id", created.id);
+          }
+        }
 
         toast({
           title: "Incident report created",
@@ -833,44 +1026,27 @@ export function IncidentReportForm({
           </CardContent>
         </Card>
 
-        {/* Vehicle Damage Diagram */}
-        <FormField
-          control={form.control}
-          name="damage_details"
-          render={({ field }) => (
-            <FormItem>
-              <CarDamageSelector
-                value={(field.value || []).map(part => ({
-                  id: part.id || Math.random().toString(),
-                  name: part.name || "",
-                  severity: part.severity || "minor"
-                }))}
-                onChange={field.onChange}
-              />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Image Upload */}
+        {/* Image Upload (preload existing images from DB as read-only thumbs) */}
         <FormField
           control={form.control}
           name="incident_images"
           render={({ field }) => (
             <FormItem>
               <ImageUpload
-                value={(field.value || []).map(img => ({
+                value={(field.value || []).map((img) => ({
                   id: img.id || Math.random().toString(),
                   file: img.file,
                   preview: img.preview || "",
                   name: img.name || "",
                   size: img.size || 0,
-                  type: img.type || ""
+                  type: img.type || "",
                 }))}
                 onChange={field.onChange}
                 maxImages={10}
                 maxFileSize={5}
               />
+              {/* Existing stored images */}
+              {report && <ExistingIncidentImages incidentId={report.id} />}
               <FormMessage />
             </FormItem>
           )}

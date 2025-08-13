@@ -29,6 +29,8 @@ export interface DbTrip {
   soft_skin_count?: number;
   armoured_count?: number;
   assigned_vehicle_ids?: string[];
+  // Transient, computed from trip_assignments; not necessarily stored in DB
+  assigned_driver_ids?: string[];
   passport_documents?: { name: string; url: string; passenger_name: string }[];
   invitation_documents?: {
     name: string;
@@ -80,6 +82,7 @@ export interface Trip {
   soft_skin_count?: number;
   armoured_count?: number;
   assigned_vehicle_ids?: string[];
+  assigned_driver_ids?: string[];
   passport_documents?: { name: string; url: string; passenger_name: string }[];
   invitation_documents?: {
     name: string;

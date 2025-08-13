@@ -106,17 +106,19 @@ A comprehensive fleet management solution built with React, TypeScript, and Supa
    cp .env.example .env.local
    ```
 
-   Configure the following variables:
+   Configure the following variables (for local dev, create `.env.local` in the project root):
 
    ```env
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   RESEND_API_KEY=your_resend_api_key
+   # For Supabase Edge Functions, set server-only secrets in Supabase, not in .env.local
+   # RESEND_API_KEY=your_resend_api_key
    ```
 
 4. **Start the development server**
    ```bash
    npm run dev
+   # App runs at http://localhost:8080
    ```
 
 ### Supabase Setup

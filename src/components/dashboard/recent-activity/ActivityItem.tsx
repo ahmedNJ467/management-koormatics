@@ -1,4 +1,3 @@
-
 import { ActivityIcon } from "./ActivityIcon";
 import { ActivityItemProps } from "@/types/dashboard";
 
@@ -12,15 +11,17 @@ export const ActivityItem = ({ activity }: ActivityItemComponentProps) => {
   }
 
   return (
-    <div className="flex items-center space-x-4 rounded-lg border border-border bg-card p-4">
-      <ActivityIcon type={activity.type} />
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-card-foreground truncate">
+    <div className="grid grid-cols-[auto,1fr,auto] items-start gap-3 rounded-md border p-3">
+      <div className="mt-0.5">
+        <ActivityIcon type={activity.type} />
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm font-medium text-foreground whitespace-normal break-words">
           {activity.title}
         </div>
-        <div className="text-xs text-muted-foreground">
-          {activity.timestamp}
-        </div>
+      </div>
+      <div className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+        {activity.timestamp}
       </div>
     </div>
   );

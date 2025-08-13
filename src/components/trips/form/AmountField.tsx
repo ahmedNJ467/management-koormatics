@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DisplayTrip } from "@/lib/types/trip";
@@ -26,7 +25,6 @@ export function AmountField({ editTrip }: AmountFieldProps) {
           step="0.01"
         />
       </div>
-      <p className="text-xs text-muted-foreground">Enter the amount charged for this trip</p>
     </div>
   );
 }

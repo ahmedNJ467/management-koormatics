@@ -96,9 +96,7 @@ export function AssignDriverDialog({
       }
 
       // Filter out the current trip from conflicts check
-      const otherTrips = allTrips.filter(
-        (trip) => trip.id !== tripToAssign.id
-      );
+      const otherTrips = allTrips.filter((trip) => trip.id !== tripToAssign.id);
 
       // Check each driver's availability using time-based logic
       const driversWithAvailability = data.map((driver) => {
@@ -122,8 +120,9 @@ export function AssignDriverDialog({
 
       console.log("AssignDriverDialog - Drivers with availability:", {
         totalDrivers: driversWithAvailability.length,
-        availableDrivers: driversWithAvailability.filter(d => d.isAvailable).length,
-        drivers: driversWithAvailability.map(d => ({
+        availableDrivers: driversWithAvailability.filter((d) => d.isAvailable)
+          .length,
+        drivers: driversWithAvailability.map((d) => ({
           name: d.name,
           isAvailable: d.isAvailable,
           reason: d.reason,
@@ -199,6 +198,14 @@ export function AssignDriverDialog({
         .eq("id", tripToAssign.id);
 
       if (updateError) throw updateError;
+
+      // Optimistically update trips cache so UI reflects driver + vehicle status in sync
+      queryClient.setQueryData<DisplayTrip[] | undefined>(["trips"], (prev) => {
+        if (!prev) return prev as any;
+        return prev.map((t) =>
+          t.id === tripToAssign.id ? { ...t, driver_id: selectedDriver } : t
+        );
+      });
 
       toast({
         title: "Driver assigned",

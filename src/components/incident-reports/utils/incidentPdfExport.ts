@@ -1,17 +1,14 @@
 import jsPDF from "jspdf";
-import { autoTable } from "jspdf-autotable";
-import { format } from "date-fns";
-import { toast } from "sonner";
+import autoTable from "jspdf-autotable";
+import { toShortId } from "@/utils/ids";
 
-export interface IncidentReportData {
+export interface IncidentReportForPdf {
   id: string;
-  vehicle_id: string;
-  driver_id?: string;
   incident_date: string;
   incident_time?: string;
   incident_type: string;
-  severity: string;
-  status: string;
+  severity: "minor" | "moderate" | "severe" | "critical";
+  status: "reported" | "investigating" | "resolved" | "closed";
   location: string;
   description: string;
   injuries_reported: boolean;
@@ -27,607 +24,507 @@ export interface IncidentReportData {
   follow_up_required: boolean;
   follow_up_date?: string;
   notes?: string;
-  damage_details?: string;
+  // Optional photos to embed in the PDF
+  photos?: Array<{
+    url: string;
+    name?: string;
+  }>;
+
   created_at: string;
   updated_at: string;
   vehicle?: {
-    make: string;
-    model: string;
-    year?: number;
-    registration: string;
+    make?: string;
+    model?: string;
+    registration?: string;
   };
   driver?: {
-    name: string;
+    name?: string;
     license_number?: string;
   };
 }
 
-// Export single incident report as detailed PDF
-export const exportIncidentReportToPDF = (incident: IncidentReportData) => {
+// Helper function to load image as data URL
+async function loadImageAsDataURL(url: string): Promise<string> {
   try {
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm", 
-      format: "a4",
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
     });
+  } catch (error) {
+    console.error("Error loading image:", error);
+    return "";
+  }
+}
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+// Helper function to format boolean values (avoid unicode glyphs that may not render)
+function formatBoolean(value: boolean | undefined): string {
+  if (value === undefined || value === null) return "-";
+  return value ? "Yes" : "No";
+}
 
-    // Draw header
-    drawIncidentReportHeader(doc, pageWidth, incident);
+// Helper to format ISO date strings consistently
+function formatDateValue(value?: string): string {
+  if (!value) return "-";
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleDateString();
+  } catch {
+    return value;
+  }
+}
 
-    // Draw incident details
-    let currentY = drawIncidentBasicInfo(doc, incident, 50);
-    currentY = drawIncidentClassification(doc, incident, currentY + 20);
-    currentY = drawIncidentDescription(doc, incident, currentY + 20);
-    currentY = drawIncidentParties(doc, incident, currentY + 20);
-    currentY = drawIncidentFinancials(doc, incident, currentY + 20);
-    currentY = drawIncidentFollowUp(doc, incident, currentY + 20);
+// Helper function to format severity with color coding
+function getSeverityColor(severity: string): string {
+  switch (severity.toLowerCase()) {
+    case "minor":
+      return "#28A745"; // Green
+    case "moderate":
+      return "#FFC107"; // Yellow
+    case "severe":
+      return "#FF6C37"; // Orange
+    case "critical":
+      return "#DC3545"; // Red
+    default:
+      return "#6C757D"; // Gray
+  }
+}
 
-    // Check if we need a new page
-    if (currentY > pageHeight - 40) {
-      doc.addPage();
-      currentY = 20;
+// Helper function to format status with color coding
+function getStatusColor(status: string): string {
+  switch (status.toLowerCase()) {
+    case "reported":
+      return "#6C757D"; // Gray
+    case "investigating":
+      return "#FFC107"; // Yellow
+    case "resolved":
+      return "#28A745"; // Green
+    case "closed":
+      return "#6C757D"; // Gray
+    default:
+      return "#6C757D"; // Gray
+  }
+}
+
+export async function generateIncidentReportPdf(
+  incident: IncidentReportForPdf,
+  options?: { logoUrl?: string }
+): Promise<void> {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+  const brandPrimary = "#2E4A87"; // Koormatics blue tone
+  const brandAccent = "#7AC943"; // Koormatics green tone
+
+  // Header
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 36;
+  const headerHeight = 72;
+
+  let logoDataUrl: string | null = null;
+  if (options?.logoUrl) {
+    logoDataUrl = await loadImageAsDataURL(options.logoUrl);
+  }
+
+  if (logoDataUrl) {
+    // Draw logo on left
+    const logoWidth = 160;
+    const logoHeight = 42;
+    doc.addImage(logoDataUrl, "PNG", marginX, 24, logoWidth, logoHeight);
+  }
+
+  // Company/title block on right
+  doc.setTextColor(brandPrimary);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Vehicle Incident Report", pageWidth - marginX, 36, {
+    align: "right",
+  });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Koormatics Fleet Management", pageWidth - marginX, 56, {
+    align: "right",
+  });
+
+  // Divider
+  doc.setDrawColor(brandAccent);
+  doc.setFillColor(brandAccent);
+  doc.rect(marginX, headerHeight, pageWidth - marginX * 2, 2, "F");
+
+  let yCursor = headerHeight + 24;
+
+  // Overview table (two columns) - no header, bold field labels
+  autoTable(doc, {
+    startY: yCursor,
+    styles: { fontSize: 10, cellPadding: 6 },
+    body: [
+      [
+        "Incident ID",
+        toShortId(incident.id, 8),
+        "Status",
+        (incident.status || "-").toString().toUpperCase(),
+      ],
+      [
+        "Date",
+        incident.incident_date
+          ? new Date(incident.incident_date).toLocaleDateString()
+          : "-",
+        "Time",
+        incident.incident_time || "-",
+      ],
+      [
+        "Vehicle",
+        `${incident.vehicle?.make || ""} ${
+          incident.vehicle?.model || ""
+        }`.trim() || "-",
+        "Registration",
+        incident.vehicle?.registration || "-",
+      ],
+      [
+        "Driver",
+        incident.driver?.name || "-",
+        "License",
+        incident.driver?.license_number || "-",
+      ],
+      [
+        "Location",
+        incident.location || "-",
+        "Reported By",
+        incident.reported_by || "-",
+      ],
+    ],
+    showHead: "never",
+    theme: "grid",
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: "auto" },
+      2: { fontStyle: "bold", cellWidth: "auto" },
+      1: { cellWidth: "auto" },
+      3: { cellWidth: "auto" },
+    },
+    didParseCell: (data: any) => {
+      // Ensure columns 0 and 2 (field labels) appear bold
+      if (
+        data.section === "body" &&
+        (data.column.index === 0 || data.column.index === 2)
+      ) {
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
+  } as any);
+  yCursor = (doc as any).lastAutoTable.finalY + 16;
+
+  // Incident classification table
+  autoTable(doc, {
+    startY: yCursor,
+    head: [["Classification", "Details"]],
+    body: [
+      ["Type", (incident.incident_type || "-").toString().toUpperCase()],
+      ["Severity", (incident.severity || "-").toString().toUpperCase()],
+      ["Status", (incident.status || "-").toString().toUpperCase()],
+    ],
+    styles: { fontSize: 9, cellPadding: 6 },
+    headStyles: { fillColor: brandPrimary, textColor: 255 },
+    theme: "grid",
+  });
+  yCursor = (doc as any).lastAutoTable.finalY + 16;
+
+  // Incident details table
+  autoTable(doc, {
+    startY: yCursor,
+    head: [["Incident Details", "Status"]],
+    body: [
+      ["Injuries Reported", formatBoolean(incident.injuries_reported)],
+      ["Third Party Involved", formatBoolean(incident.third_party_involved)],
+      ["Photos Attached", formatBoolean(incident.photos_attached)],
+      ["Follow-up Required", formatBoolean(incident.follow_up_required)],
+      ["Follow-up Date", formatDateValue(incident.follow_up_date)],
+    ],
+    styles: { fontSize: 9, cellPadding: 6 },
+    headStyles: { fillColor: brandPrimary, textColor: 255 },
+    theme: "striped",
+  });
+  yCursor = (doc as any).lastAutoTable.finalY + 16;
+
+  // Financial information table
+  const financialData = [];
+  if (incident.estimated_damage_cost) {
+    financialData.push([
+      "Estimated Damage Cost",
+      `$${incident.estimated_damage_cost.toLocaleString()}`,
+    ]);
+  }
+  if (incident.actual_repair_cost) {
+    financialData.push([
+      "Actual Repair Cost",
+      `$${incident.actual_repair_cost.toLocaleString()}`,
+    ]);
+  }
+  if (incident.police_report_number) {
+    financialData.push(["Police Report Number", incident.police_report_number]);
+  }
+  if (incident.insurance_claim_number) {
+    financialData.push([
+      "Insurance Claim Number",
+      incident.insurance_claim_number,
+    ]);
+  }
+
+  if (financialData.length > 0) {
+    autoTable(doc, {
+      startY: yCursor,
+      head: [["Financial & Reference Information", "Details"]],
+      body: financialData,
+      styles: { fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: brandPrimary, textColor: 255 },
+      theme: "grid",
+    });
+    yCursor = (doc as any).lastAutoTable.finalY + 16;
+  }
+
+  // Description section
+  if (incident.description) {
+    autoTable(doc, {
+      startY: yCursor,
+      head: [["Incident Description"]],
+      body: [[incident.description]],
+      styles: { fontSize: 10, cellPadding: 8, valign: "top" },
+      headStyles: { fillColor: brandPrimary, textColor: 255, halign: "left" },
+      columnStyles: { 0: { cellWidth: pageWidth - marginX * 2 } },
+      theme: "grid",
+      margin: { left: marginX, right: marginX },
+    });
+    yCursor = (doc as any).lastAutoTable.finalY + 16;
+  }
+
+  // Additional details section
+  const additionalDetails = [];
+  if (incident.third_party_details) {
+    additionalDetails.push([
+      "Third Party Details",
+      incident.third_party_details,
+    ]);
+  }
+  if (incident.witness_details) {
+    additionalDetails.push(["Witness Details", incident.witness_details]);
+  }
+  if (incident.notes) {
+    additionalDetails.push(["Additional Notes", incident.notes]);
+  }
+
+  if (additionalDetails.length > 0) {
+    autoTable(doc, {
+      startY: yCursor,
+      head: [["Additional Information", "Details"]],
+      body: additionalDetails,
+      styles: { fontSize: 9, cellPadding: 6, valign: "top" },
+      headStyles: { fillColor: brandPrimary, textColor: 255 },
+      theme: "grid",
+    });
+    yCursor = (doc as any).lastAutoTable.finalY + 16;
+  }
+
+  // Photos section (optional)
+  if (incident.photos && incident.photos.length > 0) {
+    // Title
+    doc.setTextColor(brandPrimary);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Photos", marginX, yCursor);
+    yCursor += 10;
+
+    // Convert provided URLs to data URLs if needed
+    const toDataUrl = async (url: string): Promise<string> => {
+      if (!url) return "";
+      if (url.startsWith("data:")) return url;
+      return await loadImageAsDataURL(url);
+    };
+
+    const dataUrls = await Promise.all(
+      incident.photos.map((p) => toDataUrl(p.url))
+    );
+
+    const imagesPerRow = 3;
+    const gap = 8;
+    const usableWidth = pageWidth - marginX * 2;
+    const imageWidth = (usableWidth - gap * (imagesPerRow - 1)) / imagesPerRow;
+    const imageHeight = imageWidth * 0.75; // 4:3 ratio
+    const captionHeight = 12;
+    const rowHeight = imageHeight + captionHeight + 6;
+    const bottomSafeY = doc.internal.pageSize.getHeight() - 120; // leave space for footer
+
+    const getType = (dataUrl: string): "PNG" | "JPEG" =>
+      dataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
+
+    let col = 0;
+    for (let i = 0; i < dataUrls.length; i++) {
+      const dataUrl = dataUrls[i];
+      if (!dataUrl) continue;
+
+      if (yCursor + rowHeight > bottomSafeY) {
+        doc.addPage();
+        yCursor = 36;
+      }
+
+      const x = marginX + col * (imageWidth + gap);
+      const y = yCursor;
+      try {
+        doc.addImage(dataUrl, getType(dataUrl), x, y, imageWidth, imageHeight);
+      } catch {
+        // ignore image add failure
+      }
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(60);
+      const name = incident.photos[i]?.name || `Photo ${i + 1}`;
+      const maxChars = 40;
+      const caption =
+        name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
+      doc.text(caption, x, y + imageHeight + 10, { maxWidth: imageWidth });
+
+      col++;
+      if (col >= imagesPerRow) {
+        col = 0;
+        yCursor += rowHeight + gap;
+      }
     }
 
-    // Draw footer
-    drawIncidentReportFooter(doc, pageWidth, pageHeight);
-
-    const filename = `incident-report-${incident.id.slice(0, 8)}-${format(new Date(incident.incident_date), "yyyy-MM-dd")}`;
-    doc.save(`${filename}.pdf`);
-    toast.success("Incident report PDF exported successfully");
-  } catch (error) {
-    console.error("Error exporting incident report PDF:", error);
-    toast.error("Failed to export incident report PDF");
+    if (col !== 0) {
+      yCursor += rowHeight + gap;
+    }
   }
-};
+
+  // Footer signature area
+  const footerY = doc.internal.pageSize.getHeight() - 96;
+  doc.setDrawColor(brandPrimary);
+  doc.line(marginX, footerY, marginX + 180, footerY);
+  doc.line(pageWidth - marginX - 180, footerY, pageWidth - marginX, footerY);
+  doc.setFontSize(9);
+  doc.text("Reporter Signature", marginX, footerY + 14);
+  doc.text("Manager Approval", pageWidth - marginX - 180, footerY + 14);
+
+  const filenameParts = [
+    "incident-report",
+    incident.vehicle?.registration || "vehicle",
+    incident.incident_date?.slice(0, 10) || "date",
+    toShortId(incident.id, 8),
+  ];
+  const fileName = filenameParts.filter(Boolean).join("-") + ".pdf";
+  doc.save(fileName);
+}
 
 // Export multiple incident reports as summary table
-export const exportIncidentReportsListToPDF = (incidents: IncidentReportData[]) => {
+export async function exportIncidentReportsListToPDF(
+  incidents: IncidentReportForPdf[]
+): Promise<void> {
   if (!incidents || incidents.length === 0) {
-    toast.error("No incident reports available to export");
-    return;
+    throw new Error("No incident reports available to export");
   }
 
-  try {
-    const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a4",
-    });
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "pt",
+    format: "a4",
+  });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+  const brandPrimary = "#2E4A87";
+  const brandAccent = "#7AC943";
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 36;
+  const headerHeight = 72;
 
-    // Draw header
-    drawIncidentListHeader(doc, pageWidth);
+  // Header
+  doc.setFillColor(brandPrimary);
+  doc.rect(0, 0, pageWidth, headerHeight, "F");
 
-    // Generate summary statistics
-    drawIncidentSummaryStats(doc, incidents, 40);
-
-    // Generate table
-    generateIncidentReportsTable(doc, incidents, pageWidth, 75);
-
-    // Draw footer
-    drawIncidentReportFooter(doc, pageWidth, pageHeight);
-
-    const filename = `incident-reports-summary-${format(new Date(), "yyyy-MM-dd")}`;
-    doc.save(`${filename}.pdf`);
-    toast.success("Incident reports summary PDF exported successfully");
-  } catch (error) {
-    console.error("Error exporting incident reports list PDF:", error);
-    toast.error("Failed to export incident reports summary PDF");
-  }
-};
-
-function drawIncidentReportHeader(doc: jsPDF, pageWidth: number, incident: IncidentReportData) {
-  // Modern gradient-style header background
-  doc.setFillColor(30, 64, 175); // Deep professional blue
-  doc.rect(0, 0, pageWidth, 35, "F");
-
-  // Subtle accent line at top
-  doc.setFillColor(99, 102, 241); // Indigo accent
-  doc.rect(0, 0, pageWidth, 2, "F");
-
-  // Company logo area with clean white background
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(20, 8, 70, 20, 4, 4, "F");
-
-  // Add the uploaded Koormatics logo
-  try {
-    doc.addImage(
-      "/lovable-uploads/1e7ff00e-4144-4e6e-a20c-f8df7fd74542.png",
-      "PNG",
-      25,
-      12,
-      60,
-      12
-    );
-  } catch (e) {
-    console.error("Error adding logo to PDF:", e);
-    // Fallback to text
-    doc.setTextColor(30, 64, 175);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("KOORMATICS", 25, 18);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text("Transportation & Logistics", 25, 22);
-  }
-
-  // Main title with modern typography
+  // Company logo and title
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  const title = "VEHICLE INCIDENT REPORT";
-  const titleWidth = doc.getTextWidth(title);
-  doc.text(title, (pageWidth - titleWidth) / 2, 20);
-
-  // Professional subtitle with better spacing
-  doc.setFontSize(11);
+  doc.setFontSize(18);
+  doc.text("Incident Reports Summary", pageWidth / 2, 36, { align: "center" });
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(220, 220, 220);
-  const subtitle = "SAFETY & FLEET MANAGEMENT DIVISION";
-  const subtitleWidth = doc.getTextWidth(subtitle);
-  doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 27);
-
-  // Modern info panel on the right
-  doc.setFillColor(255, 255, 255);
-  doc.setFillColor(245, 247, 250); // Light background
-  doc.roundedRect(pageWidth - 85, 8, 70, 20, 4, 4, "F");
-
-  // Report metadata with modern styling  
-  doc.setTextColor(75, 85, 99);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("REPORT ID", pageWidth - 80, 14);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`#${incident.id.slice(0, 8).toUpperCase()}`, pageWidth - 80, 18);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("GENERATED", pageWidth - 80, 22);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(format(new Date(), "dd/MM/yyyy"), pageWidth - 80, 26);
-
-  // Modern status badge with enhanced styling
-  const statusColors = {
-    reported: [239, 68, 68],    // Red-500
-    investigating: [245, 158, 11], // Amber-500
-    resolved: [34, 197, 94],    // Green-500
-    closed: [107, 114, 128]     // Gray-500
-  };
-  const statusColor = statusColors[incident.status as keyof typeof statusColors] || [107, 114, 128];
-  
-  doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-  doc.roundedRect(pageWidth - 45, 12, 35, 10, 3, 3, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text(incident.status.toUpperCase(), pageWidth - 27.5, 18.5, { align: "center" });
-}
-
-function drawIncidentListHeader(doc: jsPDF, pageWidth: number) {
-  // Modern gradient-style header background
-  doc.setFillColor(30, 64, 175); // Deep professional blue
-  doc.rect(0, 0, pageWidth, 35, "F");
-
-  // Subtle accent line at top
-  doc.setFillColor(99, 102, 241); // Indigo accent
-  doc.rect(0, 0, pageWidth, 2, "F");
-
-  // Company logo area with clean white background
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(20, 8, 70, 20, 4, 4, "F");
-
-  // Add the uploaded Koormatics logo
-  try {
-    doc.addImage(
-      "/lovable-uploads/1e7ff00e-4144-4e6e-a20c-f8df7fd74542.png",
-      "PNG",
-      25,
-      12,
-      60,
-      12
-    );
-  } catch (e) {
-    console.error("Error adding logo to PDF:", e);
-    // Fallback to text
-    doc.setTextColor(30, 64, 175);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("KOORMATICS", 25, 18);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text("Transportation & Logistics", 25, 22);
-  }
-
-  // Main title with modern typography
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  const title = "INCIDENT REPORTS SUMMARY";
-  const titleWidth = doc.getTextWidth(title);
-  doc.text(title, (pageWidth - titleWidth) / 2, 20);
-
-  // Professional subtitle with better spacing
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(220, 220, 220);
-  const subtitle = "SAFETY & FLEET MANAGEMENT DIVISION";
-  const subtitleWidth = doc.getTextWidth(subtitle);
-  doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 27);
-
-  // Modern info panel on the right
-  doc.setFillColor(245, 247, 250); // Light background
-  doc.roundedRect(pageWidth - 85, 8, 70, 20, 4, 4, "F");
-
-  // Report metadata with modern styling  
-  doc.setTextColor(75, 85, 99);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("GENERATED", pageWidth - 80, 14);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(format(new Date(), "dd/MM/yyyy"), pageWidth - 80, 18);
-  
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("REPORT DATE", pageWidth - 80, 22);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(format(new Date(), "EEEE"), pageWidth - 80, 26);
-}
-
-function drawIncidentBasicInfo(doc: jsPDF, incident: IncidentReportData, startY: number): number {
-  const leftCol = 20;
-  const rightCol = 110;
-  let currentY = startY;
-
-  // Section title with proper spacing
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(30, 64, 175); // Professional blue
-  doc.text("INCIDENT INFORMATION", leftCol, currentY);
-  currentY += 15;
-
-  // Info boxes with better positioning
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(leftCol, currentY, 85, 30, 3, 3, "FD");
-  doc.roundedRect(rightCol, currentY, 85, 30, 3, 3, "FD");
-
-  // Left column - Date & Location
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
-  doc.text("DATE & TIME", leftCol + 5, currentY + 8);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(17, 24, 39);
-  const incidentDateTime = `${format(new Date(incident.incident_date), "dd MMM yyyy")}${incident.incident_time ? ` at ${incident.incident_time}` : ""}`;
-  doc.text(incidentDateTime, leftCol + 5, currentY + 14);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
-  doc.text("LOCATION", leftCol + 5, currentY + 20);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(17, 24, 39);
-  const locationText = incident.location.length > 30 ? incident.location.substring(0, 30) + "..." : incident.location;
-  doc.text(locationText, leftCol + 5, currentY + 26);
-
-  // Right column - Vehicle & Driver
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
-  doc.text("VEHICLE", rightCol + 5, currentY + 8);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(17, 24, 39);
-  const vehicleInfo = incident.vehicle 
-    ? `${incident.vehicle.make} ${incident.vehicle.model} (${incident.vehicle.registration})`
-    : "Vehicle information not available";
-  const vehicleText = vehicleInfo.length > 30 ? vehicleInfo.substring(0, 30) + "..." : vehicleInfo;
-  doc.text(vehicleText, rightCol + 5, currentY + 14);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
-  doc.text("DRIVER", rightCol + 5, currentY + 20);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(17, 24, 39);
-  const driverInfo = incident.driver ? incident.driver.name : "No driver assigned";
-  doc.text(driverInfo, rightCol + 5, currentY + 26);
-
-  return currentY + 35;
-}
-
-function drawIncidentClassification(doc: jsPDF, incident: IncidentReportData, startY: number): number {
-  const leftCol = 20;
-  let currentY = startY;
-
-  // Section title with proper spacing
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(30, 64, 175); // Professional blue
-  doc.text("CLASSIFICATION", leftCol, currentY);
-  currentY += 15;
-
-  // Modern classification badges with better spacing
-  const badges = [
-    { label: "TYPE", value: incident.incident_type, color: [59, 130, 246] }, // Blue-500
-    { label: "SEVERITY", value: incident.severity, color: getSeverityColor(incident.severity) },
-  ];
-
-  let xPos = leftCol;
-  badges.forEach(badge => {
-    // Modern badge design
-    doc.setFillColor(badge.color[0], badge.color[1], badge.color[2]);
-    doc.roundedRect(xPos, currentY, 50, 16, 4, 4, "F");
-    
-    // Badge text with better positioning
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text(badge.label, xPos + 25, currentY + 6, { align: "center" });
-    doc.setFontSize(11);
-    doc.text(badge.value.toUpperCase(), xPos + 25, currentY + 12, { align: "center" });
-    
-    xPos += 60;
+  doc.setFontSize(12);
+  doc.text("Koormatics Fleet Management", pageWidth / 2, 56, {
+    align: "center",
   });
 
-  return currentY + 25;
-}
+  // Divider
+  doc.setFillColor(brandAccent);
+  doc.rect(marginX, headerHeight, pageWidth - marginX * 2, 2, "F");
 
-function drawIncidentDescription(doc: jsPDF, incident: IncidentReportData, startY: number): number {
-  const leftCol = 20;
-  const rightCol = 190;
-  let currentY = startY;
+  let yCursor = headerHeight + 24;
 
-  // Section title with proper spacing
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(30, 64, 175); // Professional blue
-  doc.text("DESCRIPTION", leftCol, currentY);
-  currentY += 15;
+  // Summary statistics
+  const totalIncidents = incidents.length;
+  const criticalIncidents = incidents.filter(
+    (i) => i.severity === "critical"
+  ).length;
+  const severeIncidents = incidents.filter(
+    (i) => i.severity === "severe"
+  ).length;
+  const totalCost = incidents.reduce(
+    (sum, i) => sum + (i.actual_repair_cost || 0),
+    0
+  );
 
-  // Modern description box
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(leftCol, currentY, rightCol - leftCol, 35, 3, 3, "FD");
+  autoTable(doc, {
+    startY: yCursor,
+    styles: { fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: brandPrimary, textColor: 255 },
+    body: [
+      ["Total Incidents", totalIncidents.toString()],
+      ["Critical Incidents", criticalIncidents.toString()],
+      ["Severe Incidents", severeIncidents.toString()],
+      ["Total Repair Cost", `$${totalCost.toLocaleString()}`],
+    ],
+    columns: [
+      { header: "Metric", dataKey: "metric" },
+      { header: "Value", dataKey: "value" },
+    ],
+    theme: "grid",
+  } as any);
+  yCursor = (doc as any).lastAutoTable.finalY + 16;
 
-  // Description text with proper padding
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(17, 24, 39);
-  
-  const maxWidth = rightCol - leftCol - 10;
-  const splitDescription = doc.splitTextToSize(incident.description, maxWidth);
-  doc.text(splitDescription, leftCol + 5, currentY + 10);
-
-  return currentY + 45;
-}
-
-function drawIncidentParties(doc: jsPDF, incident: IncidentReportData, startY: number): number {
-  const leftCol = 20;
-  let currentY = startY;
-
-  // Section title with proper spacing
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(30, 64, 175); // Professional blue
-  doc.text("PARTIES INVOLVED", leftCol, currentY);
-  currentY += 15;
-
-  // Modern flag indicators with better spacing
-  const flags = [
-    { label: "Injuries Reported", value: incident.injuries_reported, color: incident.injuries_reported ? [239, 68, 68] : [156, 163, 175] },
-    { label: "Third Party Involved", value: incident.third_party_involved, color: incident.third_party_involved ? [245, 158, 11] : [156, 163, 175] },
-    { label: "Photos Attached", value: incident.photos_attached, color: incident.photos_attached ? [34, 197, 94] : [156, 163, 175] },
-  ];
-
-  flags.forEach((flag, index) => {
-    const xPos = leftCol + (index * 65);
-    
-    // Modern flag design
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(229, 231, 235);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(xPos, currentY, 60, 20, 3, 3, "FD");
-    
-    // Flag indicator with modern styling
-    doc.setFillColor(flag.color[0], flag.color[1], flag.color[2]);
-    doc.circle(xPos + 8, currentY + 6, 3, "F");
-    
-    // Flag text with better typography
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(75, 85, 99);
-    doc.text(flag.label, xPos + 5, currentY + 12);
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(flag.value ? flag.color[0] : 156, flag.value ? flag.color[1] : 163, flag.value ? flag.color[2] : 175);
-    doc.text(flag.value ? "YES" : "NO", xPos + 5, currentY + 17);
-  });
-
-  return currentY + 30;
-}
-
-function drawIncidentFinancials(doc: jsPDF, incident: IncidentReportData, startY: number): number {
-  const leftCol = 20;
-  const rightCol = 110;
-  let currentY = startY;
-
-  // Section title with proper spacing
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(30, 64, 175); // Professional blue
-  doc.text("FINANCIAL IMPACT", leftCol, currentY);
-  currentY += 15;
-
-  // Modern financial boxes
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(leftCol, currentY, 85, 25, 3, 3, "FD");
-  doc.roundedRect(rightCol, currentY, 85, 25, 3, 3, "FD");
-
-  // Left: Estimated cost with modern styling
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
-  doc.text("ESTIMATED DAMAGE COST", leftCol + 5, currentY + 8);
-  
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(239, 68, 68); // Red-500 for cost
-  const estimatedCost = incident.estimated_damage_cost ? `$${incident.estimated_damage_cost.toFixed(2)}` : "Not assessed";
-  doc.text(estimatedCost, leftCol + 5, currentY + 18);
-
-  // Right: Actual cost with modern styling
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
-  doc.text("ACTUAL REPAIR COST", rightCol + 5, currentY + 8);
-  
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(incident.actual_repair_cost ? 34 : 156, incident.actual_repair_cost ? 197 : 163, incident.actual_repair_cost ? 94 : 175);
-  const actualCost = incident.actual_repair_cost ? `$${incident.actual_repair_cost.toFixed(2)}` : "Pending";
-  doc.text(actualCost, rightCol + 5, currentY + 18);
-
-  return currentY + 35;
-}
-
-function drawIncidentFollowUp(doc: jsPDF, incident: IncidentReportData, startY: number): number {
-  const leftCol = 20;
-  let currentY = startY;
-
-  // Section title with proper spacing
-  doc.setFont("helvetica", "bold");  
-  doc.setFontSize(14);
-  doc.setTextColor(30, 64, 175); // Professional blue
-  doc.text("FOLLOW-UP & REFERENCES", leftCol, currentY);
-  currentY += 18;
-
-  // Modern info grid with better spacing
-  const infoItems = [
-    { label: "Reported By", value: incident.reported_by },
-    { label: "Police Report #", value: incident.police_report_number || "Not applicable" },
-    { label: "Insurance Claim #", value: incident.insurance_claim_number || "Not filed" },
-    { label: "Follow-up Required", value: incident.follow_up_required ? "YES" : "NO" },
-    { label: "Follow-up Date", value: incident.follow_up_date ? format(new Date(incident.follow_up_date), "dd MMM yyyy") : "Not scheduled" },
-    { label: "Report Created", value: format(new Date(incident.created_at), "dd MMM yyyy") },
-  ];
-
-  let xPos = leftCol;
-  let yPos = currentY;
-  
-  infoItems.forEach((item, index) => {
-    if (index % 2 === 0 && index > 0) {
-      yPos += 18;
-      xPos = leftCol;
-    }
-    
-    // Modern info box
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(229, 231, 235);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(xPos, yPos, 90, 15, 2, 2, "FD");
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(75, 85, 99);
-    doc.text(item.label.toUpperCase(), xPos + 3, yPos + 6);
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(17, 24, 39);
-    const valueText = item.value.length > 25 ? item.value.substring(0, 25) + "..." : item.value;
-    doc.text(valueText, xPos + 3, yPos + 12);
-    
-    xPos += 95;
-  });
-
-  return yPos + 25;
-}
-
-function drawIncidentSummaryStats(doc: jsPDF, incidents: IncidentReportData[], startY: number) {
-  const stats = {
-    total: incidents.length,
-    severe: incidents.filter(i => i.severity === "severe" || i.severity === "critical").length,
-    pending: incidents.filter(i => i.status === "reported" || i.status === "investigating").length,
-    totalCost: incidents.reduce((sum, i) => sum + (i.estimated_damage_cost || 0), 0),
-  };
-
-  const leftCol = 20;
-  let currentY = startY;
-
-  // Stats boxes
-  const statBoxes = [
-    { label: "Total Reports", value: stats.total.toString(), color: [52, 144, 220] },
-    { label: "Severe Incidents", value: stats.severe.toString(), color: [220, 53, 69] },
-    { label: "Pending Cases", value: stats.pending.toString(), color: [255, 193, 7] },
-    { label: "Total Est. Cost", value: `$${stats.totalCost.toFixed(2)}`, color: [40, 167, 69] },
-  ];
-
-  statBoxes.forEach((stat, index) => {
-    const xPos = leftCol + (index * 65);
-    
-    doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
-    doc.roundedRect(xPos, currentY, 60, 20, 3, 3, "F");
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(stat.value, xPos + 30, currentY + 8, { align: "center" });
-    
-    doc.setFontSize(8);
-    doc.text(stat.label, xPos + 30, currentY + 15, { align: "center" });
-  });
-}
-
-function generateIncidentReportsTable(doc: jsPDF, incidents: IncidentReportData[], pageWidth: number, startY: number) {
-  const tableData = incidents.map(incident => [
-    format(new Date(incident.incident_date), "dd MMM yyyy"),
-    incident.vehicle ? `${incident.vehicle.make} ${incident.vehicle.model}` : "N/A",
-    incident.incident_type.toUpperCase(),
-    incident.severity.toUpperCase(),
-    incident.status.toUpperCase(),
-    incident.location.length > 30 ? incident.location.substring(0, 30) + "..." : incident.location,
-    incident.estimated_damage_cost ? `$${incident.estimated_damage_cost.toFixed(2)}` : "N/A",
-    incident.reported_by,
+  // Generate summary table
+  const tableData = incidents.map((incident) => [
+    incident.incident_date
+      ? new Date(incident.incident_date).toLocaleDateString()
+      : "-",
+    incident.vehicle
+      ? `${incident.vehicle.make || ""} ${incident.vehicle.model || ""}`.trim()
+      : "N/A",
+    (incident.incident_type || "-").toString().toUpperCase(),
+    (incident.severity || "-").toString().toUpperCase(),
+    (incident.status || "-").toString().toUpperCase(),
+    incident.location.length > 30
+      ? incident.location.substring(0, 30) + "..."
+      : incident.location,
+    incident.estimated_damage_cost
+      ? `$${incident.estimated_damage_cost.toFixed(2)}`
+      : "N/A",
+    incident.reported_by || "-",
   ]);
 
   const headers = [
-    "DATE",
-    "VEHICLE", 
-    "TYPE",
-    "SEVERITY",
-    "STATUS",
-    "LOCATION",
-    "EST. COST",
-    "REPORTED BY"
+    "Date",
+    "Vehicle",
+    "Type",
+    "Severity",
+    "Status",
+    "Location",
+    "Est. Cost",
+    "Reported By",
   ];
 
   autoTable(doc, {
     head: [headers],
     body: tableData,
-    startY: startY,
-    margin: { left: 15, right: 15 },
+    startY: yCursor,
+    margin: { left: marginX, right: marginX },
     styles: {
       fontSize: 8,
       cellPadding: { top: 3, right: 2, bottom: 3, left: 2 },
@@ -638,7 +535,7 @@ function generateIncidentReportsTable(doc: jsPDF, incidents: IncidentReportData[
       valign: "middle",
     },
     headStyles: {
-      fillColor: [25, 54, 126], // Professional blue
+      fillColor: [brandPrimary],
       textColor: [255, 255, 255],
       fontStyle: "bold",
       halign: "center",
@@ -658,45 +555,22 @@ function generateIncidentReportsTable(doc: jsPDF, incidents: IncidentReportData[
       fillColor: [248, 249, 250],
     },
   });
-}
 
-function drawIncidentReportFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
-  const footerY = pageHeight - 20;
+  // Footer
+  const footerY = pageHeight - 36;
+  doc.setDrawColor(brandPrimary);
+  doc.line(marginX, footerY, pageWidth - marginX, footerY);
+  doc.setTextColor(brandPrimary);
+  doc.setFontSize(9);
+  doc.text(
+    `Generated on ${new Date().toLocaleDateString()}`,
+    pageWidth / 2,
+    footerY + 14,
+    { align: "center" }
+  );
 
-  // Footer background
-  doc.setFillColor(248, 250, 252);
-  doc.rect(0, footerY - 5, pageWidth, 25, "F");
-
-  // Company info
-  doc.setTextColor(25, 54, 126); // Professional blue
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("KOORMATICS", 20, footerY);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.text("Safety & Fleet Management Division", 20, footerY + 4);
-
-  // Page number
-  doc.setTextColor(60, 60, 60);
-  const pageInfo = `Page ${doc.internal.getNumberOfPages()}`;
-  const pageInfoWidth = doc.getTextWidth(pageInfo);
-  doc.text(pageInfo, (pageWidth - pageInfoWidth) / 2, footerY + 2);
-
-  // Confidentiality notice
-  doc.setTextColor(100, 100, 100);
-  doc.setFontSize(8);
-  doc.text("CONFIDENTIAL INCIDENT REPORT", pageWidth - 20, footerY, { align: "right" });
-  doc.text(`Generated: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, pageWidth - 20, footerY + 4, { align: "right" });
-}
-
-function getSeverityColor(severity: string): [number, number, number] {
-  const colors = {
-    minor: [40, 167, 69],      // Green
-    moderate: [255, 193, 7],   // Yellow
-    severe: [255, 108, 55],    // Orange
-    critical: [220, 53, 69],   // Red
-  };
-  return (colors[severity as keyof typeof colors] || [108, 117, 125]) as [number, number, number];
+  const filename = `incident-reports-summary-${new Date()
+    .toISOString()
+    .slice(0, 10)}.pdf`;
+  doc.save(filename);
 }

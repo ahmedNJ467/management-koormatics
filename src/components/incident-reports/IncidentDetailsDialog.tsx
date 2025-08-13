@@ -1,4 +1,6 @@
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +60,7 @@ interface VehicleIncidentReport {
   follow_up_required: boolean;
   follow_up_date?: string;
   notes?: string;
-  damage_details?: string;
+
   created_at: string;
   updated_at: string;
   vehicle?: {
@@ -99,6 +101,20 @@ export function IncidentDetailsDialog({
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
     }
   };
+
+  // Fetch incident images from DB
+  const { data: incidentImages } = useQuery({
+    queryKey: ["incident-images", report.id],
+    enabled: !!report?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicle_incident_images")
+        .select("image_url, name")
+        .eq("incident_id", report.id);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -537,73 +553,37 @@ export function IncidentDetailsDialog({
             </CardContent>
           </Card>
 
-          {/* Vehicle Damage Details */}
-          {report.damage_details && (
+          {/* Incident Photos */}
+          {incidentImages && incidentImages.length > 0 && (
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
-                  <Car className="h-5 w-5" />
-                  Vehicle Damage Assessment
+                  <Camera className="h-5 w-5" />
+                  Incident Photos
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {(() => {
-                  try {
-                    const damageData = JSON.parse(report.damage_details);
-                    if (
-                      damageData &&
-                      Array.isArray(damageData) &&
-                      damageData.length > 0
-                    ) {
-                      const severityColors = {
-                        minor: "bg-green-100 text-green-800",
-                        moderate: "bg-yellow-100 text-yellow-800",
-                        severe: "bg-red-100 text-red-800",
-                      };
-
-                      return (
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground">
-                            {damageData.length} damaged part(s) identified:
-                          </p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {damageData.map((damage: any, index: number) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-3 border rounded-lg"
-                              >
-                                <span className="font-medium text-sm">
-                                  {damage.name}
-                                </span>
-                                <Badge
-                                  className={`${
-                                    severityColors[
-                                      damage.severity as keyof typeof severityColors
-                                    ]
-                                  } hover:${
-                                    severityColors[
-                                      damage.severity as keyof typeof severityColors
-                                    ]
-                                  }`}
-                                >
-                                  {damage.severity.charAt(0).toUpperCase() +
-                                    damage.severity.slice(1)}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {incidentImages.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="border rounded-lg overflow-hidden"
+                    >
+                      <div className="aspect-square bg-muted">
+                        <img
+                          src={img.image_url}
+                          alt={img.name || `Photo ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {img.name && (
+                        <div className="px-2 py-1 text-xs text-muted-foreground truncate">
+                          {img.name}
                         </div>
-                      );
-                    }
-                  } catch (e) {
-                    console.error("Error parsing damage details:", e);
-                  }
-                  return (
-                    <p className="text-sm text-muted-foreground">
-                      No damage details recorded or invalid data format.
-                    </p>
-                  );
-                })()}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

@@ -56,7 +56,7 @@ export function VehicleForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Images Section */}
-        <div>
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
           <h3 className="text-lg font-semibold mb-2">Vehicle Images</h3>
           <VehicleImagesField
             vehicle={vehicle}
@@ -66,9 +66,9 @@ export function VehicleForm({
             setImagePreviewUrls={setImagePreviewUrls}
           />
         </div>
-        <Separator />
+        
         {/* Basic Info Section */}
-        <div>
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
           <h3 className="text-lg font-semibold mb-2">Basic Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <VehicleTypeField form={form} />
@@ -76,24 +76,24 @@ export function VehicleForm({
             <VehicleBasicInfoFields form={form} />
           </div>
         </div>
-        <Separator />
+        
         {/* Details Section */}
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Details</h3>
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
+          <h3 className="text-lg font-semibold mb-2">Vehicle Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <VehicleDetailsFields form={form} />
           </div>
         </div>
-        <Separator />
+        
         {/* Status & Notes Section */}
-        <div>
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
           <h3 className="text-lg font-semibold mb-2">Status & Notes</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <VehicleStatusField form={form} />
             <VehicleNotesField form={form} />
           </div>
         </div>
-        <Separator />
+        
         <VehicleFormActions
           onCancel={onCancel}
           isSubmitting={isSubmitting}

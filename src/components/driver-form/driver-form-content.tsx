@@ -4,6 +4,7 @@ import type { UseFormReturn } from "react-hook-form";
 import type { DriverFormValues } from "./types";
 import { AvatarUploadField } from "./avatar-upload-field";
 import { DocumentUploadField } from "./document-upload-field";
+import { AirportIdUploadField } from "./airport-id-upload-field";
 import { DriverFields } from "./driver-fields";
 import type { Driver } from "@/lib/types";
 
@@ -13,9 +14,12 @@ interface DriverFormContentProps {
   isSubmitting: boolean;
   avatarPreview: string | null;
   documentName: string | null;
+  airportIdName: string | null;
   onAvatarChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDocumentChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDocumentClear: () => void;
+  onAirportIdChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onAirportIdClear: () => void;
   onCancel: () => void;
   onDelete: () => void;
   onSubmit: (values: DriverFormValues) => Promise<void>;
@@ -27,9 +31,12 @@ export function DriverFormContent({
   isSubmitting,
   avatarPreview,
   documentName,
+  airportIdName,
   onAvatarChange,
   onDocumentChange,
   onDocumentClear,
+  onAirportIdChange,
+  onAirportIdClear,
   onCancel,
   onDelete,
   onSubmit,
@@ -51,6 +58,12 @@ export function DriverFormContent({
                 documentUrl={driver?.document_url}
                 onDocumentChange={onDocumentChange}
                 onDocumentClear={onDocumentClear}
+              />
+              <AirportIdUploadField
+                documentName={airportIdName}
+                documentUrl={driver?.airport_id_url}
+                onDocumentChange={onAirportIdChange}
+                onDocumentClear={onAirportIdClear}
               />
             </div>
             <div className="flex-[2] w-full">

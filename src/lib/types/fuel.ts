@@ -1,7 +1,6 @@
-
 import { Vehicle } from "./vehicle";
 
-export type FuelType = "petrol" | "diesel" | "cng";
+export type FuelType = "petrol" | "diesel";
 
 export interface FuelLog {
   id: string;

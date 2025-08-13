@@ -1,10 +1,9 @@
-const { createClient } = require("@supabase/supabase-js");
-const fs = require("fs");
+import { createClient } from "@supabase/supabase-js";
+import fs from "fs";
 
-// Supabase configuration
-const SUPABASE_URL = "https://kgmjttamzppmypwzargk.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnbWp0dGFtenBwbXlwd3phcmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MjY2MjYsImV4cCI6MjA1NTQwMjYyNn0.HMfRqxeKQSjRY2ydzyxuJoTqr06nTVjOmGp0TpXtYpk";
+// Supabase configuration (read from environment)
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 
 // Create Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -13,28 +12,11 @@ async function runSecurityEscortFix() {
   console.log("🚀 Starting Security Escort Fix...");
 
   try {
-    // Step 1: Add security escort fields to trips table
-    console.log("📝 Adding security escort fields...");
-
-    const addFieldsSQL = `
-      -- Add security escort fields to trips table
-      ALTER TABLE trips ADD COLUMN IF NOT EXISTS has_security_escort BOOLEAN DEFAULT false;
-      ALTER TABLE trips ADD COLUMN IF NOT EXISTS escort_count INTEGER DEFAULT 0;
-      ALTER TABLE trips ADD COLUMN IF NOT EXISTS escort_vehicle_ids JSONB DEFAULT '[]'::jsonb;
-      ALTER TABLE trips ADD COLUMN IF NOT EXISTS escort_status TEXT DEFAULT 'not_assigned';
-      ALTER TABLE trips ADD COLUMN IF NOT EXISTS escort_assigned_at TIMESTAMP WITH TIME ZONE;
-    `;
-
-    const { error: fieldsError } = await supabase.rpc("exec_sql", {
-      sql: addFieldsSQL,
-    });
-    if (fieldsError) {
-      console.log(
-        "⚠️  Field addition may have failed (fields might already exist):",
-        fieldsError.message
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.error(
+        "❌ Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env vars."
       );
-    } else {
-      console.log("✅ Security escort fields added successfully");
+      process.exit(1);
     }
 
     // Step 2: Create test client
@@ -48,7 +30,7 @@ async function runSecurityEscortFix() {
         email: "security@viptransport.com",
         phone: "+1234567890",
         address: "123 Security Street, VIP City",
-        contact_person: "John Security",
+        contact: "John Security",
       })
       .select()
       .single();
@@ -117,9 +99,8 @@ async function runSecurityEscortFix() {
         name: "Michael Security",
         license_number: "SEC123456",
         phone: "+1234567891",
-        email: "mike@security.com",
+        contact: "mike@security.com",
         status: "active",
-        vehicle_type_preference: "armoured",
       })
       .select()
       .single();

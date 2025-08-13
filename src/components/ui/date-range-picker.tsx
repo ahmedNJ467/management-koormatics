@@ -1,24 +1,24 @@
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import * as React from "react";
+import { DateRange } from "react-day-picker";
 
-import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
-import * as React from "react"
-import { DateRange } from "react-day-picker"
-
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DateRangePickerProps {
-  value?: DateRange
-  date?: DateRange
-  onChange?: (date: DateRange | undefined) => void
-  onDateChange?: (date: DateRange | undefined) => void
-  className?: string
+  value?: DateRange;
+  date?: DateRange;
+  onChange?: (date: DateRange | undefined) => void;
+  onDateChange?: (date: DateRange | undefined) => void;
+  className?: string;
 }
 
 export function DateRangePicker({
@@ -30,6 +30,7 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const actualValue = value || date;
   const actualOnChange = onChange || onDateChange;
+  const isMobile = useIsMobile();
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
@@ -38,7 +39,7 @@ export function DateRangePicker({
             id="date"
             variant={"outline"}
             className={cn(
-              "w-[300px] justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal",
               !actualValue && "text-muted-foreground"
             )}
           >
@@ -57,17 +58,21 @@ export function DateRangePicker({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent
+          className="w-auto p-0 max-w-[calc(100vw-2rem)]"
+          align="start"
+          side="bottom"
+        >
           <Calendar
             initialFocus
             mode="range"
             defaultMonth={actualValue?.from}
             selected={actualValue}
             onSelect={actualOnChange}
-            numberOfMonths={2}
+            numberOfMonths={isMobile ? 1 : 2}
           />
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

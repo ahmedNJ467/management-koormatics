@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,20 +11,15 @@ import {
 } from "@/components/ui/table";
 import {
   Plus,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
   Search,
   Filter,
-  Download,
   Car,
-  Calendar,
   User,
-  FileText,
   Eye,
   Edit,
   Trash2,
   MoreVertical,
+  FileDown,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +51,8 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { VehicleInspectionForm } from "@/components/vehicle-inspections/VehicleInspectionForm";
 import { InspectionDetailsDialog } from "@/components/vehicle-inspections/InspectionDetailsDialog";
+import { toShortId } from "@/utils/ids";
+import { generateVehicleInspectionPdf } from "@/utils/pdf/vehicleInspectionPdf";
 
 interface VehicleInspection {
   id: string;
@@ -217,34 +214,21 @@ export default function VehicleInspections() {
     dateRange,
   ]);
 
-  // Calculate summary statistics
-  const summaryStats = useMemo(() => {
-    if (!filteredInspections)
-      return {
-        total: 0,
-        passed: 0,
-        failed: 0,
-        conditional: 0,
-        todayInspections: 0,
-      };
+  // Pagination logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const inspectionsPerPage = 20;
+  const totalPages = Math.ceil(
+    (filteredInspections?.length || 0) / inspectionsPerPage
+  );
+  const startIndex = (currentPage - 1) * inspectionsPerPage;
+  const endIndex = startIndex + inspectionsPerPage;
+  const paginatedInspections =
+    filteredInspections?.slice(startIndex, endIndex) || [];
 
-    const today = new Date().toISOString().split("T")[0];
-    const todayInspections = filteredInspections.filter(
-      (i) => i.inspection_date === today
-    ).length;
-
-    return {
-      total: filteredInspections.length,
-      passed: filteredInspections.filter((i) => i.overall_status === "pass")
-        .length,
-      failed: filteredInspections.filter((i) => i.overall_status === "fail")
-        .length,
-      conditional: filteredInspections.filter(
-        (i) => i.overall_status === "conditional"
-      ).length,
-      todayInspections,
-    };
-  }, [filteredInspections]);
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, vehicleFilter, statusFilter, inspectorFilter, dateRange]);
 
   // Delete inspection mutation
   const deleteMutation = useMutation({
@@ -287,6 +271,23 @@ export default function VehicleInspections() {
     setFormOpen(true);
   };
 
+  const handleDownloadPdf = async (inspection: VehicleInspection) => {
+    try {
+      await generateVehicleInspectionPdf(inspection as any, {
+        logoUrl:
+          window.location.origin +
+          "/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png",
+      });
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "PDF generation failed",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pass":
@@ -325,238 +326,172 @@ export default function VehicleInspections() {
     setDateRange(undefined);
   };
 
-  const exportToCSV = () => {
-    if (!filteredInspections || filteredInspections.length === 0) {
-      toast({
-        title: "No data to export",
-        description: "There are no inspections to export.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const headers = [
-      "Date",
-      "Vehicle",
-      "Registration",
-      "Inspector",
-      "Status",
-      "Mileage",
-      "Fuel Level",
-      "Engine Oil",
-      "Defects Noted",
-      "Actions Required",
-    ];
-
-    const csvData = filteredInspections.map((inspection) => [
-      formatDate(inspection.inspection_date),
-      inspection.vehicle
-        ? `${inspection.vehicle.make} ${inspection.vehicle.model}`
-        : "Unknown",
-      inspection.vehicle?.registration || "",
-      inspection.inspector_name,
-      inspection.overall_status,
-      inspection.mileage?.toString() || "",
-      `${inspection.fuel_level}%`,
-      inspection.engine_oil,
-      inspection.defects_noted || "",
-      inspection.corrective_actions || "",
-    ]);
-
-    const csvContent = [headers, ...csvData]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `vehicle-inspections-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Export successful",
-      description: `Exported ${filteredInspections.length} inspections to CSV.`,
-    });
-  };
+  const hasActiveFilters =
+    searchTerm ||
+    vehicleFilter !== "all" ||
+    statusFilter !== "all" ||
+    inspectorFilter !== "all" ||
+    dateRange?.from ||
+    dateRange?.to;
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight">
             Vehicle Inspections
           </h2>
-          <p className="text-muted-foreground">
-            Daily vehicle inspection checklists and safety records
-          </p>
         </div>
-        <Button
-          onClick={() => {
-            setSelectedInspection(null);
-            setFormOpen(true);
-          }}
-          className="gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          New Inspection
-        </Button>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Inspections
-            </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.total}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Passed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {summaryStats.passed}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {summaryStats.total > 0
-                ? Math.round((summaryStats.passed / summaryStats.total) * 100)
-                : 0}
-              % pass rate
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Failed</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {summaryStats.failed}
-            </div>
-            <p className="text-xs text-muted-foreground">Require attention</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conditional</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {summaryStats.conditional}
-            </div>
-            <p className="text-xs text-muted-foreground">Minor issues</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {summaryStats.todayInspections}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Inspections completed
-            </p>
-          </CardContent>
-        </Card>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              setSelectedInspection(null);
+              setFormOpen(true);
+            }}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Inspection
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by vehicle, registration, or inspector..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Vehicles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Vehicles</SelectItem>
-                {vehicles?.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.make} {vehicle.model} ({vehicle.registration})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pass">Pass</SelectItem>
-                <SelectItem value="fail">Fail</SelectItem>
-                <SelectItem value="conditional">Conditional</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={inspectorFilter} onValueChange={setInspectorFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="All Inspectors" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Inspectors</SelectItem>
-                {inspectors.map((inspector) => (
-                  <SelectItem key={inspector} value={inspector}>
-                    {inspector}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <DateRangePicker
-              date={dateRange}
-              onDateChange={setDateRange}
-              className="w-[240px]"
-            />
-
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                <Filter className="h-4 w-4 mr-2" />
-                Clear
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by vehicle, registration, or inspector..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Vehicles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vehicles</SelectItem>
+              {vehicles?.map((vehicle) => (
+                <SelectItem key={vehicle.id} value={vehicle.id}>
+                  {vehicle.make} {vehicle.model} ({vehicle.registration})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pass">Pass</SelectItem>
+              <SelectItem value="fail">Fail</SelectItem>
+              <SelectItem value="conditional">Conditional</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={inspectorFilter} onValueChange={setInspectorFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Inspectors" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Inspectors</SelectItem>
+              {inspectors.map((inspector) => (
+                <SelectItem key={inspector} value={inspector}>
+                  {inspector}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            className="w-[240px]"
+          />
+
+          {hasActiveFilters && (
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              <Filter className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Active Filters Display */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2">
+          {searchTerm && (
+            <Badge variant="secondary" className="gap-1">
+              Search: {searchTerm}
+              <button
+                onClick={() => setSearchTerm("")}
+                className="ml-1 hover:text-destructive"
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          {vehicleFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              Vehicle: {vehicles?.find((v) => v.id === vehicleFilter)?.make}{" "}
+              {vehicles?.find((v) => v.id === vehicleFilter)?.model}
+              <button
+                onClick={() => setVehicleFilter("all")}
+                className="ml-1 hover:text-destructive"
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          {statusFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              Status: {statusFilter}
+              <button
+                onClick={() => setStatusFilter("all")}
+                className="ml-1 hover:text-destructive"
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          {inspectorFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              Inspector: {inspectorFilter}
+              <button
+                onClick={() => setInspectorFilter("all")}
+                className="ml-1 hover:text-destructive"
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          {(dateRange?.from || dateRange?.to) && (
+            <Badge variant="secondary" className="gap-1">
+              Date Range:{" "}
+              {dateRange?.from ? format(dateRange.from, "MMM dd") : ""} -{" "}
+              {dateRange?.to ? format(dateRange.to, "MMM dd") : ""}
+              <button
+                onClick={() => setDateRange(undefined)}
+                className="ml-1 hover:text-destructive"
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+        </div>
+      )}
 
       {/* Inspections Table */}
       <Card>
@@ -566,6 +501,7 @@ export default function VehicleInspections() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
+                  <TableHead>Inspection ID</TableHead>
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Inspector</TableHead>
                   <TableHead>Status</TableHead>
@@ -578,21 +514,26 @@ export default function VehicleInspections() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       Loading inspections...
                     </TableCell>
                   </TableRow>
                 ) : filteredInspections?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       No inspections found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredInspections?.map((inspection) => (
+                  paginatedInspections?.map((inspection) => (
                     <TableRow key={inspection.id}>
                       <TableCell>
                         {formatDate(inspection.inspection_date)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {toShortId(inspection.id, 8)}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div>
@@ -654,6 +595,12 @@ export default function VehicleInspections() {
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => handleDownloadPdf(inspection)}
+                            >
+                              <FileDown className="mr-2 h-4 w-4" />
+                              Download PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => handleDelete(inspection.id)}
                               className="text-red-600"
                             >
@@ -671,6 +618,106 @@ export default function VehicleInspections() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Results Count and Pagination Info */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Showing {startIndex + 1}-
+            {Math.min(endIndex, filteredInspections?.length || 0)} of{" "}
+            {filteredInspections?.length || 0} inspections
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="h-8 px-3"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                if (totalPages <= 5) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                }
+
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                }
+
+                if (
+                  pageNum === currentPage - 2 ||
+                  pageNum === currentPage + 2
+                ) {
+                  return (
+                    <span key={pageNum} className="px-2 text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="h-8 px-3"
+            >
+              Next
+            </Button>
+          </div>
+
+          {/* Timestamp at bottom */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>•</span>
+            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
+      )}
 
       {/* Form Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>

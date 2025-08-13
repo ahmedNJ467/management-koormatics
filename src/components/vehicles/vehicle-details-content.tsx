@@ -72,6 +72,19 @@ export const VehicleDetailsContent = memo(
       }
     };
 
+    const getStatusText = (status: string) => {
+      switch (status) {
+        case "active":
+          return "Active";
+        case "in_service":
+          return "In Service";
+        case "inactive":
+          return "Inactive";
+        default:
+          return "Unknown";
+      }
+    };
+
     const getTypeIcon = (type: string) => {
       return type === "armoured" ? (
         <Shield className="h-5 w-5" />
@@ -152,7 +165,7 @@ export const VehicleDetailsContent = memo(
                   selectedVehicle.status
                 )}`}
               >
-                {selectedVehicle.status.replace("_", " ")}
+                {getStatusText(selectedVehicle.status)}
               </Badge>
             </div>
           </div>
@@ -319,7 +332,7 @@ export const VehicleDetailsContent = memo(
                       selectedVehicle.status
                     )}`}
                   >
-                    {selectedVehicle.status.replace("_", " ")}
+                    {getStatusText(selectedVehicle.status)}
                   </Badge>
                 </div>
               </div>

@@ -1,51 +1,54 @@
-
 import { useState } from "react";
 import { useCostAnalyticsData } from "./use-cost-analytics-data";
 import { useReportsData } from "@/components/reports/hooks/useReportsData";
 import { calculateCombinedFinancialData } from "@/lib/financial-analytics";
 
 export function useCombinedFinancialData() {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString()
+  );
   const [activeTab, setActiveTab] = useState("overview");
-  
+
   // Get cost analytics data
-  const { 
-    maintenanceData, 
-    fuelData, 
-    comparisonMaintenanceData, 
+  const {
+    maintenanceData,
+    fuelData,
+    sparePartsData,
+    comparisonMaintenanceData,
     comparisonFuelData,
-    isLoading: isLoadingCosts, 
+    comparisonSparePartsData,
+    isLoading: isLoadingCosts,
     yearOptions,
     comparisonYear,
-    setComparisonYear
+    setComparisonYear,
   } = useCostAnalyticsData(selectedYear);
-  
+
   // Get revenue data from reports
-  const { 
-    tripsData,
-    isLoadingTrips
-  } = useReportsData();
-  
+  const { tripsData, isLoadingTrips } = useReportsData();
+
   // Filter trips data by selected year
-  const filteredTrips = tripsData?.filter(trip => {
-    if (!trip.date) return false;
-    const tripYear = new Date(trip.date).getFullYear().toString();
-    return tripYear === selectedYear;
-  }) || [];
-  
+  const filteredTrips =
+    tripsData?.filter((trip) => {
+      if (!trip.date) return false;
+      const tripYear = new Date(trip.date).getFullYear().toString();
+      return tripYear === selectedYear;
+    }) || [];
+
   // Calculate combined financial data
   const combinedData = calculateCombinedFinancialData(
-    filteredTrips, 
-    maintenanceData, 
-    fuelData, 
-    comparisonMaintenanceData, 
+    filteredTrips,
+    maintenanceData,
+    fuelData,
+    sparePartsData || [],
+    comparisonMaintenanceData,
     comparisonFuelData,
+    comparisonSparePartsData || [],
     selectedYear,
     comparisonYear
   );
-  
+
   const isLoading = isLoadingCosts || isLoadingTrips;
-  
+
   return {
     combinedData,
     isLoading,
@@ -55,6 +58,6 @@ export function useCombinedFinancialData() {
     setActiveTab,
     yearOptions,
     comparisonYear,
-    setComparisonYear
+    setComparisonYear,
   };
 }

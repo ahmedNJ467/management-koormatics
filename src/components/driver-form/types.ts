@@ -9,6 +9,7 @@ export const driverSchema = z.object({
   license_type: z.string().min(1, "License type is required"),
   license_expiry: z.string().min(1, "License expiry is required"),
   status: z.enum(["active", "inactive", "on_leave"] as const),
+  is_vip: z.boolean().default(false),
 });
 
 export type DriverFormValues = z.infer<typeof driverSchema>;

@@ -1,6 +1,6 @@
 export type VehicleStatus = "active" | "in_service" | "inactive";
 export type VehicleType = "armoured" | "soft_skin";
-export type FuelType = "petrol" | "diesel" | "hybrid" | "electric";
+export type FuelType = "petrol" | "diesel";
 
 export interface Vehicle {
   id: string;

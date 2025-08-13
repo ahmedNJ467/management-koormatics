@@ -11,7 +11,6 @@ import { LocationFields } from "./form/LocationFields";
 import { DateTimeFields } from "./form/DateTimeFields";
 import { NotesField } from "./form/NotesField";
 import { FormFooter } from "./form/FormFooter";
-import { AmountField } from "./form/AmountField";
 import { SecurityEscortToggle } from "./form/SecurityEscortToggle";
 import { formatUIServiceType } from "./form/utils";
 import { Label } from "@/components/ui/label";
@@ -195,8 +194,8 @@ export function TripForm({
           setServiceType={setServiceType}
         />
 
-        {/* Vehicle requirements for new trips */}
-        {!editTrip && (
+        {/* Vehicle requirements - editable for both new and existing trips */}
+        {
           <div className="space-y-4">
             <h3 className="font-medium">Vehicle Requirements</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -207,7 +206,7 @@ export function TripForm({
                   name="soft_skin_count"
                   type="number"
                   min="0"
-                  defaultValue="0"
+                  defaultValue={editTrip?.soft_skin_count ?? 0}
                 />
               </div>
               <div className="space-y-2">
@@ -217,12 +216,12 @@ export function TripForm({
                   name="armoured_count"
                   type="number"
                   min="0"
-                  defaultValue="0"
+                  defaultValue={editTrip?.armoured_count ?? 0}
                 />
               </div>
             </div>
           </div>
-        )}
+        }
 
         <SecurityEscortToggle
           hasSecurityEscort={hasSecurityEscort}
@@ -258,7 +257,7 @@ export function TripForm({
 
         <LocationFields editTrip={editTrip} serviceType={serviceType} />
 
-        <AmountField editTrip={editTrip} />
+        {/* Removed AmountField to price trips in Finance workflow */}
 
         <NotesField editTrip={editTrip} />
 

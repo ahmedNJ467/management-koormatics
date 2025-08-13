@@ -36,6 +36,7 @@ export function FuelLogFormDialog({
     handleSubmit,
     shouldCloseDialog,
     resetCloseDialog,
+    hasPreviousMileage,
   } = useFuelLogForm(fuelLog);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -78,7 +79,10 @@ export function FuelLogFormDialog({
                 <VehicleSelect form={form} vehicles={vehicles} />
                 <FuelDetails form={form} vehicles={vehicles} />
                 <VolumePrice form={form} />
-                <MileageFields form={form} />
+                <MileageFields
+                  form={form}
+                  hasPreviousMileage={hasPreviousMileage}
+                />
                 <NotesField form={form} />
                 <FormActions
                   onCancel={() => onOpenChange(false)}

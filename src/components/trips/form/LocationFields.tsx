@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { DisplayTrip } from "@/lib/types/trip";
 import { UIServiceType } from "./types";
 import { useState } from "react";
@@ -35,6 +36,7 @@ export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
           name="pickup_location"
           placeholder="Enter pickup location"
           defaultValue={editTrip?.pickup_location || ""}
+          required
         />
       </div>
 
@@ -50,25 +52,28 @@ export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
               value={stop}
               onChange={(e) => updateStop(index, e.target.value)}
             />
-            <button
+            <Button
               type="button"
-              className="text-destructive text-sm"
+              variant="ghost"
+              size="sm"
               onClick={() => removeStop(index)}
             >
               Remove
-            </button>
+            </Button>
           </div>
         </div>
       ))}
 
       {/* Add stop button */}
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={addStop}
-        className="self-start text-primary text-sm"
+        className="w-fit"
       >
         + Add Stop
-      </button>
+      </Button>
 
       {/* Drop-off */}
       <div className="space-y-2">
@@ -78,6 +83,7 @@ export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
           name="dropoff_location"
           placeholder="Enter dropoff location"
           defaultValue={editTrip?.dropoff_location || ""}
+          required
         />
       </div>
     </div>

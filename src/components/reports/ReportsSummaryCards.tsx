@@ -1,31 +1,45 @@
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { calculateFinancialData } from "@/lib/financial-calculations";
 
 interface ReportsSummaryCardsProps {
   fuelData: any[] | undefined;
   maintenanceData: any[] | undefined;
   tripsData: any[] | undefined;
+  sparePartsData?: any[] | undefined;
   isLoadingFuel: boolean;
   isLoadingMaintenance: boolean;
   isLoadingTrips: boolean;
+  isLoadingSpareparts?: boolean;
 }
 
 export function ReportsSummaryCards({
   fuelData,
   maintenanceData,
   tripsData,
+  sparePartsData,
   isLoadingFuel,
   isLoadingMaintenance,
-  isLoadingTrips
+  isLoadingTrips,
+  isLoadingSpareparts = false,
 }: ReportsSummaryCardsProps) {
   const financialData = calculateFinancialData(
     tripsData || [],
     maintenanceData || [],
-    fuelData || []
+    fuelData || [],
+    sparePartsData || []
   );
 
-  const isLoading = isLoadingFuel || isLoadingMaintenance || isLoadingTrips;
+  const isLoading =
+    isLoadingFuel ||
+    isLoadingMaintenance ||
+    isLoadingTrips ||
+    isLoadingSpareparts;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -62,20 +76,28 @@ export function ReportsSummaryCards({
           </div>
         </CardContent>
       </Card>
-      <Card className={financialData.profit >= 0 ? "border-green-500" : "border-red-500"}>
+      <Card
+        className={
+          financialData.profit >= 0 ? "border-green-500" : "border-red-500"
+        }
+      >
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Profit</CardTitle>
           <CardDescription>Revenue minus expenses</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${financialData.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+          <div
+            className={`text-2xl font-bold ${
+              financialData.profit >= 0 ? "text-green-600" : "text-red-600"
+            }`}
+          >
             ${isLoading ? "..." : financialData.profit.toFixed(2)}
           </div>
           {!isLoading && (
             <div className="text-xs text-muted-foreground">
-              {financialData.totalRevenue > 0 ? 
-                `Margin: ${financialData.profitMargin.toFixed(1)}%` : 
-                "No revenue recorded"}
+              {financialData.totalRevenue > 0
+                ? `Margin: ${financialData.profitMargin.toFixed(1)}%`
+                : "No revenue recorded"}
             </div>
           )}
         </CardContent>

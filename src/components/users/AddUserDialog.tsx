@@ -1,8 +1,21 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,20 +25,37 @@ interface AddUserDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Manager roles aligned with domain access
 const roles = [
-  { slug: "super_admin", name: "Super Admin" },
-  { slug: "manager", name: "Manager" },
-  { slug: "staff", name: "Staff" },
-  { slug: "viewer", name: "Viewer" },
+  { slug: "fleet_manager", name: "Fleet manager" },
+  { slug: "operations_manager", name: "Operations manager" },
+  { slug: "finance_manager", name: "Finance manager" },
 ];
 
-const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => {
+const AddUserDialog: React.FC<AddUserDialogProps> = ({
+  open,
+  onOpenChange,
+}) => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     full_name: "",
-    role_slug: "viewer",
+    role_slug: roles[0].slug,
   });
+
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generatePassword = () => {
+    setIsGenerating(true);
+    const chars =
+      "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
+    let pwd = "";
+    for (let i = 0; i < 12; i++) {
+      pwd += chars[Math.floor(Math.random() * chars.length)];
+    }
+    setFormData((p) => ({ ...p, password: pwd }));
+    setIsGenerating(false);
+  };
 
   const queryClient = useQueryClient();
 
@@ -42,9 +72,19 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
       toast({ title: "User created" });
       queryClient.invalidateQueries({ queryKey: ["system_users"] });
       onOpenChange(false);
-      setFormData({ email: "", password: "", full_name: "", role_slug: "viewer" });
+      setFormData({
+        email: "",
+        password: "",
+        full_name: "",
+        role_slug: "viewer",
+      });
     },
-    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+    onError: (err: any) =>
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,28 +95,77 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Add user</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Enter the details for the new account and assign a role.
+          Provide essential details and assign a manager role.
         </DialogDescription>
-        <div className="space-y-4">
-          <Input name="full_name" placeholder="Full Name" value={formData.full_name} onChange={handleChange} />
-          <Input name="email" placeholder="Email" value={formData.email} onChange={handleChange} type="email" />
-          <Input name="password" placeholder="Temp Password" value={formData.password} onChange={handleChange} type="password" />
-          <Select value={formData.role_slug} onValueChange={(v)=>setFormData({...formData, role_slug: v})}>
+        <div className="space-y-3">
+          <Input
+            name="full_name"
+            placeholder="Full name"
+            value={formData.full_name}
+            onChange={handleChange}
+          />
+          <Input
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            type="email"
+          />
+          <div className="flex gap-2">
+            <Input
+              name="password"
+              placeholder="Temporary password"
+              value={formData.password}
+              onChange={handleChange}
+              type="password"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={generatePassword}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "…" : "Generate"}
+            </Button>
+          </div>
+          <Select
+            value={formData.role_slug}
+            onValueChange={(v) => setFormData({ ...formData, role_slug: v })}
+          >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
-              {roles.map(r => <SelectItem key={r.slug} value={r.slug}>{r.name}</SelectItem>)}
+              {roles.map((r) => (
+                <SelectItem key={r.slug} value={r.slug}>
+                  {r.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={()=>onOpenChange(false)}>Cancel</Button>
-          <Button onClick={()=>addUserMutation.mutate()} disabled={addUserMutation.isPending}>
-            {addUserMutation.isPending ? "Creating..." : "Create"}
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={addUserMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => addUserMutation.mutate()}
+            disabled={
+              addUserMutation.isPending ||
+              !formData.full_name.trim() ||
+              !formData.email.trim() ||
+              formData.password.length < 8
+            }
+          >
+            {addUserMutation.isPending ? "Creating…" : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -84,4 +173,4 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
   );
 };
 
-export default AddUserDialog; 
+export default AddUserDialog;

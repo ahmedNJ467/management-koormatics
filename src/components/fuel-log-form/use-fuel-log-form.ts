@@ -21,15 +21,16 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldCloseDialog, setShouldCloseDialog] = useState(false);
+  const [hasPreviousMileage, setHasPreviousMileage] = useState(false);
 
   // Fetch vehicles for select dropdown
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
       const result = await getVehicles();
-      return result.map(vehicle => ({
+      return result.map((vehicle) => ({
         ...vehicle,
-        fuel_type: (vehicle as any).fuel_type || 'diesel' // Ensure fuel_type is always present
+        fuel_type: (vehicle as any).fuel_type || "diesel", // Ensure fuel_type is always present
       }));
     },
   });
@@ -70,6 +71,13 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
   // Apply calculations for cost and mileage
   useFuelCalculations(form);
 
+  // When editing an existing fuel log, we always have a previous mileage context
+  useEffect(() => {
+    if (fuelLog) {
+      setHasPreviousMileage(true);
+    }
+  }, [fuelLog]);
+
   const vehicleId = form.watch("vehicle_id");
 
   // Load previous mileage and set fuel type when vehicle changes
@@ -95,7 +103,8 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
         console.log("Fetched last mileage:", lastMileage);
 
         // Set previous mileage to the last recorded mileage
-        form.setValue("previous_mileage", lastMileage);
+        form.setValue("previous_mileage", lastMileage.value);
+        setHasPreviousMileage(lastMileage.hasPrevious);
 
         // Clear current mileage so user can fill it in with new value
         if (!fuelLog) {
@@ -108,7 +117,10 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           console.log(
             `Auto-setting fuel type to: ${(selectedVehicle as any).fuel_type}`
           );
-          form.setValue("fuel_type", (selectedVehicle as any).fuel_type as "petrol" | "diesel" | "cng");
+          form.setValue(
+            "fuel_type",
+            (selectedVehicle as any).fuel_type as "petrol" | "diesel"
+          );
         }
       } catch (error) {
         console.error("Error fetching latest mileage:", error);
@@ -188,5 +200,6 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     handleSubmit,
     shouldCloseDialog,
     resetCloseDialog: () => setShouldCloseDialog(false),
+    hasPreviousMileage,
   };
 }

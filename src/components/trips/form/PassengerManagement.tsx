@@ -13,13 +13,8 @@ export function PassengerManagement({
   handleKeyDown,
 }: PassengerManagementProps) {
   return (
-    <div className="border p-4 rounded-md space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Passengers</h3>
-        <p className="text-xs text-muted-foreground">
-          Add passenger names for this trip
-        </p>
-      </div>
+    <div className="space-y-4">
+      <h3 className="text-sm font-medium">Passengers</h3>
 
       {/* New passenger input with add button */}
       <div className="flex items-center gap-2">
@@ -32,13 +27,13 @@ export function PassengerManagement({
         />
         <Button
           type="button"
-          variant="default"
+          variant="outline"
           size="sm"
           onClick={addPassenger}
           disabled={!newPassenger.trim()}
           className="h-10"
         >
-          <Plus className="h-4 w-4 mr-1" /> Add
+          Add
         </Button>
       </div>
 
@@ -48,7 +43,7 @@ export function PassengerManagement({
           .filter((p) => p.trim())
           .map((passenger, index) => (
             <div key={index} className="flex items-center gap-2">
-              <div className="flex-1 bg-muted rounded-md px-3 py-2 text-sm flex justify-between items-center">
+              <div className="flex-1 rounded-md px-3 py-2 text-sm flex justify-between items-center bg-muted/50">
                 <span>{passenger}</span>
                 <button
                   type="button"

@@ -1,5 +1,10 @@
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Vehicle } from "@/lib/types";
 import { VehicleForm } from "./vehicle-form/vehicle-form";
 import { VehicleAuthWrapper } from "./vehicle-form/vehicle-auth-wrapper";
@@ -12,23 +17,35 @@ interface VehicleFormDialogProps {
   vehicle?: Vehicle;
 }
 
-export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDialogProps) {
-  const { 
+export function VehicleFormDialog({
+  open,
+  onOpenChange,
+  vehicle,
+}: VehicleFormDialogProps) {
+  const {
     uploadVehicleImages,
     images,
     setImages,
     imagePreviewUrls,
-    setImagePreviewUrls
+    setImagePreviewUrls,
   } = useVehicleImages();
-  const { onSubmit, isSubmitting } = useVehicleFormSubmit(vehicle, onOpenChange, uploadVehicleImages);
+  const { onSubmit, isSubmitting } = useVehicleFormSubmit(
+    vehicle,
+    onOpenChange,
+    uploadVehicleImages
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{vehicle ? 'Edit Vehicle' : 'Add New Vehicle'}</DialogTitle>
+          <DialogTitle>
+            {vehicle ? "Edit Vehicle" : "Add New Vehicle"}
+          </DialogTitle>
           <DialogDescription>
-            {vehicle ? 'Update the details of your vehicle below.' : 'Fill in the details of your new vehicle below.'}
+            {vehicle
+              ? "Update the details of your vehicle below."
+              : "Fill in the details of your new vehicle below."}
           </DialogDescription>
         </DialogHeader>
 

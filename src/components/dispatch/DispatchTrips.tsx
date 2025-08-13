@@ -1,8 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import {
   MapPin,
-  User,
   MessageCircle,
   Clock,
   AlertTriangle,
@@ -12,10 +12,11 @@ import {
   Calendar,
   Check,
   X,
-  Car,
   FileText,
   Download,
   Shield,
+  Navigation,
+  CheckCircle,
 } from "lucide-react";
 import { formatDate, formatTime } from "@/components/trips/utils";
 import { Badge } from "@/components/ui/badge";
@@ -33,33 +34,57 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { OverdueIndicator } from "./OverdueIndicator";
-import { useTripsData } from "@/hooks/use-trips-data";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+// Overdue indicator removed per requirements
 import { vehicleAssignmentStatus } from "@/lib/types/trip/trip-utils";
+import { Vehicle } from "@/lib/types/vehicle";
+import { useToast } from "@/hooks/use-toast";
+import { AssignResourcesDialog } from "./AssignResourcesDialog";
 
 interface DispatchTripsProps {
   trips: DisplayTrip[];
-  onAssignDriver: (trip: DisplayTrip) => void;
   onSendMessage: (trip: DisplayTrip) => void;
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
-  onAssignVehicle: (trip: DisplayTrip) => void;
   onAssignEscort?: (trip: DisplayTrip) => void;
   onGenerateInvoice: (trip: DisplayTrip) => void;
+  vehicles?: Vehicle[];
 }
 
 export function DispatchTrips({
   trips,
-  onAssignDriver,
   onSendMessage,
   onCompleteTrip,
   onUpdateStatus,
-  onAssignVehicle,
   onAssignEscort,
   onGenerateInvoice,
+  vehicles: vehiclesProp,
 }: DispatchTripsProps) {
-  // Get vehicles data to show escort vehicle details
-  const { vehicles = [] } = useTripsData();
+  const getStatusBadgeClass = (status: TripStatus): string => {
+    switch (status) {
+      case "completed":
+        return "bg-emerald-500/12 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30";
+      case "in_progress":
+        return "bg-amber-500/12 text-amber-700 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30";
+      case "cancelled":
+        return "bg-rose-500/12 text-rose-700 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30";
+      case "scheduled":
+      default:
+        return "bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30";
+    }
+  };
+  const { toast } = useToast();
+  const [assignResourcesOpen, setAssignResourcesOpen] = useState(
+    false as boolean
+  );
+  const [activeTrip, setActiveTrip] = useState<DisplayTrip | null>(null);
+  // Prefer passed vehicles to avoid redundant hooks/subscriptions
+  const vehicles = vehiclesProp || [];
 
   // Debug logging for security escort functionality
   console.log("DispatchTrips render:", {
@@ -302,630 +327,388 @@ export function DispatchTrips({
         </div>
       )}
 
-      {safeTrips.map((trip) => {
+      {safeTrips.map((trip, index) => {
         const flightDetails = [trip.airline, trip.flight_number, trip.terminal]
           .filter(Boolean)
           .join(" / ");
+        const { state, totalNeeded, totalAssigned } =
+          vehicleAssignmentStatus(trip);
+
         return (
-          <div
-            key={
-              trip.id || `trip-${Math.random().toString(36).substring(2, 9)}`
-            }
-            className={`border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow ${
+          <Accordion
+            key={trip.id || `trip-${index}`}
+            type="single"
+            collapsible
+            className={`rounded-lg border shadow-sm transition ${
               trip.id && conflictedTrips.has(String(trip.id))
-                ? "border-amber-500 dark:border-amber-500/70"
-                : ""
+                ? "border-amber-400 bg-amber-50 dark:bg-amber-900/20"
+                : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
             }`}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
-              <div className="font-medium text-lg">
-                {safeFormatDate(trip.date)}
-                {trip.time && (
-                  <span className="text-muted-foreground ml-2 text-sm">
-                    <Clock className="h-3 w-3 inline mr-1" />
-                    {safeFormatTime(trip.time)}
-                  </span>
-                )}
-
-                {/* Conflict indicator */}
-                {trip.id && conflictedTrips.has(String(trip.id)) && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge
-                          variant="outline"
-                          className="ml-2 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500"
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Conflict
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-sm">
-                        <p>
-                          This driver is scheduled for multiple trips at the
-                          same time
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-
-                {/* Overdue indicator */}
-                <OverdueIndicator trip={trip} className="ml-2" />
-              </div>
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                <span>Trip ID: {safeFormatId(trip.id)}</span>
-                {(trip as { _isTestData?: boolean })._isTestData && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs bg-blue-100 text-blue-800"
-                  >
-                    TEST DATA
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-              {/* Location Information */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <div className="font-medium text-primary">
-                      Pickup Location
+            <AccordionItem value="item">
+              <AccordionTrigger className="px-6 py-4">
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-base font-medium text-slate-900 dark:text-slate-100">
+                      {safeFormatDate(trip.date)}
                     </div>
-                    <div className="text-foreground">
-                      {safeFormatText(trip.pickup_location)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Render intermediate stops, if any */}
-                {Array.isArray(trip.stops) &&
-                  trip.stops.length > 0 &&
-                  trip.stops.map((stop, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
-                      <div className="flex-1">
-                        <div className="font-medium text-yellow-500">
-                          Stop {idx + 1}
-                        </div>
-                        <div className="text-foreground">
-                          {safeFormatText(stop)}
-                        </div>
+                    {trip.time && (
+                      <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                        <Clock className="h-5 w-5" />
+                        <span className="text-sm font-medium">
+                          {safeFormatTime(trip.time)}
+                        </span>
                       </div>
-                    </div>
-                  ))}
-
-                <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <div className="font-medium text-destructive">
-                      Dropoff Location
-                    </div>
-                    <div className="text-foreground">
-                      {safeFormatText(trip.dropoff_location)}
+                    )}
+                    <div className="text-[11px] font-mono text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                      #{safeFormatId(trip.id)}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Trip Details */}
-              <div className="space-y-3">
-                <div className="text-sm">
-                  <span className="font-medium text-muted-foreground">
-                    Client:
-                  </span>
-                  <div className="text-foreground">
-                    {safeFormatText(trip.client_name)}
-                  </div>
-                  {trip.client_type && (
-                    <Badge variant="outline" className="text-xs mt-1">
-                      {trip.client_type === "organization"
-                        ? "Organization"
-                        : "Individual"}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="text-sm">
-                  <span className="font-medium text-muted-foreground">
-                    Service Type:
-                  </span>
-                  <div className="text-foreground">
-                    {trip.type
-                      ? trip.type
-                          .replace(/_/g, " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())
-                      : "Not specified"}
-                  </div>
-                </div>
-
-                <div className="text-sm">
-                  <span className="font-medium text-muted-foreground">
-                    Vehicles:
-                  </span>
-                  <div className="text-foreground">
-                    {(() => {
-                      const { state, totalNeeded, totalAssigned } =
-                        vehicleAssignmentStatus(trip);
-                      if (state === "none") {
-                        return (
-                          <Badge variant="destructive" className="text-xs">
-                            Unassigned
-                          </Badge>
-                        );
-                      }
-                      if (state === "partial") {
-                        return (
-                          <Badge variant="secondary" className="text-xs">
-                            {totalNeeded - totalAssigned} left
-                          </Badge>
-                        );
-                      }
-                      return (
-                        <Badge variant="default" className="text-xs">
-                          Assigned
-                        </Badge>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {/* Security Escort Information */}
-                {trip.has_security_escort && (
-                  <div className="text-sm">
-                    <span className="font-medium text-muted-foreground">
-                      Security Escort:
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {trip.type
+                        ?.replace(/_/g, " ")
+                        .replace(/\b\w/g, (l) => l.toUpperCase()) ||
+                        "Not specified"}
                     </span>
-                    <div className="text-foreground flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">
-                        🛡️ Required
+                    {trip.id && conflictedTrips.has(String(trip.id)) && (
+                      <Badge
+                        variant="outline"
+                        className="text-[11px] bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
+                      >
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Conflict
                       </Badge>
-                      <span className="text-sm">
-                        {trip.escort_count || 1} escort vehicle
-                        {(trip.escort_count || 1) > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-sm">
-                  <span className="font-medium text-muted-foreground">
-                    Driver:
-                  </span>
-                  <div className="text-foreground">
-                    {trip.driver_id ? (
-                      <div>
-                        <div>
-                          {safeFormatText(trip.driver_name, "Unknown Driver")}
-                        </div>
-                        {trip.driver_contact && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            <Phone className="h-3 w-3 inline mr-1" />
-                            {formatPhoneNumber(trip.driver_contact)}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-amber-600">Unassigned</span>
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
+              </AccordionTrigger>
 
-            {/* Security Escort Details */}
-            {trip.has_security_escort && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
-                <div className="flex items-start gap-2 text-sm">
-                  <Shield className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium text-red-900 dark:text-red-100">
-                        Security Escort Required
+              <AccordionContent className="px-6">
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 py-3">
+                  {/* Route Section */}
+                  <div className="lg:col-span-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Navigation className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Route
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {/* Pickup */}
+                      <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <div className="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wide">
+                            Pickup
+                          </div>
+                          <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                            {safeFormatText(trip.pickup_location)}
+                          </div>
+                        </div>
                       </div>
-                      {trip.escort_status === "fully_assigned" && (
+
+                      {/* Stops */}
+                      {Array.isArray(trip.stops) &&
+                        trip.stops.length > 0 &&
+                        trip.stops.map((stop, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
+                          >
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <div>
+                              <div className="text-xs font-medium text-yellow-700 dark:text-yellow-400 uppercase tracking-wide">
+                                Stop {idx + 1}
+                              </div>
+                              <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                                {safeFormatText(stop)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                      {/* Dropoff */}
+                      <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <div className="text-xs font-medium text-red-700 dark:text-red-400 uppercase tracking-wide">
+                            Dropoff
+                          </div>
+                          <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                            {safeFormatText(trip.dropoff_location)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Details Section */}
+                  <div className="space-y-4">
+                    {/* Client */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          Client
+                        </span>
+                      </div>
+                      <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                        {safeFormatText(trip.client_name)}
+                      </div>
+                      {trip.client_type && (
                         <Badge
-                          variant="default"
-                          className="bg-green-600 text-xs"
+                          variant="outline"
+                          className="text-[11px] mt-1 bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30"
                         >
-                          ✓ Assigned
-                        </Badge>
-                      )}
-                      {trip.escort_status === "partially_assigned" && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-yellow-600 text-white text-xs"
-                        >
-                          Partial
-                        </Badge>
-                      )}
-                      {trip.escort_status === "not_assigned" && (
-                        <Badge variant="destructive" className="text-xs">
-                          Not Assigned
+                          {trip.client_type === "organization"
+                            ? "Organization"
+                            : "Individual"}
                         </Badge>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-red-700 dark:text-red-300">
-                          Escort vehicles needed:
+
+                    {/* Service Type */}
+                    <div>
+                      <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+                        Service
+                      </div>
+                      <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                        {trip.type
+                          ?.replace(/_/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase()) ||
+                          "Not specified"}
+                      </div>
+                    </div>
+
+                    {/* Vehicles */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          Vehicles
                         </span>
-                        <Badge variant="destructive" className="text-xs">
-                          {trip.escort_count || 1} vehicle
-                          {(trip.escort_count || 1) > 1 ? "s" : ""}
-                        </Badge>
                       </div>
 
-                      {/* Show assigned escorts */}
-                      {trip.escort_vehicle_ids &&
-                        trip.escort_vehicle_ids.length > 0 && (
-                          <div className="space-y-1">
-                            <div className="text-xs text-red-700 dark:text-red-300">
-                              <span className="font-medium">Assigned: </span>
-                              {trip.escort_vehicle_ids.length} of{" "}
-                              {trip.escort_count || 1} vehicles
-                            </div>
-                            <div className="space-y-1 ml-2">
-                              {trip.escort_vehicle_ids.map(
-                                (vehicleId, index) => {
-                                  // Find the vehicle details from available vehicles
-                                  let vehicle = vehicles?.find(
-                                    (v) => v.id === vehicleId
-                                  );
+                      {state === "none" && (
+                        <Badge
+                          variant="outline"
+                          className="text-[11px] bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30"
+                        >
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Unassigned
+                        </Badge>
+                      )}
 
-                                  // If not found in current vehicles list, try to get from trip data
-                                  if (!vehicle && trip.vehicle_details) {
-                                    // Check if this might be the main vehicle being used as escort
-                                    const mainVehicleMatch =
-                                      trip.vehicle_details.match(/^(.+?)\s*\(/);
-                                    if (mainVehicleMatch) {
-                                      vehicle = {
-                                        id: vehicleId,
-                                        make:
-                                          mainVehicleMatch[1].split(" ")[0] ||
-                                          "Unknown",
-                                        model:
-                                          mainVehicleMatch[1]
-                                            .split(" ")
-                                            .slice(1)
-                                            .join(" ") || "Vehicle",
-                                        registration:
-                                          trip.vehicle_details.match(
-                                            /\(([^)]+)\)/
-                                          )?.[1] || "Unknown",
-                                        type: "unknown",
-                                      } as any;
-                                    }
-                                  }
-
-                                  // Create a display name for the vehicle
-                                  const displayName = vehicle
-                                    ? `${vehicle.make} ${vehicle.model} (${vehicle.registration})`
-                                    : `Vehicle ${vehicleId.slice(0, 8)}...`;
-
-                                  return (
-                                    <div
-                                      key={vehicleId}
-                                      className="flex items-center gap-2 text-xs"
-                                    >
-                                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                      <span className="text-red-600 dark:text-red-400">
-                                        Escort {index + 1}: {displayName}
-                                      </span>
-                                      {vehicle?.type && (
-                                        <Badge
-                                          variant={
-                                            vehicle.type === "armoured"
-                                              ? "default"
-                                              : "secondary"
-                                          }
-                                          className="text-xs px-1 py-0"
-                                        >
-                                          {vehicle.type === "armoured"
-                                            ? "Armoured"
-                                            : "Soft Skin"}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  );
-                                }
-                              )}
-                            </div>
+                      {state === "partial" && (
+                        <div className="space-y-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[11px] bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
+                          >
+                            {totalAssigned} of {totalNeeded} assigned
+                          </Badge>
+                          <div className="text-xs text-slate-500">
+                            {totalNeeded - totalAssigned} vehicle(s) needed
                           </div>
-                        )}
+                        </div>
+                      )}
 
-                      {trip.escort_status !== "fully_assigned" && (
-                        <div className="text-red-600 dark:text-red-400 text-xs">
-                          ⚠️ Escort vehicles must be assigned by dispatch center
-                          before trip departure
+                      {state === "full" && (
+                        <div className="flex flex-wrap gap-1">
+                          {trip.assigned_vehicle_ids?.map((vehicleId) => {
+                            const assignedVehicle = vehicles.find(
+                              (v) => v.id === vehicleId
+                            );
+                            return assignedVehicle ? (
+                              <Badge
+                                key={vehicleId}
+                                variant="outline"
+                                className="text-[11px] bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30"
+                              >
+                                {assignedVehicle.registration}
+                              </Badge>
+                            ) : null;
+                          })}
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* Flight Information */}
-            {(trip.type === "airport_pickup" ||
-              trip.type === "airport_dropoff") &&
-              flightDetails && (
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-start gap-2 text-sm">
-                    <Plane className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-medium text-blue-900 dark:text-blue-100">
-                        Flight Information
+                    {/* Driver */}
+                    <div>
+                      <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+                        Driver
                       </div>
-                      <div className="text-blue-700 dark:text-blue-300 mt-1">
-                        {flightDetails}
-                      </div>
+                      {trip.driver_id ? (
+                        <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                          {safeFormatText(trip.driver_name, "Unknown Driver")}
+                        </div>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-amber-600"
+                        >
+                          Unassigned
+                        </Badge>
+                      )}
                     </div>
+
+                    {/* Security Escort */}
+                    {trip.has_security_escort && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Shield className="h-4 w-4 text-rose-500" />
+                          <span className="text-sm font-medium text-rose-700 dark:text-rose-400">
+                            Security Escort
+                          </span>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-[11px] bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30"
+                        >
+                          {trip.escort_count || 1} escort vehicle(s) required
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
 
-            {/* Passenger Information */}
-            {trip.passengers &&
-              Array.isArray(trip.passengers) &&
-              trip.passengers.length > 0 && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="flex items-start gap-2 text-sm">
-                    <User className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-medium text-green-900 dark:text-green-100 mb-2">
-                        Passengers ({trip.passengers.length})
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2">
+                    {/* Status Badge */}
+                    <Badge
+                      variant="outline"
+                      className={`text-[11px] font-medium ${getStatusBadgeClass(
+                        trip.status
+                      )}`}
+                    >
+                      {trip.status.replace("_", " ").toUpperCase()}
+                    </Badge>
+
+                    {flightDetails && (
+                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                        <Plane className="h-3 w-3" />
+                        <span>{flightDetails}</span>
                       </div>
-                      <div className="space-y-1">
-                        {trip.passengers.map((passenger, index) => (
-                          <div
-                            key={index}
-                            className="text-green-700 dark:text-green-300 text-sm"
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setActiveTrip(trip);
+                            setAssignResourcesOpen(true);
+                          }}
+                        >
+                          Assign Resources
+                        </DropdownMenuItem>
+
+                        {trip.has_security_escort && onAssignEscort && (
+                          <DropdownMenuItem
+                            onClick={() => onAssignEscort(trip)}
                           >
-                            {index + 1}.{" "}
-                            {safeFormatText(
-                              passenger,
-                              `Passenger ${index + 1}`
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            {/* Documents for Airport Services */}
-            {(trip.type === "airport_pickup" ||
-              trip.type === "airport_dropoff") &&
-              ((trip.passport_documents &&
-                trip.passport_documents.length > 0) ||
-                (trip.invitation_documents &&
-                  trip.invitation_documents.length > 0)) && (
-                <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <div className="flex items-start gap-2 text-sm">
-                    <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-medium text-purple-900 dark:text-purple-100 mb-3">
-                        Airport Service Documents
-                      </div>
-
-                      {/* Passport Documents */}
-                      {trip.passport_documents &&
-                        trip.passport_documents.length > 0 && (
-                          <div className="mb-3">
-                            <div className="font-medium text-purple-800 dark:text-purple-200 text-sm mb-2">
-                              Passport Pictures
-                            </div>
-                            <div className="space-y-2">
-                              {trip.passport_documents.map((doc, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between p-2 bg-white dark:bg-purple-900/20 rounded border"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <FileText className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                                    <div>
-                                      <div className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                                        {safeFormatText(
-                                          doc.passenger_name,
-                                          `Passenger ${index + 1}`
-                                        )}
-                                      </div>
-                                      <div className="text-xs text-purple-700 dark:text-purple-300">
-                                        {safeFormatText(doc.name, "Document")}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      window.open(doc.url, "_blank")
-                                    }
-                                    className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                            <Shield className="h-4 w-4 mr-2" />
+                            Assign Escort
+                          </DropdownMenuItem>
                         )}
 
-                      {/* Invitation Documents */}
-                      {trip.invitation_documents &&
-                        trip.invitation_documents.length > 0 && (
-                          <div>
-                            <div className="font-medium text-purple-800 dark:text-purple-200 text-sm mb-2">
-                              Invitation Letters
-                            </div>
-                            <div className="space-y-2">
-                              {trip.invitation_documents.map((doc, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between p-2 bg-white dark:bg-purple-900/20 rounded border"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <FileText className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                                    <div>
-                                      <div className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                                        {safeFormatText(
-                                          doc.passenger_name,
-                                          `Passenger ${index + 1}`
-                                        )}
-                                      </div>
-                                      <div className="text-xs text-purple-700 dark:text-purple-300">
-                                        {safeFormatText(doc.name, "Document")}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      window.open(doc.url, "_blank")
-                                    }
-                                    className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                        <DropdownMenuItem onClick={() => onSendMessage(trip)}>
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Send Message
+                        </DropdownMenuItem>
+
+                        {trip.status === "scheduled" && (
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const { state, totalNeeded, totalAssigned } =
+                                vehicleAssignmentStatus(trip);
+                              const isDriverAssigned = Boolean(trip.driver_id);
+                              const isVehiclesReady =
+                                state === "full" ||
+                                (totalNeeded === 0 &&
+                                  (trip.vehicle_id ||
+                                    (trip.assigned_vehicle_ids?.length || 0) >
+                                      0));
+                              if (!isDriverAssigned || !isVehiclesReady) {
+                                // Prevent starting and notify why
+                                const reasons: string[] = [];
+                                if (!isDriverAssigned)
+                                  reasons.push("assign a driver");
+                                if (!isVehiclesReady)
+                                  reasons.push("assign required vehicle(s)");
+                                toast({
+                                  title: "Cannot start trip",
+                                  description: `Please ${reasons.join(
+                                    " and "
+                                  )} before starting.`,
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              onUpdateStatus(trip.id, "in_progress");
+                            }}
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Start Trip
+                          </DropdownMenuItem>
                         )}
-                    </div>
+
+                        {trip.status === "in_progress" && (
+                          <DropdownMenuItem
+                            onClick={() => onCompleteTrip(trip)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Complete Trip
+                          </DropdownMenuItem>
+                        )}
+
+                        {trip.status === "completed" && (
+                          <DropdownMenuItem
+                            onClick={() => onGenerateInvoice(trip)}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Generate Invoice
+                          </DropdownMenuItem>
+                        )}
+
+                        {trip.status !== "cancelled" && (
+                          <DropdownMenuItem
+                            onClick={() => onUpdateStatus(trip.id, "cancelled")}
+                            className="text-red-600"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancel Trip
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
-              )}
-
-            {/* Additional Information */}
-            {(trip.return_time || trip.notes) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
-                {trip.return_time && (
-                  <div>
-                    <span className="font-medium text-muted-foreground">
-                      Return Time:
-                    </span>
-                    <div className="text-foreground">
-                      {safeFormatTime(trip.return_time)}
-                    </div>
-                  </div>
-                )}
-
-                {trip.notes && (
-                  <div className={trip.return_time ? "md:col-span-2" : ""}>
-                    <span className="font-medium text-muted-foreground">
-                      Notes:
-                    </span>
-                    <div className="text-foreground mt-1 p-2 bg-muted rounded text-sm">
-                      {trip.notes}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-2 mt-4 items-center">
-              <Button
-                size="sm"
-                onClick={() => onAssignDriver(trip)}
-                className={
-                  trip.driver_id
-                    ? "bg-green-500 hover:bg-green-600"
-                    : "bg-primary"
-                }
-              >
-                <User className="h-4 w-4 mr-1" />
-                {trip.driver_id ? "Driver Assigned" : "Assign Driver"}
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={() => onAssignVehicle(trip)}
-                className={
-                  trip.vehicle_id
-                    ? "bg-green-500 hover:bg-green-600"
-                    : "bg-primary"
-                }
-              >
-                <Car className="h-4 w-4 mr-1" />
-                {trip.vehicle_id ? "Vehicle Assigned" : "Assign Vehicle"}
-              </Button>
-
-              {/* Security Escort Assignment Button */}
-              {trip.has_security_escort && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onAssignEscort && onAssignEscort(trip)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  <Shield className="h-4 w-4 mr-1" />
-                  Assign Escorts
-                </Button>
-              )}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onSendMessage(trip)}
-              >
-                <MessageCircle className="h-4 w-4 mr-1" />
-                Send Message
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {trip.status !== "scheduled" && (
-                    <DropdownMenuItem
-                      onClick={() => onUpdateStatus(trip.id, "scheduled")}
-                    >
-                      <Calendar className="mr-2 h-4 w-4" /> Set as Scheduled
-                    </DropdownMenuItem>
-                  )}
-                  {trip.status !== "in_progress" && (
-                    <DropdownMenuItem
-                      onClick={() => onUpdateStatus(trip.id, "in_progress")}
-                    >
-                      <Clock className="mr-2 h-4 w-4" /> Set as In Progress
-                    </DropdownMenuItem>
-                  )}
-                  {trip.status !== "completed" && (
-                    <DropdownMenuItem onClick={() => onCompleteTrip(trip)}>
-                      <Check className="mr-2 h-4 w-4" /> Complete Trip
-                    </DropdownMenuItem>
-                  )}
-                  {trip.status === "completed" && !trip.invoice_id && (
-                    <DropdownMenuItem onClick={() => onGenerateInvoice(trip)}>
-                      <FileText className="mr-2 h-4 w-4" /> Generate Invoice
-                    </DropdownMenuItem>
-                  )}
-                  {trip.status !== "cancelled" && (
-                    <DropdownMenuItem
-                      className="text-red-500"
-                      onClick={() => onUpdateStatus(trip.id, "cancelled")}
-                    >
-                      <X className="mr-2 h-4 w-4" /> Cancel Trip
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         );
       })}
+
+      <AssignResourcesDialog
+        open={assignResourcesOpen}
+        trip={activeTrip}
+        onClose={() => setAssignResourcesOpen(false)}
+        onAssigned={() => {
+          // no-op here; parent will refetch via subscriptions
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 import { FileText, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,11 +9,11 @@ interface DocumentUploadFieldProps {
   onDocumentClear: () => void;
 }
 
-export function DocumentUploadField({ 
-  documentName, 
+export function DocumentUploadField({
+  documentName,
   documentUrl,
-  onDocumentChange, 
-  onDocumentClear 
+  onDocumentChange,
+  onDocumentClear,
 }: DocumentUploadFieldProps) {
   return (
     <div className="flex flex-col space-y-2">
@@ -29,7 +28,7 @@ export function DocumentUploadField({
         />
         <label
           htmlFor="document-upload"
-          className="flex items-center space-x-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-gray-50"
+          className="flex items-center space-x-2 px-4 py-2 rounded-md border border-border/50 cursor-pointer bg-transparent hover:bg-muted/50 text-foreground"
         >
           <FileText className="h-4 w-4" />
           <span>{documentName || "Upload Document"}</span>
@@ -37,11 +36,11 @@ export function DocumentUploadField({
         {documentName && (
           <div className="flex items-center space-x-2">
             {documentUrl && (
-              <a 
+              <a
                 href={documentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-800"
+                className="flex items-center space-x-1 px-2 py-1 text-sm text-primary hover:text-primary/80"
               >
                 <Download className="h-4 w-4" />
                 <span>Download</span>
@@ -52,6 +51,7 @@ export function DocumentUploadField({
               variant="outline"
               size="sm"
               onClick={onDocumentClear}
+              className="border-border/50"
             >
               <X className="h-4 w-4" />
             </Button>

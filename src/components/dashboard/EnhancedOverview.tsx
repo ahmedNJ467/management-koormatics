@@ -1,51 +1,26 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, DollarSign, CheckCircle, AlertTriangle, Car } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  TrendingUp,
+  Car,
+  DollarSign,
+  Target,
+  Calendar,
+  Users,
+  Activity,
+} from "lucide-react";
 
-interface MetricCardProps {
+type Metric = {
   title: string;
   value: string;
-  subtitle: string;
-  trend?: {
-    value: string;
-    isPositive: boolean;
-  };
-  icon: React.ReactNode;
-  color: string;
+  hint?: string;
   progress?: number;
-}
-
-const MetricCard = ({ title, value, subtitle, trend, icon, color, progress }: MetricCardProps) => (
-  <Card className={`relative overflow-hidden border-0 shadow-lg ${color}`}>
-    <CardHeader className="pb-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          {icon}
-          <CardTitle className="text-sm font-medium text-white/90">{title}</CardTitle>
-        </div>
-        {trend && (
-          <div className={`flex items-center space-x-1 text-xs ${trend.isPositive ? 'text-green-300' : 'text-red-300'}`}>
-            {trend.isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            <span>{trend.value}</span>
-          </div>
-        )}
-      </div>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <p className="text-xs text-white/70">{subtitle}</p>
-      {progress !== undefined && (
-        <div className="mt-3">
-          <Progress value={progress} className="h-2 bg-white/20" />
-        </div>
-      )}
-    </CardContent>
-    <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8"></div>
-  </Card>
-);
+  icon: React.ReactNode;
+  trend?: string;
+};
 
 export function EnhancedOverview() {
   const { data: stats, isLoading } = useQuery({
@@ -54,25 +29,47 @@ export function EnhancedOverview() {
       const [
         { data: trips, error: tripsError },
         { data: vehicles, error: vehiclesError },
-        { data: maintenance, error: maintenanceError }
+        { data: maintenance, error: maintenanceError },
       ] = await Promise.all([
-        supabase.from("trips").select("amount, status, date").gte("date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]),
+        supabase
+          .from("trips")
+          .select("amount, status, date")
+          .gte(
+            "date",
+            new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+              .toISOString()
+              .split("T")[0]
+          ),
         supabase.from("vehicles").select("status"),
-        supabase.from("maintenance").select("cost, status").gte("date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+        supabase
+          .from("maintenance")
+          .select("cost, status")
+          .gte(
+            "date",
+            new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+              .toISOString()
+              .split("T")[0]
+          ),
       ]);
 
       if (tripsError || vehiclesError || maintenanceError) {
         throw new Error("Failed to fetch stats");
       }
 
-      const monthlyRevenue = trips?.reduce((sum, trip) => sum + (Number(trip.amount) || 0), 0) || 0;
-      const completedTrips = trips?.filter(t => t.status === "completed").length || 0;
+      const monthlyRevenue =
+        trips?.reduce((sum, trip) => sum + (Number(trip.amount) || 0), 0) || 0;
+      const completedTrips =
+        trips?.filter((t) => t.status === "completed").length || 0;
       const totalTrips = trips?.length || 0;
-      const completionRate = totalTrips > 0 ? (completedTrips / totalTrips) * 100 : 0;
-      const totalCosts = maintenance?.reduce((sum, m) => sum + (Number(m.cost) || 0), 0) || 0;
-      const activeVehicles = vehicles?.filter(v => v.status === "active").length || 0;
+      const completionRate =
+        totalTrips > 0 ? (completedTrips / totalTrips) * 100 : 0;
+      const totalCosts =
+        maintenance?.reduce((sum, m) => sum + (Number(m.cost) || 0), 0) || 0;
+      const activeVehicles =
+        vehicles?.filter((v) => v.status === "active").length || 0;
       const totalVehicles = vehicles?.length || 0;
-      const utilizationRate = totalVehicles > 0 ? (activeVehicles / totalVehicles) * 100 : 0;
+      const utilizationRate =
+        totalVehicles > 0 ? (activeVehicles / totalVehicles) * 100 : 0;
 
       return {
         monthlyRevenue,
@@ -82,60 +79,107 @@ export function EnhancedOverview() {
         totalCosts,
         utilizationRate,
         activeVehicles,
-        totalVehicles
+        totalVehicles,
       };
     },
   });
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="h-32 animate-pulse bg-gray-200" />
+          <Card key={i} className="border shadow-sm">
+            <CardHeader className="pb-3">
+              <Skeleton className="h-4 w-24 mb-2" />
+              <Skeleton className="h-8 w-16" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-3 w-32" />
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
   }
 
-  const metrics = [
+  const metrics: Metric[] = [
     {
       title: "Monthly Revenue",
-      value: `$${stats?.monthlyRevenue?.toLocaleString() || '0'}`,
-      subtitle: `${stats?.completedTrips || 0} trips completed`,
-      trend: { value: "12.5% from last month", isPositive: true },
-      icon: <DollarSign className="h-5 w-5 text-white" />,
-      color: "bg-gradient-to-br from-blue-500 to-blue-600",
+      value: `$${stats?.monthlyRevenue?.toLocaleString() || "0"}`,
+      hint: `${stats?.completedTrips || 0} trips completed`,
+      icon: <DollarSign className="h-5 w-5" />,
+      trend: stats?.monthlyRevenue > 0 ? "+12.5%" : "0%",
     },
     {
       title: "Trip Completion",
-      value: `${stats?.completionRate?.toFixed(1) || '0'}%`,
-      subtitle: `${stats?.completedTrips || 0} of ${stats?.totalTrips || 0} trips completed`,
-      icon: <CheckCircle className="h-5 w-5 text-white" />,
-      color: "bg-gradient-to-br from-green-500 to-green-600",
+      value: `${stats?.completionRate?.toFixed(1) || "0"}%`,
+      hint: `${stats?.completedTrips || 0}/${stats?.totalTrips || 0} trips`,
       progress: stats?.completionRate || 0,
+      icon: <Target className="h-5 w-5" />,
     },
     {
       title: "Total Costs",
-      value: `$${stats?.totalCosts?.toLocaleString() || '0'}`,
-      subtitle: "Monthly operational costs",
-      trend: { value: "8.2% from last month", isPositive: false },
-      icon: <AlertTriangle className="h-5 w-5 text-white" />,
-      color: "bg-gradient-to-br from-purple-500 to-purple-600",
+      value: `$${stats?.totalCosts?.toLocaleString() || "0"}`,
+      hint: "Monthly operational costs",
+      icon: <TrendingUp className="h-5 w-5" />,
     },
     {
       title: "Fleet Utilization",
-      value: `${stats?.utilizationRate?.toFixed(1) || '0'}%`,
-      subtitle: `${stats?.activeVehicles || 0} of ${stats?.totalVehicles || 0} vehicles active`,
-      icon: <Car className="h-5 w-5 text-white" />,
-      color: "bg-gradient-to-br from-orange-500 to-orange-600",
+      value: `${stats?.utilizationRate?.toFixed(1) || "0"}%`,
+      hint: `${stats?.activeVehicles || 0}/${stats?.totalVehicles || 0} active`,
       progress: stats?.utilizationRate || 0,
+      icon: <Car className="h-5 w-5" />,
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {metrics.map((metric, index) => (
-        <MetricCard key={index} {...metric} />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {metrics.map((metric) => (
+        <Card
+          key={metric.title}
+          className="border shadow-sm hover:shadow-md transition-all duration-200 group bg-card"
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2.5 rounded-xl bg-muted text-primary shadow-sm">
+                {metric.icon}
+              </div>
+              {metric.trend && (
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted text-foreground">
+                  {metric.trend}
+                </span>
+              )}
+            </div>
+            <CardTitle className="text-sm font-semibold text-foreground">
+              {metric.title}
+            </CardTitle>
+            <div className="text-2xl font-bold text-foreground group-hover:scale-105 transition-transform duration-200">
+              {metric.value}
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {metric.progress !== undefined && (
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs font-medium text-muted-foreground mb-2">
+                  <span>Progress</span>
+                  <span className="font-semibold">
+                    {metric.progress.toFixed(1)}%
+                  </span>
+                </div>
+                <Progress
+                  value={metric.progress}
+                  className="h-2.5 bg-muted/50"
+                />
+              </div>
+            )}
+            {metric.hint && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2 bg-muted/30 px-2 py-1.5 rounded-md">
+                <Activity className="h-3 w-3 text-muted-foreground" />
+                <span className="font-medium">{metric.hint}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ))}
     </div>
   );

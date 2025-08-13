@@ -1,45 +1,45 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DispatchTrips } from "./DispatchTrips";
 import { DriverStatus } from "./DriverStatus";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { Driver } from "@/lib/types";
 import { Vehicle } from "@/lib/types/vehicle";
+import { isSameDay, isAfter, parseISO } from "date-fns";
 
 interface DispatchBoardProps {
   trips: DisplayTrip[];
+  allTrips?: DisplayTrip[]; // unfiltered set for availability calculations
   drivers: Driver[];
   vehicles: Vehicle[];
-  onAssignDriver: (trip: DisplayTrip) => void;
   onSendMessage: (trip: DisplayTrip) => void;
   onCompleteTrip: (trip: DisplayTrip) => void;
   onUpdateStatus: (tripId: string, status: TripStatus) => void;
-  onAssignVehicle: (trip: DisplayTrip) => void;
   onAssignEscort?: (trip: DisplayTrip) => void;
   onGenerateInvoice: (trip: DisplayTrip) => void;
 }
 
 export function DispatchBoard({
   trips,
+  allTrips,
   drivers,
   vehicles,
-  onAssignDriver,
   onSendMessage,
   onCompleteTrip,
   onUpdateStatus,
-  onAssignVehicle,
   onAssignEscort,
   onGenerateInvoice,
 }: DispatchBoardProps) {
   const [activeTab, setActiveTab] = useState("upcoming");
 
   // Filter upcoming trips (scheduled for today or tomorrow)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const { todayStart, tomorrowStart } = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    const tmw = new Date(t);
+    tmw.setDate(tmw.getDate() + 1);
+    return { todayStart: t, tomorrowStart: tmw };
+  }, []);
 
   // Separate trips by status first, then by date for scheduled trips
   const inProgressTrips = trips.filter((trip) => trip.status === "in_progress");
@@ -50,34 +50,28 @@ export function DispatchBoard({
   // From scheduled trips, separate upcoming (today/tomorrow) from later
   const upcomingTrips = scheduledTrips.filter((trip) => {
     if (!trip.date) return false;
-    const tripDate = new Date(trip.date);
-    tripDate.setHours(0, 0, 0, 0);
-
+    // Use parseISO safely; compare by local day using isSameDay
+    const tripDate = parseISO(trip.date);
     return (
-      tripDate.getTime() === today.getTime() ||
-      tripDate.getTime() === tomorrow.getTime()
+      isSameDay(tripDate, todayStart) || isSameDay(tripDate, tomorrowStart)
     );
   });
 
   // Trips scheduled for later (after tomorrow)
   const laterTrips = scheduledTrips.filter((trip) => {
     if (!trip.date) return false;
-    const tripDate = new Date(trip.date);
-    tripDate.setHours(0, 0, 0, 0);
-
-    return tripDate.getTime() > tomorrow.getTime();
+    const tripDate = parseISO(trip.date);
+    return isAfter(tripDate, tomorrowStart);
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
       <div className="lg:col-span-2">
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="text-card-foreground">
-              Trip Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
+        <div className="border rounded-md bg-card">
+          <div className="border-b p-3">
+            <div className="text-sm font-medium">Trip management</div>
+          </div>
+          <div className="p-3">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full bg-muted border border-border">
                 <TabsTrigger
@@ -105,65 +99,61 @@ export function DispatchBoard({
                   Completed ({completedTrips.length})
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="upcoming" className="mt-4">
+              <TabsContent value="upcoming" className="mt-2">
                 <DispatchTrips
                   trips={upcomingTrips}
-                  onAssignDriver={onAssignDriver}
+                  vehicles={vehicles}
                   onSendMessage={onSendMessage}
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
-                  onAssignVehicle={onAssignVehicle}
                   onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
-              <TabsContent value="in-progress" className="mt-4">
+              <TabsContent value="in-progress" className="mt-2">
                 <DispatchTrips
                   trips={inProgressTrips}
-                  onAssignDriver={onAssignDriver}
+                  vehicles={vehicles}
                   onSendMessage={onSendMessage}
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
-                  onAssignVehicle={onAssignVehicle}
                   onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
-              <TabsContent value="scheduled" className="mt-4">
+              <TabsContent value="scheduled" className="mt-2">
                 <DispatchTrips
                   trips={laterTrips}
-                  onAssignDriver={onAssignDriver}
+                  vehicles={vehicles}
                   onSendMessage={onSendMessage}
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
-                  onAssignVehicle={onAssignVehicle}
                   onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
-              <TabsContent value="completed" className="mt-4">
+              <TabsContent value="completed" className="mt-2">
                 <DispatchTrips
                   trips={completedTrips}
-                  onAssignDriver={onAssignDriver}
+                  vehicles={vehicles}
                   onSendMessage={onSendMessage}
                   onCompleteTrip={onCompleteTrip}
                   onUpdateStatus={onUpdateStatus}
-                  onAssignVehicle={onAssignVehicle}
                   onAssignEscort={onAssignEscort}
                   onGenerateInvoice={onGenerateInvoice}
                 />
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <div>
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="text-card-foreground">Availability</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
+        <div className="border rounded-md bg-card">
+          <div className="border-b p-3">
+            <div className="text-sm font-medium">Availability</div>
+          </div>
+          <div className="p-3">
             <DriverStatus
               key={`${trips.length}-${vehicles.length}-${
                 trips.filter((t) => t.status === "cancelled").length
@@ -172,10 +162,10 @@ export function DispatchBoard({
               }-${vehicles.filter((v) => v.is_escort_assigned).length}`}
               drivers={drivers}
               vehicles={vehicles}
-              trips={trips}
+              trips={allTrips || trips}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

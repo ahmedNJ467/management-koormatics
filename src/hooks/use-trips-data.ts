@@ -28,9 +28,49 @@ export function useTripsData() {
       if (error) throw error;
 
       // Type assertion to help TypeScript understand the structure
-      return data.map((trip: any) => {
-        return mapDatabaseFieldsToTrip(trip);
+      // Auto-progress trips: if scheduled and start time has passed, mark in_progress
+      const now = new Date();
+      const mapped = data.map((trip: any) => mapDatabaseFieldsToTrip(trip));
+
+      // Overlay driver assignments from trip_assignments so availability is accurate
+      try {
+        const { data: assigns, error: assignsError } = await supabase
+          .from("trip_assignments")
+          .select("trip_id, driver_id");
+        if (!assignsError && assigns) {
+          const byTrip = assigns.reduce((acc: any, a: any) => {
+            (acc[a.trip_id] ||= []).push(a.driver_id);
+            return acc;
+          }, {} as Record<string, string[]>);
+          for (const t of mapped) {
+            t.assigned_driver_ids =
+              byTrip[t.id] || (t.driver_id ? [t.driver_id] : []);
+          }
+        }
+      } catch {}
+      const toProgress = mapped.filter((t) => {
+        if (t.status !== "scheduled" || !t.date || !t.time) return false;
+        const start = new Date(`${t.date}T${t.time}`);
+        return start <= now;
       });
+
+      if (toProgress.length > 0) {
+        const ids = toProgress.map((t) => t.id);
+        try {
+          await supabase
+            .from("trips")
+            .update({ status: "in_progress" })
+            .in("id", ids);
+          // update local mapped copy as well
+          for (const t of mapped) {
+            if (ids.includes(t.id)) t.status = "in_progress" as any;
+          }
+        } catch (e) {
+          console.warn("Auto-progress trips failed", e);
+        }
+      }
+
+      return mapped;
     },
   });
 
@@ -146,8 +186,17 @@ export function useTripsData() {
           "postgres_changes",
           { event: "*", schema: "public", table: "trips" },
           () => {
+            // Recompute both trips and vehicles immediately when trips change
             queryClient.invalidateQueries({ queryKey: ["trips"] });
             queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "vehicles" },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+            queryClient.invalidateQueries({ queryKey: ["trips"] });
           }
         )
         .subscribe();

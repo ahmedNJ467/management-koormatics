@@ -8,8 +8,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 interface SecurityEscortToggleProps {
   hasSecurityEscort: boolean;
@@ -44,16 +42,9 @@ export function SecurityEscortToggle({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Shield className="h-4 w-4 text-blue-600" />
               <Label htmlFor="security_escort" className="text-sm font-medium">
                 Security Escort
               </Label>
-              {hasSecurityEscort && (
-                <Badge variant="secondary" className="text-xs">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Enhanced Security
-                </Badge>
-              )}
             </div>
             <Switch
               id="security_escort"
@@ -83,9 +74,6 @@ export function SecurityEscortToggle({
                   <SelectItem value="2">2 Escort Vehicles</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Escort vehicles will be assigned by the dispatch center
-              </p>
             </div>
           )}
         </div>

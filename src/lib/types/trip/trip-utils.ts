@@ -87,7 +87,8 @@ export function vehicleAssignmentStatus(trip: DisplayTrip) {
   const totalNeeded = (trip.soft_skin_count || 0) + (trip.armoured_count || 0);
   const totalAssigned = trip.assigned_vehicle_ids?.length || 0;
 
-  if (totalAssigned === 0) return { state: "none" as const, totalNeeded, totalAssigned };
+  if (totalAssigned === 0)
+    return { state: "none" as const, totalNeeded, totalAssigned };
   if (totalAssigned < totalNeeded)
     return { state: "partial" as const, totalNeeded, totalAssigned };
   return { state: "full" as const, totalNeeded, totalAssigned };

@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
+import { useTenantScope } from "@/hooks/use-tenant-scope";
+import { Navigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ErrorBoundary from "./ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Layout() {
+  const { isAllowed } = useTenantScope();
+  if (!isAllowed) return <Navigate to="/403" replace />;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const isMobile = useIsMobile();

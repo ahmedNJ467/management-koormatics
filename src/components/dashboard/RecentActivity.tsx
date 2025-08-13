@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityItemProps } from "@/types/dashboard";
@@ -13,12 +12,19 @@ interface RecentActivityProps {
   activities?: ActivityItemProps[];
 }
 
-export const RecentActivity = ({ activities: propActivities, isLoading: propIsLoading }: RecentActivityProps) => {
-  const { data: fetchedActivities, isLoading, error } = useQuery({
+export const RecentActivity = ({
+  activities: propActivities,
+  isLoading: propIsLoading,
+}: RecentActivityProps) => {
+  const {
+    data: fetchedActivities,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["dashboard-activities"],
     queryFn: async () => {
       if (propActivities) return propActivities;
-      
+
       try {
         const { data, error } = await supabase
           .from("activities")
@@ -30,14 +36,32 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
           console.error("Error fetching activities:", error);
           throw error;
         }
-        
-        return data.map(item => ({
-          id: item.id?.toString() || 'unknown',
-          title: item.title || 'Unknown activity',
-          timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown time',
-          type: (item.type as ActivityItemProps['type']) || 'default',
-          icon: item.type || 'default',
-          related_id: item.related_id // Keep the actual related trip ID for reference
+
+        const normalizeTitle = (raw: string): string => {
+          if (!raw) return "Unknown activity";
+          let t = raw;
+          // Fix cases where "created" lost its leading space/letter after an ID
+          t = t.replace(
+            /(\b[Tt]rip\s+[A-Z0-9]{6,12})reated\b:?/g,
+            "$1 created"
+          );
+          // Ensure a space between Trip <ID> and following verb if missing
+          t = t.replace(
+            /(\b[Tt]rip\s+[A-Z0-9]{6,12})(?=(created|updated|assigned|completed)\b)/g,
+            "$1 "
+          );
+          return t;
+        };
+
+        return data.map((item) => ({
+          id: item.id?.toString() || "unknown",
+          title: normalizeTitle(item.title || ""),
+          timestamp: item.timestamp
+            ? new Date(item.timestamp).toLocaleString()
+            : "Unknown time",
+          type: (item.type as ActivityItemProps["type"]) || "default",
+          icon: item.type || "default",
+          related_id: item.related_id, // Keep the actual related trip ID for reference
         })) as ActivityItemProps[];
       } catch (err) {
         console.error("Database connection error:", err);
@@ -49,7 +73,8 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
     retryDelay: 1000,
   });
 
-  const { realtimeActivities, connectionError } = useRealtimeActivities(fetchedActivities);
+  const { realtimeActivities, connectionError } =
+    useRealtimeActivities(fetchedActivities);
 
   const loadingState = propIsLoading !== undefined ? propIsLoading : isLoading;
   const displayActivities = propActivities || realtimeActivities;
@@ -71,8 +96,8 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
   }
 
   // Filter out any invalid activities before rendering
-  const validActivities = displayActivities.filter(activity => 
-    activity && typeof activity === 'object' && activity.id
+  const validActivities = displayActivities.filter(
+    (activity) => activity && typeof activity === "object" && activity.id
   );
 
   if (validActivities.length === 0) {
@@ -80,8 +105,8 @@ export const RecentActivity = ({ activities: propActivities, isLoading: propIsLo
   }
 
   return (
-    <ScrollArea className="h-[400px] w-full">
-      <div className="space-y-3 pr-4">
+    <ScrollArea className="w-full">
+      <div className="space-y-2 pr-2">
         {validActivities.map((activity) => (
           <ActivityItem key={activity.id} activity={activity} />
         ))}

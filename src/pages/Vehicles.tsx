@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,17 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Plus,
-  Search,
-  Filter,
-  Grid,
-  List,
-  Car,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-} from "lucide-react";
+import { Plus, Search, Filter, Grid, List } from "lucide-react";
 import { Vehicle, VehicleStatus, VehicleType } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +33,9 @@ export default function Vehicles() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [currentPage, setCurrentPage] = useState(1);
+  const vehiclesPerPage = 20;
 
   const {
     data: vehicles,
@@ -111,6 +103,17 @@ export default function Vehicles() {
       return matchesSearch && matchesType && matchesStatus;
     });
   }, [vehicles, searchTerm, typeFilter, statusFilter]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredVehicles.length / vehiclesPerPage);
+  const startIndex = (currentPage - 1) * vehiclesPerPage;
+  const endIndex = startIndex + vehiclesPerPage;
+  const paginatedVehicles = filteredVehicles.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, typeFilter, statusFilter]);
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -185,127 +188,37 @@ export default function Vehicles() {
     searchTerm !== "" || typeFilter !== "all" || statusFilter !== "all";
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Vehicles</h2>
-          <p className="text-muted-foreground">
-            Manage your vehicle fleet and track their status
-          </p>
+          <h2 className="text-xl font-semibold">Vehicles</h2>
         </div>
-        <Button variant="outline" className="gap-2" onClick={handleAddVehicle}>
-          <Plus className="h-5 w-5" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-foreground border-border/50"
+          onClick={handleAddVehicle}
+        >
           Add Vehicle
         </Button>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Vehicles
-            </CardTitle>
-            <Car className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{statistics.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {statistics.armoured} armoured, {statistics.softSkin} soft skin
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {statistics.active}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Available for service
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Service</CardTitle>
-            <Clock className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {statistics.inService}
-            </div>
-            <p className="text-xs text-muted-foreground">Currently on trips</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {statistics.inactive}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Maintenance or retired
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters and Search */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h3 className="text-lg font-semibold">Vehicles</h3>
-              {hasActiveFilters && (
-                <Badge variant="secondary" className="gap-1">
-                  {filteredVehicles.length} of {vehicles?.length || 0}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode("table")}
-                className={viewMode === "table" ? "bg-muted" : ""}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode("cards")}
-                className={viewMode === "cards" ? "bg-muted" : ""}
-              >
-                <Grid className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <VehicleFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            typeFilter={typeFilter}
-            setTypeFilter={setTypeFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            onClearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
-          />
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <VehicleFilters
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          onClearFilters={clearFilters}
+          hasActiveFilters={hasActiveFilters}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+        />
+      </div>
 
       {/* Content */}
       <Card>
@@ -314,15 +227,15 @@ export default function Vehicles() {
             <VehiclesLoading />
           ) : error ? (
             <VehiclesError />
-          ) : filteredVehicles && filteredVehicles.length > 0 ? (
+          ) : paginatedVehicles && paginatedVehicles.length > 0 ? (
             viewMode === "table" ? (
               <VehicleTable
-                vehicles={filteredVehicles}
+                vehicles={paginatedVehicles}
                 onVehicleClick={handleVehicleClick}
               />
             ) : (
               <VehicleCards
-                vehicles={filteredVehicles}
+                vehicles={paginatedVehicles}
                 onVehicleClick={handleVehicleClick}
               />
             )
@@ -331,6 +244,106 @@ export default function Vehicles() {
           )}
         </CardContent>
       </Card>
+
+      {/* Results Count and Pagination Info */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Showing {startIndex + 1}-
+            {Math.min(endIndex, filteredVehicles.length)} of{" "}
+            {filteredVehicles.length} vehicles
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="h-8 px-3"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                if (totalPages <= 5) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                }
+
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                }
+
+                if (
+                  pageNum === currentPage - 2 ||
+                  pageNum === currentPage + 2
+                ) {
+                  return (
+                    <span key={pageNum} className="px-2 text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="h-8 px-3"
+            >
+              Next
+            </Button>
+          </div>
+
+          {/* Timestamp at bottom */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>•</span>
+            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
+      )}
 
       {/* Dialogs */}
       <VehicleFormDialog open={formOpen} onOpenChange={setFormOpen} />

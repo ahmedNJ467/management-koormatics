@@ -36,13 +36,18 @@ export function DriverFormDialog({
     setIsSubmitting,
     avatarFile,
     documentFile,
+    airportIdFile,
     avatarPreview,
     setAvatarPreview,
     documentName,
     setDocumentName,
+    airportIdName,
+    setAirportIdName,
     handleAvatarChange,
     handleDocumentChange,
     clearDocument,
+    handleAirportIdChange,
+    clearAirportId,
   } = useDriverForm(driver);
 
   useEffect(() => {
@@ -54,10 +59,14 @@ export function DriverFormDialog({
         license_type: driver.license_type,
         license_expiry: driver.license_expiry,
         status: driver.status,
+        is_vip: driver.is_vip || false,
       });
       setAvatarPreview(driver.avatar_url);
       setDocumentName(
         driver.document_url ? driver.document_url.split("/").pop() : null
+      );
+      setAirportIdName(
+        driver.airport_id_url ? driver.airport_id_url.split("/").pop() : null
       );
     } else {
       form.reset({
@@ -67,11 +76,13 @@ export function DriverFormDialog({
         license_type: "",
         license_expiry: "",
         status: "active",
+        is_vip: false,
       });
       setAvatarPreview(null);
       setDocumentName(null);
+      setAirportIdName(null);
     }
-  }, [driver, form, setAvatarPreview, setDocumentName]);
+      }, [driver, form, setAvatarPreview, setDocumentName, setAirportIdName]);
 
   async function onSubmit(values: DriverFormValues) {
     setIsSubmitting(true);
@@ -86,6 +97,7 @@ export function DriverFormDialog({
         license_type: values.license_type,
         license_expiry: values.license_expiry,
         status: values.status,
+        is_vip: values.is_vip,
       };
 
       let driverId: string;
@@ -126,6 +138,19 @@ export function DriverFormDialog({
             driverId,
             "document"
           );
+        }
+        if (airportIdFile) {
+          const airportIdUrl = await uploadDriverFile(
+            airportIdFile,
+            "driver-airport-ids",
+            driverId,
+            "airport-id"
+          );
+          // Update the driver with airport ID URL
+          await supabase
+            .from("drivers")
+            .update({ airport_id_url: airportIdUrl })
+            .eq("id", driverId);
         }
 
         if (avatarUrl || documentUrl) {
@@ -188,9 +213,12 @@ export function DriverFormDialog({
             isSubmitting={isSubmitting}
             avatarPreview={avatarPreview}
             documentName={documentName}
+            airportIdName={airportIdName}
             onAvatarChange={handleAvatarChange}
             onDocumentChange={handleDocumentChange}
             onDocumentClear={clearDocument}
+            onAirportIdChange={handleAirportIdChange}
+            onAirportIdClear={clearAirportId}
             onCancel={() => onOpenChange(false)}
             onDelete={() => setShowDeleteDialog(true)}
             onSubmit={onSubmit}

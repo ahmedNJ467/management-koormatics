@@ -1,4 +1,5 @@
 import { memo, useCallback } from "react";
+import Lightbox from "@/components/ui/Lightbox";
 import {
   Table,
   TableBody,
@@ -57,6 +58,19 @@ export const VehicleTable = memo(
           return "bg-orange-100 text-orange-800 border-orange-200";
         default:
           return "bg-gray-100 text-gray-800 border-gray-200";
+      }
+    };
+
+    const getStatusText = (status: string) => {
+      switch (status) {
+        case "active":
+          return "Active";
+        case "in_service":
+          return "In Service";
+        case "inactive":
+          return "Inactive";
+        default:
+          return "Unknown";
       }
     };
 
@@ -167,20 +181,17 @@ export const VehicleTable = memo(
                         {vehicle.vehicle_images &&
                         Array.isArray(vehicle.vehicle_images) &&
                         vehicle.vehicle_images.length > 0 ? (
-                          <img
+                          <Lightbox
                             src={vehicle.vehicle_images[0]?.image_url || ""}
                             alt={`${safeString(
                               vehicle.make,
                               "Vehicle"
                             )} ${safeString(vehicle.model)}`}
-                            className="w-12 h-12 rounded-lg object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
+                            className="w-24 h-16 object-cover rounded-none"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                            <Car className="h-6 w-6 text-muted-foreground" />
+                          <div className="w-24 h-16 bg-muted flex items-center justify-center rounded-none">
+                            <Car className="h-8 w-8 text-muted-foreground" />
                           </div>
                         )}
                       </div>
@@ -199,7 +210,7 @@ export const VehicleTable = memo(
                     <div className="flex items-center gap-2">
                       {getTypeIcon(vehicle.type)}
                       <span className="capitalize">
-                        {safeReplace(vehicle.type)}
+                        {vehicle.type ? vehicle.type.replace("_", " ") : "N/A"}
                       </span>
                     </div>
                   </TableCell>
@@ -210,7 +221,7 @@ export const VehicleTable = memo(
                         variant="outline"
                         className={`text-xs ${getStatusColor(vehicle.status)}`}
                       >
-                        {safeReplace(vehicle.status)}
+                        {getStatusText(vehicle.status)}
                       </Badge>
                     </div>
                   </TableCell>

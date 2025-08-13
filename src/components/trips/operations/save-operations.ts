@@ -30,7 +30,7 @@ export const handleSaveTrip = async (
   const form = event.currentTarget;
   const formData = new FormData(form);
 
-  const uiServiceType = formData.get("service_type") as string;
+  const uiServiceType = (formData.get("service_type") as string) || "one_way";
 
   const tripType: TripType = (serviceTypeMap[uiServiceType] ||
     "other") as TripType;
@@ -90,9 +90,7 @@ export const handleSaveTrip = async (
 
   // Parse intermediate stops (array of strings). Inputs are named stops[]
   const rawStops = formData.getAll("stops[]") as string[];
-  const stops = rawStops
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  const stops = rawStops.map((s) => s.trim()).filter((s) => s.length > 0);
 
   if (passportDocsValue) {
     try {
@@ -114,7 +112,8 @@ export const handleSaveTrip = async (
   const amount = amountValue ? parseFloat(amountValue) : 0;
 
   // Parse vehicle count inputs
-  const softSkinCount = parseInt(formData.get("soft_skin_count") as string) || 0;
+  const softSkinCount =
+    parseInt(formData.get("soft_skin_count") as string) || 0;
   const armouredCount = parseInt(formData.get("armoured_count") as string) || 0;
 
   // Sanitize vehicle_type – convert empty string to null so Postgres enum isn't violated
@@ -146,36 +145,62 @@ export const handleSaveTrip = async (
   );
 
   try {
+    // Basic validation for required fields
+    const clientId = (formData.get("client_id") as string) || "";
+    const dateField = (formData.get("date") as string) || "";
+    if (!clientId) {
+      toast({
+        title: "Missing client",
+        description: "Please select a client before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!dateField) {
+      toast({
+        title: "Missing date",
+        description: "Please select a trip date before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (editTrip) {
+      const baseUpdate: any = {
+        client_id: clientId,
+        date: dateField,
+        service_type: dbServiceType,
+        amount: amount,
+        status: statusValue,
+      };
+      if (timeValue) baseUpdate.time = timeValue;
+      if (needsReturnTime && returnTimeValue)
+        baseUpdate.return_time = returnTimeValue;
+      const pickup = (formData.get("pickup_location") as string) || "";
+      const dropoff = (formData.get("dropoff_location") as string) || "";
+      if (pickup) baseUpdate.pickup_location = pickup;
+      if (dropoff) baseUpdate.dropoff_location = dropoff;
+      if (notes) baseUpdate.notes = notes;
+      if (flightNumber) baseUpdate.flight_number = flightNumber;
+      if (airline) baseUpdate.airline = airline;
+      if (terminal) baseUpdate.terminal = terminal;
+      if (passengers.length > 0) baseUpdate.passengers = passengers;
+      if (vehicleType) baseUpdate.vehicle_type = vehicleType;
+      if (passportDocuments.length > 0)
+        baseUpdate.passport_documents = passportDocuments;
+      if (invitationDocuments.length > 0)
+        baseUpdate.invitation_documents = invitationDocuments;
+      // Escort fields: always set boolean; set count only when enabled, otherwise null
+      baseUpdate.has_security_escort = hasSecurityEscort;
+      baseUpdate.escort_count = hasSecurityEscort
+        ? Math.max(1, escortCount || 1)
+        : (null as any);
+      if (softSkinCount) baseUpdate.soft_skin_count = softSkinCount;
+      if (armouredCount) baseUpdate.armoured_count = armouredCount;
+      if (stops.length > 0) baseUpdate.stops = stops;
+
       const { error } = await supabase
         .from("trips")
-        .update({
-          client_id: formData.get("client_id") as string,
-          date: formData.get("date") as string,
-          time: timeValue || null,
-          return_time: needsReturnTime ? returnTimeValue || null : null,
-          service_type: dbServiceType,
-          pickup_location: (formData.get("pickup_location") as string) || null,
-          dropoff_location:
-            (formData.get("dropoff_location") as string) || null,
-          notes: notes || null,
-          status: statusValue,
-          flight_number: flightNumber,
-          airline: airline,
-          terminal: terminal,
-          passengers: passengers.length > 0 ? passengers : null,
-          amount: amount,
-          vehicle_type: vehicleType,
-          passport_documents:
-            passportDocuments.length > 0 ? passportDocuments : null,
-          invitation_documents:
-            invitationDocuments.length > 0 ? invitationDocuments : null,
-          has_security_escort: hasSecurityEscort,
-          escort_count: escortCount,
-          soft_skin_count: softSkinCount,
-          armoured_count: armouredCount,
-          stops: stops.length > 0 ? stops : null,
-        })
+        .update(baseUpdate)
         .eq("id", editTrip.id);
 
       if (error) throw error;
@@ -254,34 +279,40 @@ export const handleSaveTrip = async (
 
       setBookingOpen(false);
     } else {
-      const tripData = {
-        client_id: formData.get("client_id") as string,
-        date: formData.get("date") as string,
-        time: timeValue || null,
-        return_time: needsReturnTime ? returnTimeValue || null : null,
+      const tripData: any = {
+        client_id: clientId,
+        date: dateField,
         service_type: dbServiceType,
-        amount: amount,
-        pickup_location: (formData.get("pickup_location") as string) || null,
-        dropoff_location: (formData.get("dropoff_location") as string) || null,
-        notes: notes || null,
+        amount,
         status: "scheduled" as any,
-        flight_number: flightNumber,
-        airline: airline,
-        terminal: terminal,
-        passengers: passengers.length > 0 ? passengers : null,
-        passport_documents:
-          passportDocuments.length > 0 ? passportDocuments : null,
-        invitation_documents:
-          invitationDocuments.length > 0 ? invitationDocuments : null,
-        vehicle_type: vehicleType,
         driver_id: null,
         vehicle_id: null,
-        has_security_escort: hasSecurityEscort,
-        escort_count: escortCount,
-        soft_skin_count: softSkinCount,
-        armoured_count: armouredCount,
-        stops: stops.length > 0 ? stops : null,
       };
+      if (timeValue) tripData.time = timeValue;
+      if (needsReturnTime && returnTimeValue)
+        tripData.return_time = returnTimeValue;
+      const pickup = (formData.get("pickup_location") as string) || "";
+      const dropoff = (formData.get("dropoff_location") as string) || "";
+      if (pickup) tripData.pickup_location = pickup;
+      if (dropoff) tripData.dropoff_location = dropoff;
+      if (notes) tripData.notes = notes;
+      if (flightNumber) tripData.flight_number = flightNumber;
+      if (airline) tripData.airline = airline;
+      if (terminal) tripData.terminal = terminal;
+      if (passengers.length > 0) tripData.passengers = passengers;
+      if (passportDocuments.length > 0)
+        tripData.passport_documents = passportDocuments;
+      if (invitationDocuments.length > 0)
+        tripData.invitation_documents = invitationDocuments;
+      if (vehicleType) tripData.vehicle_type = vehicleType;
+      // Escort fields: always set boolean; set count only when enabled, otherwise null
+      tripData.has_security_escort = hasSecurityEscort;
+      tripData.escort_count = hasSecurityEscort
+        ? Math.max(1, escortCount || 1)
+        : (null as any);
+      if (softSkinCount) tripData.soft_skin_count = softSkinCount;
+      if (armouredCount) tripData.armoured_count = armouredCount;
+      if (stops.length > 0) tripData.stops = stops;
 
       const { data, error } = await supabase
         .from("trips")
@@ -319,7 +350,7 @@ export const handleSaveTrip = async (
     console.error("Error saving trip:", error);
     toast({
       title: "Error",
-      description: "Failed to save trip details",
+      description: (error as any)?.message || "Failed to save trip details",
       variant: "destructive",
     });
   }

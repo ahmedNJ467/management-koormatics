@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
+import { useTenantScope } from "@/hooks/use-tenant-scope";
+import { preloadByPath } from "@/routes/pages";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRole } from "@/hooks/useRole";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -29,19 +32,19 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { domain } = useTenantScope();
+  const { hasRole } = useRole();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const handleProfileClick = () => {
-    // Navigate to profile page
-    window.location.href = "/profile";
+    navigate("/profile");
   };
 
   const handleSettingsClick = () => {
-    // Navigate to settings page
-    window.location.href = "/settings";
+    navigate("/settings");
   };
 
   const handleLogoutClick = async () => {
@@ -89,18 +92,25 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   }
 
   return (
-    <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-40">
       <div className="flex h-16 items-center px-4 gap-4">
         <Button variant="ghost" size="icon" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
 
-        <Link to="/dashboard" className="flex items-center">
+        <Link
+          to="/dashboard"
+          className="flex items-center"
+          onMouseEnter={() => preloadByPath("/dashboard")}
+        >
           <img
             src="/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png"
             alt="Koormatics Logo"
             className="h-8 object-contain"
           />
+          <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+            /{domain}
+          </span>
         </Link>
 
         <div className="flex-1 flex justify-center max-w-sm mx-auto">
@@ -148,10 +158,12 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSettingsClick}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
+              {hasRole("super_admin") && (
+                <DropdownMenuItem onClick={handleSettingsClick}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogoutClick}>
                 <LogOut className="mr-2 h-4 w-4" />

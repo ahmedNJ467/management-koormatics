@@ -1,12 +1,7 @@
 import { Button } from "@/components/ui/button";
-import {
-  Calendar,
-  List,
-  PlusCircle,
-  BarChart,
-  ChevronLeft,
-} from "lucide-react";
+import { Calendar, List, PlusCircle, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { preloadByPath } from "@/routes/pages";
 
 interface TripHeaderProps {
   calendarView: boolean;
@@ -24,7 +19,11 @@ export function TripHeader({
   return (
     <div className="flex flex-col gap-4">
       {isAnalyticsView && (
-        <Link to="/trips" className="-mt-2 -ml-1 mb-2">
+        <Link
+          to="/trips"
+          className="-mt-2 -ml-1 mb-2"
+          onMouseEnter={() => preloadByPath("/trips")}
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -38,29 +37,13 @@ export function TripHeader({
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">
+          <h2 className="text-xl font-semibold tracking-tight">
             {isAnalyticsView ? "Trip Analytics" : "Trips"}
           </h2>
-          {isAnalyticsView ? (
-            <p className="text-muted-foreground">
-              Analyze trends and performance metrics
-            </p>
-          ) : (
-            <p className="text-muted-foreground">
-              Manage and track your fleet trips
-            </p>
-          )}
         </div>
 
         {!isAnalyticsView ? (
           <div className="flex items-center gap-2">
-            <Link to="/trip-analytics">
-              <Button variant="outline" size="sm">
-                <BarChart className="mr-2 h-4 w-4" />
-                Analytics
-              </Button>
-            </Link>
-            <div className="border-r h-8 mx-1" />
             <Button
               variant="outline"
               size="sm"
@@ -79,7 +62,7 @@ export function TripHeader({
               <Calendar className="mr-2 h-4 w-4" />
               Calendar
             </Button>
-            <Button onClick={() => setBookingOpen(true)}>
+            <Button variant="outline" onClick={() => setBookingOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               New Trip
             </Button>

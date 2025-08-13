@@ -5,7 +5,10 @@ import { DisplayTrip } from "@/lib/types/trip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Clock } from "lucide-react";
-import { isResourceAvailable } from "@/lib/utils/availability-utils";
+import {
+  getExpectedTripEnd,
+  isResourceAvailable,
+} from "@/lib/utils/availability-utils";
 
 interface DriverStatusProps {
   drivers: Driver[];
@@ -71,7 +74,36 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
     return availabilities;
   }, [vehicles, trips]);
 
-  // Determine driver availability based on time-based rules
+  // Count vehicles actively assigned as escorts in active trips only
+  const activeEscortCount = useMemo(() => {
+    try {
+      return (vehicles || []).reduce((count, v) => {
+        const isActiveEscort = (trips || []).some(
+          (t) =>
+            (t.status === "in_progress" || t.status === "scheduled") &&
+            Array.isArray(t.escort_vehicle_ids) &&
+            (t.escort_vehicle_ids as any[]).map(String).includes(String(v.id))
+        );
+        return count + (isActiveEscort ? 1 : 0);
+      }, 0);
+    } catch (_) {
+      return 0;
+    }
+  }, [vehicles, trips]);
+
+  // Helpers to determine if a conflicting trip has actually started
+  const getTripStart = (t: DisplayTrip) => {
+    const tripDateStr = t.date.split("T")[0];
+    const startStr = t.time ? `${tripDateStr} ${t.time}` : undefined;
+    return startStr ? new Date(startStr) : new Date(t.date);
+  };
+  const hasTripStarted = (t?: DisplayTrip | null) => {
+    if (!t) return false;
+    const start = getTripStart(t);
+    return new Date() >= start;
+  };
+
+  // Determine driver availability based on time-based rules, mirroring vehicle logic
   const getDriverAvailability = (driverId: string) => {
     return driverAvailabilities.get(driverId) || { isAvailable: true };
   };
@@ -85,7 +117,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
   const getVehicleAssignmentType = (vehicleId: string) => {
     const vehicle = vehicles.find((v) => v.id === vehicleId);
 
-    // Check if assigned as primary vehicle to any active trip
+    // Check if assigned as primary vehicle to any ACTIVE trip only
     const hasPrimaryAssignment = trips.some(
       (trip) =>
         trip.vehicle_id === vehicleId &&
@@ -94,7 +126,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
 
     if (hasPrimaryAssignment) return "Assigned";
 
-    // Check if assigned as escort to any active trip
+    // Check if assigned as escort to any ACTIVE trip only
     const hasEscortAssignment = trips.some(
       (trip) =>
         trip.escort_vehicle_ids &&
@@ -106,7 +138,7 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
     if (hasEscortAssignment) return "Escort";
 
     // Check database escort assignment status as fallback
-    // Only trust this if the escort_trip_id corresponds to an active trip
+    // Only trust this if the escort_trip_id corresponds to an ACTIVE trip
     if (vehicle?.is_escort_assigned && vehicle?.escort_trip_id) {
       const escortTripExists = trips.some(
         (trip) =>
@@ -115,6 +147,11 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
       );
 
       if (escortTripExists) return "Escort";
+
+      // If escort trip is not active, clear the assignment
+      console.warn(
+        `Vehicle ${vehicleId} has orphaned escort assignment to cancelled/completed trip ${vehicle.escort_trip_id}`
+      );
     }
 
     return "Available";
@@ -184,6 +221,10 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
         <div className="space-y-3">
           {drivers.map((driver) => {
             const availability = getDriverAvailability(driver.id);
+            const conflictingTrip = availability.conflictingTrip as
+              | DisplayTrip
+              | undefined;
+            const started = hasTripStarted(conflictingTrip);
 
             return (
               <div
@@ -206,11 +247,38 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                       <Phone className="h-3 w-3" />
                       {formatPhoneNumber(driver.contact)}
                     </div>
-                    {!availability.isAvailable && availability.reason && (
-                      <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {availability.reason}
-                      </div>
+                    {!availability.isAvailable && (
+                      <>
+                        {(() => {
+                          const reason = availability.reason || "";
+                          const isCurrentTripReason = reason
+                            .toLowerCase()
+                            .startsWith("currently on trip");
+                          return reason && !isCurrentTripReason ? (
+                            <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {reason}
+                            </div>
+                          ) : null;
+                        })()}
+                        {availability.conflictingTrip && started && (
+                          <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {(() => {
+                              const t = availability.conflictingTrip;
+                              const end = getExpectedTripEnd(t);
+                              return `On trip until ${end.toLocaleTimeString(
+                                "en-US",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }
+                              )}`;
+                            })()}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -219,14 +287,16 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                   <Badge
                     variant="outline"
                     className={`${
-                      availability.isAvailable
-                        ? "bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/40"
-                        : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40"
+                      availability.isAvailable || !started
+                        ? "bg-emerald-500/12 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30"
+                        : "bg-amber-500/12 text-amber-700 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
                     }`}
                   >
-                    {availability.isAvailable ? "Available" : "Busy"}
+                    {availability.isAvailable || !started
+                      ? "Available"
+                      : "Busy"}
                   </Badge>
-                  {availability.availableAt && !availability.isAvailable && (
+                  {availability.availableAt && !started && (
                     <div className="text-xs text-muted-foreground">
                       Available:{" "}
                       {availability.availableAt.toLocaleTimeString("en-US", {
@@ -245,10 +315,9 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
 
       <h3 className="text-lg font-medium text-card-foreground mb-4 mt-6">
         Vehicles ({displayVehicles.length})
-        {vehicles.filter((v) => v.is_escort_assigned).length > 0 && (
+        {activeEscortCount > 0 && (
           <span className="text-xs text-red-600 ml-2">
-            ({vehicles.filter((v) => v.is_escort_assigned).length} on escort
-            duty)
+            ({activeEscortCount} on escort duty)
           </span>
         )}
       </h3>
@@ -267,11 +336,17 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
               .filter((trip) => {
                 const tripDate = new Date(trip.date);
                 tripDate.setHours(0, 0, 0, 0);
+                const escortIds = Array.isArray(trip.escort_vehicle_ids)
+                  ? (trip.escort_vehicle_ids as any[]).map(String)
+                  : [];
+                const inCarrier = Array.isArray(trip.assigned_vehicle_ids)
+                  ? (trip.assigned_vehicle_ids as string[]).includes(vehicle.id)
+                  : false;
+                const inEscort = escortIds.includes(String(vehicle.id));
+                const isAssigned =
+                  trip.vehicle_id === vehicle.id || inCarrier || inEscort;
                 return (
-                  (trip.vehicle_id === vehicle.id ||
-                    (trip.escort_vehicle_ids &&
-                      Array.isArray(trip.escort_vehicle_ids) &&
-                      trip.escort_vehicle_ids.includes(vehicle.id))) &&
+                  isAssigned &&
                   (trip.status === "scheduled" ||
                     trip.status === "in_progress") &&
                   tripDate > today // strictly in the future
@@ -289,11 +364,17 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
               }`;
             }
             isCurrentlyOnTrip = trips.some((trip) => {
+              const escortIds = Array.isArray(trip.escort_vehicle_ids)
+                ? (trip.escort_vehicle_ids as any[]).map(String)
+                : [];
+              const inCarrier = Array.isArray(trip.assigned_vehicle_ids)
+                ? (trip.assigned_vehicle_ids as string[]).includes(vehicle.id)
+                : false;
+              const inEscort = escortIds.includes(String(vehicle.id));
+              const isAssigned =
+                trip.vehicle_id === vehicle.id || inCarrier || inEscort;
               if (
-                (trip.vehicle_id === vehicle.id ||
-                  (trip.escort_vehicle_ids &&
-                    Array.isArray(trip.escort_vehicle_ids) &&
-                    trip.escort_vehicle_ids.includes(vehicle.id))) &&
+                isAssigned &&
                 (trip.status === "in_progress" || trip.status === "scheduled")
               ) {
                 const tripDateStr = trip.date.split("T")[0];
@@ -316,10 +397,16 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
               }
               return false;
             });
-            let badgeText = isCurrentlyOnTrip ? "On a Trip" : "Available";
-            let badgeClass = isCurrentlyOnTrip
-              ? "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40"
-              : "bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/40";
+            const isBusy = isCurrentlyOnTrip || !availability.isAvailable;
+            const badgeText = isCurrentlyOnTrip
+              ? "On Trip"
+              : isBusy
+              ? "Busy"
+              : "Available";
+            const badgeClass =
+              isCurrentlyOnTrip || isBusy
+                ? "bg-amber-500/12 text-amber-700 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
+                : "bg-emerald-500/12 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30";
             return (
               <div
                 key={vehicle.id}
@@ -328,19 +415,14 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                 <div className="flex-1">
                   <div className="font-medium text-card-foreground">
                     {vehicle.make} {vehicle.model}
-                    {vehicle.type && (
-                      <Badge
-                        variant={
-                          vehicle.type === "armoured" ? "default" : "secondary"
-                        }
-                        className="text-xs ml-2"
-                      >
-                        {vehicle.type === "armoured" ? "Armoured" : "Soft Skin"}
-                      </Badge>
-                    )}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {vehicle.registration}
+                    {vehicle.type && (
+                      <span className="ml-2 text-muted-foreground">
+                        {vehicle.type === "armoured" ? "Armoured" : "Soft Skin"}
+                      </span>
+                    )}
                     {(() => {
                       const escortInfo = getEscortTripDetails(vehicle.id);
                       return escortInfo ? (
@@ -356,7 +438,47 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
                     {isCurrentlyOnTrip && (
                       <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Currently on trip (until ...)
+                        {(() => {
+                          // Find the active trip for this vehicle and show its expected end time
+                          const activeTrip = trips.find((trip) => {
+                            const escortIds = Array.isArray(
+                              trip.escort_vehicle_ids
+                            )
+                              ? (trip.escort_vehicle_ids as any[]).map(String)
+                              : [];
+                            const inCarrier = Array.isArray(
+                              trip.assigned_vehicle_ids
+                            )
+                              ? (
+                                  trip.assigned_vehicle_ids as string[]
+                                ).includes(vehicle.id)
+                              : false;
+                            const inEscort = escortIds.includes(
+                              String(vehicle.id)
+                            );
+                            const isAssigned =
+                              trip.vehicle_id === vehicle.id ||
+                              inCarrier ||
+                              inEscort;
+                            return (
+                              isAssigned &&
+                              (trip.status === "in_progress" ||
+                                trip.status === "scheduled")
+                            );
+                          });
+                          if (activeTrip) {
+                            const end = getExpectedTripEnd(activeTrip);
+                            return `On trip until ${end.toLocaleTimeString(
+                              "en-US",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              }
+                            )}`;
+                          }
+                          return "Currently on trip";
+                        })()}
                       </div>
                     )}
                     {!availability.isAvailable &&

@@ -23,6 +23,7 @@ import {
   TrendingUp,
   AlertTriangle,
   MoreVertical,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { FuelLog } from "@/lib/types";
@@ -60,10 +61,10 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
-  getFuelTanks,
-  getTankFills,
-  getTankDispensed,
-  addTankFill,
+  getFuelStorages,
+  getFuelFills,
+  getStorageDispensed,
+  addFuelFill,
   broadcastTankUpdate,
 } from "@/components/fuel-log-form/services/fuel-log-service";
 import {
@@ -189,6 +190,19 @@ export default function FuelLogs() {
       return true;
     });
   }, [fuelLogs, searchTerm, vehicleFilter, fuelTypeFilter, dateRange]);
+
+  // Pagination logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const fuelLogsPerPage = 20;
+  const totalPages = Math.ceil(filteredFuelLogs.length / fuelLogsPerPage);
+  const startIndex = (currentPage - 1) * fuelLogsPerPage;
+  const endIndex = startIndex + fuelLogsPerPage;
+  const paginatedFuelLogs = filteredFuelLogs.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, vehicleFilter, fuelTypeFilter, dateRange]);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
@@ -357,17 +371,17 @@ export default function FuelLogs() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [allTankFills, setAllTankFills] = useState([]);
 
-  // Function to fetch and update tank data
+  // Function to fetch and update fuel storage data
   const fetchTankData = async () => {
     try {
-      const tanks = await getFuelTanks();
+      const tanks = await getFuelStorages();
       setTanks(tanks);
       const stats = {};
       const allFills = [];
 
       for (const tank of tanks) {
-        const fills = await getTankFills(tank.id);
-        const dispensed = await getTankDispensed(tank.id);
+        const fills = await getFuelFills(tank.id);
+        const dispensed = await getStorageDispensed(tank.id);
         const totalFilled = fills.reduce((sum, f) => sum + (f.amount || 0), 0);
         const lastFill = fills[0];
         stats[tank.id] = {
@@ -395,23 +409,23 @@ export default function FuelLogs() {
     fetchTankData();
   }, []);
 
-  // Listen for tank update events from fuel log form
+  // Listen for fuel storage update events from fuel log form
   useEffect(() => {
     const handleTankUpdate = () => {
-      console.log("Tank update event received, refreshing tank data...");
+      console.log("Fuel storage update event received, refreshing data...");
       fetchTankData();
     };
 
-    window.addEventListener("tankDataUpdate", handleTankUpdate);
+    window.addEventListener("fuelStorageDataUpdate", handleTankUpdate);
 
     return () => {
-      window.removeEventListener("tankDataUpdate", handleTankUpdate);
+      window.removeEventListener("fuelStorageDataUpdate", handleTankUpdate);
     };
   }, []);
 
   useEffect(() => {
     if (selectedTankId) {
-      getTankFills(selectedTankId).then(setTankFills);
+      getFuelFills(selectedTankId).then(setTankFills);
     }
   }, [selectedTankId, showFillDialog]);
 
@@ -469,8 +483,8 @@ export default function FuelLogs() {
   const handleAddFill = async () => {
     if (!selectedTankId) {
       toast({
-        title: "No Tank Selected",
-        description: "Please select a tank before saving a fill.",
+        title: "No Storage Selected",
+        description: "Please select a storage before saving a fill.",
         variant: "destructive",
       });
       return;
@@ -511,8 +525,8 @@ export default function FuelLogs() {
           .eq("id", editingFill.id);
       } else {
         // Add new fill
-        await addTankFill({
-          tank_id: selectedTankId!,
+        await addFuelFill({
+          fuel_management_id: selectedTankId!,
           fill_date: fillForm.fill_date,
           amount: Number(fillForm.amount),
           cost_per_liter: Number(fillForm.cost_per_liter) || null,
@@ -532,16 +546,16 @@ export default function FuelLogs() {
       });
       setEditingFill(null);
       // Refresh tank stats and fills
-      if (selectedTankId) getTankFills(selectedTankId).then(setTankFills);
+      if (selectedTankId) getFuelFills(selectedTankId).then(setTankFills);
       // Also refresh all tank stats
-      const refreshedTanks = await getFuelTanks();
+      const refreshedTanks = await getFuelStorages();
       setTanks(refreshedTanks);
       const stats = {};
       const allFills = [];
 
       for (const tank of refreshedTanks) {
-        const fills = await getTankFills(tank.id);
-        const dispensed = await getTankDispensed(tank.id);
+        const fills = await getFuelFills(tank.id);
+        const dispensed = await getStorageDispensed(tank.id);
         const totalFilled = fills.reduce((sum, f) => sum + (f.amount || 0), 0);
         const lastFill = fills[0];
         stats[tank.id] = {
@@ -623,16 +637,16 @@ export default function FuelLogs() {
     await supabase.from("tank_fills").delete().eq("id", editingFill.id);
     setShowDeleteDialog(false);
     setEditingFill(null);
-    if (selectedTankId) getTankFills(selectedTankId).then(setTankFills);
+    if (selectedTankId) getFuelFills(selectedTankId).then(setTankFills);
     // Refresh tank stats
-    const refreshedTanks = await getFuelTanks();
+    const refreshedTanks = await getFuelStorages();
     setTanks(refreshedTanks);
     const stats = {};
     const allFills = [];
 
     for (const tank of refreshedTanks) {
-      const fills = await getTankFills(tank.id);
-      const dispensed = await getTankDispensed(tank.id);
+      const fills = await getFuelFills(tank.id);
+      const dispensed = await getStorageDispensed(tank.id);
       const totalFilled = fills.reduce((sum, f) => sum + (f.amount || 0), 0);
       const lastFill = fills[0];
       stats[tank.id] = {
@@ -659,24 +673,17 @@ export default function FuelLogs() {
       onValueChange={setActiveTab}
       className="space-y-8 animate-fade-in"
     >
-      <TabsList className="mb-6">
-        <TabsTrigger value="logs">Fuel Logs</TabsTrigger>
-        <TabsTrigger value="tanks">Tank Management</TabsTrigger>
-      </TabsList>
-      <TabsContent value="logs">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-12">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Fuel Logs</h2>
-            <p className="text-muted-foreground">
-              Track fuel consumption and costs
-            </p>
-          </div>
+      <div className="flex items-center justify-between mb-6">
+        <TabsList>
+          <TabsTrigger value="logs">Fuel Logs</TabsTrigger>
+          <TabsTrigger value="tanks">Fuel Management</TabsTrigger>
+        </TabsList>
+        {activeTab === "logs" && (
           <div className="flex gap-2">
             <Button
               variant="outline"
-              size="lg"
-              className="gap-2 text-white border-white/20"
+              size="sm"
+              className="gap-2 text-foreground border-border/50"
               onClick={exportToCSV}
             >
               <Download className="mr-2 h-4 w-4" /> Export
@@ -684,93 +691,45 @@ export default function FuelLogs() {
             <Button
               onClick={() => setFormOpen(true)}
               variant="outline"
-              size="lg"
-              className="gap-2 text-white border-white/20"
+              size="sm"
+              className="gap-2 text-foreground border-border/50"
             >
-              <Plus className="mr-2 h-4 w-4" /> Add Log
+              Add Log
             </Button>
           </div>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-400">
-                Total Logs
-              </CardTitle>
-              <Fuel className="h-4 w-4 text-blue-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-300">
-                {summaryStats.totalLogs}
-              </div>
-              <p className="text-xs text-blue-400/70">
-                {summaryStats.recentLogs} in last 7 days
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-400">
-                Total Cost
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-green-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-300">
-                ${summaryStats.totalCost.toFixed(2)}
-              </div>
-              <p className="text-xs text-green-400/70">
-                {summaryStats.highCostLogs} logs above $100
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-purple-400">
-                Total Volume
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-300">
-                {summaryStats.totalVolume.toFixed(1)}L
-              </div>
-              <p className="text-xs text-purple-400/70">
-                Avg: ${summaryStats.averageCostPerLiter.toFixed(2)}/L
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
+        )}
+      </div>
+      <TabsContent value="logs">
         {/* Search and Filters */}
-        <Card className="bg-card/50 border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Search & Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <div className="space-y-4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search Section */}
+            <div className="flex-1 relative group">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="Search by vehicle, registration, or fuel type..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-9 h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
               />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1 h-7 w-7 p-0 hover:bg-muted/50"
+                  onClick={() => setSearchTerm("")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
             </div>
 
-            {/* Filter Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Filters Section */}
+            <div className="flex items-center gap-3">
               <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Vehicles" />
+                <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Vehicle" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Vehicles</SelectItem>
@@ -783,8 +742,8 @@ export default function FuelLogs() {
               </Select>
 
               <Select value={fuelTypeFilter} onValueChange={setFuelTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Fuel Types" />
+                <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+                  <SelectValue placeholder="Fuel Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Fuel Types</SelectItem>
@@ -797,41 +756,38 @@ export default function FuelLogs() {
               </Select>
 
               <DateRangePicker value={dateRange} onChange={setDateRange} />
-
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                disabled={!hasActiveFilters}
-                className="gap-2"
-              >
-                Clear Filters
-              </Button>
             </div>
+          </div>
 
-            {/* Active Filters Display */}
-            {hasActiveFilters && (
+          {/* Active Filters Display */}
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between pt-3 border-t border-border/20">
               <div className="flex flex-wrap gap-2">
                 {searchTerm && (
                   <Badge variant="secondary" className="gap-1">
                     Search: "{searchTerm}"
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
                       onClick={() => setSearchTerm("")}
-                      className="ml-1 hover:text-destructive"
                     >
-                      ×
-                    </button>
+                      <X className="h-3 w-3" />
+                    </Button>
                   </Badge>
                 )}
                 {vehicleFilter !== "all" && (
                   <Badge variant="secondary" className="gap-1">
                     Vehicle:{" "}
                     {vehicles.find((v) => v.id === vehicleFilter)?.name}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
                       onClick={() => setVehicleFilter("all")}
-                      className="ml-1 hover:text-destructive"
                     >
-                      ×
-                    </button>
+                      <X className="h-3 w-3" />
+                    </Button>
                   </Badge>
                 )}
                 {fuelTypeFilter !== "all" && (
@@ -839,12 +795,14 @@ export default function FuelLogs() {
                     Fuel:{" "}
                     {fuelTypeFilter.charAt(0).toUpperCase() +
                       fuelTypeFilter.slice(1)}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
                       onClick={() => setFuelTypeFilter("all")}
-                      className="ml-1 hover:text-destructive"
                     >
-                      ×
-                    </button>
+                      <X className="h-3 w-3" />
+                    </Button>
                   </Badge>
                 )}
                 {(dateRange?.from || dateRange?.to) && (
@@ -854,199 +812,224 @@ export default function FuelLogs() {
                       ? format(dateRange.from, "MMM dd")
                       : "Start"}{" "}
                     - {dateRange.to ? format(dateRange.to, "MMM dd") : "End"}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
                       onClick={() => setDateRange(undefined)}
-                      className="ml-1 hover:text-destructive"
                     >
-                      ×
-                    </button>
+                      <X className="h-3 w-3" />
+                    </Button>
                   </Badge>
                 )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear All
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Fuel Logs Table */}
-        <Card className="bg-card/50 border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Car className="h-5 w-5" />
-              Fuel Logs
-              {hasActiveFilters && (
-                <Badge variant="outline" className="ml-2">
-                  {filteredFuelLogs.length} of {fuelLogs?.length || 0}
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
+        <div className="space-y-6 mt-8">
+          <div className="rounded-lg border border-border/50 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/20">
+                  <TableHead className="font-medium">Date</TableHead>
+                  <TableHead className="font-medium">Vehicle</TableHead>
+                  <TableHead className="font-medium">Fuel Type</TableHead>
+                  <TableHead className="font-medium">Volume (L)</TableHead>
+                  <TableHead className="font-medium">Cost (USD)</TableHead>
+                  <TableHead className="font-medium">Cost/L (USD)</TableHead>
+                  <TableHead className="font-medium">Distance (km)</TableHead>
+                  <TableHead className="w-[100px] font-medium">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Fuel Type</TableHead>
-                    <TableHead>Volume (L)</TableHead>
-                    <TableHead>Cost (USD)</TableHead>
-                    <TableHead>Cost/L (USD)</TableHead>
-                    <TableHead>Distance (km)</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        Loading fuel logs...
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                          Loading fuel logs...
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredFuelLogs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Fuel className="h-8 w-8" />
-                          {hasActiveFilters ? (
-                            <>
-                              <p className="font-medium">
-                                No fuel logs match your filters
-                              </p>
-                              <p className="text-sm">
-                                Try adjusting your search criteria
-                              </p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={clearFilters}
-                              >
-                                Clear Filters
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <p className="font-medium">No fuel logs found</p>
-                              <p className="text-sm">
-                                Add your first fuel log to get started
-                              </p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setFormOpen(true)}
-                              >
-                                Add First Log
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredFuelLogs.map((log) => {
-                      const costPerLiter =
-                        log.volume > 0 ? log.cost / log.volume : 0;
-                      const isHighCost = log.cost > 100;
-
-                      return (
-                        <TableRow key={log.id} className="hover:bg-muted/50">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3 w-3 text-muted-foreground" />
-                              {formatDateCell(log.date)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium">
-                                {log.vehicle
-                                  ? `${log.vehicle.make} ${log.vehicle.model}`
-                                  : "Unknown Vehicle"}
-                              </span>
-                              {log.vehicle?.registration && (
-                                <span className="text-xs text-muted-foreground">
-                                  {log.vehicle.registration}
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
+                ) : filteredFuelLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Fuel className="h-8 w-8" />
+                        {hasActiveFilters ? (
+                          <>
+                            <p className="font-medium">
+                              No fuel logs match your filters
+                            </p>
+                            <p className="text-sm">
+                              Try adjusting your search criteria
+                            </p>
+                            <Button
                               variant="outline"
+                              size="sm"
+                              onClick={clearFilters}
+                            >
+                              Clear Filters
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-medium">No fuel logs found</p>
+                            <p className="text-sm">
+                              Add your first fuel log to get started
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setFormOpen(true)}
+                            >
+                              Add First Log
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedFuelLogs.map((log) => {
+                    const costPerLiter =
+                      log.volume > 0 ? log.cost / log.volume : 0;
+                    const isHighCost = log.cost > 100;
+
+                    return (
+                      <TableRow
+                        key={log.id}
+                        className="hover:bg-muted/30 transition-colors"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {formatDateCell(log.date)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {log.vehicle
+                                ? `${log.vehicle.make} ${log.vehicle.model}`
+                                : "Unknown Vehicle"}
+                            </span>
+                            {log.vehicle?.registration && (
+                              <span className="text-xs text-muted-foreground">
+                                {log.vehicle.registration}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "capitalize",
+                              log.fuel_type === "diesel" &&
+                                "border-blue-500/30 text-blue-400",
+                              log.fuel_type === "petrol" &&
+                                "border-green-500/30 text-green-400",
+                              false && ""
+                            )}
+                          >
+                            {log.fuel_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {log.volume.toFixed(1)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span
                               className={cn(
-                                "capitalize",
-                                log.fuel_type === "diesel" &&
-                                  "border-blue-500/30 text-blue-400",
-                                log.fuel_type === "petrol" &&
-                                  "border-green-500/30 text-green-400",
-                                log.fuel_type === "cng" &&
-                                  "border-purple-500/30 text-purple-400"
+                                "font-mono",
+                                isHighCost && "text-orange-400 font-semibold"
                               )}
                             >
-                              {log.fuel_type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono">
-                            {log.volume.toFixed(1)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <span
-                                className={cn(
-                                  "font-mono",
-                                  isHighCost && "text-orange-400 font-semibold"
-                                )}
-                              >
-                                ${log.cost.toFixed(2)}
-                              </span>
-                              {isHighCost && (
-                                <AlertTriangle className="h-3 w-3 text-orange-400" />
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground">
-                            ${costPerLiter.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="font-mono">
-                            {log.mileage ? log.mileage.toLocaleString() : "—"}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedFuelLog(log);
-                                  setFormOpen(true);
-                                }}
-                                className="h-8 w-8"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedFuelLog(log);
-                                  setShowDeleteConfirm(true);
-                                }}
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                              ${log.cost.toFixed(2)}
+                            </span>
+                            {isHighCost && (
+                              <AlertTriangle className="h-3 w-3 text-orange-400" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-muted-foreground">
+                          ${costPerLiter.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {log.mileage ? log.mileage.toLocaleString() : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedFuelLog(log);
+                                setFormOpen(true);
+                              }}
+                              className="h-8 w-8"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedFuelLog(log);
+                                setShowDeleteConfirm(true);
+                              }}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Results Count and Pagination Info */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                Showing {startIndex + 1}-
+                {Math.min(endIndex, filteredFuelLogs.length)} of{" "}
+                {filteredFuelLogs.length} fuel logs
+              </span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+            </div>
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {filteredFuelLogs.length} of {fuelLogs?.length || 0}
+                </Badge>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Form Dialog */}
         <FuelLogFormDialog
@@ -1092,141 +1075,21 @@ export default function FuelLogs() {
         </AlertDialog>
       </TabsContent>
       <TabsContent value="tanks">
-        {/* Cost Analytics Summary Cards */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-400">
-                Diesel Costs
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-blue-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-300">
-                ${costAnalytics.diesel.totalSpent.toFixed(2)}
-              </div>
-              <p className="text-xs text-blue-400/70">
-                {costAnalytics.diesel.totalVolume.toFixed(1)}L • $
-                {costAnalytics.diesel.avgCostPerLiter.toFixed(2)}/L
-              </p>
-            </CardContent>
-          </Card>
+        {/* Summary cards removed per requirements */}
 
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-400">
-                Petrol Costs
-              </CardTitle>
-              <Fuel className="h-4 w-4 text-green-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-300">
-                ${costAnalytics.petrol.totalSpent.toFixed(2)}
-              </div>
-              <p className="text-xs text-green-400/70">
-                {costAnalytics.petrol.totalVolume.toFixed(1)}L • $
-                {costAnalytics.petrol.avgCostPerLiter.toFixed(2)}/L
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-purple-400">
-                Total Spent
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-300">
-                ${costAnalytics.total.totalSpent.toFixed(2)}
-              </div>
-              <p className="text-xs text-purple-400/70">
-                {costAnalytics.total.fillCount} fills • $
-                {costAnalytics.total.avgCostPerLiter.toFixed(2)}/L avg
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="mb-8 flex flex-wrap gap-4">
-          {tanks.map((tank) => {
-            let currentLevel = tankStats[tank.id]?.currentLevel ?? 0;
-            if (currentLevel > tank.capacity) currentLevel = tank.capacity;
-            const percent =
-              tank.capacity > 0
-                ? Math.max(
-                    0,
-                    Math.min(100, (currentLevel / tank.capacity) * 100)
-                  )
-                : 0;
-            let barColor = "bg-green-500";
-            if (percent < 20) barColor = "bg-red-500";
-            else if (percent < 50) barColor = "bg-yellow-500";
-            // Remove 'Underground' from name
-            const displayName = tank.name.replace(/underground/i, "").trim();
-            let levelLabel = "Full";
-            if (percent < 20) levelLabel = "Low";
-            else if (percent < 50) levelLabel = "Medium";
-            return (
-              <Card key={tank.id} className="w-96">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Fuel className="h-6 w-6 text-blue-500" />
-                    {displayName} ({tank.fuel_type})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-2 text-sm">
-                    Capacity: {tank.capacity} L
-                  </div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="relative w-full h-8 bg-background rounded-full overflow-hidden border">
-                          <div
-                            className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${barColor}`}
-                            style={{ width: `${percent}%` }}
-                          ></div>
-                          <div
-                            className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${
-                              percent > 10 ? "text-white" : "text-foreground"
-                            }`}
-                          >
-                            {currentLevel} L ({percent.toFixed(0)}%)
-                          </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <span>{levelLabel}</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Last Fill:{" "}
-                    {tankStats[tank.id]?.lastFillDate
-                      ? `${tankStats[tank.id].lastFillAmount} L on ${
-                          tankStats[tank.id].lastFillDate
-                        }`
-                      : "-"}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        {/* Storage cards removed per requirements */}
         <div className="mb-4 flex items-center gap-4">
           <Select
             value={selectedTankId || ""}
             onValueChange={setSelectedTankId}
           >
             <SelectTrigger className="w-64">
-              <SelectValue placeholder="Select a tank" />
+              <SelectValue placeholder="Select storage" />
             </SelectTrigger>
             <SelectContent>
               {tanks.map((tank) => (
                 <SelectItem key={tank.id} value={tank.id}>
-                  {tank.name} ({tank.fuel_type})
+                  {tank.fuel_type}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1235,7 +1098,7 @@ export default function FuelLogs() {
             onClick={() => setShowFillDialog(true)}
             disabled={!selectedTankId}
           >
-            Add Tank Fill
+            Add Fill
           </Button>
           <Button
             variant="outline"
@@ -1243,7 +1106,7 @@ export default function FuelLogs() {
             disabled={!tankFills.length}
             className="gap-2"
           >
-            <Download className="h-4 w-4" /> Export History
+            <Download className="h-4 w-4" /> Export
           </Button>
         </div>
         {selectedTankId && (
@@ -1317,6 +1180,98 @@ export default function FuelLogs() {
             </TableBody>
           </Table>
         )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  if (totalPages <= 5) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+
+                  // Show first page, last page, current page, and pages around current
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+
+                  if (
+                    pageNum === currentPage - 2 ||
+                    pageNum === currentPage + 2
+                  ) {
+                    return (
+                      <span
+                        key={pageNum}
+                        className="px-2 text-muted-foreground"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-8 px-3"
+              >
+                Next
+              </Button>
+            </div>
+
+            {/* Timestamp at bottom */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>•</span>
+              <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+        )}
+
         {/* Add/Edit Tank Fill Dialog */}
         <Dialog open={showFillDialog} onOpenChange={setShowFillDialog}>
           <DialogContent>

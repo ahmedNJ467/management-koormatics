@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 
 interface VehicleFormActionsProps {
@@ -7,15 +6,21 @@ interface VehicleFormActionsProps {
   isEdit: boolean;
 }
 
-export function VehicleFormActions({ onCancel, isSubmitting, isEdit }: VehicleFormActionsProps) {
+export function VehicleFormActions({
+  onCancel,
+  isSubmitting,
+  isEdit,
+}: VehicleFormActionsProps) {
   return (
-    <div className="flex justify-end space-x-4">
+    <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
       <Button type="button" variant="outline" onClick={onCancel}>
         Cancel
       </Button>
-      <Button 
-        type="submit" 
+      <Button
+        type="submit"
         disabled={isSubmitting}
+        variant="default"
+        className="w-full sm:w-auto font-semibold shadow"
       >
         {isSubmitting ? "Saving..." : isEdit ? "Update Vehicle" : "Add Vehicle"}
       </Button>

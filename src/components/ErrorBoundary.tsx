@@ -1,4 +1,3 @@
-
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -36,7 +35,8 @@ class ErrorBoundary extends Component<Props, State> {
             <AlertTitle>Something went wrong</AlertTitle>
             <AlertDescription>
               <p className="mb-4">
-                An unexpected error occurred on this page. You can try refreshing the page.
+                An unexpected error occurred on this page. You can try
+                refreshing the page.
               </p>
               <Button onClick={() => window.location.reload()}>
                 Refresh Page

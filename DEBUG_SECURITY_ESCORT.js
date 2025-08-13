@@ -23,7 +23,7 @@ async function createTestSecurityEscortTrip() {
         email: "vip@security.test",
         phone: "+1234567890",
         address: "Security Street 123",
-        contact_person: "Security Manager",
+        contact: "Security Manager",
       })
       .select()
       .single();
@@ -92,9 +92,8 @@ async function createTestSecurityEscortTrip() {
         name: "Security Driver",
         license_number: "SEC123456",
         phone: "+1234567891",
-        email: "driver@security.test",
         status: "active",
-        vehicle_type_preference: "armoured",
+        contact: "driver@security.test",
       })
       .select()
       .single();

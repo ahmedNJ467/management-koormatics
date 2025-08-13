@@ -39,6 +39,7 @@ interface MaintenanceFormContentProps {
   form: UseFormReturn<any>;
   maintenance: Maintenance | undefined;
   isSubmitting: boolean;
+  isReadOnly?: boolean;
   onCancel: () => void;
   onDelete: () => void;
   onSubmit: (values: any) => Promise<void>;
@@ -48,6 +49,7 @@ export function MaintenanceFormContent({
   form,
   maintenance,
   isSubmitting,
+  isReadOnly = false,
   onCancel,
   onDelete,
   onSubmit,
@@ -55,6 +57,8 @@ export function MaintenanceFormContent({
   const [selectedParts, setSelectedParts] = useState<
     { id: string; quantity: number }[]
   >(maintenance?.spare_parts || []);
+
+  const isCompleted = maintenance?.status === "completed";
 
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles"],
@@ -134,9 +138,10 @@ export function MaintenanceFormContent({
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
+                  disabled={isReadOnly}
                 >
                   <FormControl>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className={`h-11 ${isReadOnly ? "opacity-60" : ""}`}>
                       <SelectValue placeholder="Choose a vehicle..." />
                     </SelectTrigger>
                   </FormControl>
@@ -166,7 +171,7 @@ export function MaintenanceFormContent({
                     When was/is the maintenance performed
                   </FormDescription>
                   <FormControl>
-                    <Input type="date" className="h-11" {...field} />
+                    <Input type="date" className="h-11" {...field} readOnly={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -183,7 +188,7 @@ export function MaintenanceFormContent({
                     When is the next maintenance due
                   </FormDescription>
                   <FormControl>
-                    <Input type="date" className="h-11" {...field} />
+                    <Input type="date" className="h-11" {...field} readOnly={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -214,6 +219,7 @@ export function MaintenanceFormContent({
                   <Input
                     placeholder="e.g., Oil change, brake pad replacement, engine tune-up..."
                     className="h-11"
+                    readOnly={isReadOnly}
                     {...field}
                   />
                 </FormControl>
@@ -241,6 +247,7 @@ export function MaintenanceFormContent({
                       min="0"
                       placeholder="0.00"
                       className="h-11"
+                      readOnly={isReadOnly}
                       {...field}
                       onChange={(e) =>
                         field.onChange(parseFloat(e.target.value) || 0)
@@ -264,9 +271,10 @@ export function MaintenanceFormContent({
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
+                    disabled={isReadOnly}
                   >
                     <FormControl>
-                      <SelectTrigger className="h-11">
+                      <SelectTrigger className={`h-11 ${isReadOnly ? "opacity-60" : ""}`}>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                     </FormControl>
@@ -296,6 +304,7 @@ export function MaintenanceFormContent({
                   <Input
                     placeholder="e.g., ABC Auto Service, John's Garage..."
                     className="h-11"
+                    readOnly={isReadOnly}
                     {...field}
                   />
                 </FormControl>
@@ -319,7 +328,7 @@ export function MaintenanceFormContent({
           </div>
 
           <Card className="border-dashed">
-            <CardContent className="p-4">
+            <CardContent className={`p-4 ${isReadOnly ? "opacity-60 pointer-events-none" : ""}`}>
               {spareParts?.length ? (
                 <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto">
                   {spareParts.map((part) => (
@@ -435,6 +444,7 @@ export function MaintenanceFormContent({
                   <Textarea
                     placeholder="Enter any additional notes, observations, or special instructions..."
                     className="min-h-[120px] resize-none"
+                    readOnly={isReadOnly}
                     {...field}
                   />
                 </FormControl>
@@ -453,7 +463,7 @@ export function MaintenanceFormContent({
               onClick={onCancel}
               disabled={isSubmitting}
             >
-              Cancel
+              {isReadOnly ? "Close" : "Cancel"}
             </Button>
             {maintenance && (
               <Button
@@ -467,20 +477,22 @@ export function MaintenanceFormContent({
             )}
           </div>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="min-w-[120px]"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Saving...
-              </>
-            ) : (
-              <>{maintenance ? "Update Record" : "Add Record"}</>
-            )}
-          </Button>
+          {!isReadOnly && (
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="min-w-[120px]"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>{maintenance ? "Update Record" : "Add Record"}</>
+              )}
+            </Button>
+          )}
         </div>
       </form>
     </Form>

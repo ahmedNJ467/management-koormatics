@@ -1,12 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { SparePart } from "@/components/spare-parts/types";
 import { usePartsFilter } from "@/components/spare-parts/hooks/use-parts-filter";
 import { usePartsMutations } from "@/components/spare-parts/hooks/use-parts-mutations";
 import { usePartsSorting } from "@/components/spare-parts/hooks/use-parts-sorting";
 import { useSparePartsQuery } from "@/components/spare-parts/hooks/use-spare-parts-query";
-import { SearchBar } from "@/components/spare-parts/search-bar";
-import { HeaderActions } from "@/components/spare-parts/header-actions";
-import { StatusCards } from "@/components/spare-parts/summary-cards/status-cards";
 import { PartsTabs } from "@/components/spare-parts/parts-tabs/parts-tabs";
 import { AddPartDialog } from "@/components/spare-parts/dialogs/add-part-dialog";
 import { EditPartDialog } from "@/components/spare-parts/dialogs/edit-part-dialog";
@@ -14,15 +11,7 @@ import { DeletePartDialog } from "@/components/spare-parts/dialogs/delete-part-d
 import { exportToCSV } from "@/components/reports/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertTriangle,
-  Filter,
-  Download,
-  Package,
-  DollarSign,
-  TrendingUp,
-  AlertCircle,
-} from "lucide-react";
+import { AlertTriangle, Filter, Download, Package, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -135,40 +124,21 @@ const SpareParts = () => {
     priceRangeFilter,
   ]);
 
-  // Calculate enhanced summary statistics
-  const summaryStats = useMemo(() => {
-    const totalParts = enhancedFilteredParts.length;
-    const totalValue = enhancedFilteredParts.reduce(
-      (sum, part) => sum + part.quantity * part.unit_price,
-      0
-    );
-    const averagePrice =
-      totalParts > 0
-        ? enhancedFilteredParts.reduce(
-            (sum, part) => sum + part.unit_price,
-            0
-          ) / totalParts
-        : 0;
-    const lowStockValue = lowStockParts.reduce(
-      (sum, part) => sum + part.quantity * part.unit_price,
-      0
-    );
-    const outOfStockValue = outOfStockParts.reduce(
-      (sum, part) => sum + part.unit_price * part.min_stock_level,
-      0
-    );
+  // Pagination logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const partsPerPage = 20;
+  const totalPages = Math.ceil(
+    (enhancedFilteredParts?.length || 0) / partsPerPage
+  );
+  const startIndex = (currentPage - 1) * partsPerPage;
+  const endIndex = startIndex + partsPerPage;
+  const paginatedParts =
+    enhancedFilteredParts?.slice(startIndex, endIndex) || [];
 
-    return {
-      totalParts,
-      totalValue,
-      averagePrice,
-      lowStockValue,
-      outOfStockValue,
-      inStockCount: inStockParts.length,
-      lowStockCount: lowStockParts.length,
-      outOfStockCount: outOfStockParts.length,
-    };
-  }, [enhancedFilteredParts, inStockParts, lowStockParts, outOfStockParts]);
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, manufacturerFilter, locationFilter, priceRangeFilter]);
 
   const openEditDialog = (part: SparePart) => {
     setSelectedPart(part);
@@ -229,244 +199,169 @@ const SpareParts = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Spare Parts</h2>
-          <p className="text-muted-foreground">
-            Manage your spare parts inventory and track stock levels
-          </p>
+          <h2 className="text-2xl font-semibold tracking-tight">Spare Parts</h2>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
-            size="lg"
-            className="gap-2 text-white border-white/20"
+            size="sm"
+            className="gap-2"
             onClick={handleExportCSV}
           >
-            <Download className="mr-2 h-4 w-4" /> Export
+            <Download className="h-4 w-4" /> Export
           </Button>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
             variant="outline"
-            size="lg"
-            className="gap-2 text-white border-white/20"
+            size="sm"
+            className="gap-2"
           >
-            <Package className="mr-2 h-4 w-4" /> Add Part
+            <Package className="h-4 w-4" /> Add Part
           </Button>
         </div>
       </div>
 
-      {/* Enhanced Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-400">
-              Total Parts
-            </CardTitle>
-            <Package className="h-4 w-4 text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-300">
-              {summaryStats.totalParts}
-            </div>
-            <p className="text-xs text-blue-400/70">
-              {summaryStats.inStockCount} in stock
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-400">
-              Total Value
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-300">
-              ${summaryStats.totalValue.toFixed(2)}
-            </div>
-            <p className="text-xs text-green-400/70">
-              Avg: ${summaryStats.averagePrice.toFixed(2)}/part
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-400">
-              Low Stock
-            </CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-300">
-              {summaryStats.lowStockCount}
-            </div>
-            <p className="text-xs text-orange-400/70">
-              ${summaryStats.lowStockValue.toFixed(2)} value
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-500/10 to-red-600/10 border-red-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-400">
-              Out of Stock
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-300">
-              {summaryStats.outOfStockCount}
-            </div>
-            <p className="text-xs text-red-400/70">
-              ${summaryStats.outOfStockValue.toFixed(2)} needed
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Enhanced Search and Filters */}
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Search & Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <SearchBar searchQuery={searchQuery} onChange={setSearchQuery} />
+      <div className="space-y-4">
+        {/* Search Bar */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by part name, category, or manufacturer..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
           </div>
 
-          {/* Filter Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <Select
-              value={manufacturerFilter}
-              onValueChange={setManufacturerFilter}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Manufacturers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Manufacturers</SelectItem>
-                {manufacturers.map((manufacturer) => (
-                  <SelectItem key={manufacturer} value={manufacturer}>
-                    {manufacturer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select
+            value={manufacturerFilter}
+            onValueChange={setManufacturerFilter}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Manufacturers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Manufacturers</SelectItem>
+              {manufacturers.map((manufacturer) => (
+                <SelectItem key={manufacturer} value={manufacturer}>
+                  {manufacturer}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Locations" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {locations.map((location) => (
-                  <SelectItem key={location} value={location}>
-                    {location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select value={locationFilter} onValueChange={setLocationFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Locations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {locations.map((location) => (
+                <SelectItem key={location} value={location}>
+                  {location}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <Select
-              value={priceRangeFilter}
-              onValueChange={setPriceRangeFilter}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Prices" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="low">Under $50</SelectItem>
-                <SelectItem value="medium">$50 - $200</SelectItem>
-                <SelectItem value="high">Over $200</SelectItem>
-              </SelectContent>
-            </Select>
+          <Select value={priceRangeFilter} onValueChange={setPriceRangeFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All Prices" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Prices</SelectItem>
+              <SelectItem value="low">Under $50</SelectItem>
+              <SelectItem value="medium">$50 - $200</SelectItem>
+              <SelectItem value="high">Over $200</SelectItem>
+            </SelectContent>
+          </Select>
 
+          {hasActiveFilters && (
             <Button
               variant="outline"
+              size="sm"
               onClick={clearFilters}
-              disabled={!hasActiveFilters}
               className="gap-2"
             >
-              Clear Filters
+              <Filter className="h-4 w-4 mr-2" />
+              Clear
             </Button>
-          </div>
-
-          {/* Active Filters Display */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap gap-2">
-              {categoryFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1">
-                  Category: {categoryFilter}
-                  <button
-                    onClick={() => setCategoryFilter("all")}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {manufacturerFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1">
-                  Manufacturer: {manufacturerFilter}
-                  <button
-                    onClick={() => setManufacturerFilter("all")}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {locationFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1">
-                  Location: {locationFilter}
-                  <button
-                    onClick={() => setLocationFilter("all")}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {priceRangeFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1">
-                  Price:{" "}
-                  {priceRangeFilter === "low"
-                    ? "Under $50"
-                    : priceRangeFilter === "medium"
-                    ? "$50 - $200"
-                    : "Over $200"}
-                  <button
-                    onClick={() => setPriceRangeFilter("all")}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Active Filters Display */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap gap-2">
+            {categoryFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                Category: {categoryFilter}
+                <button
+                  onClick={() => setCategoryFilter("all")}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            {manufacturerFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                Manufacturer: {manufacturerFilter}
+                <button
+                  onClick={() => setManufacturerFilter("all")}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            {locationFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                Location: {locationFilter}
+                <button
+                  onClick={() => setLocationFilter("all")}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            {priceRangeFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                Price:{" "}
+                {priceRangeFilter === "low"
+                  ? "Under $50"
+                  : priceRangeFilter === "medium"
+                  ? "$50 - $200"
+                  : "Over $200"}
+                <button
+                  onClick={() => setPriceRangeFilter("all")}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Storage Alert */}
       {isStorageAvailable === false && (
@@ -482,38 +377,123 @@ const SpareParts = () => {
       )}
 
       {/* Parts Table with Enhanced Data */}
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Parts Inventory
-            {hasActiveFilters && (
-              <Badge variant="outline" className="ml-2">
-                {enhancedFilteredParts.length} of {spareParts.length}
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PartsTabs
-            filteredParts={enhancedFilteredParts}
-            inStockParts={inStockParts.filter((part) =>
-              enhancedFilteredParts.includes(part)
-            )}
-            lowStockParts={lowStockParts.filter((part) =>
-              enhancedFilteredParts.includes(part)
-            )}
-            outOfStockParts={outOfStockParts.filter((part) =>
-              enhancedFilteredParts.includes(part)
-            )}
-            onEdit={openEditDialog}
-            onDelete={openDeleteDialog}
-            isLoading={isLoading}
-            onSort={handleSort}
-            sortConfig={sortConfig}
-          />
-        </CardContent>
-      </Card>
+      <PartsTabs
+        filteredParts={paginatedParts}
+        inStockParts={inStockParts.filter((part) =>
+          enhancedFilteredParts.includes(part)
+        )}
+        lowStockParts={lowStockParts.filter((part) =>
+          enhancedFilteredParts.includes(part)
+        )}
+        outOfStockParts={outOfStockParts.filter((part) =>
+          enhancedFilteredParts.includes(part)
+        )}
+        onEdit={openEditDialog}
+        onDelete={openDeleteDialog}
+        isLoading={isLoading}
+        onSort={handleSort}
+        sortConfig={sortConfig}
+      />
+
+      {/* Results Count and Pagination Info */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Showing {startIndex + 1}-
+            {Math.min(endIndex, enhancedFilteredParts?.length || 0)} of{" "}
+            {enhancedFilteredParts?.length || 0} spare parts
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="h-8 px-3"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                if (totalPages <= 5) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                }
+
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                }
+
+                if (
+                  pageNum === currentPage - 2 ||
+                  pageNum === currentPage + 2
+                ) {
+                  return (
+                    <span key={pageNum} className="px-2 text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="h-8 px-3"
+            >
+              Next
+            </Button>
+          </div>
+
+          {/* Timestamp at bottom */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>•</span>
+            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
+      )}
 
       {/* Dialogs */}
       <AddPartDialog

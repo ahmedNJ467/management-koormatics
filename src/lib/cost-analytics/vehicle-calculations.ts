@@ -83,7 +83,7 @@ export function calculateVehicleCosts(
       }
       
       const quantityUsed = Number(item.quantity_used || 0);
-      const costPerUnit = Number(item.cost_per_unit || 0);
+      const costPerUnit = Number(item.unit_price || 0);
       vehicleCosts[vehicleId].spareParts += quantityUsed * costPerUnit;
     });
   }

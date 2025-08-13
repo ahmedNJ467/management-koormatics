@@ -1,6 +1,11 @@
-
 import { useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useMaintenanceForm } from "./maintenance-form/use-maintenance-form";
 import { MaintenanceFormContent } from "./maintenance-form/maintenance-form-content";
@@ -18,17 +23,17 @@ export function MaintenanceFormDialog({
   open,
   onOpenChange,
   maintenance,
-  onMaintenanceDeleted
+  onMaintenanceDeleted,
 }: MaintenanceFormDialogProps) {
   const { toast } = useToast();
-  const isCompleted = maintenance?.status === 'completed';
-  
+  const isCompleted = maintenance?.status === "completed";
+
   const {
     form,
     isSubmitting,
     showDeleteDialog,
     setShowDeleteDialog,
-    handleSubmit
+    handleSubmit,
   } = useMaintenanceForm(maintenance);
 
   useEffect(() => {
@@ -58,29 +63,35 @@ export function MaintenanceFormDialog({
   }, [maintenance, form]);
 
   const onSubmit = async (values: any) => {
-    await handleSubmit(values);
-    onOpenChange(false);
+    if (!isCompleted) {
+      await handleSubmit(values);
+      onOpenChange(false);
+    }
   };
-
-  // Don't render the dialog if trying to edit a completed maintenance record
-  if (maintenance && isCompleted) {
-    return null;
-  }
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{maintenance ? "Edit Maintenance Record" : "Add Maintenance Record"}</DialogTitle>
+            <DialogTitle>
+              {maintenance
+                ? isCompleted
+                  ? "View Maintenance Record"
+                  : "Edit Maintenance Record"
+                : "Add Maintenance Record"}
+            </DialogTitle>
             <DialogDescription>
-              Enter the maintenance details below. Required fields are marked with an asterisk.
+              {isCompleted
+                ? "Maintenance record details (read-only). You can delete this record if needed."
+                : "Enter the maintenance details below. Required fields are marked with an asterisk."}
             </DialogDescription>
           </DialogHeader>
           <MaintenanceFormContent
             form={form}
             maintenance={maintenance}
             isSubmitting={isSubmitting}
+            isReadOnly={isCompleted}
             onCancel={() => onOpenChange(false)}
             onDelete={() => setShowDeleteDialog(true)}
             onSubmit={onSubmit}

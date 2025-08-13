@@ -6,6 +6,10 @@
     <title>management-koormatics</title>
     <meta name="description" content="Koormatics Fleet Management System" />
     <meta name="author" content="Koormatics" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://esm.sh https://cdn.jsdelivr.net; img-src 'self' data: blob: https://*.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
+    />
     <link rel="icon" type="image/svg+xml" href="/koormatics-logo.svg" />
     <link rel="alternate icon" href="/favicon.ico" />
     <meta property="og:image" content="/og-image.png" />
@@ -13,8 +17,6 @@
 
   <body>
     <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

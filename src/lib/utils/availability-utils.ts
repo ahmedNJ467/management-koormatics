@@ -1,7 +1,7 @@
 import { DisplayTrip } from "@/lib/types/trip";
 
 export interface AvailabilityOptions {
-  bufferHours?: number; // Default 1 hour buffer after return time or completion
+  bufferHours?: number; // Default 0 hours after return time or completion
   currentDateTime?: Date; // Current date/time for calculations (defaults to now)
 }
 
@@ -22,20 +22,28 @@ export function isResourceAvailable(
   availableAt?: Date;
   conflictingTrip?: DisplayTrip;
 } {
-  const { bufferHours = 1, currentDateTime = new Date() } = options;
+  const { bufferHours = 0, currentDateTime = new Date() } = options;
 
   // Get all trips for this resource
   const resourceTrips = trips.filter((trip) => {
+    if (!trip) return false;
     if (resourceType === "driver") {
-      return trip.driver_id === resourceId;
+      const assignedDriverIds = (trip as any).assigned_driver_ids as
+        | string[]
+        | undefined;
+      const isCarrierDriver = Array.isArray(assignedDriverIds)
+        ? assignedDriverIds.includes(resourceId)
+        : false;
+      return trip.driver_id === resourceId || isCarrierDriver;
     } else {
-      // For vehicles, check both primary assignment and escort assignment
-      return (
-        trip.vehicle_id === resourceId ||
-        (trip.escort_vehicle_ids &&
-          Array.isArray(trip.escort_vehicle_ids) &&
-          trip.escort_vehicle_ids.includes(resourceId))
-      );
+      // For vehicles, check primary, carrier array, and escort assignment
+      const inCarrierArray = Array.isArray(trip.assigned_vehicle_ids)
+        ? (trip.assigned_vehicle_ids as string[]).includes(resourceId)
+        : false;
+      const inEscortArray = Array.isArray(trip.escort_vehicle_ids)
+        ? (trip.escort_vehicle_ids as any[]).includes(resourceId as any) // escort_vehicle_ids may be jsonb/text[] → UI sends strings
+        : false;
+      return trip.vehicle_id === resourceId || inCarrierArray || inEscortArray;
     }
   });
 
@@ -98,18 +106,14 @@ function checkTripAvailability(
 
     // If trip was in the past and not completed, calculate based on expected end time
     const expectedEndTime = calculateExpectedEndTime(trip, tripDate);
-    const availableAt = new Date(
-      expectedEndTime.getTime() + bufferHours * 60 * 60 * 1000
-    );
+    const availableAt = new Date(expectedEndTime.getTime());
 
     if (currentDateTime >= availableAt) {
       return { isAvailable: true };
     } else {
       return {
         isAvailable: false,
-        reason: `Unavailable until ${formatTime(
-          availableAt
-        )} (${bufferHours}h after expected trip end)`,
+        reason: `Unavailable until ${formatTime(availableAt)}`,
         availableAt,
       };
     }
@@ -117,9 +121,7 @@ function checkTripAvailability(
 
   // Trip is on the same date - check time-based availability
   const expectedEndTime = calculateExpectedEndTime(trip, tripDate);
-  const availableAt = new Date(
-    expectedEndTime.getTime() + bufferHours * 60 * 60 * 1000
-  );
+  const availableAt = new Date(expectedEndTime.getTime());
 
   if (currentDateTime >= availableAt) {
     return { isAvailable: true };
@@ -147,9 +149,7 @@ function checkTripAvailability(
   } else {
     return {
       isAvailable: false,
-      reason: `Unavailable until ${formatTime(
-        availableAt
-      )} (${bufferHours}h buffer after trip)`,
+      reason: `Unavailable until ${formatTime(availableAt)}`,
       availableAt,
     };
   }
@@ -195,6 +195,16 @@ function calculateExpectedEndTime(trip: DisplayTrip, tripDate: Date): Date {
 }
 
 /**
+ * Public helper to get the expected end Date for a trip using its own date/time.
+ * Exposed for UI components that need to display end-time summaries without
+ * duplicating the duration logic.
+ */
+export function getExpectedTripEnd(trip: DisplayTrip): Date {
+  const tripDate = new Date(trip.date);
+  return calculateExpectedEndTime(trip, tripDate);
+}
+
+/**
  * Parses a time string (HH:MM) and combines it with a date
  */
 function parseTimeOnDate(timeString: string, date: Date): Date {
@@ -231,7 +241,7 @@ export function isDriverAvailableForTimeSlot(
   conflicts: DisplayTrip[];
   reason?: string;
 } {
-  const { bufferHours = 1, currentDateTime = new Date() } = options;
+  const { bufferHours = 0, currentDateTime = new Date() } = options;
 
   // Filter trips for this driver, excluding the specified trip
   const driverTrips = trips.filter(
@@ -264,9 +274,7 @@ export function isDriverAvailableForTimeSlot(
 
     const tripStartTime = parseTimeOnDate(trip.time || "00:00", tripDate);
     const tripEndTime = calculateExpectedEndTime(trip, tripDate);
-    const tripAvailableTime = new Date(
-      tripEndTime.getTime() + bufferHours * 60 * 60 * 1000
-    );
+    const tripAvailableTime = new Date(tripEndTime.getTime());
 
     // Check for time conflicts with buffer
     const hasConflict =
@@ -283,7 +291,7 @@ export function isDriverAvailableForTimeSlot(
   const isAvailable = conflicts.length === 0;
   const reason =
     conflicts.length > 0
-      ? `Conflicts with ${conflicts.length} existing trip(s) (including ${bufferHours}h buffer)`
+      ? `Conflicts with ${conflicts.length} existing trip(s)`
       : undefined;
 
   console.log(`👨‍✈️ Driver ${driverId} availability result for ${targetDate}:`, {
@@ -318,7 +326,7 @@ export function isVehicleAvailableForTimeSlot(
   conflicts: DisplayTrip[];
   reason?: string;
 } {
-  const { bufferHours = 1 } = options;
+  const { bufferHours = 0 } = options;
 
   // Filter trips where this vehicle is assigned (primary or escort), excluding the specified trip
   const vehicleTrips = trips.filter(
@@ -384,9 +392,7 @@ export function isVehicleAvailableForTimeSlot(
 
     const tripStartTime = parseTimeOnDate(trip.time || "00:00", tripDate);
     const tripEndTime = calculateExpectedEndTime(trip, tripDate);
-    const tripAvailableTime = new Date(
-      tripEndTime.getTime() + bufferHours * 60 * 60 * 1000
-    );
+    const tripAvailableTime = new Date(tripEndTime.getTime());
 
     // Check for time conflicts with buffer
     const hasConflict =
@@ -403,7 +409,7 @@ export function isVehicleAvailableForTimeSlot(
   const isAvailable = conflicts.length === 0;
   const reason =
     conflicts.length > 0
-      ? `Conflicts with ${conflicts.length} existing trip(s) (including ${bufferHours}h buffer)`
+      ? `Conflicts with ${conflicts.length} existing trip(s)`
       : undefined;
 
   return {

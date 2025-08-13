@@ -19,7 +19,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { format, parseISO } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
-import { getFuelTanks } from "./services/fuel-log-service";
+import { getFuelStorages } from "./services/fuel-log-service";
 import { Badge } from "@/components/ui/badge";
 import { Fuel } from "lucide-react";
 
@@ -40,7 +40,7 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
   const vehicleId = form.watch("vehicle_id");
 
   useEffect(() => {
-    getFuelTanks().then(setTanks);
+    getFuelStorages().then(setTanks);
   }, []);
 
   const filteredTanks = tanks.filter((tank) => tank.fuel_type === fuelType);
@@ -48,18 +48,11 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
   // Auto-select tank when fuel type changes
   useEffect(() => {
     if (fuelType && filteredTanks.length > 0) {
-      // Find the main underground tank for this fuel type
-      const mainTank =
-        filteredTanks.find(
-          (tank) =>
-            tank.name.toLowerCase().includes("underground") ||
-            tank.name.toLowerCase().includes("main")
-        ) || filteredTanks[0]; // Fallback to first tank if no "underground" tank found
+      // Prefer the first available storage for the selected fuel type
+      const mainTank = filteredTanks[0];
 
       if (mainTank && form.getValues("tank_id") !== mainTank.id) {
-        console.log(
-          `Auto-selecting tank: ${mainTank.name} for fuel type: ${fuelType}`
-        );
+        console.log(`Auto-selecting storage for fuel type: ${fuelType}`);
         form.setValue("tank_id", mainTank.id);
       }
     }
@@ -73,25 +66,16 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
     const fuelTypeMap = {
       petrol: "Petrol",
       diesel: "Diesel",
-      hybrid: "Hybrid",
-      electric: "Electric",
-      cng: "CNG",
     };
     return fuelTypeMap[fuelType as keyof typeof fuelTypeMap] || fuelType;
   };
 
   const getFuelTypeColor = (fuelType: string) => {
     switch (fuelType) {
-      case "electric":
-        return "text-green-600";
-      case "hybrid":
-        return "text-blue-600";
       case "diesel":
         return "text-orange-600";
       case "petrol":
         return "text-gray-600";
-      case "cng":
-        return "text-purple-600";
       default:
         return "text-muted-foreground";
     }
@@ -153,9 +137,6 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
                 <SelectContent>
                   <SelectItem value="petrol">Petrol</SelectItem>
                   <SelectItem value="diesel">Diesel</SelectItem>
-                  <SelectItem value="hybrid">Hybrid</SelectItem>
-                  <SelectItem value="electric">Electric</SelectItem>
-                  <SelectItem value="cng">CNG</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -184,53 +165,7 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
       />
       */}
 
-      <FormField
-        control={form.control}
-        name="tank_id"
-        render={({ field }) => {
-          const selectedTank = tanks.find((tank) => tank.id === field.value);
-          const isAutoSelected =
-            fuelType && filteredTanks.length > 0 && field.value;
-
-          return (
-            <FormItem className="space-y-2">
-              <FormLabel>Tank</FormLabel>
-              {isAutoSelected && selectedTank ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-                    <Fuel className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">
-                      {selectedTank.name} (Capacity: {selectedTank.capacity}L)
-                    </span>
-                    <Badge variant="secondary" className="ml-auto text-xs">
-                      Auto-selected
-                    </Badge>
-                  </div>
-                  <FormDescription className="text-xs">
-                    Underground tank automatically selected based on fuel type.
-                  </FormDescription>
-                </div>
-              ) : (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select ${fuelType} tank`} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {filteredTanks.map((tank) => (
-                      <SelectItem key={tank.id} value={tank.id}>
-                        {tank.name} (Capacity: {tank.capacity}L)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
+      {/* Storage selection removed from fuel log form */}
     </>
   );
 }

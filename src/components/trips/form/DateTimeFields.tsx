@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { DisplayTrip } from "@/lib/types/trip";
 import { UIServiceType } from "./types";
 import { DatePicker } from "@/components/ui/date-picker";
-import { TimePicker } from "@/components/ui/time-picker";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 
@@ -61,10 +61,11 @@ export function DateTimeFields({
     }
   };
 
-  const handleTimeChange = (newTime: string | undefined) => {
+  const handleTimeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = e.target.value;
     setTime(newTime);
-    if (onDateTimeChange && newTime) {
-      onDateTimeChange("time", newTime);
+    if (onDateTimeChange) {
+      onDateTimeChange("time", newTime || "");
     }
   };
 
@@ -78,13 +79,22 @@ export function DateTimeFields({
             type="hidden"
             name="date"
             value={date ? format(date, "yyyy-MM-dd") : ""}
+            required
           />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="time">Time</Label>
-          <TimePicker value={time} onChange={handleTimeChange} />
-          <input type="hidden" name="time" value={time || ""} />
+          <Input
+            id="time"
+            type="time"
+            value={time || ""}
+            onChange={handleTimeInputChange}
+            className="h-11"
+            step={60}
+            required
+          />
+          <input type="hidden" name="time" value={time || ""} required />
         </div>
       </div>
 
@@ -93,7 +103,14 @@ export function DateTimeFields({
       ) && (
         <div className="space-y-2">
           <Label htmlFor="return_time">Return Time</Label>
-          <TimePicker value={returnTime} onChange={setReturnTime} />
+          <Input
+            id="return_time"
+            type="time"
+            value={returnTime || ""}
+            onChange={(e) => setReturnTime(e.target.value)}
+            className="h-11"
+            step={60}
+          />
           <input type="hidden" name="return_time" value={returnTime || ""} />
         </div>
       )}

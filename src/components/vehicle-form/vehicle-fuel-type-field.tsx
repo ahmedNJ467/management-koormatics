@@ -38,8 +38,6 @@ export function VehicleFuelTypeField({ form }: VehicleFuelTypeFieldProps) {
             <SelectContent>
               <SelectItem value="petrol">Petrol</SelectItem>
               <SelectItem value="diesel">Diesel</SelectItem>
-              <SelectItem value="hybrid">Hybrid</SelectItem>
-              <SelectItem value="electric">Electric</SelectItem>
             </SelectContent>
           </Select>
           <FormMessage />

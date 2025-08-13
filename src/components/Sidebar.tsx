@@ -1,4 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTenantScope } from "@/hooks/use-tenant-scope";
+import { AppDomain } from "@/utils/subdomain";
+import { preloadByPath } from "@/routes/pages";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -53,16 +56,12 @@ const navigationGroups = [
     items: [
       { name: "Dispatch", href: "/dispatch", icon: Navigation },
       { name: "Trips", href: "/trips", icon: Calendar },
-      { name: "Vehicle Leasing", href: "/vehicle-leasing", icon: CreditCard },
       { name: "Clients", href: "/clients", icon: Users2 },
-      { name: "Contracts", href: "/contracts", icon: File },
-      { name: "Quotations", href: "/quotations", icon: FileText },
-      { name: "Invoices", href: "/invoices", icon: Receipt },
       { name: "Invitation Letter", href: "/invitation-letter", icon: Mail },
     ],
   },
   {
-    category: "Analytics",
+    category: "Finance",
     items: [
       {
         name: "Revenue & Cost Analytics",
@@ -70,9 +69,43 @@ const navigationGroups = [
         icon: DollarSign,
       },
       { name: "Reports", href: "/reports", icon: BarChart },
+      { name: "Vehicle Leasing", href: "/vehicle-leasing", icon: CreditCard },
+      { name: "Contracts", href: "/contracts", icon: File },
+      { name: "Quotations", href: "/quotations", icon: FileText },
+      { name: "Invoices", href: "/invoices", icon: Receipt },
+      { name: "Trip Finance", href: "/trip-finance", icon: Receipt },
     ],
   },
 ];
+
+const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
+  management: "*",
+  fleet: [
+    "/vehicles",
+    "/drivers",
+    "/maintenance",
+    "/fuel-logs",
+    "/spare-parts",
+    "/vehicle-inspections",
+    "/vehicle-incident-reports",
+  ],
+  operations: ["/dispatch", "/trips", "/clients", "/invitation-letter"],
+  finance: [
+    "/cost-analytics",
+    "/reports",
+    "/vehicle-leasing",
+    "/contracts",
+    "/quotations",
+    "/invoices",
+    "/trip-finance",
+  ],
+  "*": "*",
+};
+
+function isAllowedPath(domain: AppDomain, href: string) {
+  const allow = DOMAIN_ITEM_ALLOWLIST[domain];
+  return allow === "*" || allow.includes(href);
+}
 
 interface SidebarProps {
   open: boolean;
@@ -82,10 +115,30 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { domain } = useTenantScope();
+
+  // Build groups based on domain: prune items first, then filter categories
+  const groupsPruned = navigationGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) =>
+        isAllowedPath(domain as AppDomain, item.href)
+      ),
+    }))
+    .filter((g) => g.items.length > 0);
+
+  const groupsToRender =
+    domain === "management"
+      ? groupsPruned
+      : domain === "fleet"
+      ? groupsPruned.filter((g) => g.category === "Fleet Management")
+      : domain === "operations"
+      ? groupsPruned.filter((g) => g.category === "Operations")
+      : groupsPruned.filter((g) => g.category === "Finance");
 
   // Find which category contains the current route and set it as default expanded
   const findActiveCategoryIndex = () => {
-    const activeIndex = navigationGroups.findIndex((group) =>
+    const activeIndex = groupsToRender.findIndex((group) =>
       group.items.some((item) => location.pathname === item.href)
     );
     return activeIndex !== -1 ? activeIndex : 0; // Default to first category if no match
@@ -119,6 +172,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       )}
     >
       <nav className="flex flex-col gap-1 p-4">
+        <div className="px-3 pb-2 text-[10px] tracking-widest text-muted-foreground">
+          {domain.toUpperCase()}
+        </div>
         {/* Dashboard standalone item */}
         <div className="mb-4">
           <Link
@@ -136,7 +192,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           </Link>
         </div>
 
-        {navigationGroups.map((group, groupIndex) => {
+        {groupsToRender.map((group, groupIndex) => {
           const isExpanded = expandedCategoryIndex === groupIndex;
           const hasActiveItem = group.items.some(
             (item) => location.pathname === item.href
@@ -170,6 +226,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                         key={item.name}
                         to={item.href}
                         onClick={handleLinkClick}
+                        onMouseEnter={() => preloadByPath(item.href)}
                         className={cn(
                           "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
                           isActive

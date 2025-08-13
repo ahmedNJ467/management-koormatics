@@ -1,12 +1,14 @@
-
-import { 
+import {
   CostData,
   MonthlyData,
   VehicleCostData,
   CategoryData,
-  YearComparisonData
+  YearComparisonData,
 } from "./types/cost-analytics";
-import { calculateFinancialData, FinancialData } from "./financial-calculations";
+import {
+  calculateFinancialData,
+  FinancialData,
+} from "./financial-calculations";
 
 export type CombinedFinancialData = {
   costAnalytics: {
@@ -22,7 +24,13 @@ export type CombinedFinancialData = {
     totalProfit: number;
     profitMargin: number;
     monthlyProfit: { month: string; profit: number }[];
-    vehicleProfits: { vehicle_id: string; vehicle_name: string; revenue: number; costs: number; profit: number }[];
+    vehicleProfits: {
+      vehicle_id: string;
+      vehicle_name: string;
+      revenue: number;
+      costs: number;
+      profit: number;
+    }[];
   };
 };
 
@@ -31,53 +39,70 @@ export type CombinedFinancialData = {
  */
 export function calculateCombinedFinancialData(
   tripsData: any[] = [],
-  maintenanceData: any[] = [], 
+  maintenanceData: any[] = [],
   fuelData: any[] = [],
+  sparePartsData: any[] = [],
   comparisonMaintenanceData: any[] = [],
   comparisonFuelData: any[] = [],
+  comparisonSparePartsData: any[] = [],
   selectedYear: string,
   comparisonYear: string | null
 ): CombinedFinancialData {
   // Calculate cost analytics
-  const summaryCosts = calculateSummaryCosts(maintenanceData, fuelData);
-  const monthlyData = calculateMonthlyData(maintenanceData, fuelData);
-  const vehicleCosts = calculateVehicleCosts(maintenanceData, fuelData);
+  const summaryCosts = calculateSummaryCosts(
+    maintenanceData,
+    fuelData,
+    sparePartsData
+  );
+  const monthlyData = calculateMonthlyData(
+    maintenanceData,
+    fuelData,
+    sparePartsData
+  );
+  const vehicleCosts = calculateVehicleCosts(
+    maintenanceData,
+    fuelData,
+    sparePartsData
+  );
   const maintenanceCategories = calculateMaintenanceCategories(maintenanceData);
   const fuelTypes = calculateFuelTypes(fuelData);
-  
-  // Add empty arrays for spare parts data in the comparison function
-  const sparePartsData: any[] = [];
-  const comparisonSparePartsData: any[] = [];
-  
+
   const yearComparison = calculateYearComparison(
-    maintenanceData, 
+    maintenanceData,
     fuelData,
-    sparePartsData, // Add spare parts data
-    comparisonMaintenanceData, 
+    sparePartsData,
+    comparisonMaintenanceData,
     comparisonFuelData,
-    comparisonSparePartsData, // Add comparison spare parts data
-    selectedYear, 
+    comparisonSparePartsData,
+    selectedYear,
     comparisonYear
   );
 
   // Calculate revenue analytics
-  const revenueAnalytics = calculateFinancialData(tripsData, maintenanceData, fuelData);
+  const revenueAnalytics = calculateFinancialData(
+    tripsData,
+    maintenanceData,
+    fuelData,
+    sparePartsData
+  );
 
   // Calculate profit analytics
   const totalProfit = revenueAnalytics.totalRevenue - summaryCosts.total;
-  const profitMargin = revenueAnalytics.totalRevenue > 0 
-    ? (totalProfit / revenueAnalytics.totalRevenue) * 100 
-    : 0;
+  const profitMargin =
+    revenueAnalytics.totalRevenue > 0
+      ? (totalProfit / revenueAnalytics.totalRevenue) * 100
+      : 0;
 
   // Calculate monthly profit
   const monthlyProfit = monthlyData.map((monthData, index) => {
-    const monthRevenue = index < revenueAnalytics.monthlyData.length 
-      ? revenueAnalytics.monthlyData[index].revenue 
-      : 0;
-    
+    const monthRevenue =
+      index < revenueAnalytics.monthlyData.length
+        ? revenueAnalytics.monthlyData[index].revenue
+        : 0;
+
     return {
       month: monthData.month,
-      profit: monthRevenue - monthData.total
+      profit: monthRevenue - monthData.total,
     };
   });
 
@@ -91,15 +116,15 @@ export function calculateCombinedFinancialData(
       vehicleCosts,
       maintenanceCategories,
       fuelTypes,
-      yearComparison
+      yearComparison,
     },
     revenueAnalytics,
     profitAnalytics: {
       totalProfit,
       profitMargin,
       monthlyProfit,
-      vehicleProfits
-    }
+      vehicleProfits,
+    },
   };
 }
 
@@ -110,7 +135,7 @@ import {
   calculateVehicleCosts,
   calculateMaintenanceCategories,
   calculateFuelTypes,
-  calculateYearComparison
+  calculateYearComparison,
 } from "./cost-analytics";
 
 /**
@@ -121,29 +146,31 @@ function calculateVehicleProfits(
   tripsData: any[]
 ) {
   const vehicleRevenues: Record<string, number> = {};
-  
+
   // Calculate revenue by vehicle
-  tripsData.forEach(trip => {
+  tripsData.forEach((trip) => {
     if (!trip.vehicle_id) return;
-    
+
     if (!vehicleRevenues[trip.vehicle_id]) {
       vehicleRevenues[trip.vehicle_id] = 0;
     }
-    
+
     vehicleRevenues[trip.vehicle_id] += Number(trip.amount || 0);
   });
-  
+
   // Calculate profit by vehicle
-  return vehicleCosts.map(vehicleCost => {
-    const vehicleRevenue = vehicleRevenues[vehicleCost.vehicle_id] || 0;
-    const vehicleProfit = vehicleRevenue - vehicleCost.total;
-    
-    return {
-      vehicle_id: vehicleCost.vehicle_id,
-      vehicle_name: vehicleCost.vehicle_name,
-      revenue: vehicleRevenue,
-      costs: vehicleCost.total,
-      profit: vehicleProfit
-    };
-  }).sort((a, b) => b.profit - a.profit); // Sort by profit
+  return vehicleCosts
+    .map((vehicleCost) => {
+      const vehicleRevenue = vehicleRevenues[vehicleCost.vehicle_id] || 0;
+      const vehicleProfit = vehicleRevenue - vehicleCost.total;
+
+      return {
+        vehicle_id: vehicleCost.vehicle_id,
+        vehicle_name: vehicleCost.vehicle_name,
+        revenue: vehicleRevenue,
+        costs: vehicleCost.total,
+        profit: vehicleProfit,
+      };
+    })
+    .sort((a, b) => b.profit - a.profit); // Sort by profit
 }

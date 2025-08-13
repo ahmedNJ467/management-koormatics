@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, User, Eye, EyeOff } from "lucide-react";
+import { User, Eye, EyeOff } from "lucide-react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -16,6 +14,7 @@ export default function Auth() {
   const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const currentYear = new Date().getFullYear();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +29,7 @@ export default function Auth() {
 
       toast({
         title: "Welcome back!",
-        description:
-          "Successfully signed in to Koormatics Transportation & Logistics",
+        description: "Successfully signed in to Koormatics",
       });
       navigate("/dashboard");
     } catch (error) {
@@ -82,138 +80,70 @@ export default function Auth() {
             <div className="flex items-center justify-center mb-6">
               <img
                 src="/lovable-uploads/4ac6bd3a-707d-4262-bc89-af00beb7077e.png"
-                alt="Koormatics Transportation & Logistics"
+                alt="Koormatics"
                 className="h-20 object-contain drop-shadow-lg"
               />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-              Transportation & Logistics
-            </h1>
           </div>
 
-          {/* Login Card */}
-          <Card className="backdrop-blur-xl bg-white/95 border-0 shadow-2xl rounded-2xl overflow-hidden">
-            <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-slate-50 pb-6">
-              <CardTitle className="text-gray-800 flex items-center justify-center gap-3 text-xl">
-                <Lock className="h-5 w-5 text-blue-600" />
-                Administrator Access
-              </CardTitle>
-              <p className="text-sm text-gray-600 mt-2">
-                Sign in to manage your operations
-              </p>
-            </CardHeader>
-            <CardContent className="p-8">
-              <form onSubmit={handleAuth} className="space-y-6">
-                {/* Email Field */}
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700 font-medium">
-                    Email Address
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="admin@koormatics.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="pl-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg transition-all duration-200"
-                    />
-                  </div>
-                </div>
+          {/* Simplified Login */}
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="User"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="pl-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-400 transition-colors"
+              />
+            </div>
 
-                {/* Password Field */}
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-gray-700 font-medium"
-                  >
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your secure password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg transition-all duration-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="pl-3 pr-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-400 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
 
-                {/* Options Row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="remember"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <Label htmlFor="remember" className="text-sm text-gray-600">
-                      Remember me
-                    </Label>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                  >
-                    Forgot password?
-                  </button>
+            <Button
+              type="submit"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium h-12 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Logging in...
                 </div>
-
-                {/* Login Button */}
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 h-12 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Authenticating...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Lock className="h-4 w-4" />
-                      Sign In
-                    </div>
-                  )}
-                </Button>
-
-                {/* Security Notice */}
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">
-                    Secure connection protected by SSL encryption
-                  </p>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+              ) : (
+                "Log in"
+              )}
+            </Button>
+          </form>
 
           {/* Footer */}
-          <div className="text-center mt-6 space-y-2">
+          <div className="text-center mt-6">
             <p className="text-white/80 text-xs drop-shadow">
-              © 2024 Koormatics Transportation & Logistics
-            </p>
-            <p className="text-white/60 text-xs drop-shadow">
-              All rights reserved
+              © {currentYear} Koormatics · All rights reserved
             </p>
           </div>
         </div>

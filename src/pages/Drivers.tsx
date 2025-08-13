@@ -20,6 +20,8 @@ import {
   List,
   Grid,
   Check,
+  Crown,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -36,7 +38,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -45,7 +54,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DriverAnalytics } from "@/components/drivers/DriverAnalytics";
 import { DriverQuickActions } from "@/components/drivers/DriverQuickActions";
 
 export default function Drivers() {
@@ -56,8 +64,9 @@ export default function Drivers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [licenseTypeFilter, setLicenseTypeFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [activeTab, setActiveTab] = useState("drivers");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [currentPage, setCurrentPage] = useState(1);
+  const driversPerPage = 20;
 
   // Fetch drivers data
   const {
@@ -85,15 +94,13 @@ export default function Drivers() {
     },
   });
 
-  // Fetch trips data for driver performance
+  // Fetch trips data for driver trip counts
   const { data: trips } = useQuery({
     queryKey: ["trips"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        .select(
-          "id, driver_id, amount, status, date, pickup_location, dropoff_location"
-        )
+        .select("id, driver_id")
         .order("date", { ascending: false });
 
       if (error) throw error;
@@ -216,6 +223,24 @@ export default function Drivers() {
     return performance;
   }, [drivers, trips]);
 
+  // Calculate driver trip counts (simplified)
+  const driverTripCounts = useMemo(() => {
+    if (!drivers || !trips) return {};
+
+    const counts: Record<string, { totalTrips: number }> = {};
+
+    trips.forEach((trip) => {
+      if (trip.driver_id) {
+        if (!counts[trip.driver_id]) {
+          counts[trip.driver_id] = { totalTrips: 0 };
+        }
+        counts[trip.driver_id].totalTrips++;
+      }
+    });
+
+    return counts;
+  }, [drivers, trips]);
+
   const handleDriverDeleted = () => {
     queryClient.invalidateQueries({ queryKey: ["drivers"] });
     setSelectedDriver(undefined);
@@ -234,6 +259,7 @@ export default function Drivers() {
           "License Type",
           "License Expiry",
           "Status",
+          "VIP Driver",
         ],
         ...drivers.map((driver) => [
           driver.name,
@@ -242,6 +268,7 @@ export default function Drivers() {
           driver.license_type,
           driver.license_expiry,
           driver.status,
+          driver.is_vip ? "Yes" : "No",
         ]),
       ]
         .map((row) => row.join(","))
@@ -337,6 +364,17 @@ export default function Drivers() {
     });
   }, [drivers, searchTerm, statusFilter, licenseTypeFilter]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredDrivers.length / driversPerPage);
+  const startIndex = (currentPage - 1) * driversPerPage;
+  const endIndex = startIndex + driversPerPage;
+  const paginatedDrivers = filteredDrivers.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, licenseTypeFilter]);
+
   // Get unique license types for filter
   const licenseTypes = useMemo(() => {
     if (!drivers) return [];
@@ -367,7 +405,7 @@ export default function Drivers() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Drivers</h2>
+            <h2 className="text-xl font-semibold">Drivers</h2>
             <p className="text-muted-foreground">Loading drivers...</p>
           </div>
         </div>
@@ -379,7 +417,7 @@ export default function Drivers() {
     return (
       <div className="space-y-8">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Error</h2>
+          <h2 className="text-xl font-semibold">Error</h2>
           <p className="text-destructive">Failed to load drivers</p>
         </div>
       </div>
@@ -387,571 +425,537 @@ export default function Drivers() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Drivers</h2>
-          <p className="text-muted-foreground">
-            Manage your fleet drivers and track performance
-          </p>
+          <h2 className="text-xl font-semibold">Drivers</h2>
         </div>
         <Button
           onClick={() => setIsAddingDriver(true)}
           variant="outline"
-          size="lg"
-          className="gap-2 text-white border-white/20"
+          size="sm"
+          className="text-foreground border-border/50"
         >
-          <Plus className="h-5 w-5" /> Add Driver
+          Add Driver
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      {driverStats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Drivers
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{driverStats.total}</div>
-              <p className="text-xs text-muted-foreground">
-                {driverStats.active} active, {driverStats.onLeave} on leave
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Drivers
-              </CardTitle>
-              <Car className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{driverStats.active}</div>
-              <div className="flex items-center space-x-2">
-                <Progress
-                  value={driverStats.activePercentage}
-                  className="flex-1"
-                />
-                <span className="text-xs text-muted-foreground">
-                  {driverStats.activePercentage}%
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Expiring Licenses
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {driverStats.expiringLicenses}
-              </div>
-              <p className="text-xs text-muted-foreground">Within 30 days</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Expired Licenses
-              </CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {driverStats.expiredLicenses}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Requires immediate attention
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="drivers" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Drivers List
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="drivers" className="space-y-6">
-          {/* Filters and Search */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search drivers by name, license, or contact..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="on_leave">On Leave</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select
-                    value={licenseTypeFilter}
-                    onValueChange={setLicenseTypeFilter}
-                  >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="License Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      {licenseTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      setViewMode(viewMode === "grid" ? "list" : "grid")
-                    }
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Results Count */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredDrivers.length} of {drivers?.length || 0} drivers
-            </p>
-            <div className="flex items-center space-x-2">
+      {/* Filters and Search */}
+      <div className="space-y-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Section */}
+          <div className="flex-1 relative group">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input
+              placeholder="Search drivers by name, license, or contact..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+            />
+            {searchTerm && (
               <Button
                 variant="ghost"
-                size="icon"
-                className={`rounded-xl p-3 bg-transparent ${
+                size="sm"
+                className="absolute right-1 top-1 h-7 w-7 p-0 hover:bg-muted/50"
+                onClick={() => setSearchTerm("")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+
+          {/* Filters Section */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={licenseTypeFilter}
+                onValueChange={setLicenseTypeFilter}
+              >
+                <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+                  <SelectValue placeholder="License Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {licenseTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-lg border border-border/50">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 px-3 rounded-md transition-all ${
                   viewMode === "list"
-                    ? "border-2 border-white/30"
-                    : "border-2 border-transparent"
+                    ? "bg-background text-foreground shadow-sm border border-border/50"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setViewMode("list")}
                 aria-label="List view"
               >
-                <List className="h-6 w-6 text-white" />
+                <List className="h-4 w-4 mr-2" />
+                List
               </Button>
               <Button
                 variant="ghost"
-                size="icon"
-                className={`rounded-xl p-3 bg-transparent ${
+                size="sm"
+                className={`h-8 px-3 rounded-md transition-all ${
                   viewMode === "grid"
-                    ? "border-2 border-white/30"
-                    : "border-2 border-transparent"
+                    ? "bg-background text-foreground shadow-sm border border-border/50"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setViewMode("grid")}
                 aria-label="Grid view"
               >
-                <Grid className="h-6 w-6 text-white" />
+                <Grid className="h-4 w-4 mr-2" />
+                Grid
               </Button>
             </div>
           </div>
+        </div>
 
-          {/* Drivers Grid/List */}
-          {viewMode === "grid" ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredDrivers.map((driver) => {
-                const performance = driverPerformance[driver.id];
-                const isExpiring = isLicenseExpiringSoon(driver.license_expiry);
-                const isExpired = isLicenseExpired(driver.license_expiry);
-
-                return (
-                  <Card
-                    key={driver.id}
-                    className="relative cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4"
-                    style={{
-                      borderLeftColor: isExpired
-                        ? "#ef4444"
-                        : isExpiring
-                        ? "#f97316"
-                        : driver.status === "active"
-                        ? "#10b981"
-                        : driver.status === "on_leave"
-                        ? "#f59e0b"
-                        : "#6b7280",
-                    }}
-                    onClick={() => handleDriverClick(driver)}
+        {/* Active Filters Display */}
+        {(searchTerm ||
+          statusFilter !== "all" ||
+          licenseTypeFilter !== "all") && (
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2">
+              {searchTerm && (
+                <Badge variant="secondary" className="gap-1">
+                  Search: "{searchTerm}"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    onClick={() => setSearchTerm("")}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage
-                              src={driver.avatar_url}
-                              alt={driver.name}
-                            />
-                            <AvatarFallback className="text-sm font-semibold">
-                              {driver.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold text-lg">
-                              {driver.name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {driver.contact}
-                            </p>
-                          </div>
-                        </div>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {statusFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  Status: {statusFilter.replace("_", " ")}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    onClick={() => setStatusFilter("all")}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {licenseTypeFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  Type: {licenseTypeFilter}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    onClick={() => setLicenseTypeFilter("all")}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("all");
+                setLicenseTypeFilter("all");
+              }}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Clear All
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Drivers Grid/List */}
+      {viewMode === "grid" ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {paginatedDrivers.map((driver) => {
+            const tripCount = driverTripCounts[driver.id];
+            const isExpiring = isLicenseExpiringSoon(driver.license_expiry);
+            const isExpired = isLicenseExpired(driver.license_expiry);
+
+            return (
+              <Card
+                key={driver.id}
+                className="relative cursor-pointer hover:bg-muted/20 transition-all duration-200 overflow-hidden"
+                onClick={() => handleDriverClick(driver)}
+              >
+                <CardContent className="p-5">
+                  {/* Header Section */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-14 w-14">
+                        <AvatarImage
+                          src={driver.avatar_url}
+                          alt={driver.name}
+                        />
+                        <AvatarFallback className="text-base font-semibold bg-muted/50">
+                          {driver.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-lg text-foreground truncate">
+                          {driver.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {driver.contact}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {driver.is_vip && (
                         <Badge
-                          className={
-                            driver.status === "active"
-                              ? "bg-[#D1FADF] text-[#039855] gap-1 px-3"
-                              : driver.status === "inactive"
-                              ? "bg-[#FEF0C7] text-[#B54708] gap-1 px-3"
-                              : driver.status === "on_leave"
-                              ? "bg-[#6B7280] text-white gap-1 px-3"
-                              : ""
-                          }
+                          className="bg-purple-500/20 text-purple-600 border-purple-500/30"
                           variant="outline"
                         >
-                          {driver.status === "active" && (
-                            <Check className="h-4 w-4 mr-1" />
-                          )}
-                          {driver.status === "inactive" && (
-                            <AlertTriangle className="h-4 w-4 mr-1" />
-                          )}
-                          {driver.status?.replace("_", " ") || "Unknown"}
+                          <Crown className="h-3 w-3 mr-1" />
+                          VIP Driver
                         </Badge>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            License:
-                          </span>
-                          <span className="font-medium">
-                            {driver.license_number || "N/A"}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Type:</span>
-                          <span>{driver.license_type || "N/A"}</span>
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Expiry:</span>
-                          <span
-                            className={
-                              isExpired
-                                ? "text-red-600 font-medium"
-                                : isExpiring
-                                ? "text-orange-600 font-medium"
-                                : ""
-                            }
-                          >
-                            {driver.license_expiry
-                              ? new Date(
-                                  driver.license_expiry
-                                ).toLocaleDateString()
-                              : "N/A"}
-                          </span>
-                        </div>
-
-                        {performance && (
-                          <>
-                            <Separator />
-                            <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Total Trips:
-                                </span>
-                                <span className="font-medium">
-                                  {performance.totalTrips}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Completion Rate:
-                                </span>
-                                <span className="font-medium">
-                                  {performance.completionRate.toFixed(2)}%
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  On-Time Rate:
-                                </span>
-                                <span className="font-medium">
-                                  {performance.onTimeRate.toFixed(2)}%
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Efficiency Score:
-                                </span>
-                                <span className="font-medium">
-                                  {performance.efficiencyScore.toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                          </>
+                      )}
+                      <Badge
+                        className={
+                          driver.status === "active"
+                            ? "bg-green-500/20 text-green-600 border-green-500/30"
+                            : driver.status === "inactive"
+                            ? "bg-yellow-500/20 text-yellow-600 border-yellow-500/30"
+                            : driver.status === "on_leave"
+                            ? "bg-gray-500/20 text-gray-600 border-gray-500/30"
+                            : "bg-gray-500/20 text-gray-600 border-gray-500/30"
+                        }
+                        variant="outline"
+                      >
+                        {driver.status === "active" && (
+                          <Check className="h-3 w-3 mr-1" />
                         )}
-
-                        {(isExpired || isExpiring) && (
-                          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-md">
-                            <div className="flex items-center gap-2 text-red-700 text-sm">
-                              <AlertTriangle className="h-4 w-4" />
-                              <span>
-                                {isExpired
-                                  ? "License expired"
-                                  : "License expiring soon"}
-                              </span>
-                            </div>
-                          </div>
+                        {driver.status === "inactive" && (
+                          <AlertTriangle className="h-3 w-3 mr-1" />
                         )}
+                        {driver.status?.replace("_", " ") || "Unknown"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* License Details Section */}
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground font-medium">
+                        License:
+                      </span>
+                      <span className="font-semibold text-foreground">
+                        {driver.license_number || "N/A"}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground font-medium">
+                        Type:
+                      </span>
+                      <span className="text-foreground">
+                        {driver.license_type || "N/A"}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground font-medium">
+                        Expiry:
+                      </span>
+                      <span
+                        className={
+                          isExpired
+                            ? "text-red-500 font-semibold"
+                            : isExpiring
+                            ? "text-orange-500 font-semibold"
+                            : "text-foreground font-medium"
+                        }
+                      >
+                        {driver.license_expiry
+                          ? new Date(driver.license_expiry).toLocaleDateString()
+                          : "N/A"}
+                      </span>
+                    </div>
+
+                    {/* License Warning */}
+                    {(isExpired || isExpiring) && (
+                      <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                        <div className="flex items-center gap-2 text-red-600 text-sm font-medium">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>
+                            {isExpired
+                              ? "License expired"
+                              : "License expiring soon"}
+                          </span>
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredDrivers.map((driver) => {
-                const performance = driverPerformance[driver.id];
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-lg border overflow-x-auto">
+          <Table className="min-w-[800px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Driver</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>License Number</TableHead>
+                <TableHead>License Type</TableHead>
+                <TableHead>Expiry Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>VIP Driver</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedDrivers.map((driver) => {
+                const tripCount = driverTripCounts[driver.id];
                 const isExpiring = isLicenseExpiringSoon(driver.license_expiry);
                 const isExpired = isLicenseExpired(driver.license_expiry);
 
                 return (
-                  <Card
+                  <TableRow
                     key={driver.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="cursor-pointer hover:bg-muted/50 transition-all duration-200"
                     onClick={() => handleDriverClick(driver)}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage
-                              src={driver.avatar_url}
-                              alt={driver.name}
-                            />
-                            <AvatarFallback className="text-sm">
-                              {driver.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <h3 className="font-semibold">{driver.name}</h3>
-                              <Badge
-                                className={
-                                  driver.status === "active"
-                                    ? "bg-[#D1FADF] text-[#039855] gap-1 px-3"
-                                    : driver.status === "inactive"
-                                    ? "bg-[#FEF0C7] text-[#B54708] gap-1 px-3"
-                                    : driver.status === "on_leave"
-                                    ? "bg-[#6B7280] text-white gap-1 px-3"
-                                    : ""
-                                }
-                                variant="outline"
-                              >
-                                {driver.status === "active" && (
-                                  <Check className="h-4 w-4 mr-1" />
-                                )}
-                                {driver.status === "inactive" && (
-                                  <AlertTriangle className="h-4 w-4 mr-1" />
-                                )}
-                                {driver.status?.replace("_", " ") || "Unknown"}
-                              </Badge>
-                              {(isExpired || isExpiring) && (
-                                <Badge
-                                  className={
-                                    driver.status === "active"
-                                      ? "bg-[#D1FADF] text-[#039855] gap-1 px-3"
-                                      : driver.status === "inactive"
-                                      ? "bg-[#FEF0C7] text-[#B54708] gap-1 px-3"
-                                      : driver.status === "on_leave"
-                                      ? "bg-[#6B7280] text-white gap-1 px-3"
-                                      : ""
-                                  }
-                                  variant="outline"
-                                >
-                                  {driver.status === "active" && (
-                                    <Check className="h-4 w-4 mr-1" />
-                                  )}
-                                  {driver.status === "inactive" && (
-                                    <AlertTriangle className="h-4 w-4 mr-1" />
-                                  )}
-                                  {driver.status?.replace("_", " ") ||
-                                    "Unknown"}
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {driver.contact}
-                            </p>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage
+                            src={driver.avatar_url}
+                            alt={driver.name}
+                          />
+                          <AvatarFallback className="text-sm font-semibold bg-muted/50">
+                            {driver.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-foreground truncate">
+                            {driver.name}
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="text-right">
-                            <div className="text-muted-foreground">License</div>
-                            <div className="font-medium">
-                              {driver.license_number || "N/A"}
-                            </div>
-                          </div>
-
-                          <div className="text-right">
-                            <div className="text-muted-foreground">Type</div>
-                            <div>{driver.license_type || "N/A"}</div>
-                          </div>
-
-                          <div className="text-right">
-                            <div className="text-muted-foreground">Expiry</div>
-                            <div
-                              className={
-                                isExpired
-                                  ? "text-red-600 font-medium"
-                                  : isExpiring
-                                  ? "text-orange-600 font-medium"
-                                  : ""
-                              }
-                            >
-                              {driver.license_expiry
-                                ? new Date(
-                                    driver.license_expiry
-                                  ).toLocaleDateString()
-                                : "N/A"}
-                            </div>
-                          </div>
-
-                          {performance && (
-                            <>
-                              <div className="text-right">
-                                <div className="text-muted-foreground">
-                                  Trips
-                                </div>
-                                <div className="font-medium">
-                                  {performance.totalTrips}
-                                </div>
-                              </div>
-
-                              <div className="text-right">
-                                <div className="text-muted-foreground">
-                                  Completion Rate
-                                </div>
-                                <div className="font-medium">
-                                  {performance.completionRate.toFixed(2)}%
-                                </div>
-                              </div>
-                            </>
-                          )}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">{driver.contact}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">
+                        {driver.license_number || "N/A"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {driver.license_type || "N/A"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={
+                            isExpired
+                              ? "text-red-500 font-semibold"
+                              : isExpiring
+                              ? "text-orange-500 font-semibold"
+                              : "text-foreground"
+                          }
+                        >
+                          {driver.license_expiry
+                            ? new Date(
+                                driver.license_expiry
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </span>
+                        {(isExpired || isExpiring) && (
+                          <Badge
+                            variant="destructive"
+                            className="bg-red-500/20 text-red-600 border-red-500/30 text-xs"
+                          >
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {isExpired ? "Expired" : "Expiring"}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          driver.status === "active"
+                            ? "bg-green-500/20 text-green-600 border-green-500/30"
+                            : driver.status === "inactive"
+                            ? "bg-yellow-500/20 text-yellow-600 border-yellow-500/30"
+                            : driver.status === "on_leave"
+                            ? "bg-gray-500/20 text-gray-600 border-gray-500/30"
+                            : "bg-gray-500/20 text-gray-600 border-gray-500/30"
+                        }
+                        variant="outline"
+                      >
+                        {driver.status === "active" && (
+                          <Check className="h-3 w-3 mr-1" />
+                        )}
+                        {driver.status === "inactive" && (
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                        )}
+                        {driver.status?.replace("_", " ") || "Unknown"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {driver.is_vip ? (
+                        <Badge
+                          className="bg-purple-500/20 text-purple-600 border-purple-500/30"
+                          variant="outline"
+                        >
+                          <Crown className="h-3 w-3 mr-1" />
+                          VIP Driver
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </div>
-          )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
-          {/* Empty State */}
-          {filteredDrivers.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No drivers found</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchTerm ||
-                  statusFilter !== "all" ||
-                  licenseTypeFilter !== "all"
-                    ? "Try adjusting your search or filters"
-                    : "Get started by adding your first driver"}
-                </p>
-                {!searchTerm &&
-                  statusFilter === "all" &&
-                  licenseTypeFilter === "all" && (
+      {/* Results Count and Pagination Info */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Showing {startIndex + 1}-
+            {Math.min(endIndex, filteredDrivers.length)} of{" "}
+            {filteredDrivers.length} drivers
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="h-8 px-3"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                if (totalPages <= 5) {
+                  return (
                     <Button
-                      onClick={() => setIsAddingDriver(true)}
-                      variant="outline"
-                      size="lg"
-                      className="gap-2 text-white border-white/20"
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
                     >
-                      <Plus className="mr-2 h-5 w-5" /> Add First Driver
+                      {pageNum}
                     </Button>
-                  )}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+                  );
+                }
 
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              {drivers && trips && (
-                <DriverAnalytics
-                  drivers={drivers}
-                  trips={trips}
-                  selectedDriver={selectedDriver}
-                />
-              )}
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                }
+
+                if (
+                  pageNum === currentPage - 2 ||
+                  pageNum === currentPage + 2
+                ) {
+                  return (
+                    <span key={pageNum} className="px-2 text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+
+                return null;
+              })}
             </div>
-            <div>
-              {drivers && (
-                <DriverQuickActions
-                  drivers={drivers}
-                  onExportDrivers={handleExportDrivers}
-                  onImportDrivers={handleImportDrivers}
-                  onSendBulkMessage={handleSendBulkMessage}
-                  onGenerateReport={handleGenerateReport}
-                />
-              )}
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="h-8 px-3"
+            >
+              Next
+            </Button>
           </div>
-        </TabsContent>
-      </Tabs>
+
+          {/* Timestamp at bottom */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>•</span>
+            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
+      )}
 
       <DriverFormDialog
         open={isAddingDriver || !!selectedDriver}

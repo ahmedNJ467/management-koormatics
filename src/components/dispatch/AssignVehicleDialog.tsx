@@ -31,6 +31,8 @@ interface AssignVehicleDialogProps {
   trip: DisplayTrip | null;
   onClose: () => void;
   onVehicleAssigned: () => void;
+  // Add this new prop
+  isEditMode?: boolean; // Indicates if in edit mode (to pre-populate assigned vehicles)
 }
 
 interface EnhancedVehicle extends Vehicle {
@@ -45,6 +47,7 @@ export function AssignVehicleDialog({
   trip,
   onClose,
   onVehicleAssigned,
+  isEditMode = false, // Default to false
 }: AssignVehicleDialogProps) {
   const { vehicles = [], trips = [] } = useTripsData();
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
@@ -53,7 +56,7 @@ export function AssignVehicleDialog({
   const { toast } = useToast();
 
   const requirements = useMemo(() => {
-    if (!trip) return [] as ("armoured"|"soft_skin")[];
+    if (!trip) return [] as ("armoured" | "soft_skin")[];
     return [
       ...Array(trip.armoured_count || 0).fill("armoured" as const),
       ...Array(trip.soft_skin_count || 0).fill("soft_skin" as const),
@@ -61,21 +64,28 @@ export function AssignVehicleDialog({
   }, [trip]);
 
   useEffect(() => {
-    if (!trip) return;
-    const totalNeeded =
-      (trip.soft_skin_count || 0) + (trip.armoured_count || 0);
-    // Pre-fill with already assigned vehicles if array exists
-    const preassigned =
-      trip.assigned_vehicle_ids && trip.assigned_vehicle_ids.length > 0
-        ? trip.assigned_vehicle_ids
-        : trip.vehicle_id
-        ? [trip.vehicle_id]
-        : [];
-    const initial = [...preassigned];
-    while (initial.length < totalNeeded) initial.push("");
-    setSelectedVehicles(initial.slice(0, totalNeeded));
+    if (!trip || !open) return;
+
+    const newSelectedVehicles: string[] = [];
+
+    // Populate initial selections based on existing assigned_vehicle_ids
+    if (
+      isEditMode &&
+      trip.assigned_vehicle_ids &&
+      trip.assigned_vehicle_ids.length > 0
+    ) {
+      trip.assigned_vehicle_ids.forEach((id) => newSelectedVehicles.push(id));
+    }
+
+    // Pad with empty strings if not enough vehicles are pre-selected to meet requirements
+    while (newSelectedVehicles.length < requirements.length) {
+      newSelectedVehicles.push("");
+    }
+
+    // Trim if too many were pre-selected for the current requirements
+    setSelectedVehicles(newSelectedVehicles.slice(0, requirements.length));
     setConflictWarning(null);
-  }, [trip]);
+  }, [trip, open, requirements, isEditMode]);
 
   // Check for conflicts when vehicle is selected
   useEffect(() => {
@@ -138,7 +148,9 @@ export function AssignVehicleDialog({
   });
 
   const getAvailableVehicles = (currentIndex: number) => {
-    const excludeIds = selectedVehicles.filter((id, idx) => idx !== currentIndex && id);
+    const excludeIds = selectedVehicles.filter(
+      (id, idx) => idx !== currentIndex && id
+    );
     const requiredType = requirements[currentIndex];
     return enhancedVehicles.filter(
       (v) =>
@@ -167,6 +179,25 @@ export function AssignVehicleDialog({
       if (error) throw error;
     },
     onSuccess: async () => {
+      // Optimistically update trips cache so UI reflects vehicles + driver status in sync
+      queryClient.setQueryData<DisplayTrip[] | undefined>(
+        ["trips"],
+        (prev: any) => {
+          if (!prev) return prev as any;
+          if (!trip) return prev;
+          const validVehicles = selectedVehicles.filter(Boolean);
+          return prev.map((t: any) =>
+            t.id === trip.id
+              ? {
+                  ...t,
+                  vehicle_id: validVehicles[0] || t.vehicle_id,
+                  assigned_vehicle_ids: validVehicles,
+                }
+              : t
+          );
+        }
+      );
+
       // Force immediate refresh of all related queries
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["trips"] }),
@@ -205,11 +236,34 @@ export function AssignVehicleDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trip || selectedVehicles.length === 0) return;
-    mutation.mutate({
-      tripId: trip.id,
-      vehicleIds: selectedVehicles.filter(Boolean),
-    });
+    if (!trip) return;
+
+    const validVehicles = selectedVehicles.filter(Boolean); // Filter out empty strings
+
+    // Validation: ensure all required slots are filled
+    if (validVehicles.length !== requirements.length) {
+      toast({
+        title: "Assignment Incomplete",
+        description: `Please assign ${
+          requirements.length - validVehicles.length
+        } more vehicle(s).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Ensure no duplicate vehicles are selected (excluding empty slots)
+    const uniqueVehicles = new Set(validVehicles);
+    if (uniqueVehicles.size !== validVehicles.length) {
+      toast({
+        title: "Duplicate Vehicles",
+        description: "Please ensure each selected vehicle is unique.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    mutation.mutate({ tripId: trip.id, vehicleIds: validVehicles });
   };
 
   return (
@@ -221,26 +275,46 @@ export function AssignVehicleDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Assign Vehicle</DialogTitle>
+          <DialogTitle>Assign Vehicles</DialogTitle>
           <DialogDescription>
-            Assign a vehicle for trip{" "}
-            {trip?.id ? trip.id.substring(0, 8).toUpperCase() : ""}.
+            Assign required vehicles for trip{" "}
+            {trip?.id ? trip.id.substring(0, 8).toUpperCase() : ""}. This trip
+            requires:
+            <ul className="list-disc list-inside mt-2">
+              {trip?.soft_skin_count > 0 && (
+                <li>
+                  <Badge variant="secondary" className="mr-1">
+                    {trip.soft_skin_count}
+                  </Badge>
+                  Soft Skin vehicle(s)
+                </li>
+              )}
+              {trip?.armoured_count > 0 && (
+                <li>
+                  <Badge variant="default" className="mr-1">
+                    {trip.armoured_count}
+                  </Badge>
+                  Armoured vehicle(s)
+                </li>
+              )}
+              {requirements.length === 0 && (
+                <li>No specific vehicle types requested.</li>
+              )}
+            </ul>
           </DialogDescription>
-          {trip?.vehicle_type && (
-            <div className="mt-2 text-sm text-muted-foreground">
-              Required type:{" "}
-              <Badge variant="outline" className="ml-1">
-                {trip.vehicle_type.replace("_", " ")}
-              </Badge>
-            </div>
-          )}
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            {selectedVehicles.map((val, idx) => (
+            {requirements.length === 0 && (
+              <p className="text-muted-foreground">
+                No specific vehicle types were requested for this trip.
+              </p>
+            )}
+            {requirements.map((requiredType, idx) => (
               <div key={idx} className="space-y-2">
                 <Label htmlFor={`vehicle-${idx}`}>
-                  Vehicle {idx + 1} – {requirements[idx]?.replace("_", " ") || "any"} ({enhancedVehicles.length} total)
+                  Vehicle {idx + 1} – {requiredType.replace("_", " ")} (
+                  {getAvailableVehicles(idx).length} available)
                 </Label>
                 <Select
                   onValueChange={(value) => {
@@ -248,39 +322,48 @@ export function AssignVehicleDialog({
                     newSelectedVehicles[idx] = value;
                     setSelectedVehicles(newSelectedVehicles);
                   }}
-                  value={val}
+                  value={selectedVehicles[idx] || ""} // Ensure value is a string, not undefined
                 >
                   <SelectTrigger id={`vehicle-${idx}`}>
-                    <SelectValue placeholder="Select a vehicle" />
+                    <SelectValue
+                      placeholder={`Select ${requiredType.replace(
+                        "_",
+                        " "
+                      )} vehicle`}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailableVehicles(idx)
-                      .filter((vehicle) => vehicle.isCompatible)
-                      .map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                          <div className="flex items-center justify-between w-full">
-                            <span>
-                              {vehicle.make} {vehicle.model} (
-                              {vehicle.registration})
-                            </span>
-                            <div className="flex gap-1">
-                              <Badge
-                                className={`${
-                                  vehicle.isAvailable
-                                    ? "bg-green-500 hover:bg-green-600"
-                                    : "bg-amber-500 hover:bg-amber-600"
-                                } text-white text-xs`}
-                              >
-                                {vehicle.isAvailable ? "Available" : "Busy"}
-                              </Badge>
-                            </div>
+                    {getAvailableVehicles(idx).map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>
+                            {vehicle.make} {vehicle.model} (
+                            {vehicle.registration})
+                          </span>
+                          <div className="flex gap-1">
+                            <Badge
+                              className={`${
+                                vehicle.isAvailable
+                                  ? "bg-green-500 hover:bg-green-600"
+                                  : "bg-amber-500 hover:bg-amber-600"
+                              } text-white text-xs`}
+                            >
+                              {vehicle.isAvailable ? "Available" : "Busy"}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {vehicle.type === "armoured"
+                                ? "Armoured"
+                                : "Soft Skin"}
+                            </Badge>
                           </div>
-                        </SelectItem>
-                      ))}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             ))}
+
             {conflictWarning && (
               <div className="bg-amber-900/30 border border-amber-500/50 text-amber-200 p-3 rounded-md flex items-start gap-2">
                 <div className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0">
@@ -296,9 +379,12 @@ export function AssignVehicleDialog({
             </Button>
             <Button
               type="submit"
-              disabled={selectedVehicles.filter(Boolean).length !== requirements.length || mutation.isPending}
+              disabled={
+                selectedVehicles.filter(Boolean).length !==
+                  requirements.length || mutation.isPending
+              }
             >
-              {mutation.isPending ? "Assigning..." : "Assign Vehicle"}
+              {mutation.isPending ? "Assigning..." : "Assign Vehicles"}
             </Button>
           </DialogFooter>
         </form>

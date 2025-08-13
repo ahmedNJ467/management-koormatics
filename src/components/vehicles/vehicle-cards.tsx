@@ -2,16 +2,7 @@ import { memo, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Car,
-  Calendar,
-  Shield,
-  Car as CarIcon,
-  Clock,
-  AlertTriangle,
-  CheckCircle,
-  Fuel,
-} from "lucide-react";
+import { Car } from "lucide-react";
 import { Vehicle } from "@/lib/types";
 import { formatVehicleId } from "@/lib/utils";
 
@@ -29,38 +20,26 @@ export const VehicleCards = memo(
       [onVehicleClick]
     );
 
-    const getStatusIcon = (status: string) => {
-      switch (status) {
-        case "active":
-          return <CheckCircle className="h-4 w-4 text-green-600" />;
-        case "in_service":
-          return <Clock className="h-4 w-4 text-blue-600" />;
-        case "inactive":
-          return <AlertTriangle className="h-4 w-4 text-orange-600" />;
-        default:
-          return <Car className="h-4 w-4 text-muted-foreground" />;
+    const getVehicleStatus = (vehicle: Vehicle) => {
+      if (vehicle.status === "in_service") {
+        return {
+          text: "In Service",
+          color: "bg-blue-50 text-blue-700 border-blue-200",
+        };
       }
-    };
 
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case "active":
-          return "bg-green-100 text-green-800 border-green-200";
-        case "in_service":
-          return "bg-blue-100 text-blue-800 border-blue-200";
-        case "inactive":
-          return "bg-orange-100 text-orange-800 border-orange-200";
-        default:
-          return "bg-gray-100 text-gray-800 border-gray-200";
+      if (vehicle.status === "inactive") {
+        return {
+          text: "Inactive",
+          color: "bg-gray-50 text-gray-700 border-gray-200",
+        };
       }
-    };
 
-    const getTypeIcon = (type: string) => {
-      return type === "armoured" ? (
-        <Shield className="h-4 w-4" />
-      ) : (
-        <CarIcon className="h-4 w-4" />
-      );
+      // Default to active
+      return {
+        text: "Active",
+        color: "bg-green-50 text-green-700 border-green-200",
+      };
     };
 
     const isInsuranceExpiringSoon = (expiryDate: string | null) => {
@@ -78,34 +57,6 @@ export const VehicleCards = memo(
       const expiry = new Date(expiryDate);
       const now = new Date();
       return expiry < now;
-    };
-
-    const getFuelTypeDisplay = (fuelType: string | undefined) => {
-      if (!fuelType) return "N/A";
-
-      const fuelTypeMap = {
-        petrol: "Petrol",
-        diesel: "Diesel",
-        hybrid: "Hybrid",
-        electric: "Electric",
-      };
-
-      return fuelTypeMap[fuelType as keyof typeof fuelTypeMap] || fuelType;
-    };
-
-    const getFuelTypeColor = (fuelType: string | undefined) => {
-      switch (fuelType) {
-        case "electric":
-          return "text-green-600";
-        case "hybrid":
-          return "text-blue-600";
-        case "diesel":
-          return "text-orange-600";
-        case "petrol":
-          return "text-gray-600";
-        default:
-          return "text-muted-foreground";
-      }
     };
 
     if (!vehicles || !Array.isArray(vehicles)) {
@@ -136,47 +87,38 @@ export const VehicleCards = memo(
               vehicle.insurance_expiry
             );
 
+            const statusInfo = getVehicleStatus(vehicle);
+
             return (
               <Card
                 key={vehicle.id || Math.random()}
-                className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group"
+                className="cursor-pointer hover:shadow-md transition-shadow duration-200 border"
                 onClick={() => handleVehicleClick(vehicle)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      {getTypeIcon(vehicle.type)}
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {formatVehicleId(vehicle.id)}
-                      </span>
+                    <div className="text-sm text-muted-foreground">
+                      {formatVehicleId(vehicle.id)}
                     </div>
-                    <div className="flex items-center gap-1">
-                      {getStatusIcon(vehicle.status)}
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${getStatusColor(vehicle.status)}`}
-                      >
-                        {typeof vehicle.status === "string"
-                          ? vehicle.status.replace("_", " ")
-                          : "N/A"}
-                      </Badge>
-                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${statusInfo.color}`}
+                    >
+                      {statusInfo.text}
+                    </Badge>
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                   {/* Vehicle Image */}
-                  <div className="relative aspect-video bg-white rounded-t-xl overflow-hidden border border-border shadow-sm flex items-center justify-center">
+                  <div className="relative aspect-video bg-gray-50 rounded-lg overflow-hidden border flex items-center justify-center">
                     {hasImage ? (
                       <img
                         src={vehicle.vehicle_images[0]?.image_url || ""}
                         alt={`${vehicle.make} ${vehicle.model}`}
-                        className="w-full h-full object-contain rounded-t-xl group-hover:scale-105 transition-transform duration-200"
+                        className="w-full h-full object-contain"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
-                          e.currentTarget.nextElementSibling?.classList.remove(
-                            "hidden"
-                          );
                         }}
                       />
                     ) : null}
@@ -185,7 +127,7 @@ export const VehicleCards = memo(
                         hasImage ? "hidden" : ""
                       }`}
                     >
-                      <Car className="h-12 w-12 text-muted-foreground" />
+                      <Car className="h-8 w-8 text-muted-foreground" />
                     </div>
                     {/* Insurance Warning */}
                     {(insuranceExpiringSoon || insuranceExpired) && (
@@ -200,7 +142,7 @@ export const VehicleCards = memo(
                   {/* Vehicle Details */}
                   <div className="space-y-2">
                     <div>
-                      <h3 className="font-semibold text-lg leading-tight">
+                      <h3 className="font-medium text-base">
                         {vehicle.make} {vehicle.model}
                       </h3>
                       <p className="text-sm text-muted-foreground font-mono">
@@ -211,42 +153,29 @@ export const VehicleCards = memo(
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="text-muted-foreground">Year:</span>
-                        <span className="ml-1 font-medium">
-                          {vehicle.year || "N/A"}
-                        </span>
+                        <span className="ml-1">{vehicle.year || "N/A"}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Color:</span>
-                        <span className="ml-1 font-medium">
-                          {vehicle.color || "N/A"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Fuel:</span>
-                        <span
-                          className={`ml-1 font-medium ${getFuelTypeColor(
-                            vehicle.fuel_type
-                          )}`}
-                        >
-                          {getFuelTypeDisplay(vehicle.fuel_type)}
+                        <span className="text-muted-foreground">Type:</span>
+                        <span className="ml-1 capitalize">
+                          {vehicle.type || "N/A"}
                         </span>
                       </div>
                     </div>
 
                     {vehicle.insurance_expiry && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <div className="text-sm">
                         <span className="text-muted-foreground">
-                          Insurance:
+                          Insurance expires:{" "}
                         </span>
                         <span
-                          className={`font-medium ${
+                          className={
                             insuranceExpired
                               ? "text-red-600"
                               : insuranceExpiringSoon
                               ? "text-orange-600"
                               : ""
-                          }`}
+                          }
                         >
                           {new Date(
                             vehicle.insurance_expiry
@@ -254,21 +183,6 @@ export const VehicleCards = memo(
                         </span>
                       </div>
                     )}
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="flex gap-2 pt-2 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleVehicleClick(vehicle);
-                      }}
-                    >
-                      View Details
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
