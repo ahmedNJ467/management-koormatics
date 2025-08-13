@@ -397,11 +397,13 @@ export type Database = {
       }
       drivers: {
         Row: {
+          airport_id_url: string | null
           avatar_url: string | null
           contact: string | null
           created_at: string | null
           document_url: string | null
           id: string
+          is_vip: boolean
           license_expiry: string | null
           license_number: string
           license_type: string | null
@@ -411,11 +413,13 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          airport_id_url?: string | null
           avatar_url?: string | null
           contact?: string | null
           created_at?: string | null
           document_url?: string | null
           id?: string
+          is_vip?: boolean
           license_expiry?: string | null
           license_number: string
           license_type?: string | null
@@ -425,11 +429,13 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          airport_id_url?: string | null
           avatar_url?: string | null
           contact?: string | null
           created_at?: string | null
           document_url?: string | null
           id?: string
+          is_vip?: boolean
           license_expiry?: string | null
           license_number?: string
           license_type?: string | null
@@ -440,19 +446,64 @@ export type Database = {
         }
         Relationships: []
       }
+      fuel_fills: {
+        Row: {
+          amount: number
+          cost_per_liter: number | null
+          created_at: string | null
+          fill_date: string
+          fuel_management_id: string | null
+          id: string
+          notes: string | null
+          supplier: string | null
+          total_cost: number | null
+        }
+        Insert: {
+          amount: number
+          cost_per_liter?: number | null
+          created_at?: string | null
+          fill_date: string
+          fuel_management_id?: string | null
+          id?: string
+          notes?: string | null
+          supplier?: string | null
+          total_cost?: number | null
+        }
+        Update: {
+          amount?: number
+          cost_per_liter?: number | null
+          created_at?: string | null
+          fill_date?: string
+          fuel_management_id?: string | null
+          id?: string
+          notes?: string | null
+          supplier?: string | null
+          total_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tank_fills_tank_id_fkey"
+            columns: ["fuel_management_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_logs: {
         Row: {
           cost: number
           created_at: string | null
           current_mileage: number | null
           date: string
-          fuel_type: Database["public"]["Enums"]["fuel_type"]
+          filled_by: string | null
+          fuel_management_id: string | null
+          fuel_type: Database["public"]["Enums"]["fuel_type_enum_strict"]
           id: string
           mileage: number
           notes: string | null
           previous_mileage: number | null
           price_per_liter: number | null
-          tank_id: string | null
           updated_at: string | null
           vehicle_id: string
           volume: number
@@ -462,13 +513,14 @@ export type Database = {
           created_at?: string | null
           current_mileage?: number | null
           date: string
-          fuel_type: Database["public"]["Enums"]["fuel_type"]
+          filled_by?: string | null
+          fuel_management_id?: string | null
+          fuel_type: Database["public"]["Enums"]["fuel_type_enum_strict"]
           id?: string
           mileage: number
           notes?: string | null
           previous_mileage?: number | null
           price_per_liter?: number | null
-          tank_id?: string | null
           updated_at?: string | null
           vehicle_id: string
           volume: number
@@ -478,23 +530,31 @@ export type Database = {
           created_at?: string | null
           current_mileage?: number | null
           date?: string
-          fuel_type?: Database["public"]["Enums"]["fuel_type"]
+          filled_by?: string | null
+          fuel_management_id?: string | null
+          fuel_type?: Database["public"]["Enums"]["fuel_type_enum_strict"]
           id?: string
           mileage?: number
           notes?: string | null
           previous_mileage?: number | null
           price_per_liter?: number | null
-          tank_id?: string | null
           updated_at?: string | null
           vehicle_id?: string
           volume?: number
         }
         Relationships: [
           {
-            foreignKeyName: "fuel_logs_tank_id_fkey"
-            columns: ["tank_id"]
+            foreignKeyName: "fuel_logs_storage_fuel_type_fk"
+            columns: ["fuel_management_id", "fuel_type"]
             isOneToOne: false
-            referencedRelation: "fuel_tanks"
+            referencedRelation: "fuel_management"
+            referencedColumns: ["id", "fuel_type"]
+          },
+          {
+            foreignKeyName: "fuel_logs_tank_id_fkey"
+            columns: ["fuel_management_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_management"
             referencedColumns: ["id"]
           },
           {
@@ -506,25 +566,22 @@ export type Database = {
           },
         ]
       }
-      fuel_tanks: {
+      fuel_management: {
         Row: {
-          capacity: number
           created_at: string | null
-          fuel_type: string
+          fuel_type: Database["public"]["Enums"]["fuel_type_enum_strict"]
           id: string
           name: string
         }
         Insert: {
-          capacity: number
           created_at?: string | null
-          fuel_type: string
+          fuel_type: Database["public"]["Enums"]["fuel_type_enum_strict"]
           id?: string
           name: string
         }
         Update: {
-          capacity?: number
           created_at?: string | null
-          fuel_type?: string
+          fuel_type?: Database["public"]["Enums"]["fuel_type_enum_strict"]
           id?: string
           name?: string
         }
@@ -600,15 +657,7 @@ export type Database = {
           visitor_organization?: string
           visitor_passport?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "invitation_letters_generated_by_fkey"
-            columns: ["generated_by"]
-            isOneToOne: false
-            referencedRelation: "vw_user_roles"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       invoices: {
         Row: {
@@ -747,6 +796,30 @@ export type Database = {
           created_at?: string | null
           id?: string
           label?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -924,50 +997,6 @@ export type Database = {
             columns: ["maintenance_id"]
             isOneToOne: false
             referencedRelation: "maintenance"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tank_fills: {
-        Row: {
-          amount: number
-          cost_per_liter: number | null
-          created_at: string | null
-          fill_date: string
-          id: string
-          notes: string | null
-          supplier: string | null
-          tank_id: string | null
-          total_cost: number | null
-        }
-        Insert: {
-          amount: number
-          cost_per_liter?: number | null
-          created_at?: string | null
-          fill_date: string
-          id?: string
-          notes?: string | null
-          supplier?: string | null
-          tank_id?: string | null
-          total_cost?: number | null
-        }
-        Update: {
-          amount?: number
-          cost_per_liter?: number | null
-          created_at?: string | null
-          fill_date?: string
-          id?: string
-          notes?: string | null
-          supplier?: string | null
-          tank_id?: string | null
-          total_cost?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tank_fills_tank_id_fkey"
-            columns: ["tank_id"]
-            isOneToOne: false
-            referencedRelation: "fuel_tanks"
             referencedColumns: ["id"]
           },
         ]
@@ -1310,13 +1339,6 @@ export type Database = {
             referencedRelation: "roles"
             referencedColumns: ["slug"]
           },
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "vw_user_roles"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       vehicle_images: {
@@ -1347,6 +1369,38 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_incident_images: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string
+          incident_id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_url: string
+          incident_id: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          incident_id?: string
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_incident_images_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_incident_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -1765,15 +1819,7 @@ export type Database = {
           pages: string[] | null
           user_id: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "vw_user_roles"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       vw_user_roles: {
         Row: {
@@ -1803,11 +1849,19 @@ export type Database = {
         Args: { table_name: string }
         Returns: boolean
       }
+      get_storage_dispensed: {
+        Args: { p_storage_id: string }
+        Returns: number
+      }
       modify_invoices_client_id_nullable: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
       modify_trips_client_id_nullable: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      secure_function_template: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -1819,6 +1873,10 @@ export type Database = {
         Args: { part_id: string; notes_value: string }
         Returns: undefined
       }
+      your_function_name: {
+        Args: Record<PropertyKey, never>
+        Returns: Record<string, unknown>[]
+      }
     }
     Enums: {
       client_type: "organization" | "individual"
@@ -1826,6 +1884,8 @@ export type Database = {
       driver_status: "active" | "inactive" | "on_leave"
       fluid_level: "good" | "low" | "needs_change" | "needs_refill"
       fuel_type: "petrol" | "diesel" | "hybrid" | "electric"
+      fuel_type_enum: "petrol" | "diesel" | "cng"
+      fuel_type_enum_strict: "petrol" | "diesel"
       incident_severity: "minor" | "moderate" | "severe" | "critical"
       incident_status: "reported" | "investigating" | "resolved" | "closed"
       incident_type:
@@ -2000,6 +2060,8 @@ export const Constants = {
       driver_status: ["active", "inactive", "on_leave"],
       fluid_level: ["good", "low", "needs_change", "needs_refill"],
       fuel_type: ["petrol", "diesel", "hybrid", "electric"],
+      fuel_type_enum: ["petrol", "diesel", "cng"],
+      fuel_type_enum_strict: ["petrol", "diesel"],
       incident_severity: ["minor", "moderate", "severe", "critical"],
       incident_status: ["reported", "investigating", "resolved", "closed"],
       incident_type: [
