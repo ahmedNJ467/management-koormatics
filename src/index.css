@@ -67,6 +67,14 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
 }
 
 /* Animation keyframes */

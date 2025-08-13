@@ -202,18 +202,18 @@ export function InvoicesTable({
   }
 
   return (
-    <div className="border rounded-lg bg-card overflow-hidden">
+    <div className="border rounded-lg bg-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[120px]">Invoice #</TableHead>
+            <TableHead className="min-w-[120px]">Invoice #</TableHead>
             <TableHead className="min-w-[200px]">Client</TableHead>
-            <TableHead className="w-[100px]">Date</TableHead>
-            <TableHead className="w-[140px]">Due Date</TableHead>
-            <TableHead className="w-[120px] text-right">Amount</TableHead>
-            <TableHead className="w-[120px] text-right">Balance</TableHead>
-            <TableHead className="w-[120px]">Status</TableHead>
-            <TableHead className="w-[60px] text-right">Actions</TableHead>
+            <TableHead className="min-w-[100px]">Date</TableHead>
+            <TableHead className="min-w-[140px]">Due Date</TableHead>
+            <TableHead className="min-w-[120px] text-right">Amount</TableHead>
+            <TableHead className="min-w-[120px] text-right">Balance</TableHead>
+            <TableHead className="min-w-[120px]">Status</TableHead>
+            <TableHead className="min-w-[60px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

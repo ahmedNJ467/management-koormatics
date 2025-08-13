@@ -65,7 +65,12 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
       const { data, error } = await supabase.functions.invoke("create-user", {
         body: formData,
       });
-      if (error) throw error;
+      if (error) {
+        const details = (error as any)?.context
+          ? ` — ${JSON.stringify((error as any).context)}`
+          : "";
+        throw new Error(`${error.message}${details}`);
+      }
       return data;
     },
     onSuccess: () => {

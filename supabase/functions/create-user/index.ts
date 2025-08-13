@@ -13,9 +13,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("", {
       headers: {
+        // For local dev you may restrict to http://localhost:8080
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
+        "Access-Control-Max-Age": "86400",
       },
       status: 204,
     });
@@ -27,7 +30,8 @@ serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
       },
     });
   }
@@ -36,17 +40,15 @@ serve(async (req) => {
     const { email, password, role_slug, full_name } = await req.json();
 
     if (!email || !password || !role_slug) {
-      return new Response(
-        JSON.stringify({ error: "email, password and role_slug are required" }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
-          },
-        }
-      );
+      return new Response(JSON.stringify({ error: "email, password and role_slug are required" }), {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers":
+            "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
+        },
+      });
     }
 
     // 1. Create auth user (email confirmation disabled → immediately confirmed)
@@ -70,25 +72,24 @@ serve(async (req) => {
       throw roleError;
     }
 
-    return new Response(
-      JSON.stringify({ user_id: userData.user.id, email, role_slug }),
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
-        },
-        status: 200,
-      }
-    );
+    return new Response(JSON.stringify({ user_id: userData.user.id, email, role_slug }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
+      },
+      status: 200,
+    });
   } catch (err) {
     console.error("create-user error", err);
-    return new Response(JSON.stringify({ error: err.message || err.toString() }), {
+    return new Response(JSON.stringify({ error: (err as any).message || String(err) }), {
       status: 500,
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, apikey, X-Client-Info, x-client-info",
       },
     });
   }

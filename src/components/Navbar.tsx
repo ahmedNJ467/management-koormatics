@@ -113,7 +113,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </span>
         </Link>
 
-        <div className="flex-1 flex justify-center max-w-sm mx-auto">
+        <div className="hidden sm:flex flex-1 justify-center max-w-sm mx-auto">
           <GlobalSearchTrigger />
         </div>
 

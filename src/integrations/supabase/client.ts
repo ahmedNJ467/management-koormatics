@@ -17,7 +17,21 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
+// Derive Functions URL to avoid proxy/CORS quirks
+const FUNCTIONS_URL = (() => {
+  try {
+    const u = new URL(SUPABASE_URL);
+    // Replace <ref>.supabase.co with <ref>.functions.supabase.co (or .in)
+    const host = u.host
+      .replace(".supabase.co", ".functions.supabase.co")
+      .replace(".supabase.in", ".functions.supabase.in");
+    return `${u.protocol}//${host}`;
+  } catch {
+    return undefined;
+  }
+})();
+
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  // Direct edge function calls to the dedicated Functions domain
+  ...(FUNCTIONS_URL ? { functions: { url: FUNCTIONS_URL } } : {}),
+});
