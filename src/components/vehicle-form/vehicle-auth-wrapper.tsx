@@ -13,23 +13,15 @@ export function VehicleAuthWrapper({ children }: VehicleAuthWrapperProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // For development, we'll just set authenticated status
-      // In production, uncomment the code below
-      /*
       const { data } = await supabase.auth.getSession();
       setAuthStatus(data.session ? 'authenticated' : 'unauthenticated');
-      */
-      setAuthStatus("authenticated");
     };
 
     checkAuth();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // For development, we'll just set authenticated status
-        // In production, uncomment the code below
-        // setAuthStatus(session ? 'authenticated' : 'unauthenticated');
-        setAuthStatus("authenticated");
+        setAuthStatus(session ? 'authenticated' : 'unauthenticated');
       }
     );
 
@@ -40,8 +32,7 @@ export function VehicleAuthWrapper({ children }: VehicleAuthWrapperProps) {
 
   return (
     <>
-      {/* Only show authentication warning in production */}
-      {!isDevelopment && authStatus === "unauthenticated" && (
+      {authStatus === "unauthenticated" && (
         <div className="p-4 mb-4 border rounded-md bg-destructive/10 text-destructive">
           <p className="font-medium">Authentication required</p>
           <p className="text-sm">

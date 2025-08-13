@@ -27,8 +27,6 @@ export const useRole = () => {
   return {
     roles,
     hasRole: (role: string) => {
-      // Allow access in dev if no roles yet assigned
-      if (roles.length === 0) return role === "super_admin";
       return roles.includes(role);
     },
   };
