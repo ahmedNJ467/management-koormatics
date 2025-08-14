@@ -33,5 +33,3 @@ export const useRole = () => {
 
   return { roles, hasRole };
 };
-
-
