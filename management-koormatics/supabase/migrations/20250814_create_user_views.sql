@@ -44,8 +44,12 @@ grant select on public.vw_user_roles to anon, authenticated;
 create or replace view public.vw_user_pages
 security definer
 as
-select ur.user_id,
-       coalesce(array_agg(distinct rpa.page_id) filter (where rpa.page_id is not null), '{}') as pages
+select
+  ur.user_id,
+  case
+    when bool_or(ur.role_slug = 'super_admin') then array['*']::text[]
+    else coalesce(array_agg(distinct rpa.page_id) filter (where rpa.page_id is not null), '{}')
+  end as pages
 from public.user_roles ur
 left join public.role_page_access rpa on rpa.role_slug = ur.role_slug
 group by ur.user_id;
