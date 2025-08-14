@@ -13,9 +13,12 @@ export function useTenantScope() {
     () => getSubdomainFromHost(window.location.hostname),
     []
   );
-  const { hasRole } = useRole();
+  const { hasRole, roles, loading } = useRole();
 
   const isAllowed = useMemo(() => {
+    if (loading) return false;
+    // If user has any role, allow base access; domain checks refine it further
+    if (roles.length === 0) return false;
     if (hasRole("super_admin")) return true;
     if (domain === "fleet") return hasRole("fleet_manager");
     if (domain === "operations") return hasRole("operations_manager");
@@ -27,7 +30,7 @@ export function useTenantScope() {
       hasRole("operations_manager") ||
       hasRole("finance_manager")
     );
-  }, [domain, hasRole]);
+  }, [domain, hasRole, roles.length, loading]);
 
-  return { domain, isAllowed };
+  return { domain, isAllowed, loading };
 }

@@ -1,12 +1,13 @@
 {
   "version": 2,
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://esm.sh https://cdn.jsdelivr.net; img-src 'self' data: blob: https://*.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'none'"
+          "value": "default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://*.functions.supabase.co https://*.functions.supabase.in https://esm.sh https://cdn.jsdelivr.net; img-src 'self' data: blob: https://*.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'none'"
         },
         {
           "key": "Referrer-Policy",

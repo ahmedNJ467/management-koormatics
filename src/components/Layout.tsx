@@ -9,8 +9,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Layout() {
-  const { isAllowed } = useTenantScope();
-  if (!isAllowed) return <Navigate to="/403" replace />;
+  const { isAllowed, loading } = useTenantScope();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const isMobile = useIsMobile();
@@ -67,8 +66,8 @@ export default function Layout() {
     };
   }, [sidebarOpen]);
 
-  // Show loading state while checking authentication
-  if (isAuthenticated === null) {
+  // Show loading state while checking authentication and tenant scope
+  if (isAuthenticated === null || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-2">
@@ -83,6 +82,9 @@ export default function Layout() {
   if (!isAuthenticated) {
     return null;
   }
+
+  // After loading/auth checks, if tenant is not allowed, redirect
+  if (!isAllowed) return <Navigate to="/403" replace />;
 
   return (
     <div className="min-h-screen bg-background">
