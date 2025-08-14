@@ -93,13 +93,19 @@ export function DriverStatus({ drivers, vehicles, trips }: DriverStatusProps) {
 
   // Helpers to determine if a conflicting trip has actually started
   const getTripStart = (t: DisplayTrip) => {
-    const tripDateStr = t.date.split("T")[0];
-    const startStr = t.time ? `${tripDateStr} ${t.time}` : undefined;
-    return startStr ? new Date(startStr) : new Date(t.date);
+    // Safely handle missing/invalid dates
+    if (!t || !t.date) return null;
+    const tripDateStr = (t.date || "").split("T")[0];
+    const startStr = t.time
+      ? `${tripDateStr}T${t.time}`
+      : `${tripDateStr}T00:00`;
+    const parsed = new Date(startStr);
+    return isNaN(parsed.getTime()) ? null : parsed;
   };
   const hasTripStarted = (t?: DisplayTrip | null) => {
     if (!t) return false;
     const start = getTripStart(t);
+    if (!start) return false;
     return new Date() >= start;
   };
 

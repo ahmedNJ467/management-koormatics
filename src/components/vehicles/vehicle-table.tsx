@@ -1,5 +1,4 @@
 import { memo, useCallback } from "react";
-import Lightbox from "@/components/ui/Lightbox";
 import {
   Table,
   TableBody,
@@ -181,7 +180,7 @@ export const VehicleTable = memo(
                         {vehicle.vehicle_images &&
                         Array.isArray(vehicle.vehicle_images) &&
                         vehicle.vehicle_images.length > 0 ? (
-                          <Lightbox
+                          <img
                             src={vehicle.vehicle_images[0]?.image_url || ""}
                             alt={`${safeString(
                               vehicle.make,
