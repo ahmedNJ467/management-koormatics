@@ -95,24 +95,23 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       localStorage.removeItem("supabase.auth.token");
       sessionStorage.clear();
 
-      // Attempt to sign out with explicit scope
-      const { error } = await supabase.auth.signOut({
-        scope: "local", // Only clear local session, don't call server
-      });
+      // Only attempt signOut if we have a valid session
+      if (session.access_token) {
+        try {
+          const { error } = await supabase.auth.signOut({
+            scope: "local", // Only clear local session, don't call server
+          });
 
-      if (error) {
-        console.error("Logout error:", error);
-
-        // If logout fails, still redirect to auth and clear local state
-        toast({
-          title: "Session expired",
-          description: "Redirecting to login page",
-        });
-
-        navigate("/auth");
-        return;
+          if (error) {
+            console.error("Logout error:", error);
+          }
+        } catch (signOutError) {
+          console.error("SignOut error:", signOutError);
+          // Continue with logout process even if signOut fails
+        }
       }
 
+      // Always show success message and redirect
       toast({
         title: "Logged out successfully",
         description: "You have been signed out of the system",
@@ -123,10 +122,13 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     } catch (error) {
       console.error("Logout exception:", error);
 
+      // Even if there's an error, clear local state and redirect
+      localStorage.removeItem("supabase.auth.token");
+      sessionStorage.clear();
+
       toast({
-        title: "Logout failed",
-        description: "An error occurred during logout. Redirecting to login.",
-        variant: "destructive",
+        title: "Logout completed",
+        description: "Redirecting to login page",
       });
 
       // Force redirect even if logout fails

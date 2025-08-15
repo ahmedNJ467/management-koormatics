@@ -24,14 +24,31 @@ export default function Layout() {
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session || !session.access_token) {
+          console.log("No valid session found, redirecting to auth");
+          navigate("/auth");
+          return;
+        }
+
+        // Validate session is still valid
+        const now = Math.floor(Date.now() / 1000);
+        if (session.expires_at && session.expires_at < now) {
+          console.log("Session expired, redirecting to auth");
+          await supabase.auth.signOut({ scope: "local" });
+          navigate("/auth");
+          return;
+        }
+
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Auth check error:", error);
         navigate("/auth");
-        return;
       }
-      setIsAuthenticated(true);
     };
 
     checkAuth();
@@ -40,10 +57,12 @@ export default function Layout() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || !session) {
+      console.log("Auth state change:", event, session?.user?.email);
+
+      if (event === "SIGNED_OUT" || !session || !session.access_token) {
         setIsAuthenticated(false);
         navigate("/auth");
-      } else if (session) {
+      } else if (session && session.access_token) {
         setIsAuthenticated(true);
       }
     });
