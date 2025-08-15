@@ -91,8 +91,14 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         return;
       }
 
-      // Attempt to sign out
-      const { error } = await supabase.auth.signOut();
+      // Clear any local auth state first
+      localStorage.removeItem("supabase.auth.token");
+      sessionStorage.clear();
+
+      // Attempt to sign out with explicit scope
+      const { error } = await supabase.auth.signOut({
+        scope: "local", // Only clear local session, don't call server
+      });
 
       if (error) {
         console.error("Logout error:", error);
@@ -102,10 +108,6 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           title: "Session expired",
           description: "Redirecting to login page",
         });
-
-        // Clear any local auth state
-        localStorage.removeItem("supabase.auth.token");
-        sessionStorage.clear();
 
         navigate("/auth");
         return;

@@ -41,5 +41,22 @@ export const supabase = createClient<Database>(
   {
     // Direct edge function calls to the dedicated Functions domain
     ...(FUNCTIONS_URL ? { functions: { url: FUNCTIONS_URL } } : {}),
+    // Add auth configuration to handle cross-domain issues
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: "pkce",
+      // Ensure proper logout handling
+      onAuthStateChange: (event, session) => {
+        console.log("Auth state change:", event, session?.user?.email);
+      },
+    },
+    // Global headers for better compatibility
+    global: {
+      headers: {
+        "X-Client-Info": "supabase-js/2.x",
+      },
+    },
   }
 );
