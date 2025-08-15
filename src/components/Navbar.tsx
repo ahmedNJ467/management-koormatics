@@ -76,8 +76,40 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
   const handleLogoutClick = async () => {
     try {
+      // First, try to get current session to verify auth state
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        // No active session, just redirect to auth
+        toast({
+          title: "No active session",
+          description: "Redirecting to login page",
+        });
+        navigate("/auth");
+        return;
+      }
+
+      // Attempt to sign out
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+
+      if (error) {
+        console.error("Logout error:", error);
+
+        // If logout fails, still redirect to auth and clear local state
+        toast({
+          title: "Session expired",
+          description: "Redirecting to login page",
+        });
+
+        // Clear any local auth state
+        localStorage.removeItem("supabase.auth.token");
+        sessionStorage.clear();
+
+        navigate("/auth");
+        return;
+      }
 
       toast({
         title: "Logged out successfully",
@@ -87,14 +119,16 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       // Redirect to auth page
       navigate("/auth");
     } catch (error) {
+      console.error("Logout exception:", error);
+
       toast({
         title: "Logout failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An error occurred during logout",
+        description: "An error occurred during logout. Redirecting to login.",
         variant: "destructive",
       });
+
+      // Force redirect even if logout fails
+      navigate("/auth");
     }
   };
 
