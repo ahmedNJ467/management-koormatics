@@ -28,6 +28,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useState } from "react";
+import { usePageAccess } from "@/hooks/use-page-access";
 
 // Navigation structure with categories
 const navigationGroups = [
@@ -116,13 +117,23 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { domain } = useTenantScope();
+  const { data: pages = [], isLoading } = usePageAccess();
+
+  const isPageAllowed = (href: string) => {
+    if (pages.includes("*")) return true;
+    const id = href.startsWith("/") ? href.slice(1) : href;
+    const first = id.split("/")[0] || id;
+    return pages.includes(id) || pages.includes(first);
+  };
 
   // Build groups based on domain: prune items first, then filter categories
   const groupsPruned = navigationGroups
     .map((g) => ({
       ...g,
-      items: g.items.filter((item) =>
-        isAllowedPath(domain as AppDomain, item.href)
+      items: g.items.filter(
+        (item) =>
+          isAllowedPath(domain as AppDomain, item.href) &&
+          isPageAllowed(item.href)
       ),
     }))
     .filter((g) => g.items.length > 0);
@@ -162,7 +173,20 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     );
   };
 
-  const isDashboardActive = location.pathname === "/dashboard";
+  const dashboardPathByDomain =
+    domain === "fleet"
+      ? "/dashboard-fleet"
+      : domain === "operations"
+      ? "/dashboard-ops"
+      : domain === "finance"
+      ? "/dashboard-finance"
+      : "/dashboard-management";
+
+  const canSeeDashboard =
+    isPageAllowed(dashboardPathByDomain) || isPageAllowed("/dashboard");
+  const isDashboardActive =
+    location.pathname === dashboardPathByDomain ||
+    location.pathname === "/dashboard";
 
   return (
     <aside
@@ -176,21 +200,23 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           {domain.toUpperCase()}
         </div>
         {/* Dashboard standalone item */}
-        <div className="mb-4">
-          <Link
-            to="/dashboard"
-            onClick={handleLinkClick}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
-              isDashboardActive
-                ? "bg-primary/10 text-primary font-medium border-l-2 border-primary ml-1"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <BarChart3 className="h-4 w-4" />
-            Dashboard
-          </Link>
-        </div>
+        {canSeeDashboard && (
+          <div className="mb-4">
+            <Link
+              to={dashboardPathByDomain}
+              onClick={handleLinkClick}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                isDashboardActive
+                  ? "bg-primary/10 text-primary font-medium border-l-2 border-primary ml-1"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </Link>
+          </div>
+        )}
 
         {groupsToRender.map((group, groupIndex) => {
           const isExpanded = expandedCategoryIndex === groupIndex;

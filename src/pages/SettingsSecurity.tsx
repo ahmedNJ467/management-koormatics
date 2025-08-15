@@ -26,12 +26,15 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function SettingsSecurity() {
-  const { roles, hasRole } = useRole();
-  if (!hasRole("super_admin")) return <Navigate to="/403" />;
-
+  // Call all hooks unconditionally at the top to keep hook order stable
   const { data: users = [], isLoading } = useUsers();
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { roles, hasRole, loading } = useRole();
+
+  // Gate rendering after hooks have been called
+  if (loading) return null;
+  if (!hasRole("super_admin")) return <Navigate to="/403" />;
 
   const ROLE_OPTIONS = MANAGER_ROLE_OPTIONS;
 

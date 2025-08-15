@@ -55,6 +55,38 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/*" element={<Layout />}>
                   <Route
+                    path="dashboard-management"
+                    element={
+                      <AccessGuard pageId="dashboard-management">
+                        <Dashboard />
+                      </AccessGuard>
+                    }
+                  />
+                  <Route
+                    path="dashboard-fleet"
+                    element={
+                      <AccessGuard pageId="dashboard-fleet">
+                        <Dashboard />
+                      </AccessGuard>
+                    }
+                  />
+                  <Route
+                    path="dashboard-ops"
+                    element={
+                      <AccessGuard pageId="dashboard-ops">
+                        <Dashboard />
+                      </AccessGuard>
+                    }
+                  />
+                  <Route
+                    path="dashboard-finance"
+                    element={
+                      <AccessGuard pageId="dashboard-finance">
+                        <Dashboard />
+                      </AccessGuard>
+                    }
+                  />
+                  <Route
                     path="dashboard"
                     element={
                       <AccessGuard>

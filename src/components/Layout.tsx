@@ -7,6 +7,7 @@ import { Navigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ErrorBoundary from "./ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
+import { debugDomainDetection } from "@/utils/subdomain";
 
 export default function Layout() {
   const { isAllowed, loading } = useTenantScope();
@@ -14,6 +15,11 @@ export default function Layout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+
+  // Debug domain detection
+  useEffect(() => {
+    debugDomainDetection();
+  }, []);
 
   // Check authentication status
   useEffect(() => {

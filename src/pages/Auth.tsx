@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Eye, EyeOff } from "lucide-react";
+import { debugDomainDetection } from "@/utils/subdomain";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -14,7 +16,14 @@ export default function Auth() {
   const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { domain } = useTenantScope();
   const currentYear = new Date().getFullYear();
+
+  // Debug domain detection
+  useEffect(() => {
+    console.log("🔐 Auth Component - Domain detected:", domain);
+    debugDomainDetection();
+  }, [domain]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +40,18 @@ export default function Auth() {
         title: "Welcome back!",
         description: "Successfully signed in to Koormatics",
       });
-      navigate("/dashboard");
+
+      const dashboardPath =
+        domain === "fleet"
+          ? "/dashboard-fleet"
+          : domain === "operations"
+          ? "/dashboard-ops"
+          : domain === "finance"
+          ? "/dashboard-finance"
+          : "/dashboard-management";
+
+      console.log("🔐 Redirecting to:", dashboardPath, "for domain:", domain);
+      navigate(dashboardPath);
     } catch (error) {
       toast({
         title: "Authentication failed",
@@ -53,12 +73,27 @@ export default function Auth() {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard");
+        const dashboardPath =
+          domain === "fleet"
+            ? "/dashboard-fleet"
+            : domain === "operations"
+            ? "/dashboard-ops"
+            : domain === "finance"
+            ? "/dashboard-finance"
+            : "/dashboard-management";
+
+        console.log(
+          "🔐 Auto-redirect to:",
+          dashboardPath,
+          "for domain:",
+          domain
+        );
+        navigate(dashboardPath);
       }
     };
 
     checkAuth();
-  }, [navigate]);
+  }, [navigate, domain]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -83,6 +118,10 @@ export default function Auth() {
                 alt="Koormatics"
                 className="h-20 object-contain drop-shadow-lg"
               />
+            </div>
+            {/* Show current domain for debugging */}
+            <div className="text-white/80 text-sm mb-2">
+              Portal: {domain.toUpperCase()}
             </div>
           </div>
 

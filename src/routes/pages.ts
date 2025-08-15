@@ -47,6 +47,10 @@ export const Forbidden = lazyWithPreload(() => import("@/pages/Forbidden"));
 export const NotFound = lazyWithPreload(() => import("@/pages/NotFound"));
 
 export const pathToComponent: Record<string, PreloadableComponent<any>> = {
+  "/dashboard-management": Dashboard,
+  "/dashboard-fleet": Dashboard,
+  "/dashboard-ops": Dashboard,
+  "/dashboard-finance": Dashboard,
   "/dashboard": Dashboard,
   "/vehicles": Vehicles,
   "/drivers": Drivers,

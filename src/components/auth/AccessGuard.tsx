@@ -28,8 +28,7 @@ export default function AccessGuard({
   if (
     pages.includes(id) ||
     pages.includes(firstSegment) ||
-    pages.includes("*") ||
-    (pages.length === 0 && roles.length > 0)
+    pages.includes("*")
   ) {
     return <>{children}</>;
   }

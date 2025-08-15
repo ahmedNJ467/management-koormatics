@@ -1,25 +1,47 @@
 export type AppDomain = "management" | "fleet" | "operations" | "finance";
 
 export function getSubdomainFromHost(hostname: string): AppDomain {
-  // In production: subdomain.example.com → take first label
-  // In dev (localhost), default to management unless VITE_APP_SUBDOMAIN is set
-  if (!hostname || hostname === "localhost" || hostname.startsWith("127.")) {
-    const override = (import.meta as any).env?.VITE_APP_SUBDOMAIN as
-      | AppDomain
-      | undefined;
-    return override || "management";
+  // Allow explicit override in any environment (useful for multi-project deployments)
+  const override = (import.meta as any).env?.VITE_APP_SUBDOMAIN as
+    | AppDomain
+    | undefined;
+  if (override) return override;
+
+  // Local development defaults
+  if (!hostname || hostname.startsWith("127.")) {
+    return "management";
   }
 
+  // Handle Vercel domains specifically
+  if (hostname.includes("fleet-koormatics.vercel.app")) return "fleet";
+  if (hostname.includes("operations-koormatics.vercel.app")) return "operations";
+  if (hostname.includes("finance-koormatics.vercel.app")) return "finance";
+  if (hostname.includes("management-koormatics.vercel.app")) return "management";
+
   const firstLabel = hostname.split(".")[0]?.toLowerCase();
-  switch (firstLabel) {
-    case "fleet":
-      return "fleet";
-    case "operations":
-      return "operations";
-    case "finance":
-      return "finance";
-    case "management":
-    default:
-      return "management";
-  }
+
+  // Support both clean subdomains (fleet.example.com) and prefixed labels
+  // like fleet-koormatics.vercel.app or custom domains such as fleet-koormatics.com
+  if (firstLabel === "fleet" || firstLabel.startsWith("fleet-")) return "fleet";
+  if (firstLabel === "operations" || firstLabel.startsWith("operations-"))
+    return "operations";
+  if (firstLabel === "finance" || firstLabel.startsWith("finance-"))
+    return "finance";
+  if (firstLabel === "management" || firstLabel.startsWith("management-"))
+    return "management";
+
+  // Default to management if no match
+  return "management";
+}
+
+// Debug function to help troubleshoot domain detection
+export function debugDomainDetection() {
+  const hostname = window.location.hostname;
+  const detectedDomain = getSubdomainFromHost(hostname);
+  console.log("🔍 Domain Detection Debug:", {
+    hostname,
+    detectedDomain,
+    fullUrl: window.location.href
+  });
+  return detectedDomain;
 }

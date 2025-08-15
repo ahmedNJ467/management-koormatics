@@ -17,8 +17,12 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Derive Functions URL to avoid proxy/CORS quirks
+// Derive Functions URL to avoid proxy/CORS quirks, allow explicit override
 const FUNCTIONS_URL = (() => {
+  const explicit = (import.meta as any).env?.VITE_SUPABASE_FUNCTIONS_URL as
+    | string
+    | undefined;
+  if (explicit) return explicit;
   try {
     const u = new URL(SUPABASE_URL);
     // Replace <ref>.supabase.co with <ref>.functions.supabase.co (or .in)

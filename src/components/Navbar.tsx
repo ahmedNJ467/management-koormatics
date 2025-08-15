@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { preloadByPath } from "@/routes/pages";
+import { usePageAccess } from "@/hooks/use-page-access";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,32 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const { toast } = useToast();
   const { domain } = useTenantScope();
   const { hasRole } = useRole();
+  const { data: pages = [] } = usePageAccess();
+
+  const isPageAllowed = (href: string) => {
+    if (pages.includes("*")) return true;
+    const id = href.startsWith("/") ? href.slice(1) : href;
+    const first = id.split("/")[0] || id;
+    return pages.includes(id) || pages.includes(first);
+  };
+
+  const dashboardPathByDomain =
+    domain === "fleet"
+      ? "/dashboard-fleet"
+      : domain === "operations"
+      ? "/dashboard-ops"
+      : domain === "finance"
+      ? "/dashboard-finance"
+      : "/dashboard-management";
+
+  const canSeeDashboard =
+    isPageAllowed(dashboardPathByDomain) || isPageAllowed("/dashboard");
+  const canSeeProfile = isPageAllowed("/profile");
+  const canSeeSettings = isPageAllowed("/settings");
+  const firstAllowedPath = pages.find(Boolean)
+    ? `/${(pages[0] || "").replace(/^\//, "")}`
+    : "/403";
+  const homePath = canSeeDashboard ? dashboardPathByDomain : firstAllowedPath;
 
   useEffect(() => {
     setMounted(true);
@@ -99,9 +126,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </Button>
 
         <Link
-          to="/dashboard"
+          to={homePath}
           className="flex items-center"
-          onMouseEnter={() => preloadByPath("/dashboard")}
+          onMouseEnter={() => preloadByPath(homePath)}
         >
           <img
             src="/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png"
@@ -155,10 +182,14 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleProfileClick}>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                {canSeeProfile && (
+                  <>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </>
+                )}
               </DropdownMenuItem>
-              {hasRole("super_admin") && (
+              {hasRole("super_admin") && canSeeSettings && (
                 <DropdownMenuItem onClick={handleSettingsClick}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>

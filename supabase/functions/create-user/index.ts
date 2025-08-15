@@ -1,13 +1,6 @@
 import { serve } from "https://deno.land/x/sift@0.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Environment variables are automatically injected by Supabase at deploy
-const supabaseAdmin = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  { auth: { persistSession: false } }
-);
-
 serve(async (req) => {
   // Handle CORS preflight
   const origin = req.headers.get("origin") || "*";
@@ -35,6 +28,21 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize admin client only when needed and after CORS preflight handling
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    // Prefer SERVICE_ROLE_KEY (CLI forbids SUPABASE_ prefix for secrets)
+    const serviceKey =
+      Deno.env.get("SERVICE_ROLE_KEY") ||
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) {
+      throw new Error(
+        "Service configuration is missing. Contact the administrator."
+      );
+    }
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false },
+    });
+
     const { email, password, role_slug, full_name } = await req.json();
 
     if (!email || !password || !role_slug) {
