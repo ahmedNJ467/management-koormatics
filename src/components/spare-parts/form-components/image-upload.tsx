@@ -1,0 +1,247 @@
+
+import { useState, useEffect } from "react";
+import { FormLabel } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { X, AlertTriangle, Upload } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { getPublicImageUrl, createPartsDirectory } from "../utils/upload-utils";
+
+interface ImageUploadProps {
+  imageInputRef: any;
+  existingImage?: string;
+  previewUrl: string | null;
+  setPreviewUrl: (url: string | null) => void;
+  handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  form: any;
+}
+
+export const ImageUpload = ({ 
+  imageInputRef, 
+  existingImage, 
+  previewUrl, 
+  setPreviewUrl, 
+  handleImageChange,
+  form
+}: ImageUploadProps) => {
+  const { toast } = useToast();
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [storageAvailable, setStorageAvailable] = useState<boolean | null>(null);
+  const [isCheckingStorage, setIsCheckingStorage] = useState(true);
+  
+  // Check if storage is available
+  useEffect(() => {
+    const checkStorageAvailability = async () => {
+      setIsCheckingStorage(true);
+      try {
+        // Check if bucket is accessible
+        const { data, error } = await supabase.storage.from('images').list();
+        
+        if (error) {
+          console.error("Storage availability check failed:", error);
+          setStorageAvailable(false);
+          setImageError(`Storage service not available: ${error.message}`);
+          setIsCheckingStorage(false);
+          return;
+        }
+        
+        // Try to create/verify the parts directory
+        const dirCreated = await createPartsDirectory();
+        if (!dirCreated) {
+          console.error("Failed to create or verify parts directory");
+          setStorageAvailable(false);
+          setImageError("Could not access the upload directory");
+          setIsCheckingStorage(false);
+          return;
+        }
+        
+        // If we reach here, storage is fully configured
+        setStorageAvailable(true);
+        setImageError(null);
+      } catch (error) {
+        console.error("Error checking storage:", error);
+        setStorageAvailable(false);
+        setImageError("Storage service not available");
+      } finally {
+        setIsCheckingStorage(false);
+      }
+    };
+    
+    checkStorageAvailability();
+  }, []);
+  
+  // Fetch existing image preview using useEffect
+  useEffect(() => {
+    const fetchImage = async () => {
+      if (existingImage && storageAvailable) {
+        try {
+          setIsLoadingImage(true);
+          setImageError(null);
+          
+          console.log("Fetching existing image:", existingImage);
+          const publicUrl = await getPublicImageUrl(existingImage);
+          
+          if (publicUrl) {
+            console.log("Setting preview URL to:", publicUrl);
+            setPreviewUrl(publicUrl);
+          } else {
+            throw new Error("Could not get public URL");
+          }
+        } catch (error) {
+          console.error("Error fetching image:", error);
+          setImageError("Could not load the existing image");
+          toast({
+            title: "Image loading error",
+            description: "Could not load the existing image.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoadingImage(false);
+        }
+      } else if (existingImage && !storageAvailable) {
+        setImageError("Storage is not available");
+        setIsLoadingImage(false);
+      }
+    };
+    
+    if (!isCheckingStorage) {
+      fetchImage();
+    }
+  }, [existingImage, setPreviewUrl, toast, storageAvailable, isCheckingStorage]);
+
+  if (isCheckingStorage) {
+    return (
+      <div>
+        <FormLabel htmlFor="part_image">Part Image</FormLabel>
+        <div className="mt-1.5 p-4 bg-slate-50 border border-slate-200 rounded flex items-center gap-3">
+          <div className="animate-spin h-5 w-5 border-2 border-slate-300 border-t-slate-600 rounded-full"></div>
+          <p className="text-sm text-slate-600">
+            Checking storage availability...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (storageAvailable === false) {
+    return (
+      <div>
+        <FormLabel htmlFor="part_image">Part Image</FormLabel>
+        <div className="mt-1.5 p-4 bg-amber-50 border border-amber-200 rounded flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          <p className="text-sm text-amber-700">
+            {imageError || "Image uploads are currently unavailable. The storage service is not properly configured."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <FormLabel htmlFor="part_image">Part Image</FormLabel>
+      <div className="mt-1.5 space-y-4">
+        {/* File Input */}
+        <div className="relative">
+          <Input
+            id="part_image"
+            type="file"
+            onChange={(e) => {
+              // Important: Call both the ref's onChange and our local handler
+              handleImageChange(e);
+              const file = e.target.files?.[0];
+              if (file) {
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                  toast({
+                    title: "File too large",
+                    description: "Image must be less than 5MB",
+                    variant: "destructive",
+                  });
+                  e.target.value = '';
+                  return;
+                }
+                
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                  toast({
+                    title: "Invalid file type",
+                    description: "Please select an image file",
+                    variant: "destructive",
+                  });
+                  e.target.value = '';
+                  return;
+                }
+                
+                // Set the file value in the form
+                form.setValue("part_image", file);
+              }
+            }}
+            ref={imageInputRef.ref}
+            onBlur={imageInputRef.onBlur}
+            accept="image/*"
+            className="w-full"
+          />
+          {!previewUrl && (
+            <div className="absolute inset-0 opacity-0 pointer-events-none">
+              <Upload className="h-5 w-5" />
+            </div>
+          )}
+        </div>
+        
+        {/* Image Preview Area */}
+        <div className="flex justify-center">
+          {isLoadingImage && (
+            <div className="h-48 w-48 flex items-center justify-center bg-slate-100 rounded border">
+              <div className="animate-spin h-8 w-8 border-2 border-slate-300 border-t-slate-600 rounded-full"></div>
+            </div>
+          )}
+          
+          {imageError && !isLoadingImage && !previewUrl && (
+            <div className="h-48 w-48 flex items-center justify-center bg-red-50 rounded border">
+              <p className="text-sm text-red-500">Failed to load</p>
+            </div>
+          )}
+          
+          {previewUrl && !imageError && !isLoadingImage && (
+            <div className="relative h-48 w-48 rounded border overflow-hidden">
+              <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="h-full w-full object-cover" 
+                onError={() => {
+                  setImageError("Image failed to load");
+                  setPreviewUrl(null);
+                }}
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                onClick={() => {
+                  setPreviewUrl(null);
+                  form.setValue("part_image", null);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        {/* Instructions */}
+        <div className="text-xs text-muted-foreground text-center">
+          <p>Upload a clear image of the part</p>
+          <p>Maximum file size: 5MB</p>
+          <p>Supported formats: JPG, PNG, GIF</p>
+        </div>
+      </div>
+      {imageError && previewUrl && (
+        <p className="text-xs text-red-500 mt-1">{imageError}</p>
+      )}
+    </div>
+  );
+};
