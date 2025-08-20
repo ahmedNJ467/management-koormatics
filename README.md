@@ -121,6 +121,19 @@ A comprehensive fleet management solution built with React, TypeScript, and Supa
    # App runs at http://localhost:8080
    ```
 
+### Vercel Deployment
+
+1. Create a new Vercel Project and select this repository
+2. Framework Preset: Next.js
+3. Environment Variables (Project Settings → Environment Variables):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - Optional: `NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL`
+4. Install Command: `npm ci --legacy-peer-deps`
+5. Build Command: `npm run build`
+6. Output Directory: `.next`
+7. Redeploy
+
 ### Supabase Setup
 
 1. **Create a new Supabase project**
