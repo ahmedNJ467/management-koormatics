@@ -36,7 +36,7 @@ import AccessGuard from "@/components/auth/AccessGuard";
 
 export default function DynamicPage() {
   const params = useParams();
-  const slug = params.slug as string[];
+  const slug = params?.slug as string[] | undefined;
   const path = slug?.join("/") || "";
 
   // Route mapping based on the original App.tsx

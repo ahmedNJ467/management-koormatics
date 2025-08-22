@@ -129,8 +129,8 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleToggleSidebar]);
 
-  // Show loading state while checking authentication and tenant scope
-  if (isAuthenticated === null || loading) {
+  // Show loading state only on initial authentication check
+  if (isAuthenticated === null) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">

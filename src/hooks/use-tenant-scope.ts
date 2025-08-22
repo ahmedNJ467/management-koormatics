@@ -22,7 +22,9 @@ export function useTenantScope() {
   }, []);
 
   const isAllowed = useMemo(() => {
-    if (loading || !mounted) return false;
+    // If still loading or not mounted, don't block access yet
+    if (loading || !mounted) return true;
+
     // If user has any role, allow base access; domain checks refine it further
     if (roles.length === 0) return false;
     if (hasRole("super_admin")) return true;
@@ -38,5 +40,18 @@ export function useTenantScope() {
     );
   }, [domain, hasRole, roles.length, loading, mounted]);
 
-  return { domain, isAllowed, loading: loading || !mounted };
+  // Only show loading on initial mount, not on subsequent checks
+  const isLoading = loading && !mounted;
+
+  // Debug logging
+  console.log("useTenantScope Debug:", {
+    domain,
+    roles: roles.length > 0 ? roles : "No roles",
+    loading,
+    mounted,
+    isAllowed,
+    isLoading,
+  });
+
+  return { domain, isAllowed, loading: isLoading };
 }

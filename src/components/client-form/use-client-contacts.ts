@@ -18,12 +18,12 @@ export function useClientContacts(clientId: string | undefined, clientType: stri
         const { data, error } = await supabase
           .from('client_contacts')
           .select('*')
-          .eq('client_id', clientId);
+          .eq('client_id', clientId as any);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
-          setContacts(data.map(contact => ({
+          setContacts((data as any[]).map(contact => ({
             id: contact.id,
             name: contact.name,
             position: contact.position || "",
@@ -60,7 +60,7 @@ export async function saveClientContacts(
     const { error: deleteContactsError } = await supabase
       .from("client_contacts")
       .delete()
-      .eq("client_id", clientId);
+      .eq("client_id", clientId as any);
 
     if (deleteContactsError) {
       console.error("Error deleting existing contacts:", deleteContactsError);
@@ -81,7 +81,7 @@ export async function saveClientContacts(
 
     const { error: contactsError } = await supabase
       .from("client_contacts")
-      .insert(formattedContacts);
+      .insert(formattedContacts as any);
 
     if (contactsError) {
       console.error("Error inserting contacts:", contactsError);

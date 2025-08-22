@@ -1,5 +1,4 @@
 import { useRouter } from "next/navigation";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { usePageAccess } from "@/hooks/use-page-access";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,14 +15,39 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
   const { data: pages = [], isLoading } = usePageAccess();
   const { user } = useAuth();
 
+  // Debug logging to understand what's happening
+  console.log("AccessGuard Debug:", {
+    pageId,
+    isAllowed,
+    loading,
+    isLoading,
+    pages: pages.length > 0 ? pages : "No pages loaded",
+    user: user ? "User authenticated" : "No user",
+    hasWildcardAccess: pages.includes("*"),
+    hasSpecificAccess: pageId ? pages.includes(pageId) : "No pageId"
+  });
+
+  // Handle tenant scope redirect only when we're sure user is not allowed
   useEffect(() => {
-    if (!loading && !isAllowed) {
+    if (!loading && !isAllowed && user) {
+      console.log("Redirecting to /403 - User not allowed for tenant");
       router.push("/403");
     }
-  }, [loading, isAllowed, router]);
+  }, [loading, isAllowed, user, router]);
 
-  // Show loading state while checking permissions
-  if (loading || isLoading) {
+  // Handle page access redirect only when we have page data
+  useEffect(() => {
+    if (pageId && pages.length > 0 && !isLoading) {
+      const hasAccess = pages.includes("*") || pages.includes(pageId);
+      if (!hasAccess) {
+        console.log(`Redirecting to /403 - No access to page: ${pageId}`);
+        router.push("/403");
+      }
+    }
+  }, [pageId, pages, isLoading, router]);
+
+  // Show loading state only when both checks are loading
+  if (loading && isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-2">
@@ -34,18 +58,14 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
     );
   }
 
-  // Check if user has access to the specific page
-  if (pageId) {
-    const hasAccess = pages.includes("*") || pages.includes(pageId);
-    if (!hasAccess) {
-      router.push("/403");
-      return null;
-    }
-  }
+  // Allow access if user is authenticated and either:
+  // 1. Has wildcard access (*)
+  // 2. Has specific page access
+  // 3. No pageId specified (general access)
+  const hasAccess = !pageId || pages.includes("*") || pages.includes(pageId || "");
 
-  // Check if tenant scope is allowed
-  if (!isAllowed) {
-    router.push("/403");
+  // Don't render if still loading or if user has no access
+  if (loading || isLoading || (!hasAccess && pages.length > 0)) {
     return null;
   }
 

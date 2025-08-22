@@ -24,7 +24,7 @@ export const AddPartDialog = ({
 }: AddPartDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[1000px] h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Add New Part</DialogTitle>
           <DialogDescription>

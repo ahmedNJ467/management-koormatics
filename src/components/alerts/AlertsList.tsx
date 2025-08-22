@@ -55,8 +55,8 @@ export const AlertsList = ({ filterPriority }: AlertsListProps) => {
     try {
       const { error } = await supabase
         .from("alerts")
-        .update({ resolved: true })
-        .eq("id", id);
+        .update({ resolved: true } as any)
+        .eq("id", id as any);
 
       if (error) throw error;
 

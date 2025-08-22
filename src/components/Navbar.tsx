@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRole } from "@/hooks/useRole";
 import { ConnectionStatus } from "./ConnectionStatus";
+import KoormaticsLogo from "@/components/ui/koormatics-logo";
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -190,11 +191,7 @@ const Navbar = memo(function Navbar({
       </Button>
 
       <Link href={homePath()} className="flex items-center">
-        <img
-          src="/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png"
-          alt="Koormatics Logo"
-          className="h-8 object-contain"
-        />
+        <KoormaticsLogo size="sm" />
         <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
           /{domain}
         </span>

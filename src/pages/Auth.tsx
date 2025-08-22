@@ -6,13 +6,20 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { User, Eye, EyeOff } from "lucide-react";
 import { debugDomainDetection } from "@/utils/subdomain";
+import KoormaticsLogo from "@/components/ui/koormatics-logo";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -119,11 +126,7 @@ export default function Auth() {
           {/* Company Logo and Branding */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
-              <img
-                src="/lovable-uploads/4ac6bd68-bff3-4323-bab0-d4afcf9b85c2.png"
-                alt="Koormatics"
-                className="h-20 object-contain drop-shadow-lg"
-              />
+              <KoormaticsLogo size="xl" className="drop-shadow-lg" />
             </div>
             {/* Show current domain for debugging */}
             <div className="text-white/80 text-sm mb-2">
