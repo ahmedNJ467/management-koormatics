@@ -66,7 +66,7 @@ export function useClientFormSubmit() {
         // Update existing client
         const { error } = await supabase
           .from('clients')
-          .update(clientData)
+          .update(clientData as any)
           .eq('id', clientId);
         
         if (error) throw error;
@@ -81,13 +81,13 @@ export function useClientFormSubmit() {
         // Create new client
         const { data, error } = await supabase
           .from('clients')
-          .insert(clientData)
+          .insert(clientData as any)
           .select('id')
           .single();
         
         if (error) throw error;
         
-        clientId = data.id;
+        clientId = (data as any)?.id;
         toast({
           title: "Client created",
           description: `${values.name} has been created successfully.`,
@@ -125,7 +125,7 @@ export function useClientFormSubmit() {
           
           const { error: insertError } = await supabase
             .from('client_contacts')
-            .insert(contactsWithClientId);
+            .insert(contactsWithClientId as any);
           
           if (insertError) {
             console.error("Error inserting contacts:", insertError);
@@ -193,7 +193,7 @@ export function useClientFormSubmit() {
         // Insert all members as new entries
         const { error } = await supabase
           .from('client_members')
-          .insert(processedMembers);
+          .insert(processedMembers as any);
         
         if (error) {
           console.error("Error inserting members:", error);
