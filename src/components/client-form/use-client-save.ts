@@ -54,8 +54,8 @@ export function useClientSave() {
     // Update client
     const { error: updateError } = await supabase
       .from("clients")
-      .update(formattedValues as any)
-      .eq("id", client.id as any);
+      .update(formattedValues)
+      .eq("id", client.id);
 
     if (updateError) {
       console.error("Error updating client:", updateError);
@@ -99,7 +99,7 @@ export function useClientSave() {
 
     const { data: insertedClient, error: insertError } = await supabase
       .from("clients")
-      .insert(formattedValues as any)
+      .insert(formattedValues)
       .select()
       .single();
 
@@ -113,13 +113,13 @@ export function useClientSave() {
     }
 
     // Now that we have a client ID, upload the profile image if provided
-    const uploadedProfileUrl = await profileUploadFn((insertedClient as any).id);
+    const uploadedProfileUrl = await profileUploadFn(insertedClient.id);
 
     if (uploadedProfileUrl) {
       await supabase
         .from("clients")
-        .update({ profile_image_url: uploadedProfileUrl } as any)
-        .eq("id", (insertedClient as any).id);
+        .update({ profile_image_url: uploadedProfileUrl })
+        .eq("id", insertedClient.id);
     }
 
     // Upload any documents
@@ -130,7 +130,7 @@ export function useClientSave() {
       filesArray.forEach(file => dataTransfer.items.add(file));
       const filesList = dataTransfer.files;
       
-      const uploadedDocs = await uploadDocumentFn(filesList, (insertedClient as any).id);
+      const uploadedDocs = await uploadDocumentFn(filesList, insertedClient.id);
 
       // Convert documents to plain objects for storing
       const documentsForUpdate = uploadedDocs.map(doc => ({
@@ -142,18 +142,18 @@ export function useClientSave() {
 
       await supabase
         .from("clients")
-        .update({ documents: documentsForUpdate } as any)
-        .eq("id", (insertedClient as any).id);
+        .update({ documents: documentsForUpdate })
+        .eq("id", insertedClient.id);
     }
 
     // Add contacts if organization
     if (values.type === "organization" && contacts.length > 0) {
-      await saveClientContacts((insertedClient as any).id, contacts, false);
+      await saveClientContacts(insertedClient.id, contacts, false);
     }
 
     // Add members if organization
     if (values.type === "organization" && members.length > 0) {
-      await saveClientMembers((insertedClient as any).id, members, false);
+      await saveClientMembers(insertedClient.id, members, false);
     }
 
     return true;

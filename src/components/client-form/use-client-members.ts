@@ -19,7 +19,7 @@ export function useClientMembers(clientId: string | undefined, clientType: strin
         const { data, error } = await supabase
           .from('client_members')
           .select('*')
-          .eq('client_id', clientId as any);
+          .eq('client_id', clientId);
 
         if (error) {
           // If the table doesn't exist yet or other error
@@ -29,7 +29,7 @@ export function useClientMembers(clientId: string | undefined, clientType: strin
         }
 
         if (data && data.length > 0) {
-          setMembers(data.map((member: any) => ({
+          setMembers(data.map(member => ({
             id: member.id,
             name: member.name,
             role: member.role || "",
@@ -68,7 +68,7 @@ export async function saveClientMembers(
     const { error: deleteMembersError } = await supabase
       .from("client_members")
       .delete()
-      .eq("client_id", clientId as any);
+      .eq("client_id", clientId);
 
     if (deleteMembersError) {
       console.error("Error deleting existing members:", deleteMembersError);
@@ -127,7 +127,7 @@ export async function saveClientMembers(
     console.log("Inserting members:", formattedMembers);
     const { error: membersError } = await supabase
       .from("client_members")
-      .insert(formattedMembers as any);
+      .insert(formattedMembers);
 
     if (membersError) {
       console.error('Error updating members:', membersError);
