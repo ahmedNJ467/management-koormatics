@@ -160,16 +160,12 @@ export function useCostAnalyticsData(selectedYear: string) {
     queryKey: ["sparePartsCosts", selectedYear],
     queryFn: async () => {
       try {
-        // Fetch spare parts including both in_stock and low_stock
+        // Fetch spare parts with proper year filtering
         const { data: parts, error: partsError } = await supabase
           .from("spare_parts")
           .select("*")
-          .in("status", ["in_stock", "low_stock"])
           .or(
-            `purchase_date.gte.${selectedYear}-01-01,last_used_date.gte.${selectedYear}-01-01`
-          )
-          .or(
-            `purchase_date.lte.${selectedYear}-12-31,last_used_date.lte.${selectedYear}-12-31`
+            `and(purchase_date.gte.${selectedYear}-01-01,purchase_date.lte.${selectedYear}-12-31),and(last_used_date.gte.${selectedYear}-01-01,last_used_date.lte.${selectedYear}-12-31)`
           );
 
         if (partsError) {
@@ -181,6 +177,36 @@ export function useCostAnalyticsData(selectedYear: string) {
           });
           return [];
         }
+
+        // Filter parts that have been used in the selected year
+        const relevantParts = (parts || []).filter((part) => {
+          const quantityUsed = Number(part.quantity_used || 0);
+          if (quantityUsed <= 0) return false;
+
+          // Check if part was used in the selected year
+          const lastUsedDate = part.last_used_date;
+          const purchaseDate = part.purchase_date;
+
+          if (lastUsedDate) {
+            const lastUsed = new Date(lastUsedDate);
+            const yearStart = new Date(`${selectedYear}-01-01`);
+            const yearEnd = new Date(`${selectedYear}-12-31`);
+            return lastUsed >= yearStart && lastUsed <= yearEnd;
+          }
+
+          if (purchaseDate) {
+            const purchase = new Date(purchaseDate);
+            const yearStart = new Date(`${selectedYear}-01-01`);
+            const yearEnd = new Date(`${selectedYear}-12-31`);
+            return purchase >= yearStart && purchase <= yearEnd;
+          }
+
+          return false;
+        });
+
+        console.log(
+          `Filtered ${relevantParts.length} relevant spare parts for year ${selectedYear}`
+        );
 
         // Then fetch all maintenance records for lookup
         const { data: maintenanceRecords, error: maintenanceError } =
@@ -212,7 +238,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Combine spare parts with vehicle and maintenance data
-        const partsWithRelationships = (parts || []).map((partData: any) => {
+        const partsWithRelationships = relevantParts.map((partData: any) => {
           // Cast the database part to match our TypeScript interface
           const part: SparePart = {
             ...partData,
@@ -250,7 +276,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         });
 
         console.log(
-          "Processed spare parts data with vehicle relationships (including low stock):",
+          "Processed spare parts data with vehicle relationships:",
           partsWithRelationships
         );
         return partsWithRelationships;
@@ -391,16 +417,12 @@ export function useCostAnalyticsData(selectedYear: string) {
       if (!comparisonYear) return [];
 
       try {
-        // Fetch spare parts including both in_stock and low_stock
+        // Fetch spare parts with proper year filtering
         const { data: parts, error: partsError } = await supabase
           .from("spare_parts")
           .select("*")
-          .in("status", ["in_stock", "low_stock"])
           .or(
-            `purchase_date.gte.${comparisonYear}-01-01,last_used_date.gte.${comparisonYear}-01-01`
-          )
-          .or(
-            `purchase_date.lte.${comparisonYear}-12-31,last_used_date.lte.${comparisonYear}-12-31`
+            `and(purchase_date.gte.${comparisonYear}-01-01,purchase_date.lte.${comparisonYear}-12-31),and(last_used_date.gte.${comparisonYear}-01-01,last_used_date.lte.${comparisonYear}-12-31)`
           );
 
         if (partsError) {
@@ -412,6 +434,36 @@ export function useCostAnalyticsData(selectedYear: string) {
           });
           return [];
         }
+
+        // Filter parts that have been used in the comparison year
+        const relevantParts = (parts || []).filter((part) => {
+          const quantityUsed = Number(part.quantity_used || 0);
+          if (quantityUsed <= 0) return false;
+
+          // Check if part was used in the comparison year
+          const lastUsedDate = part.last_used_date;
+          const purchaseDate = part.purchase_date;
+
+          if (lastUsedDate) {
+            const lastUsed = new Date(lastUsedDate);
+            const yearStart = new Date(`${comparisonYear}-01-01`);
+            const yearEnd = new Date(`${comparisonYear}-12-31`);
+            return lastUsed >= yearStart && lastUsed <= yearEnd;
+          }
+
+          if (purchaseDate) {
+            const purchase = new Date(purchaseDate);
+            const yearStart = new Date(`${comparisonYear}-01-01`);
+            const yearEnd = new Date(`${comparisonYear}-12-31`);
+            return purchase >= yearStart && purchase <= yearEnd;
+          }
+
+          return false;
+        });
+
+        console.log(
+          `Filtered ${relevantParts.length} relevant comparison spare parts for year ${comparisonYear}`
+        );
 
         // Then fetch all maintenance records for lookup
         const { data: maintenanceRecords, error: maintenanceError } =
@@ -446,7 +498,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Combine spare parts with vehicle and maintenance data
-        const partsWithRelationships = (parts || []).map((partData: any) => {
+        const partsWithRelationships = relevantParts.map((partData: any) => {
           // Cast the database part to match our TypeScript interface
           const part: SparePart = {
             ...partData,

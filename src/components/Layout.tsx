@@ -1,4 +1,4 @@
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useCallback, memo } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
@@ -18,6 +18,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const isMobile = useIsMobile();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Debug domain detection
   useEffect(() => {
@@ -185,7 +186,12 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           {/* Main Content - Naturally expands/contracts */}
           <div className="flex-1 overflow-hidden">
             <main className="h-full overflow-y-auto bg-muted/20">
-              <div className="container mx-auto p-6">{children}</div>
+              {/* Apply normal spacing for all pages except dispatch */}
+              {pathname === "/dispatch" ? (
+                children
+              ) : (
+                <div className="container mx-auto p-6">{children}</div>
+              )}
             </main>
           </div>
         </div>
