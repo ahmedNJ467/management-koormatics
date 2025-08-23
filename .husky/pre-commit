@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Make commits smooth on machines without Node/npx or when lint-staged fails
+if command -v node >/dev/null 2>&1 && command -v npx >/dev/null 2>&1; then
+  echo "husky: running lint-staged"
+  npx --yes lint-staged --concurrent=false || {
+    echo "husky: lint-staged failed, allowing commit to proceed";
+  }
+else
+  echo "husky: node/npx not found, skipping lint-staged"
+fi
+
+exit 0

@@ -36,7 +36,20 @@ import { CategoriesTab } from "@/components/cost-analytics/CategoriesTab";
 import { VehiclesTab } from "@/components/cost-analytics/VehiclesTab";
 import { DetailsTab } from "@/components/cost-analytics/DetailsTab";
 import { ComparisonTab } from "@/components/cost-analytics/ComparisonTab";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 const CostAnalytics = () => {
   // Test calculations on component mount
@@ -78,6 +91,7 @@ const CostAnalytics = () => {
     sparePartsData,
     comparisonMaintenanceData,
     comparisonFuelData,
+    comparisonTripsData,
     comparisonSparePartsData,
     selectedYear,
     comparisonYear
@@ -457,7 +471,7 @@ const CostAnalytics = () => {
                           key={index}
                           className={`p-3 rounded-lg border ${
                             Number(part.quantity || 0) <=
-                              Number(part.min_stock_level || 5)
+                            Number(part.min_stock_level || 5)
                               ? "border-orange-300 bg-orange-50 dark:bg-orange-950"
                               : Number(part.quantity || 0) === 0
                               ? "border-red-300 bg-red-50 dark:bg-red-950"
@@ -607,34 +621,63 @@ const CostAnalytics = () => {
                   {/* Charts Section */}
                   <div className="space-y-6 mt-8">
                     <h4 className="font-medium">Analytics & Charts</h4>
-                    
+
                     {/* Inventory Value Chart */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-sm">Top 10 Parts by Value</CardTitle>
-                          <CardDescription>Highest value inventory items</CardDescription>
+                          <CardTitle className="text-sm">
+                            Top 10 Parts by Value
+                          </CardTitle>
+                          <CardDescription>
+                            Highest value inventory items
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <ResponsiveContainer width="100%" height={300}>
                             <BarChart
                               data={validSparePartsData
-                                .map(part => ({
-                                  name: part.name.length > 15 ? part.name.substring(0, 15) + '...' : part.name,
-                                  value: Number(part.quantity || 0) * Number(part.unit_price || 0),
-                                  quantity: Number(part.quantity || 0)
+                                .map((part) => ({
+                                  name:
+                                    part.name.length > 15
+                                      ? part.name.substring(0, 15) + "..."
+                                      : part.name,
+                                  value:
+                                    Number(part.quantity || 0) *
+                                    Number(part.unit_price || 0),
+                                  quantity: Number(part.quantity || 0),
                                 }))
                                 .sort((a, b) => b.value - a.value)
-                                .slice(0, 10)
-                              }
-                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                .slice(0, 10)}
+                              margin={{
+                                top: 5,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
                             >
                               <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                              <XAxis
+                                dataKey="name"
+                                angle={-45}
+                                textAnchor="end"
+                                height={80}
+                              />
                               <YAxis />
-                              <Tooltip 
-                                formatter={(value, name) => [`$${Number(value).toFixed(2)}`, 'Total Value']}
-                                labelFormatter={(label) => `${label} (${validSparePartsData.find(p => p.name.startsWith(label.replace('...', '')))?.quantity || 0} units)`}
+                              <Tooltip
+                                formatter={(value, name) => [
+                                  `$${Number(value).toFixed(2)}`,
+                                  "Total Value",
+                                ]}
+                                labelFormatter={(label) =>
+                                  `${label} (${
+                                    validSparePartsData.find((p) =>
+                                      p.name.startsWith(
+                                        label.replace("...", "")
+                                      )
+                                    )?.quantity || 0
+                                  } units)`
+                                }
                               />
                               <Bar dataKey="value" fill="#8b5cf6" />
                             </BarChart>
@@ -645,29 +688,55 @@ const CostAnalytics = () => {
                       {/* Stock Levels Chart */}
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-sm">Stock Levels Overview</CardTitle>
-                          <CardDescription>Current quantity vs minimum stock levels</CardDescription>
+                          <CardTitle className="text-sm">
+                            Stock Levels Overview
+                          </CardTitle>
+                          <CardDescription>
+                            Current quantity vs minimum stock levels
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <ResponsiveContainer width="100%" height={300}>
                             <BarChart
                               data={validSparePartsData
-                                .filter(part => Number(part.quantity || 0) > 0)
-                                .map(part => ({
-                                  name: part.name.length > 12 ? part.name.substring(0, 12) + '...' : part.name,
+                                .filter(
+                                  (part) => Number(part.quantity || 0) > 0
+                                )
+                                .map((part) => ({
+                                  name:
+                                    part.name.length > 12
+                                      ? part.name.substring(0, 12) + "..."
+                                      : part.name,
                                   current: Number(part.quantity || 0),
-                                  minimum: Number(part.min_stock_level || 5)
+                                  minimum: Number(part.min_stock_level || 5),
                                 }))
-                                .slice(0, 8)
-                              }
-                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                .slice(0, 8)}
+                              margin={{
+                                top: 5,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
                             >
                               <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                              <XAxis
+                                dataKey="name"
+                                angle={-45}
+                                textAnchor="end"
+                                height={80}
+                              />
                               <YAxis />
                               <Tooltip />
-                              <Bar dataKey="current" fill="#10b981" name="Current Stock" />
-                              <Bar dataKey="minimum" fill="#f59e0b" name="Minimum Level" />
+                              <Bar
+                                dataKey="current"
+                                fill="#10b981"
+                                name="Current Stock"
+                              />
+                              <Bar
+                                dataKey="minimum"
+                                fill="#f59e0b"
+                                name="Minimum Level"
+                              />
                             </BarChart>
                           </ResponsiveContainer>
                         </CardContent>
@@ -677,31 +746,46 @@ const CostAnalytics = () => {
                     {/* Monthly Purchases Trend */}
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-sm">Monthly Purchase Trends</CardTitle>
-                        <CardDescription>Spending on spare parts over time</CardDescription>
+                        <CardTitle className="text-sm">
+                          Monthly Purchase Trends
+                        </CardTitle>
+                        <CardDescription>
+                          Spending on spare parts over time
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <ResponsiveContainer width="100%" height={300}>
                           <LineChart
                             data={(() => {
-                              const monthlyPurchases: Record<string, number> = {};
-                              
-                              validSparePartsData.forEach(part => {
+                              const monthlyPurchases: Record<string, number> =
+                                {};
+
+                              validSparePartsData.forEach((part) => {
                                 if (part.purchase_date) {
                                   try {
                                     const date = new Date(part.purchase_date);
                                     if (!isNaN(date.getTime())) {
-                                      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                                      const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-                                      
+                                      const monthKey = `${date.getFullYear()}-${String(
+                                        date.getMonth() + 1
+                                      ).padStart(2, "0")}`;
+                                      const monthName = date.toLocaleString(
+                                        "default",
+                                        { month: "short", year: "numeric" }
+                                      );
+
                                       if (!monthlyPurchases[monthKey]) {
                                         monthlyPurchases[monthKey] = 0;
                                       }
-                                      
-                                      monthlyPurchases[monthKey] += Number(part.quantity || 0) * Number(part.unit_price || 0);
+
+                                      monthlyPurchases[monthKey] +=
+                                        Number(part.quantity || 0) *
+                                        Number(part.unit_price || 0);
                                     }
                                   } catch (error) {
-                                    console.warn('Error processing purchase date:', part.purchase_date);
+                                    console.warn(
+                                      "Error processing purchase date:",
+                                      part.purchase_date
+                                    );
                                   }
                                 }
                               });
@@ -709,9 +793,18 @@ const CostAnalytics = () => {
                               return Object.entries(monthlyPurchases)
                                 .sort(([a], [b]) => a.localeCompare(b))
                                 .map(([monthKey, total]) => {
-                                  const [year, month] = monthKey.split('-');
-                                  const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleString('default', { month: 'short', year: 'numeric' });
-                                  return { month: monthName, total: Number(total.toFixed(2)) };
+                                  const [year, month] = monthKey.split("-");
+                                  const monthName = new Date(
+                                    parseInt(year),
+                                    parseInt(month) - 1
+                                  ).toLocaleString("default", {
+                                    month: "short",
+                                    year: "numeric",
+                                  });
+                                  return {
+                                    month: monthName,
+                                    total: Number(total.toFixed(2)),
+                                  };
                                 });
                             })()}
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -719,8 +812,18 @@ const CostAnalytics = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="month" />
                             <YAxis />
-                            <Tooltip formatter={(value) => [`$${value}`, 'Total Spent']} />
-                            <Line type="monotone" dataKey="total" stroke="#8b5cf6" strokeWidth={2} />
+                            <Tooltip
+                              formatter={(value) => [
+                                `$${value}`,
+                                "Total Spent",
+                              ]}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="total"
+                              stroke="#8b5cf6"
+                              strokeWidth={2}
+                            />
                           </LineChart>
                         </ResponsiveContainer>
                       </CardContent>
@@ -730,43 +833,71 @@ const CostAnalytics = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-sm">Parts by Category</CardTitle>
-                          <CardDescription>Distribution of parts across categories</CardDescription>
+                          <CardTitle className="text-sm">
+                            Parts by Category
+                          </CardTitle>
+                          <CardDescription>
+                            Distribution of parts across categories
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
                               <Pie
                                 data={(() => {
-                                  const categoryCounts: Record<string, number> = {};
-                                  validSparePartsData.forEach(part => {
-                                    const category = part.category || 'Uncategorized';
-                                    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                                  const categoryCounts: Record<string, number> =
+                                    {};
+                                  validSparePartsData.forEach((part) => {
+                                    const category =
+                                      part.category || "Uncategorized";
+                                    categoryCounts[category] =
+                                      (categoryCounts[category] || 0) + 1;
                                   });
-                                  
-                                  return Object.entries(categoryCounts).map(([category, count]) => ({
-                                    name: category,
-                                    value: count
-                                  }));
+
+                                  return Object.entries(categoryCounts).map(
+                                    ([category, count]) => ({
+                                      name: category,
+                                      value: count,
+                                    })
+                                  );
                                 })()}
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent }) =>
+                                  `${name} ${(percent * 100).toFixed(0)}%`
+                                }
                                 outerRadius={80}
                                 fill="#8884d8"
                                 dataKey="value"
                               >
                                 {(() => {
-                                  const colors = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16', '#f97316', '#ec4899'];
-                                  const categoryCounts: Record<string, number> = {};
-                                  validSparePartsData.forEach(part => {
-                                    const category = part.category || 'Uncategorized';
-                                    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                                  const colors = [
+                                    "#8b5cf6",
+                                    "#10b981",
+                                    "#f59e0b",
+                                    "#ef4444",
+                                    "#06b6d4",
+                                    "#84cc16",
+                                    "#f97316",
+                                    "#ec4899",
+                                  ];
+                                  const categoryCounts: Record<string, number> =
+                                    {};
+                                  validSparePartsData.forEach((part) => {
+                                    const category =
+                                      part.category || "Uncategorized";
+                                    categoryCounts[category] =
+                                      (categoryCounts[category] || 0) + 1;
                                   });
-                                  return Object.entries(categoryCounts).map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                                  ));
+                                  return Object.entries(categoryCounts).map(
+                                    (entry, index) => (
+                                      <Cell
+                                        key={`cell-${index}`}
+                                        fill={colors[index % colors.length]}
+                                      />
+                                    )
+                                  );
                                 })()}
                               </Pie>
                               <Tooltip />
@@ -778,43 +909,64 @@ const CostAnalytics = () => {
                       {/* Status Distribution */}
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-sm">Inventory Status</CardTitle>
-                          <CardDescription>Current status of all parts</CardDescription>
+                          <CardTitle className="text-sm">
+                            Inventory Status
+                          </CardTitle>
+                          <CardDescription>
+                            Current status of all parts
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
                               <Pie
                                 data={(() => {
-                                  const statusCounts: Record<string, number> = {};
-                                  validSparePartsData.forEach(part => {
-                                    const status = part.status || 'unknown';
-                                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+                                  const statusCounts: Record<string, number> =
+                                    {};
+                                  validSparePartsData.forEach((part) => {
+                                    const status = part.status || "unknown";
+                                    statusCounts[status] =
+                                      (statusCounts[status] || 0) + 1;
                                   });
-                                  
-                                  return Object.entries(statusCounts).map(([status, count]) => ({
-                                    name: status.replace('_', ' '),
-                                    value: count
-                                  }));
+
+                                  return Object.entries(statusCounts).map(
+                                    ([status, count]) => ({
+                                      name: status.replace("_", " "),
+                                      value: count,
+                                    })
+                                  );
                                 })()}
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent }) =>
+                                  `${name} ${(percent * 100).toFixed(0)}%`
+                                }
                                 outerRadius={80}
                                 fill="#8884d8"
                                 dataKey="value"
                               >
                                 {(() => {
-                                  const colors = ['#10b981', '#f59e0b', '#ef4444'];
-                                  const statusCounts: Record<string, number> = {};
-                                  validSparePartsData.forEach(part => {
-                                    const status = part.status || 'unknown';
-                                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+                                  const colors = [
+                                    "#10b981",
+                                    "#f59e0b",
+                                    "#ef4444",
+                                  ];
+                                  const statusCounts: Record<string, number> =
+                                    {};
+                                  validSparePartsData.forEach((part) => {
+                                    const status = part.status || "unknown";
+                                    statusCounts[status] =
+                                      (statusCounts[status] || 0) + 1;
                                   });
-                                  return Object.entries(statusCounts).map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                                  ));
+                                  return Object.entries(statusCounts).map(
+                                    (entry, index) => (
+                                      <Cell
+                                        key={`cell-${index}`}
+                                        fill={colors[index % colors.length]}
+                                      />
+                                    )
+                                  );
                                 })()}
                               </Pie>
                               <Tooltip />

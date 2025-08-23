@@ -405,6 +405,342 @@ const InvitationLetter: React.FC = () => {
     }
   };
 
+  const regeneratePDF = async (historyItem: any) => {
+    setLoading(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Set margins and starting position
+      const margin = 80;
+      let y = 90;
+
+      // Professional color scheme
+      const primaryColor = [41, 128, 185]; // Blue
+      const secondaryColor = [52, 73, 94]; // Dark gray
+      const accentColor = [52, 152, 219]; // Light blue
+      const textColor = [44, 62, 80]; // Dark text
+      const lightGray = [236, 240, 241]; // Light gray
+      const borderColor = [189, 195, 199]; // Border gray
+
+      // Add watermark pattern
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.setLineWidth(0.1);
+      for (let i = 0; i < pageWidth; i += 20) {
+        doc.line(i, 0, i + 20, pageHeight);
+      }
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+      // Add document border
+      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.setLineWidth(1);
+      doc.rect(20, 20, pageWidth - 40, pageHeight - 40);
+
+      // Header
+      if (logoFile) {
+        try {
+          const logoBase64 = await loadImageAsBase64(logoFile);
+          doc.addImage(logoBase64, "JPEG", margin, y, 30, 30);
+          y += 35;
+        } catch (error) {
+          console.error("Error loading logo:", error);
+          y += 35;
+        }
+      } else {
+        y += 35;
+      }
+
+      doc.setFontSize(24);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(historyItem.company_name, pageWidth / 2, y, { align: "center" });
+      y += 30;
+
+      // Header line separator
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 45;
+
+      // Document title
+      doc.setFontSize(20);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+
+      // Decorative lines around title
+      doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(margin + 20, y - 5, margin + 60, y - 5);
+      doc.line(pageWidth - margin - 60, y - 5, pageWidth - margin - 20, y - 5);
+
+      doc.text("INVITATION LETTER", pageWidth / 2, y, { align: "center" });
+      y += 70;
+
+      // Reference and Date section
+      const refDateBoxHeight = 60;
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(
+        margin,
+        y,
+        pageWidth - 2 * margin,
+        refDateBoxHeight,
+        3,
+        3,
+        "FD"
+      );
+
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("REF:", margin + 15, y + 20);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.setFontSize(11);
+      doc.text(historyItem.ref_number, margin + 35, y + 20);
+
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("DATE:", margin + 15, y + 40);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.setFontSize(11);
+      doc.text(
+        new Date(historyItem.date).toLocaleDateString(),
+        margin + 35,
+        y + 40
+      );
+
+      y += refDateBoxHeight + 40;
+
+      // TO section
+      doc.setFontSize(13);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("TO:", margin, y);
+      y += 30;
+
+      doc.setFontSize(11);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.text(historyItem.visitor_name, margin + 10, y);
+      y += 25;
+      doc.text(historyItem.visitor_company || "N/A", margin + 10, y);
+      y += 25;
+      doc.text(historyItem.visitor_designation || "N/A", margin + 10, y);
+      y += 50;
+
+      // Salutation
+      doc.text("Dear " + historyItem.visitor_name + ",", margin, y);
+      y += 30;
+
+      // Body text
+      doc.setFontSize(11);
+      const bodyText = `We are pleased to invite you to visit our company on ${
+        historyItem.visit_date
+      } at ${historyItem.visit_time || "TBD"}. The purpose of your visit is ${
+        historyItem.visit_purpose || "business meeting"
+      }.`;
+
+      const splitBody = doc.splitTextToSize(bodyText, pageWidth - 2 * margin);
+      doc.text(splitBody, margin, y);
+      y += splitBody.length * 16 + 20;
+
+      // Guest details box
+      const boxHeight = 160;
+      const veryLightBlueGray = [240, 244, 247];
+      doc.setFillColor(
+        veryLightBlueGray[0],
+        veryLightBlueGray[1],
+        veryLightBlueGray[2]
+      );
+      doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+      doc.setLineWidth(2);
+      doc.roundedRect(margin, y, pageWidth - 2 * margin, boxHeight, 5, 5, "FD");
+
+      // Inner border
+      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(
+        margin + 2,
+        y + 2,
+        pageWidth - 2 * margin - 4,
+        boxHeight - 4,
+        3,
+        3,
+        "S"
+      );
+
+      const detailsStartY = y + 25;
+      const leftCol = margin + 20;
+      const rightCol = pageWidth / 2 + 20;
+
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("VISIT DETAILS:", margin + 15, detailsStartY);
+
+      doc.setFontSize(11);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+      let currentY = detailsStartY + 20;
+      doc.text("Visit Date:", leftCol, currentY);
+      doc.text(historyItem.visit_date, leftCol + 50, currentY);
+      currentY += 30;
+
+      doc.text("Visit Time:", leftCol, currentY);
+      doc.text(historyItem.visit_time || "TBD", leftCol + 50, currentY);
+      currentY += 30;
+
+      doc.text("Purpose:", leftCol, currentY);
+      doc.text(
+        historyItem.visit_purpose || "Business Meeting",
+        leftCol + 50,
+        currentY
+      );
+      currentY += 30;
+
+      doc.text("Location:", leftCol, currentY);
+      doc.text(
+        historyItem.meeting_location || "Main Office",
+        leftCol + 50,
+        currentY
+      );
+      currentY += 30;
+
+      doc.text("Contact Person:", leftCol, currentY);
+      doc.text(historyItem.contact_person || "N/A", leftCol + 50, currentY);
+
+      y += boxHeight + 50;
+
+      // Closing paragraph
+      const closingText = `We look forward to your visit and hope this meeting will be beneficial for both parties. Please confirm your attendance by contacting us at ${
+        historyItem.company_phone || "N/A"
+      } or ${historyItem.company_email || "N/A"}.`;
+
+      const splitClosing = doc.splitTextToSize(
+        closingText,
+        pageWidth - 2 * margin
+      );
+      doc.text(splitClosing, margin, y);
+      y += splitClosing.length * 18 + 30;
+
+      // Signature section
+      const signatureBoxHeight = 120;
+      const veryLightBlue = [235, 245, 251];
+      doc.setFillColor(veryLightBlue[0], veryLightBlue[1], veryLightBlue[2]);
+      doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+      doc.setLineWidth(1.5);
+      doc.roundedRect(
+        margin,
+        y,
+        pageWidth - 2 * margin,
+        signatureBoxHeight,
+        5,
+        5,
+        "FD"
+      );
+
+      const sigY = y + 30;
+
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("Sincerely,", margin + 20, sigY);
+
+      doc.setFontSize(11);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.text(
+        historyItem.contact_person || "Company Representative",
+        margin + 20,
+        sigY + 30
+      );
+      doc.text(historyItem.company_name, margin + 20, sigY + 50);
+      doc.text(
+        historyItem.company_address || "Company Address",
+        margin + 20,
+        sigY + 70
+      );
+
+      // Company stamp
+      if (stampFile) {
+        try {
+          const stampBase64 = await loadImageAsBase64(stampFile);
+          doc.addImage(
+            stampBase64,
+            "JPEG",
+            pageWidth - margin - 60,
+            sigY + 15,
+            50,
+            50
+          );
+        } catch (error) {
+          console.error("Error loading stamp:", error);
+          // Enhanced fallback stamp
+          doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+          doc.circle(pageWidth - margin - 35, sigY + 15, 25, "F");
+          doc.setFillColor(255, 255, 255);
+          doc.circle(pageWidth - margin - 35, sigY + 15, 20, "F");
+          doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+          doc.circle(pageWidth - margin - 35, sigY + 15, 15, "F");
+          doc.setFillColor(255, 255, 255);
+          doc.circle(pageWidth - margin - 35, sigY + 15, 10, "F");
+
+          doc.setFontSize(8);
+          doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+          doc.text("STAMP", pageWidth - margin - 35, sigY + 15, {
+            align: "center",
+          });
+        }
+      } else {
+        // Enhanced fallback stamp
+        doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+        doc.circle(pageWidth - margin - 35, sigY + 15, 25, "F");
+        doc.setFillColor(255, 255, 255);
+        doc.circle(pageWidth - margin - 35, sigY + 15, 20, "F");
+        doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+        doc.circle(pageWidth - margin - 35, sigY + 15, 15, "F");
+        doc.setFillColor(255, 255, 255);
+        doc.circle(pageWidth - margin - 35, sigY + 15, 10, "F");
+
+        doc.setFontSize(8);
+        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+        doc.text("STAMP", pageWidth - margin - 35, sigY + 15, {
+          align: "center",
+        });
+      }
+
+      y += signatureBoxHeight + 40;
+
+      // Footer
+      doc.setFontSize(9);
+      doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+      doc.text(
+        `Generated on ${new Date().toLocaleString()}`,
+        pageWidth / 2,
+        pageHeight - 80,
+        { align: "center" }
+      );
+      doc.text(
+        "This is a computer-generated document",
+        pageWidth / 2,
+        pageHeight - 65,
+        { align: "center" }
+      );
+      doc.text("No signature required", pageWidth / 2, pageHeight - 50, {
+        align: "center",
+      });
+
+      // Download the PDF
+      const fileName = `invitation_letter_${
+        historyItem.ref_number
+      }_${Date.now()}.pdf`;
+      doc.save(fileName);
+
+      alert("Invitation letter regenerated successfully!");
+    } catch (error) {
+      console.error("Error regenerating PDF:", error);
+      alert("Error regenerating PDF. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -413,6 +749,287 @@ const InvitationLetter: React.FC = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const confirmDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmId) {
+      await deleteHistoryItem(deleteConfirmId);
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const filteredHistory = history.filter(
+    (item) =>
+      item.visitor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.visitor_nationality
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      item.ref_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.purpose_of_visit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.visitor_organization
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase())
+  );
+
+  const sortedHistory = [...filteredHistory].sort((a, b) => {
+    if (sortOrder === "newest") {
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    } else {
+      return (
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    }
+  });
+
+  const loadHistoryItem = (historyItem: any) => {
+    // Populate the form with the selected history item
+    setFormData({
+      refNumber: historyItem.ref_number,
+      date: historyItem.letter_date,
+      companyName: historyItem.company_name,
+      companyAddress: historyItem.company_address,
+      companyEmail: historyItem.company_email,
+      companyPhone: historyItem.company_phone,
+      guestName: historyItem.visitor_name,
+      nationality: historyItem.visitor_nationality,
+      organization: historyItem.visitor_organization,
+      passportNumber: historyItem.visitor_passport,
+      passportExpiryDate: historyItem.passport_expiry,
+      visitDate: historyItem.date_of_visit,
+      durationOfStay: historyItem.duration_of_stay,
+      purposeOfVisit: historyItem.purpose_of_visit,
+    });
+
+    // Switch to the generate tab to show the loaded data
+    setActiveTab("generate");
+  };
+
+  const regeneratePDFFromHistory = async (historyItem: any) => {
+    setLoading(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Set margins and starting position - much more compact
+      const margin = 15;
+      let y = 25;
+
+      // Professional letterhead design
+      doc.setFillColor(41, 128, 185);
+      doc.rect(margin, y, pageWidth - 2 * margin, 25, "F");
+      y += 5;
+
+      // Company name in white on blue background
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.text(historyItem.company_name, pageWidth / 2, y, { align: "center" });
+      y += 20;
+
+      // Company details below the header bar
+      doc.setFontSize(7);
+      doc.setTextColor(52, 73, 94);
+      doc.text(historyItem.company_address, pageWidth / 2, y, {
+        align: "center",
+      });
+      y += 5;
+      doc.text(historyItem.company_email, pageWidth / 2, y, {
+        align: "center",
+      });
+      y += 5;
+      doc.text(historyItem.company_phone, pageWidth / 2, y, {
+        align: "center",
+      });
+      y += 12;
+
+      // Document title
+      doc.setFontSize(16);
+      doc.setTextColor(41, 128, 185);
+      doc.text("OFFICIAL INVITATION LETTER", pageWidth / 2, y, {
+        align: "center",
+      });
+      y += 20;
+
+      // Reference and Date - side by side, compact
+      doc.setFontSize(9);
+      doc.setTextColor(52, 73, 94);
+      doc.text(`Reference Number: ${historyItem.ref_number}`, margin, y);
+      doc.text(
+        `Date: ${new Date(historyItem.letter_date).toLocaleDateString(
+          "en-GB"
+        )}`,
+        pageWidth - margin - 50,
+        y
+      );
+      y += 15;
+
+      // TO section - compact
+      doc.text("TO:", margin, y);
+      y += 8;
+      doc.text("The Director General", margin + 8, y);
+      y += 6;
+      doc.text("Federal Government of Somalia", margin + 8, y);
+      y += 6;
+      doc.text("Immigration & Nationality Agency", margin + 8, y);
+      y += 15;
+
+      // Subject - compact
+      doc.setFillColor(41, 128, 185);
+      doc.rect(margin, y, pageWidth - 2 * margin, 10, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.text(
+        "SUBJECT: INVITATION LETTER - PEACE HOTEL RESERVATION",
+        pageWidth / 2,
+        y + 6,
+        { align: "center" }
+      );
+      y += 18;
+
+      // Salutation
+      doc.setTextColor(52, 73, 94);
+      doc.text("Dear Sir/Madam,", margin, y);
+      y += 12;
+
+      // Body - compact
+      doc.setFontSize(9);
+      const bodyText = `We would like to inform you that the below guest will be visiting Mogadishu and will be accommodated in Peace Hotel Mogadishu located next to Adan Cade International Airport. Peace Business Group will be responsible for his accommodation and safety while visiting Mogadishu.`;
+      const splitBody = doc.splitTextToSize(bodyText, pageWidth - 2 * margin);
+      doc.text(splitBody, margin, y);
+      y += splitBody.length * 4 + 8;
+
+      const clarificationText = `For further clarification you may contact Peace Hotel.`;
+      doc.text(clarificationText, margin, y);
+      y += 15;
+
+      // Guest details box - compact
+      doc.setFillColor(240, 244, 247);
+      doc.rect(margin, y, pageWidth - 2 * margin, 45, "F");
+      doc.setDrawColor(41, 128, 185);
+      doc.rect(margin, y, pageWidth - 2 * margin, 45, "S");
+
+      doc.setFontSize(10);
+      doc.setTextColor(41, 128, 185);
+      doc.text("Guest Details:", margin + 8, y + 12);
+
+      doc.setFontSize(8);
+      doc.setTextColor(52, 73, 94);
+      doc.text(
+        `Full Name: ${historyItem.visitor_name.toUpperCase()}`,
+        margin + 8,
+        y + 22
+      );
+      doc.text(
+        `Nationality: ${historyItem.visitor_nationality.toUpperCase()}`,
+        margin + 8,
+        y + 30
+      );
+      doc.text(
+        `Organization: ${historyItem.visitor_organization}`,
+        margin + 8,
+        y + 38
+      );
+
+      doc.text(
+        `Passport Number: ${historyItem.visitor_passport}`,
+        pageWidth / 2 + 5,
+        y + 22
+      );
+      doc.text(
+        `Passport Expiry: ${historyItem.passport_expiry}`,
+        pageWidth / 2 + 5,
+        y + 30
+      );
+      doc.text(
+        `Date of Visit: ${historyItem.date_of_visit}`,
+        pageWidth / 2 + 5,
+        y + 38
+      );
+
+      y += 55;
+
+      // Commitment - compact
+      const commitmentText = `We guarantee full compliance with immigration regulations and commitment to ensuring the visitor's departure within the specified timeframe.`;
+      const splitCommitment = doc.splitTextToSize(
+        commitmentText,
+        pageWidth - 2 * margin
+      );
+      doc.text(splitCommitment, margin, y);
+      y += splitCommitment.length * 4 + 12;
+
+      // Closing
+      doc.text("Thank you for your consideration.", margin, y);
+      y += 15;
+      doc.text("Yours sincerely,", margin, y);
+      y += 15;
+      doc.text("Authorized Signature:", margin, y);
+      y += 12;
+      doc.line(margin, y, margin + 100, y);
+      y += 15;
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(
+        "Official document digitally generated by Peace Business Group.",
+        pageWidth / 2,
+        pageHeight - 15,
+        { align: "center" }
+      );
+
+      // Download the regenerated PDF
+      const fileName = `invitation_letter_${
+        historyItem.ref_number
+      }_${Date.now()}.pdf`;
+      doc.save(fileName);
+
+      toast({
+        title: "Success",
+        description: "Invitation letter regenerated successfully!",
+      });
+    } catch (error) {
+      console.error("Error regenerating PDF:", error);
+      toast({
+        title: "Error",
+        description: "Error regenerating PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteHistoryItem = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this invitation letter?"))
+      return;
+
+    try {
+      const { error } = await supabase
+        .from("invitation_letters")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      await loadHistory();
+      toast({
+        title: "Success",
+        description: "Invitation letter deleted successfully!",
+      });
+    } catch (error) {
+      console.error("Error deleting invitation letter:", error);
+      toast({
+        title: "Error",
+        description: "Error deleting invitation letter. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const downloadHistoryFile = async (historyItem: any) => {
@@ -830,6 +1447,9 @@ const InvitationLetter: React.FC = () => {
   };
 
   const deleteHistoryItem = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this invitation letter?"))
+      return;
+
     try {
       const { error } = await supabase
         .from("invitation_letters")
