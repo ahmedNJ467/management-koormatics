@@ -60,22 +60,22 @@ export default function Vehicles() {
 
       if (!vehiclesData) return [];
 
-      const sanitizedVehicles = vehiclesData.map((v) => ({
+      const sanitizedVehicles = vehiclesData.map((v: any) => ({
         ...v,
-        id: v.id || "",
-        make: v.make || "Unknown",
-        model: v.model || "Model",
-        registration: v.registration || "N/A",
-        type: v.type || "armoured",
-        status: v.status || "active",
-        year: v.year || null,
-        color: v.color || "N/A",
-        vin: v.vin || "N/A",
-        insurance_expiry: v.insurance_expiry || null,
-        notes: v.notes || "",
-        created_at: v.created_at || new Date().toISOString(),
-        updated_at: v.updated_at || new Date().toISOString(),
-        vehicle_images: Array.isArray(v.vehicle_images) ? v.vehicle_images : [],
+        id: (v as any).id || "",
+        make: (v as any).make || "Unknown",
+        model: (v as any).model || "Model",
+        registration: (v as any).registration || "N/A",
+        type: (v as any).type || "armoured",
+        status: (v as any).status || "active",
+        year: (v as any).year || null,
+        color: (v as any).color || "N/A",
+        vin: (v as any).vin || "N/A",
+        insurance_expiry: (v as any).insurance_expiry || null,
+        notes: (v as any).notes || "",
+        created_at: (v as any).created_at || new Date().toISOString(),
+        updated_at: (v as any).updated_at || new Date().toISOString(),
+        vehicle_images: Array.isArray((v as any).vehicle_images) ? (v as any).vehicle_images : [],
       }));
 
       return sanitizedVehicles as (Vehicle & {
@@ -94,7 +94,7 @@ export default function Vehicles() {
         vehicle.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vehicle.registration.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.vin.toLowerCase().includes(searchTerm.toLowerCase());
+        (vehicle.vin || "").toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesType = typeFilter === "all" || vehicle.type === typeFilter;
       const matchesStatus =
@@ -139,7 +139,7 @@ export default function Vehicles() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("vehicles").delete().eq("id", id);
+      const { error } = await supabase.from("vehicles").delete().eq("id", id as any);
       if (error) throw error;
       return id;
     },

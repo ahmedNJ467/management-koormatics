@@ -108,31 +108,26 @@ export default function Invoices() {
       };
     }
 
-    const total = invoices.length;
-    const draft = invoices.filter((i) => i.status === "draft").length;
-    const sent = invoices.filter((i) => i.status === "sent").length;
-    const paid = invoices.filter((i) => i.status === "paid").length;
-    const overdue = invoices.filter((i) => i.status === "overdue").length;
-    const cancelled = invoices.filter((i) => i.status === "cancelled").length;
+    const safe = invoices.filter((i): i is DisplayInvoice => i != null);
+    const total = safe.length;
+    const draft = safe.filter((i) => i.status === "draft").length;
+    const sent = safe.filter((i) => i.status === "sent").length;
+    const paid = safe.filter((i) => i.status === "paid").length;
+    const overdue = safe.filter((i) => i.status === "overdue").length;
+    const cancelled = safe.filter((i) => i.status === "cancelled").length;
 
-    const totalValue = invoices.reduce(
-      (sum, i) => sum + (i.total_amount || 0),
-      0
-    );
-    const paidValue = invoices.reduce(
-      (sum, i) => sum + (i.paid_amount || 0),
-      0
-    );
-    const outstandingValue = invoices
+    const totalValue = safe.reduce((sum, i) => sum + (i?.total_amount || 0), 0);
+    const paidValue = safe.reduce((sum, i) => sum + (i?.paid_amount || 0), 0);
+    const outstandingValue = safe
       .filter((i) => i.status !== "paid" && i.status !== "cancelled")
       .reduce(
-        (sum, i) => sum + ((i.total_amount || 0) - (i.paid_amount || 0)),
+        (sum, i) => sum + ((i?.total_amount || 0) - (i?.paid_amount || 0)),
         0
       );
-    const overdueValue = invoices
+    const overdueValue = safe
       .filter((i) => i.status === "overdue")
       .reduce(
-        (sum, i) => sum + ((i.total_amount || 0) - (i.paid_amount || 0)),
+        (sum, i) => sum + ((i?.total_amount || 0) - (i?.paid_amount || 0)),
         0
       );
     const avgInvoiceValue = total > 0 ? totalValue / total : 0;
@@ -156,7 +151,9 @@ export default function Invoices() {
   const enhancedFilteredInvoices = useMemo(() => {
     if (!invoices) return [];
 
-    let filtered = invoices;
+    let filtered = invoices.filter(
+      (invoice): invoice is DisplayInvoice => invoice != null
+    );
 
     // Apply search filter
     if (searchTerm) {
@@ -477,7 +474,9 @@ export default function Invoices() {
         </CardHeader>
         <CardContent>
           <InvoicesTable
-            invoices={enhancedFilteredInvoices}
+            invoices={enhancedFilteredInvoices.filter(
+              (invoice): invoice is DisplayInvoice => invoice !== null
+            )}
             onView={setViewInvoice}
             onEdit={handleEdit}
             onRecordPayment={setPaymentInvoice}

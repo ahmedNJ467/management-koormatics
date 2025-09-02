@@ -183,7 +183,7 @@ export function InvoiceFormDialog({
         .select(
           `id, date, pickup_location, dropoff_location, service_type, vehicle_type, soft_skin_count, armoured_count, has_security_escort, escort_count, amount`
         )
-        .eq("client_id", selectedClientId)
+        .eq("client_id", selectedClientId as any)
         .is("invoice_id", null);
       if (error) throw error;
       return data.map(

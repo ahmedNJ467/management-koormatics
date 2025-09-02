@@ -80,6 +80,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { safeArrayResult, safeSingleResult } from "@/lib/utils/type-guards";
+import type { Tank, TankFill, TankStats } from "@/lib/types";
 
 function FuelLogs() {
   const { toast } = useToast();
@@ -113,7 +115,7 @@ function FuelLogs() {
         .order("date", { ascending: false });
 
       if (error) throw error;
-      return data as FuelLog[];
+      return safeArrayResult<FuelLog>(data);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
@@ -255,7 +257,10 @@ function FuelLogs() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase.from("fuel_logs").delete().eq("id", id);
+      const { error } = await supabase
+        .from("fuel_logs")
+        .delete()
+        .eq("id", id as any);
 
       if (error) throw error;
 
@@ -360,10 +365,11 @@ function FuelLogs() {
     dateRange?.from ||
     dateRange?.to;
 
-  const [tanks, setTanks] = useState([]);
-  const [tankStats, setTankStats] = useState({});
+  // Tank management states with proper types
+  const [tanks, setTanks] = useState<Tank[]>([]);
+  const [tankStats, setTankStats] = useState<Record<string, TankStats>>({});
   const [selectedTankId, setSelectedTankId] = useState<string | null>(null);
-  const [tankFills, setTankFills] = useState([]);
+  const [tankFills, setTankFills] = useState<TankFill[]>([]);
   const [showFillDialog, setShowFillDialog] = useState(false);
   const [fillForm, setFillForm] = useState({
     fill_date: "",
@@ -375,9 +381,9 @@ function FuelLogs() {
   });
   const [isSubmittingFill, setIsSubmittingFill] = useState(false);
   const [activeTab, setActiveTab] = useState("logs");
-  const [editingFill, setEditingFill] = useState(null);
+  const [editingFill, setEditingFill] = useState<TankFill | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [allTankFills, setAllTankFills] = useState([]);
+  const [allTankFills, setAllTankFills] = useState<TankFill[]>([]);
   const [isLoadingTanks, setIsLoadingTanks] = useState(false);
   const [tankError, setTankError] = useState<string | null>(null);
 
@@ -387,7 +393,8 @@ function FuelLogs() {
     setTankError(null);
 
     try {
-      const tanks = await getFuelStorages();
+      const tanksData = await getFuelStorages();
+      const tanks = safeArrayResult<Tank>(tanksData);
 
       if (!tanks || tanks.length === 0) {
         setTanks([]);
@@ -402,10 +409,13 @@ function FuelLogs() {
       // Process tanks in parallel for better performance
       const tankPromises = tanks.map(async (tank) => {
         try {
-          const [fills, dispensed] = await Promise.all([
+          const [fillsData, dispensedData] = await Promise.all([
             getFuelFills(tank.id),
             getStorageDispensed(tank.id),
           ]);
+
+          const fills = safeArrayResult<TankFill>(fillsData);
+          const dispensed = safeSingleResult<number>(dispensedData) || 0;
 
           const totalFilled = fills.reduce(
             (sum, f) => sum + (f.amount || 0),
@@ -413,13 +423,13 @@ function FuelLogs() {
           );
           const lastFill = fills[0];
 
-          const stats = {
+          const stats: TankStats = {
             currentLevel: totalFilled - dispensed,
             lastFillDate: lastFill?.fill_date,
             lastFillAmount: lastFill?.amount,
           };
 
-          const fillsWithTankInfo = fills.map((fill) => ({
+          const fillsWithTankInfo: TankFill[] = fills.map((fill) => ({
             ...fill,
             tank_fuel_type: tank.fuel_type,
           }));
@@ -427,14 +437,18 @@ function FuelLogs() {
           return { tankId: tank.id, stats, fills: fillsWithTankInfo };
         } catch (tankError) {
           console.error(`Error processing tank ${tank.id}:`, tankError);
-          return { tankId: tank.id, stats: {}, fills: [] };
+          return {
+            tankId: tank.id,
+            stats: {} as TankStats,
+            fills: [] as TankFill[],
+          };
         }
       });
 
       const results = await Promise.all(tankPromises);
 
-      const stats = {};
-      const allFills = [];
+      const stats: Record<string, TankStats> = {};
+      const allFills: TankFill[] = [];
 
       results.forEach(({ tankId, stats: tankStats, fills }) => {
         stats[tankId] = tankStats;
@@ -443,13 +457,13 @@ function FuelLogs() {
 
       setTankStats(stats);
       setAllTankFills(allFills);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching tank data:", error);
 
       const errorMessage =
-        error?.message ||
-        error?.details ||
-        error?.hint ||
+        (error?.message as string) ||
+        (error?.details as string) ||
+        (error?.hint as string) ||
         "Failed to fetch fuel tank data. Please check your connection and try again.";
       setTankError(errorMessage);
 
@@ -481,7 +495,7 @@ function FuelLogs() {
 
   useEffect(() => {
     if (selectedTankId) {
-      getFuelFills(selectedTankId).then(setTankFills);
+      getFuelFills(selectedTankId).then((fills) => setTankFills(fills as any));
     }
   }, [selectedTankId, showFillDialog]);
 
@@ -510,8 +524,14 @@ function FuelLogs() {
       };
     }
 
+    type FuelStats = {
+      totalSpent: number;
+      totalVolume: number;
+      fillCount: number;
+      avgCostPerLiter?: number;
+    };
     const stats = allTankFills.reduce(
-      (acc, fill) => {
+      (acc: { diesel: FuelStats; petrol: FuelStats }, fill) => {
         const fuelType = fill.tank_fuel_type === "diesel" ? "diesel" : "petrol";
         const stats = acc[fuelType];
 
@@ -537,7 +557,7 @@ function FuelLogs() {
         stats.petrol.totalSpent / stats.petrol.totalVolume;
     }
 
-    const total = {
+    const total: FuelStats & { avgCostPerLiter: number } = {
       totalSpent: stats.diesel.totalSpent + stats.petrol.totalSpent,
       totalVolume: stats.diesel.totalVolume + stats.petrol.totalVolume,
       fillCount: stats.diesel.fillCount + stats.petrol.fillCount,
@@ -572,7 +592,11 @@ function FuelLogs() {
         projectedLevel += Number(fillForm.amount);
       }
       const tank = tanks.find((t) => t.id === selectedTankId);
-      if (tank && projectedLevel > tank.capacity) {
+      if (
+        tank &&
+        typeof tank.capacity === "number" &&
+        projectedLevel > tank.capacity
+      ) {
         toast({
           title: "Tank Overfill Prevented",
           description: `This fill would exceed the tank's capacity (${tank.capacity} L). Please enter a lower amount.`,
@@ -584,7 +608,7 @@ function FuelLogs() {
       if (editingFill) {
         // Update existing fill
         await supabase
-          .from("tank_fills")
+          .from("tank_fills" as any)
           .update({
             fill_date: fillForm.fill_date,
             amount: Number(fillForm.amount),
@@ -592,16 +616,16 @@ function FuelLogs() {
             total_cost: Number(fillForm.total_cost) || null,
             supplier: fillForm.supplier,
             notes: fillForm.notes,
-          })
-          .eq("id", editingFill.id);
+          } as any)
+          .eq("id", editingFill.id as any);
       } else {
         // Add new fill
         await addFuelFill({
           fuel_management_id: selectedTankId!,
           fill_date: fillForm.fill_date,
           amount: Number(fillForm.amount),
-          cost_per_liter: Number(fillForm.cost_per_liter) || null,
-          total_cost: Number(fillForm.total_cost) || null,
+          cost_per_liter: Number(fillForm.cost_per_liter) || undefined,
+          total_cost: Number(fillForm.total_cost) || undefined,
           supplier: fillForm.supplier,
           notes: fillForm.notes,
         });
@@ -617,16 +641,20 @@ function FuelLogs() {
       });
       setEditingFill(null);
       // Refresh tank stats and fills
-      if (selectedTankId) getFuelFills(selectedTankId).then(setTankFills);
+      if (selectedTankId)
+        getFuelFills(selectedTankId).then((fills) =>
+          setTankFills(fills as any)
+        );
       // Also refresh all tank stats
       const refreshedTanks = await getFuelStorages();
-      setTanks(refreshedTanks);
-      const stats = {};
-      const allFills = [];
+      setTanks(refreshedTanks as any);
+      const stats: Record<string, TankStats> = {};
+      const allFills: TankFill[] = [];
 
-      for (const tank of refreshedTanks) {
-        const fills = await getFuelFills(tank.id);
-        const dispensed = await getStorageDispensed(tank.id);
+      const refreshedList = safeArrayResult<Tank>(refreshedTanks);
+      for (const tank of refreshedList) {
+        const fills = (await getFuelFills(tank.id)) as any[];
+        const dispensed = (await getStorageDispensed(tank.id)) as any;
         const totalFilled = fills.reduce((sum, f) => sum + (f.amount || 0), 0);
         const lastFill = fills[0];
         stats[tank.id] = {
@@ -689,13 +717,13 @@ function FuelLogs() {
   };
 
   // Edit tank fill logic
-  const handleEditFill = (fill) => {
+  const handleEditFill = (fill: TankFill) => {
     setEditingFill(fill);
     setFillForm({
       fill_date: fill.fill_date,
-      amount: fill.amount,
-      cost_per_liter: fill.cost_per_liter || "",
-      total_cost: fill.total_cost || "",
+      amount: String(fill.amount),
+      cost_per_liter: fill.cost_per_liter ? String(fill.cost_per_liter) : "",
+      total_cost: fill.total_cost ? String(fill.total_cost) : "",
       supplier: fill.supplier || "",
       notes: fill.notes || "",
     });
@@ -705,19 +733,24 @@ function FuelLogs() {
   // Delete tank fill logic
   const handleDeleteFill = async () => {
     if (!editingFill) return;
-    await supabase.from("tank_fills").delete().eq("id", editingFill.id);
+    await supabase
+      .from("tank_fills" as any)
+      .delete()
+      .eq("id", editingFill.id as any);
     setShowDeleteDialog(false);
     setEditingFill(null);
-    if (selectedTankId) getFuelFills(selectedTankId).then(setTankFills);
+    if (selectedTankId)
+      getFuelFills(selectedTankId).then((fills) => setTankFills(fills as any));
     // Refresh tank stats
     const refreshedTanks = await getFuelStorages();
-    setTanks(refreshedTanks);
-    const stats = {};
-    const allFills = [];
+    setTanks(refreshedTanks as any);
+    const stats: Record<string, TankStats> = {};
+    const allFills: TankFill[] = [];
 
-    for (const tank of refreshedTanks) {
-      const fills = await getFuelFills(tank.id);
-      const dispensed = await getStorageDispensed(tank.id);
+    const refreshedList = safeArrayResult<Tank>(refreshedTanks);
+    for (const tank of refreshedList) {
+      const fills = (await getFuelFills(tank.id)) as any[];
+      const dispensed = (await getStorageDispensed(tank.id)) as any;
       const totalFilled = fills.reduce((sum, f) => sum + (f.amount || 0), 0);
       const lastFill = fills[0];
       stats[tank.id] = {

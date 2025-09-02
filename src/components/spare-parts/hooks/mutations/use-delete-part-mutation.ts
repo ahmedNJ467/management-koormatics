@@ -9,34 +9,32 @@ export const useDeletePartMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      console.log("Deleting part with ID:", id);
+    mutationFn: async (partId: string) => {
+      console.log("Deleting part with ID:", partId);
       
-      // Try to get the part image path first to delete the image if it exists
-      const { data: part } = await supabase
+      // Get the part image before deleting
+      const { data: partData } = await supabase
         .from("spare_parts")
         .select("part_image")
-        .eq("id", id)
+        .eq("id", partId as any)
         .single();
-      
-      if (part?.part_image) {
-        // Try to delete the associated image
-        await deletePartImage(part.part_image);
-      }
-      
+
+      // Delete the part
       const { error } = await supabase
         .from("spare_parts")
         .delete()
-        .eq("id", id);
+        .eq("id", partId as any);
 
-      if (error) {
-        console.error("Error deleting part:", error);
-        throw error;
+      if (error) throw error;
+
+      // Delete the image from storage if it exists
+      if (partData && 'part_image' in partData && partData.part_image) {
+        await deletePartImage(partData.part_image);
       }
 
       console.log("Part deleted successfully");
       
-      return id;
+      return partId;
     },
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ["spare_parts"] });

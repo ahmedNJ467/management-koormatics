@@ -12,7 +12,7 @@ export function DriverPerformance({ trips }: DriverPerformanceProps) {
   const driverTripCounts: Record<string, { trips: number, revenue: number, name: string }> = {};
   
   trips.forEach(trip => {
-    const driverId = trip.driver_id;
+    const driverId = trip.driver_id || '';
     const driverName = trip.driver_name || 'Unknown Driver';
     
     if (!driverTripCounts[driverId]) {

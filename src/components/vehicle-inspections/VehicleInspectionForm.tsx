@@ -229,7 +229,7 @@ export function VehicleInspectionForm({
         // Update existing inspection
         const { error } = await supabase
           .from("vehicle_inspections")
-          .update(values)
+          .update(values as any)
           .eq("id", inspection.id);
 
         if (error) throw error;

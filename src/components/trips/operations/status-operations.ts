@@ -26,10 +26,7 @@ export const updateTripStatus = async (
       updatePayload.actual_dropoff_time = new Date().toISOString();
     }
 
-    const { error } = await supabase
-      .from("trips")
-      .update(updatePayload)
-      .eq("id", tripId);
+    const { error } = await supabase.from("trips").update(updatePayload as any).eq("id", tripId as any);
 
     if (error) throw error;
 

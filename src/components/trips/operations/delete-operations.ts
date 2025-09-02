@@ -8,11 +8,11 @@ export const deleteTripFromDatabase = async (tripId: string) => {
 
   try {
     // Delete related records first to avoid orphaned data
-    await supabase.from("trip_messages").delete().eq("trip_id", tripId);
-    await supabase.from("trip_assignments").delete().eq("trip_id", tripId);
+    await supabase.from("trip_messages").delete().eq("trip_id", tripId as any);
+    await supabase.from("trip_assignments").delete().eq("trip_id", tripId as any);
 
     // Then delete the trip
-    const { error } = await supabase.from("trips").delete().eq("id", tripId);
+    const { error } = await supabase.from("trips").delete().eq("id", tripId as any);
 
     if (error) throw error;
     return true;

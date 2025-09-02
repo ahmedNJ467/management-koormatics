@@ -153,7 +153,7 @@ export async function generateIncidentReportPdf(
 ): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
-  const brandPrimary = "#2E4A87"; // Koormatics blue tone
+  const brandPrimary: [number, number, number] = [46, 74, 135]; // Koormatics blue tone (RGB values)
   const brandAccent = "#7AC943"; // Koormatics green tone
 
   // Document metadata (helps international exchange/archiving)
@@ -186,7 +186,7 @@ export async function generateIncidentReportPdf(
   }
 
   // Company/title block on right
-  doc.setTextColor(brandPrimary);
+  doc.setTextColor(brandPrimary[0], brandPrimary[1], brandPrimary[2]);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.text("Vehicle Incident Report", pageWidth - marginX, 30, {
@@ -268,7 +268,7 @@ export async function generateIncidentReportPdf(
       ["Status", (incident.status || "-").toString().toUpperCase()],
     ],
     styles: { fontSize: 9, cellPadding: 6 },
-    headStyles: { fillColor: brandPrimary, textColor: 255 },
+    headStyles: { fillColor: brandPrimary, textColor: [255, 255, 255] },
     theme: "grid",
     didParseCell: (data: any) => {
       if (data.section === "body" && data.column.index === 1) {
@@ -303,7 +303,7 @@ export async function generateIncidentReportPdf(
       ["Follow-up Date", formatISODate(incident.follow_up_date)],
     ],
     styles: { fontSize: 9, cellPadding: 6 },
-    headStyles: { fillColor: brandPrimary, textColor: 255 },
+    headStyles: { fillColor: brandPrimary, textColor: [255, 255, 255] },
     theme: "striped",
     margin: { left: marginX, right: marginX },
   });
@@ -345,7 +345,7 @@ export async function generateIncidentReportPdf(
       head: [["Financial & Reference Information", "Details"]],
       body: financialData,
       styles: { fontSize: 9, cellPadding: 6 },
-      headStyles: { fillColor: brandPrimary, textColor: 255 },
+      headStyles: { fillColor: brandPrimary, textColor: [255, 255, 255] },
       theme: "grid",
       margin: { left: marginX, right: marginX },
     });
@@ -359,7 +359,7 @@ export async function generateIncidentReportPdf(
       head: [["Incident Description"]],
       body: [[incident.description]],
       styles: { fontSize: 10, cellPadding: 8, valign: "top" },
-      headStyles: { fillColor: brandPrimary, textColor: 255, halign: "left" },
+      headStyles: { fillColor: brandPrimary, textColor: [255, 255, 255], halign: "left" },
       columnStyles: { 0: { cellWidth: pageWidth - marginX * 2 } },
       theme: "grid",
       margin: { left: marginX, right: marginX },
@@ -388,7 +388,7 @@ export async function generateIncidentReportPdf(
       head: [["Additional Information", "Details"]],
       body: additionalDetails,
       styles: { fontSize: 9, cellPadding: 6, valign: "top" },
-      headStyles: { fillColor: brandPrimary, textColor: 255 },
+      headStyles: { fillColor: brandPrimary, textColor: [255, 255, 255] },
       theme: "grid",
       margin: { left: marginX, right: marginX },
     });
@@ -397,7 +397,7 @@ export async function generateIncidentReportPdf(
 
   // Photos section (optional)
   if (incident.photos && incident.photos.length > 0) {
-    doc.setTextColor(brandPrimary);
+    doc.setTextColor(brandPrimary[0], brandPrimary[1], brandPrimary[2]);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("Evidence Photos", marginX, yCursor);
@@ -493,7 +493,7 @@ export async function generateIncidentReportPdf(
   const leftX = marginX + reservedLeft;
   const rightX = pageWidth - marginX - sigWidth;
 
-  doc.setDrawColor(brandPrimary);
+  doc.setDrawColor(brandPrimary[0], brandPrimary[1], brandPrimary[2]);
   doc.line(leftX, footerY, leftX + sigWidth, footerY);
   doc.line(rightX, footerY, rightX + sigWidth, footerY);
   doc.setFontSize(9);
@@ -550,7 +550,7 @@ export async function exportIncidentReportsListToPDF(
     format: "a4",
   });
 
-  const brandPrimary = "#2E4A87";
+  const brandPrimary: [number, number, number] = [46, 74, 135];
   const brandAccent = "#7AC943";
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -558,7 +558,7 @@ export async function exportIncidentReportsListToPDF(
   const headerHeight = 72;
 
   // Header
-  doc.setFillColor(brandPrimary);
+  doc.setFillColor(brandPrimary[0], brandPrimary[1], brandPrimary[2]);
   doc.rect(0, 0, pageWidth, headerHeight, "F");
 
   // Company logo and title
@@ -594,7 +594,7 @@ export async function exportIncidentReportsListToPDF(
   autoTable(doc, {
     startY: yCursor,
     styles: { fontSize: 10, cellPadding: 6 },
-    headStyles: { fillColor: brandPrimary, textColor: 255 },
+    headStyles: { fillColor: brandPrimary, textColor: [255, 255, 255] },
     body: [
       ["Total Incidents", totalIncidents.toString()],
       ["Critical Incidents", criticalIncidents.toString()],
@@ -653,7 +653,7 @@ export async function exportIncidentReportsListToPDF(
       valign: "middle",
     },
     headStyles: {
-      fillColor: [brandPrimary],
+      fillColor: brandPrimary,
       textColor: [255, 255, 255],
       fontStyle: "bold",
       halign: "center",

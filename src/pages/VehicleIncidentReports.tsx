@@ -136,7 +136,7 @@ export default function VehicleIncidentReports() {
         .order("incident_date", { ascending: false });
 
       if (error) throw error;
-      return data as VehicleIncidentReport[];
+      return data as any;
     },
   });
 
@@ -157,7 +157,7 @@ export default function VehicleIncidentReports() {
   const filteredReports = useMemo(() => {
     if (!incidentReports) return [];
 
-    return incidentReports.filter((report) => {
+    return incidentReports.filter((report: any) => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -252,19 +252,19 @@ export default function VehicleIncidentReports() {
     thisMonth.setDate(1);
 
     const thisMonthReports = filteredReports.filter(
-      (r) => parseISO(r.incident_date) >= thisMonth
+      (r: any) => parseISO(r.incident_date) >= thisMonth
     ).length;
 
     const severeReports = filteredReports.filter(
-      (r) => r.severity === "severe" || r.severity === "critical"
+      (r: any) => r.severity === "severe" || r.severity === "critical"
     ).length;
 
     const pendingReports = filteredReports.filter(
-      (r) => r.status === "reported" || r.status === "investigating"
+      (r: any) => r.status === "reported" || r.status === "investigating"
     ).length;
 
     const totalCost = filteredReports.reduce(
-      (sum, r) => sum + (r.actual_repair_cost || r.estimated_damage_cost || 0),
+      (sum: any, r: any) => sum + (r.actual_repair_cost || r.estimated_damage_cost || 0),
       0
     );
 
@@ -283,7 +283,7 @@ export default function VehicleIncidentReports() {
       const { error } = await supabase
         .from("vehicle_incident_reports")
         .delete()
-        .eq("id", id);
+        .eq("id", id as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -459,7 +459,7 @@ export default function VehicleIncidentReports() {
       "Description",
     ];
 
-    const csvData = filteredReports.map((report) => [
+    const csvData = filteredReports.map((report: any) => [
       formatDate(report.incident_date),
       report.incident_time || "",
       report.vehicle
@@ -479,7 +479,7 @@ export default function VehicleIncidentReports() {
     ]);
 
     const csvContent = [headers, ...csvData]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .map((row) => row.map((cell: any) => `"${cell}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -510,7 +510,7 @@ export default function VehicleIncidentReports() {
 
     try {
       // Transform the data to match the expected interface
-      const exportData = filteredReports.map((report) => ({
+      const exportData = filteredReports.map((report: any) => ({
         ...report,
         driver: report.driver
           ? {
@@ -597,8 +597,8 @@ export default function VehicleIncidentReports() {
             <SelectContent>
               <SelectItem value="all">All Vehicles</SelectItem>
               {vehicles?.map((vehicle) => (
-                <SelectItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.make} {vehicle.model} ({vehicle.registration})
+                <SelectItem key={(vehicle as any).id} value={(vehicle as any).id}>
+                  {(vehicle as any).make} {(vehicle as any).model} ({(vehicle as any).registration})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -696,7 +696,7 @@ export default function VehicleIncidentReports() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedReports?.map((report) => (
+                  paginatedReports?.map((report: any) => (
                     <TableRow key={report.id}>
                       <TableCell>
                         <div>
@@ -803,12 +803,12 @@ export default function VehicleIncidentReports() {
                                     const { data: dbImages } = await supabase
                                       .from("vehicle_incident_images")
                                       .select("image_url, name")
-                                      .eq("incident_id", report.id);
+                                      .eq("incident_id", report.id as any);
                                     if (dbImages && dbImages.length > 0) {
                                       (exportData as any).photos = dbImages.map(
                                         (r) => ({
-                                          url: r.image_url,
-                                          name: r.name ?? undefined,
+                                          url: (r as any).image_url,
+                                          name: (r as any).name ?? undefined,
                                         })
                                       );
                                     } else {

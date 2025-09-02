@@ -16,27 +16,27 @@ export function useDashboardChartsData(
   maintenanceData: any[] = [],
   fuelLogsData: any[] = []
 ): ChartDataProps {
-  console.log('🔍 useDashboardChartsData called with:', { 
-    vehicles: vehicles.length, 
-    drivers: drivers.length, 
-    maintenanceData: maintenanceData.length, 
-    fuelLogsData: fuelLogsData.length 
+  console.log("🔍 useDashboardChartsData called with:", {
+    vehicles: vehicles.length,
+    drivers: drivers.length,
+    maintenanceData: maintenanceData.length,
+    fuelLogsData: fuelLogsData.length,
   });
-  
+
   const processedData = useMemo(() => {
-    console.log('🔄 Processing chart data...');
-    
+    console.log("🔄 Processing chart data...");
+
     // Helper function to safely convert to number
     const safeNumber = (value: any): number => {
       const num = Number(value);
       return isNaN(num) ? 0 : num;
     };
-    
+
     // Helper function to safely filter and sum
     const safeSum = (array: any[], key: string): number => {
       return array.reduce((sum, item) => sum + safeNumber(item[key]), 0);
     };
-    
+
     // Only process data if we have some data to work with
     if (
       vehicles.length === 0 &&
@@ -44,17 +44,17 @@ export function useDashboardChartsData(
       maintenanceData.length === 0 &&
       fuelLogsData.length === 0
     ) {
-      console.log('📊 No data available, returning sample data');
+      console.log("📊 No data available, returning sample data");
       // Return sample data immediately for better UX
       const sampleData = {
         monthlyData: [],
         fuelConsumptionData: [
-          { month: 'Jan', consumption: 300 },
-          { month: 'Feb', consumption: 450 },
-          { month: 'Mar', consumption: 280 },
-          { month: 'Apr', consumption: 520 },
-          { month: 'May', consumption: 380 },
-          { month: 'Jun', consumption: 410 }
+          { month: "Jan", consumption: 300 },
+          { month: "Feb", consumption: 450 },
+          { month: "Mar", consumption: 280 },
+          { month: "Apr", consumption: 520 },
+          { month: "May", consumption: 380 },
+          { month: "Jun", consumption: 410 },
         ],
         fleetDistributionData: [
           { name: "Armoured", value: 3, color: "#10B981" },
@@ -65,30 +65,30 @@ export function useDashboardChartsData(
           { name: "Inactive", value: 1, color: "#EF4444" },
         ],
         maintenanceCostData: [
-          { month: 'Jan', service: 400, repairs: 600 },
-          { month: 'Feb', service: 350, repairs: 450 },
-          { month: 'Mar', service: 500, repairs: 700 },
-          { month: 'Apr', service: 300, repairs: 550 },
-          { month: 'May', service: 450, repairs: 650 },
-          { month: 'Jun', service: 380, repairs: 480 }
+          { month: "Jan", service: 400, repairs: 600 },
+          { month: "Feb", service: 350, repairs: 450 },
+          { month: "Mar", service: 500, repairs: 700 },
+          { month: "Apr", service: 300, repairs: 550 },
+          { month: "May", service: 450, repairs: 650 },
+          { month: "Jun", service: 380, repairs: 480 },
         ],
         maintenanceCostsData: [
-          { month: 'Jan', cost: 1200, type: "Preventive" },
-          { month: 'Feb', cost: 800, type: "Repair" },
-          { month: 'Mar', cost: 1500, type: "Preventive" },
-          { month: 'Apr', cost: 900, type: "Repair" },
-          { month: 'May', cost: 1100, type: "Preventive" },
-          { month: 'Jun', cost: 1300, type: "Repair" },
-          { month: 'Jul', cost: 700, type: "Preventive" },
-          { month: 'Aug', cost: 1600, type: "Repair" },
+          { month: "Jan", cost: 1200, type: "Preventive" },
+          { month: "Feb", cost: 800, type: "Repair" },
+          { month: "Mar", cost: 1500, type: "Preventive" },
+          { month: "Apr", cost: 900, type: "Repair" },
+          { month: "May", cost: 1100, type: "Preventive" },
+          { month: "Jun", cost: 1300, type: "Repair" },
+          { month: "Jul", cost: 700, type: "Preventive" },
+          { month: "Aug", cost: 1600, type: "Repair" },
         ],
         fuelCostData: [],
       };
-      console.log('📊 Sample data returned:', sampleData);
+      console.log("📊 Sample data returned:", sampleData);
       return sampleData;
     }
 
-    console.log('🔄 Processing real data...');
+    console.log("🔄 Processing real data...");
 
     // Generate monthly labels (last 6 months) - only once
     const months = Array.from({ length: 6 }, (_, i) => {
@@ -116,10 +116,11 @@ export function useDashboardChartsData(
               try {
                 const logDate = new Date(log.date);
                 return (
-                  logDate.toLocaleString("default", { month: "short" }) === month
+                  logDate.toLocaleString("default", { month: "short" }) ===
+                  month
                 );
               } catch (error) {
-                console.warn('Invalid date in fuel log:', log.date);
+                console.warn("Invalid date in fuel log:", log.date);
                 return false;
               }
             });
@@ -143,13 +144,13 @@ export function useDashboardChartsData(
     const fleetDistributionData =
       vehicles.length > 0
         ? (() => {
-            const vehicleTypes = [
-              ...new Set(
+            const vehicleTypes = Array.from(
+              new Set(
                 vehicles
                   .map((v) => v.type || v.vehicle_type || "Unknown")
                   .filter(Boolean)
-              ),
-            ];
+              )
+            );
             const colors = [
               "#10B981",
               "#3B82F6",
@@ -177,13 +178,9 @@ export function useDashboardChartsData(
     const driverStatusData =
       drivers.length > 0
         ? (() => {
-            const statusTypes = [
-              ...new Set(
-                drivers
-                  .map((d) => d.status || "unknown")
-                  .filter(Boolean)
-              ),
-            ];
+            const statusTypes = Array.from(
+              new Set(drivers.map((d) => d.status || "unknown").filter(Boolean))
+            );
             return statusTypes.map((status) => ({
               name:
                 status === "active"
@@ -222,7 +219,7 @@ export function useDashboardChartsData(
                   month
                 );
               } catch (error) {
-                console.warn('Invalid date in maintenance:', m.date);
+                console.warn("Invalid date in maintenance:", m.date);
                 return false;
               }
             });
@@ -266,33 +263,51 @@ export function useDashboardChartsData(
                   month
                 );
               } catch (error) {
-                console.warn('Invalid date in maintenance:', m.date);
+                console.warn("Invalid date in maintenance:", m.date);
                 return false;
               }
             });
 
             const preventiveTotal = monthMaintenance
-              .filter((m) =>
-                (m.description || "").toLowerCase().includes("service") ||
-                (m.description || "").toLowerCase().includes("preventive")
+              .filter(
+                (m) =>
+                  (m.description || "").toLowerCase().includes("service") ||
+                  (m.description || "").toLowerCase().includes("preventive")
               )
               .reduce((sum, m) => sum + safeNumber(m.cost), 0);
 
             const repairTotal = monthMaintenance
               .filter(
-                (m) => !(m.description || "").toLowerCase().includes("service") &&
-                       !(m.description || "").toLowerCase().includes("preventive")
+                (m) =>
+                  !(m.description || "").toLowerCase().includes("service") &&
+                  !(m.description || "").toLowerCase().includes("preventive")
               )
               .reduce((sum, m) => sum + safeNumber(m.cost), 0);
 
             return [
-              { month, cost: Math.max(0, Math.round(preventiveTotal)), type: "Preventive" },
-              { month, cost: Math.max(0, Math.round(repairTotal)), type: "Repair" }
-            ].filter(item => item.cost > 0);
+              {
+                month,
+                cost: Math.max(0, Math.round(preventiveTotal)),
+                type: "Preventive",
+              },
+              {
+                month,
+                cost: Math.max(0, Math.round(repairTotal)),
+                type: "Repair",
+              },
+            ].filter((item) => item.cost > 0);
           })
         : months.flatMap((month) => [
-            { month, cost: Math.floor(Math.random() * 800) + 400, type: "Preventive" },
-            { month, cost: Math.floor(Math.random() * 1000) + 300, type: "Repair" }
+            {
+              month,
+              cost: Math.floor(Math.random() * 800) + 400,
+              type: "Preventive",
+            },
+            {
+              month,
+              cost: Math.floor(Math.random() * 1000) + 300,
+              type: "Repair",
+            },
           ]);
 
     // Fuel cost data - use real data if available
@@ -304,10 +319,11 @@ export function useDashboardChartsData(
               try {
                 const logDate = new Date(log.date);
                 return (
-                  logDate.toLocaleString("default", { month: "short" }) === month
+                  logDate.toLocaleString("default", { month: "short" }) ===
+                  month
                 );
               } catch (error) {
-                console.warn('Invalid date in fuel log:', log.date);
+                console.warn("Invalid date in fuel log:", log.date);
                 return false;
               }
             });
@@ -344,10 +360,10 @@ export function useDashboardChartsData(
       fuelCostData,
     };
 
-    console.log('📊 Chart data hook returning:', result);
+    console.log("📊 Chart data hook returning:", result);
     return result;
   }, [vehicles, drivers, maintenanceData, fuelLogsData]);
 
-  console.log('🎯 useDashboardChartsData final return:', processedData);
+  console.log("🎯 useDashboardChartsData final return:", processedData);
   return processedData;
 }

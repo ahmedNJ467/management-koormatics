@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ClientFormValues, type ClientDocument } from "./types";
@@ -26,11 +25,11 @@ export function useClientSave() {
     members: any[]
   ) => {
     // Convert documents to plain objects for storing in jsonb column
-    const documentsForUpdate = documents.map(doc => ({
+    const documentsForUpdate = documents.map((doc) => ({
       id: doc.id,
       name: doc.name,
       url: doc.url,
-      uploadedAt: doc.uploadedAt
+      uploadedAt: doc.uploadedAt,
     }));
 
     // Format values for update
@@ -46,7 +45,7 @@ export function useClientSave() {
       profile_image_url: profileImageUrl,
       documents: documentsForUpdate,
       // Preserve the archive status
-      is_archived: client.is_archived || false
+      is_archived: client.is_archived || false,
     };
 
     console.log("Updating client with values:", formattedValues);
@@ -54,8 +53,8 @@ export function useClientSave() {
     // Update client
     const { error: updateError } = await supabase
       .from("clients")
-      .update(formattedValues)
-      .eq("id", client.id);
+      .update(formattedValues as any)
+      .eq("id", client.id as any);
 
     if (updateError) {
       console.error("Error updating client:", updateError);
@@ -78,7 +77,10 @@ export function useClientSave() {
     documentFiles: File[],
     contacts: any[],
     members: any[],
-    uploadDocumentFn: (files: FileList, clientId: string) => Promise<ClientDocument[]>
+    uploadDocumentFn: (
+      files: FileList,
+      clientId: string
+    ) => Promise<ClientDocument[]>
   ) => {
     // Insert new client
     const formattedValues = {
@@ -92,14 +94,14 @@ export function useClientSave() {
       phone: values.phone || null,
       profile_image_url: null, // We'll update this after creating the client
       documents: [],
-      is_archived: false // New clients are not archived by default
+      is_archived: false, // New clients are not archived by default
     };
 
     console.log("Creating new client with values:", formattedValues);
 
     const { data: insertedClient, error: insertError } = await supabase
       .from("clients")
-      .insert(formattedValues)
+      .insert(formattedValues as any)
       .select()
       .single();
 
@@ -113,13 +115,18 @@ export function useClientSave() {
     }
 
     // Now that we have a client ID, upload the profile image if provided
-    const uploadedProfileUrl = await profileUploadFn(insertedClient.id);
+    let uploadedProfileUrl = null;
+    if (insertedClient && "id" in insertedClient) {
+      uploadedProfileUrl = await profileUploadFn((insertedClient as any).id);
+    } else {
+      throw new Error("Failed to get client data from insert operation");
+    }
 
     if (uploadedProfileUrl) {
       await supabase
         .from("clients")
-        .update({ profile_image_url: uploadedProfileUrl })
-        .eq("id", insertedClient.id);
+        .update({ profile_image_url: uploadedProfileUrl } as any)
+        .eq("id", (insertedClient as any).id);
     }
 
     // Upload any documents
@@ -127,33 +134,36 @@ export function useClientSave() {
       // Create a FileList-like object from Array
       const filesArray = documentFiles;
       const dataTransfer = new DataTransfer();
-      filesArray.forEach(file => dataTransfer.items.add(file));
+      filesArray.forEach((file) => dataTransfer.items.add(file));
       const filesList = dataTransfer.files;
-      
-      const uploadedDocs = await uploadDocumentFn(filesList, insertedClient.id);
+
+      const uploadedDocs = await uploadDocumentFn(
+        filesList,
+        (insertedClient as any).id
+      );
 
       // Convert documents to plain objects for storing
-      const documentsForUpdate = uploadedDocs.map(doc => ({
+      const documentsForUpdate = uploadedDocs.map((doc) => ({
         id: doc.id,
         name: doc.name,
         url: doc.url,
-        uploadedAt: doc.uploadedAt
+        uploadedAt: doc.uploadedAt,
       }));
 
       await supabase
         .from("clients")
-        .update({ documents: documentsForUpdate })
-        .eq("id", insertedClient.id);
+        .update({ documents: documentsForUpdate } as any)
+        .eq("id", (insertedClient as any).id);
     }
 
     // Add contacts if organization
     if (values.type === "organization" && contacts.length > 0) {
-      await saveClientContacts(insertedClient.id, contacts, false);
+      await saveClientContacts((insertedClient as any).id, contacts, false);
     }
 
     // Add members if organization
     if (values.type === "organization" && members.length > 0) {
-      await saveClientMembers(insertedClient.id, members, false);
+      await saveClientMembers((insertedClient as any).id, members, false);
     }
 
     return true;
@@ -168,7 +178,10 @@ export function useClientSave() {
     documentFiles: File[],
     contacts: any[],
     members: any[],
-    uploadDocumentFn: (files: FileList, clientId: string) => Promise<ClientDocument[]>
+    uploadDocumentFn: (
+      files: FileList,
+      clientId: string
+    ) => Promise<ClientDocument[]>
   ) => {
     try {
       let success;
@@ -176,25 +189,36 @@ export function useClientSave() {
       if (client) {
         const profileImageUrl = await profileUploadFn(client.id);
         success = await updateExistingClient(
-          client, values, profileImageUrl, documents, contacts, members
+          client,
+          values,
+          profileImageUrl,
+          documents,
+          contacts,
+          members
         );
       } else {
         success = await createNewClient(
-          values, profileUploadFn, documents, documentFiles, contacts, members, uploadDocumentFn
+          values,
+          profileUploadFn,
+          documents,
+          documentFiles,
+          contacts,
+          members,
+          uploadDocumentFn
         );
       }
 
       if (success) {
         toast({
           title: client ? "Client updated" : "Client created",
-          description: client 
-            ? "The client has been updated successfully." 
+          description: client
+            ? "The client has been updated successfully."
             : "A new client has been created successfully.",
         });
 
-        queryClient.invalidateQueries({ queryKey: ['clients'] });
-        queryClient.invalidateQueries({ queryKey: ['client_contacts_count'] });
-        queryClient.invalidateQueries({ queryKey: ['client_members_count'] });
+        queryClient.invalidateQueries({ queryKey: ["clients"] });
+        queryClient.invalidateQueries({ queryKey: ["client_contacts_count"] });
+        queryClient.invalidateQueries({ queryKey: ["client_members_count"] });
       }
 
       return success;
@@ -202,7 +226,8 @@ export function useClientSave() {
       console.error("Error saving client:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save client",
+        description:
+          error instanceof Error ? error.message : "Failed to save client",
         variant: "destructive",
       });
       return false;

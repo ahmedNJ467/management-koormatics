@@ -91,6 +91,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { safeArrayResult } from "@/lib/utils/type-guards";
 
 interface QuotationAnalytics {
   total: number;
@@ -197,7 +198,7 @@ export default function Quotations() {
         .order("name");
 
       if (error) throw error;
-      return data as Client[];
+      return safeArrayResult<Client>(data);
     },
   });
 
@@ -317,13 +318,13 @@ export default function Quotations() {
   }, []);
 
   const handleDeleteConfirm = async () => {
-    if (!quotationToDelete) return;
+    if (!quotationToDelete || !quotationToDelete.id) return;
 
     try {
       const { error } = await supabase
         .from("quotations")
         .delete()
-        .eq("id", quotationToDelete.id);
+        .eq("id", quotationToDelete.id as any);
 
       if (error) throw error;
 
@@ -374,7 +375,9 @@ export default function Quotations() {
         items: quotation.items as any,
       };
 
-      const { error } = await supabase.from("quotations").insert(newQuotation);
+      const { error } = await supabase
+        .from("quotations")
+        .insert([newQuotation] as any);
 
       if (error) throw error;
 

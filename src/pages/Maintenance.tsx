@@ -43,6 +43,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { safeArrayResult } from "@/lib/utils/type-guards";
 
 export default function Maintenance() {
   const queryClient = useQueryClient();
@@ -72,7 +73,7 @@ export default function Maintenance() {
         .order("date", { ascending: false });
 
       if (error) throw error;
-      return data as Maintenance[];
+      return safeArrayResult<Maintenance>(data);
     },
   });
 

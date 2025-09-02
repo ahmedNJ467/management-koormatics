@@ -80,9 +80,9 @@ export function TripForm({
           : [];
 
         // Combine both sources and remove duplicates
-        const allPassengers = [
-          ...new Set([...arrayPassengers, ...extractedPassengers]),
-        ];
+        const allPassengers = Array.from(
+          new Set([...arrayPassengers, ...extractedPassengers])
+        );
 
         setPassengers(allPassengers.length > 0 ? allPassengers : [""]);
       } else {

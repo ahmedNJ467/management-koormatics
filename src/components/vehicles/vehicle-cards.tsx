@@ -81,10 +81,10 @@ export const VehicleCards = memo(
               Array.isArray(vehicle.vehicle_images) &&
               vehicle.vehicle_images.length > 0;
             const insuranceExpiringSoon = isInsuranceExpiringSoon(
-              vehicle.insurance_expiry
+              vehicle.insurance_expiry || null
             );
             const insuranceExpired = isInsuranceExpired(
-              vehicle.insurance_expiry
+              vehicle.insurance_expiry || null
             );
 
             const statusInfo = getVehicleStatus(vehicle);

@@ -135,7 +135,7 @@ export const checkPartImageColumnExists = async (): Promise<boolean> => {
                                columnCheck.length > 0 && 
                                'part_image' in columnCheck[0];
     
-    return hasPartImageColumn;
+    return hasPartImageColumn || false;
   } catch (error) {
     console.error("Error checking part_image column:", error);
     return false;
@@ -148,10 +148,7 @@ export const updatePartWithImagePath = async (
   onError: (message: string) => void
 ): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from("spare_parts")
-      .update({ part_image: filePath })
-      .eq("id", partId);
+    const { error } = await supabase.from("spare_parts").update({ part_image: filePath } as any).eq("id", partId as any);
 
     if (error) {
       console.error("Error updating part with image path:", error);

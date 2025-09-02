@@ -23,10 +23,11 @@ export function useInvoices() {
 
       const invoicesWithTrips = await Promise.all(
         invoicesData.map(async (invoice) => {
+          if (!invoice || !('id' in invoice)) return null;
           const { data: tripsData } = await supabase
             .from("trips")
             .select(`*`)
-            .eq("invoice_id", invoice.id);
+            .eq("invoice_id", invoice.id as any);
           const tripsForInvoice = tripsData
             ? tripsData.map(
                 (trip: any) =>
@@ -34,7 +35,7 @@ export function useInvoices() {
                     ...trip,
                     type: trip.service_type || "other",
                     status: "scheduled",
-                    client_name: invoice.clients?.name || "Unknown Client",
+                    client_name: (invoice as any).clients?.name || "Unknown Client",
                   } as DisplayTrip)
               )
             : [];
@@ -43,7 +44,7 @@ export function useInvoices() {
           return displayInvoice;
         })
       );
-      return invoicesWithTrips;
+      return invoicesWithTrips.filter(Boolean);
     },
   });
 
@@ -55,7 +56,7 @@ export function useInvoices() {
         .select("id, name, email, address, phone")
         .order("name");
       if (error) throw error;
-      return data as Client[];
+      return (data || []) as unknown as Client[];
     },
   });
 
@@ -78,14 +79,16 @@ export function useInvoices() {
   useEffect(() => {
     const updateOverdueInvoices = async () => {
       if (!invoices) return;
-      const overdueInvoices = invoices.filter(isInvoiceOverdue);
+      const overdueInvoices = invoices.filter((invoice): invoice is DisplayInvoice => 
+        invoice !== null && isInvoiceOverdue(invoice)
+      );
       if (overdueInvoices.length > 0) {
         await Promise.all(
           overdueInvoices.map((invoice) =>
             supabase
               .from("invoices")
-              .update({ status: "overdue" })
-              .eq("id", invoice.id)
+              .update({ status: "overdue" } as any)
+              .eq("id", invoice.id as any)
           )
         );
         queryClient.invalidateQueries({ queryKey: ["invoices"] });
@@ -96,6 +99,7 @@ export function useInvoices() {
 
   const filteredInvoices = useMemo(() => {
     return invoices?.filter((invoice) => {
+      if (!invoice || !('id' in invoice)) return false;
       const matchesSearch =
         searchTerm === "" ||
         invoice.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||

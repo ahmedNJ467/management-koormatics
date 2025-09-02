@@ -129,14 +129,18 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
         pdfColors.headerText[1],
         pdfColors.headerText[2],
       ],
-      fontStyle: "bold",
+      fontStyle: "bold" as any,
     },
     styles: {
       font: "helvetica",
       fontSize: 9,
       cellPadding: 3,
       overflow: "linebreak",
-      textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]],
+      textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]] as [
+        number,
+        number,
+        number
+      ],
       lineColor: [
         pdfColors.border[0],
         pdfColors.border[1],
@@ -240,7 +244,7 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     {
       content: "Payment Communication:",
       styles: {
-        fontStyle: "bold",
+        fontStyle: "bold" as any,
         textColor: [
           pdfColors.primary[0],
           pdfColors.primary[1],
@@ -262,7 +266,7 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     {
       content: "Terms and Conditions:",
       styles: {
-        fontStyle: "bold",
+        fontStyle: "bold" as any,
         textColor: [
           pdfColors.primary[0],
           pdfColors.primary[1],
@@ -285,7 +289,7 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     {
       content: "Bank Details:",
       styles: {
-        fontStyle: "bold",
+        fontStyle: "bold" as any,
         textColor: [
           pdfColors.primary[0],
           pdfColors.primary[1],
@@ -296,7 +300,10 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     },
   ]);
   finalContent.push([
-    { content: "Dahabshil Bank", styles: { fontStyle: "bold", fontSize: 9 } },
+    {
+      content: "Dahabshil Bank",
+      styles: { fontStyle: "bold" as any, fontSize: 9 },
+    },
   ]);
 
   const dahabshilDetails = [
@@ -310,7 +317,10 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
 
   finalContent.push([""]); // spacer
   finalContent.push([
-    { content: "Premier Bank", styles: { fontStyle: "bold", fontSize: 9 } },
+    {
+      content: "Premier Bank",
+      styles: { fontStyle: "bold" as any, fontSize: 9 },
+    },
   ]);
 
   const premierDetails = [
@@ -322,11 +332,15 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
 
   autoTable(doc, {
     startY: yPosAfterTotals,
-    body: finalContent,
+    body: finalContent as any,
     theme: "plain",
     styles: {
       font: "helvetica",
-      textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]],
+      textColor: [pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]] as [
+        number,
+        number,
+        number
+      ],
       cellPadding: { top: 0, right: 0, bottom: 1, left: 0 },
     },
     columnStyles: {

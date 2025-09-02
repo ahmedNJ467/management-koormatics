@@ -26,7 +26,7 @@ export function DeleteMaintenanceDialog({
       const { error } = await supabase
         .from("maintenance")
         .delete()
-        .eq("id", maintenance.id)
+        .eq("id", maintenance.id as any)
         .single();
 
       if (error) throw error;

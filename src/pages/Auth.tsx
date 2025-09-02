@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
-import { User, Eye, EyeOff } from "lucide-react";
+import { User, Eye, EyeOff, Info } from "lucide-react";
 import { debugDomainDetection } from "@/utils/subdomain";
 import KoormaticsLogo from "@/components/ui/koormatics-logo";
 
@@ -27,6 +27,8 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const { domain } = useTenantScope();
@@ -48,6 +50,19 @@ export default function Auth() {
         password,
       });
       if (error) throw error;
+
+      // Get session info for debugging
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        setDebugInfo({
+          userId: session.user.id,
+          email: session.user.email,
+          metadata: session.user.user_metadata,
+          createdAt: session.user.created_at,
+        });
+      }
 
       toast({
         title: "Welcome back!",
@@ -110,11 +125,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Land Cruiser Background Image */}
+      {/* Authentication Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/lovable-uploads/14ff090f-1304-4931-b1f4-f858de64682f.png')`,
+          backgroundImage: `url('/images/auth-bg.jpg')`,
         }}
       >
         {/* Dark overlay for better readability */}
@@ -187,6 +202,43 @@ export default function Auth() {
               )}
             </Button>
           </form>
+
+          {/* Debug Information */}
+          {debugInfo && (
+            <div className="mt-6 p-4 bg-black/20 rounded-lg border border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-white/90 text-sm font-medium">
+                  Debug Info
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="text-white/70 hover:text-white p-1 h-6"
+                >
+                  {showDebug ? "Hide" : "Show"}
+                </Button>
+              </div>
+              {showDebug && (
+                <div className="text-left space-y-2 text-xs text-white/80">
+                  <div>
+                    <strong>User ID:</strong> {debugInfo.userId}
+                  </div>
+                  <div>
+                    <strong>Email:</strong> {debugInfo.email}
+                  </div>
+                  <div>
+                    <strong>Created:</strong>{" "}
+                    {new Date(debugInfo.createdAt).toLocaleString()}
+                  </div>
+                  <div>
+                    <strong>Metadata:</strong>{" "}
+                    {JSON.stringify(debugInfo.metadata, null, 2)}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Footer */}
           <div className="text-center mt-6">

@@ -34,8 +34,8 @@ export function TripDetailHeader({ viewTrip }: TripDetailHeaderProps) {
         <Navigation className="h-5 w-5 text-primary mt-0.5" />
         <div>
           <div className="text-sm text-muted-foreground font-medium">Route</div>
-          <div className="text-base font-semibold text-card-foreground truncate" title={viewTrip.pickup_location}>
-            {viewTrip.pickup_location.split(',')[0]}
+          <div className="text-base font-semibold text-card-foreground truncate" title={viewTrip.pickup_location || 'Unknown'}>
+            {(viewTrip.pickup_location || 'Unknown').split(',')[0]}
           </div>
           {viewTrip.dropoff_location && (
             <div className="text-xs text-muted-foreground mt-1 truncate" title={viewTrip.dropoff_location}>

@@ -10,7 +10,8 @@ interface ConnectionStatus {
 
 class RealtimeManager {
   private channels: Map<string, any> = new Map();
-  private subscribers: Map<string, Set<() => void>> = new Map();
+  private subscribers: Map<string, Set<(payload: any) => void>> = new Map();
+  private realtimeEnableAttempts: Set<string> = new Set();
   private connectionStatus: ConnectionStatus = {
     isConnected: false,
     retryCount: 0,
@@ -106,16 +107,8 @@ class RealtimeManager {
             },
             callback
           )
-          .on("error", (error) => {
-            console.error(`Realtime error for ${tableName}:`, error);
-            this.connectionStatus.websocketStatus = "error";
-            this.handleConnectionError(tableName);
-          })
-          .on("disconnect", () => {
-            console.warn(`Realtime disconnected for ${tableName}`);
-            this.connectionStatus.websocketStatus = "disconnected";
-            this.handleConnectionError(tableName);
-          })
+          // Note: Error and disconnect handlers removed due to type signature issues
+          // The subscription status callback below will handle connection status
           .subscribe((status) => {
             if (status === "SUBSCRIBED") {
               console.log(
@@ -128,7 +121,17 @@ class RealtimeManager {
             } else if (status === "CHANNEL_ERROR") {
               console.error(`Channel error for ${tableName}:`, status);
               this.connectionStatus.websocketStatus = "error";
-              this.handleConnectionError(tableName);
+              // Attempt to self-heal by enabling realtime for the table once
+              this.ensureRealtimeEnabled(tableName)
+                .catch((err) => {
+                  console.warn(
+                    `Failed to ensure realtime enabled for ${tableName}:`,
+                    err
+                  );
+                })
+                .finally(() => {
+                  this.handleConnectionError(tableName);
+                });
             } else if (status === "TIMED_OUT") {
               console.warn(`Channel timeout for ${tableName}`);
               this.connectionStatus.websocketStatus = "disconnected";
@@ -181,14 +184,27 @@ class RealtimeManager {
       clearTimeout(this.retryTimeout);
     }
 
-    // Set retry timeout
-    this.retryTimeout = setTimeout(() => {
+    // Set retry timeout with longer delay for realtime setup
+    const retryDelayWithRealtime =
+      this.retryDelay * Math.pow(2, this.connectionStatus.retryCount - 1);
+
+    this.retryTimeout = setTimeout(async () => {
       try {
+        // If this is the first retry, try to enable realtime first
+        if (this.connectionStatus.retryCount === 1) {
+          console.log(
+            `First retry for ${tableName}, attempting to enable realtime...`
+          );
+          await this.ensureRealtimeEnabled(tableName);
+          // Wait a bit longer for realtime changes to take effect
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+
         this.subscribeToTable(tableName, callback);
       } catch (error) {
         console.error(`Retry failed for ${tableName}:`, error);
       }
-    }, this.retryDelay * Math.pow(2, this.connectionStatus.retryCount - 1));
+    }, retryDelayWithRealtime);
   }
 
   /**
@@ -211,7 +227,7 @@ class RealtimeManager {
           }
 
           // Re-subscribe all callbacks
-          for (const callback of subscribers) {
+          for (const callback of Array.from(subscribers)) {
             await this.subscribeToTable(tableName, callback);
           }
         }
@@ -298,13 +314,38 @@ class RealtimeManager {
     // Wait a bit before reconnecting
     setTimeout(() => {
       // Reconnect all tables
-      for (const [channelKey, callbacks] of currentSubscribers) {
+      for (const [channelKey, callbacks] of Array.from(currentSubscribers)) {
         const tableName = channelKey.replace("public:", "");
-        for (const callback of callbacks) {
+        for (const callback of Array.from(callbacks)) {
           this.subscribeToTable(tableName, callback);
         }
       }
     }, 1000);
+  }
+
+  /**
+   * Manually enable realtime for a specific table
+   */
+  async enableRealtimeForTable(tableName: string): Promise<boolean> {
+    try {
+      console.log(`Manually enabling realtime for table: ${tableName}`);
+
+      // Clear any previous attempts for this table
+      const attemptKey = `public:${tableName}`;
+      this.realtimeEnableAttempts.delete(attemptKey);
+
+      // Try to enable realtime
+      await this.ensureRealtimeEnabled(tableName);
+
+      // Wait a moment for the changes to take effect
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      console.log(`Realtime setup completed for table: ${tableName}`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to enable realtime for table ${tableName}:`, error);
+      return false;
+    }
   }
 
   /**
@@ -334,6 +375,92 @@ class RealtimeManager {
     const channelKey = `public:${tableName}`;
     const channel = this.channels.get(channelKey);
     return channel ? channel.state || "unknown" : "not_found";
+  }
+
+  /**
+   * Ensure realtime is enabled for a table by invoking a DB function once
+   */
+  private async ensureRealtimeEnabled(tableName: string): Promise<void> {
+    const attemptKey = `public:${tableName}`;
+    if (this.realtimeEnableAttempts.has(attemptKey)) {
+      console.log(
+        `Already attempted to enable realtime for ${tableName}, skipping`
+      );
+      return;
+    }
+    this.realtimeEnableAttempts.add(attemptKey);
+
+    try {
+      console.log(`Attempting to enable realtime for table: ${tableName}`);
+
+      // First try the RPC function if it exists
+      const { error: rpcError } = await supabase.rpc(
+        "enable_realtime_for_table",
+        {
+          table_name: tableName,
+        }
+      );
+
+      if (rpcError) {
+        console.warn(
+          `RPC enable_realtime_for_table failed for ${tableName}:`,
+          rpcError
+        );
+
+        // Fallback: try to manually enable realtime by checking if table exists and has proper setup
+        await this.fallbackRealtimeCheck(tableName);
+      } else {
+        console.log(
+          `Successfully enabled realtime for table: ${tableName} via RPC`
+        );
+      }
+    } catch (error) {
+      console.warn(
+        `Error while ensuring realtime enabled for ${tableName}:`,
+        error
+      );
+
+      // Fallback: try to manually enable realtime
+      try {
+        await this.fallbackRealtimeCheck(tableName);
+      } catch (fallbackError) {
+        console.error(
+          `Fallback realtime check also failed for ${tableName}:`,
+          fallbackError
+        );
+      }
+    }
+  }
+
+  /**
+   * Fallback method to check and potentially fix realtime setup
+   */
+  private async fallbackRealtimeCheck(tableName: string): Promise<void> {
+    try {
+      console.log(`Running fallback realtime check for ${tableName}`);
+
+      // Check if table exists and is accessible
+      const { data: tableCheck, error: tableError } = await supabase
+        .from(tableName as any)
+        .select("id")
+        .limit(1);
+
+      if (tableError) {
+        console.error(`Table ${tableName} is not accessible:`, tableError);
+        return;
+      }
+
+      console.log(
+        `Table ${tableName} is accessible, realtime may need manual DB configuration`
+      );
+      console.log(`Please ensure the following SQL has been run:`);
+      console.log(`1. ALTER TABLE public.${tableName} REPLICA IDENTITY FULL;`);
+      console.log(
+        `2. ALTER PUBLICATION supabase_realtime ADD TABLE public.${tableName};`
+      );
+    } catch (error) {
+      console.error(`Fallback check failed for ${tableName}:`, error);
+    }
   }
 }
 

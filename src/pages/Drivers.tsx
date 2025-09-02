@@ -55,6 +55,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DriverQuickActions } from "@/components/drivers/DriverQuickActions";
+import { safeArrayResult } from "@/lib/utils/type-guards";
 
 export default function Drivers() {
   const { toast } = useToast();
@@ -90,7 +91,7 @@ export default function Drivers() {
         throw error;
       }
 
-      return data as Driver[];
+      return safeArrayResult<Driver>(data);
     },
   });
 
@@ -104,7 +105,7 @@ export default function Drivers() {
         .order("date", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return safeArrayResult<any>(data);
     },
   });
 
@@ -271,7 +272,7 @@ export default function Drivers() {
           driver.is_vip ? "Yes" : "No",
         ]),
       ]
-        .map((row) => row.join(","))
+        .map((row, index) => row.join(","))
         .join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv" });
@@ -622,7 +623,7 @@ export default function Drivers() {
                         <AvatarFallback className="text-base font-semibold bg-muted/50">
                           {driver.name
                             .split(" ")
-                            .map((n) => n[0])
+                            .map((n, index) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
@@ -762,7 +763,7 @@ export default function Drivers() {
                           <AvatarFallback className="text-sm font-semibold bg-muted/50">
                             {driver.name
                               .split(" ")
-                              .map((n) => n[0])
+                              .map((n, index) => n[0])
                               .join("")}
                           </AvatarFallback>
                         </Avatar>

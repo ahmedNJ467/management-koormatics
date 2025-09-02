@@ -200,8 +200,8 @@ export const handleSaveTrip = async (
 
       const { error } = await supabase
         .from("trips")
-        .update(baseUpdate)
-        .eq("id", editTrip.id);
+        .update(baseUpdate as any)
+        .eq("id", editTrip.id as any);
 
       if (error) throw error;
 
@@ -258,7 +258,7 @@ export const handleSaveTrip = async (
 
       const { data, error } = await supabase
         .from("trips")
-        .insert(trips)
+        .insert(trips as any)
         .select("id");
 
       if (error) throw error;

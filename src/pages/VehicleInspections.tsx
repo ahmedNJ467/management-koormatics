@@ -127,7 +127,7 @@ export default function VehicleInspections() {
         .order("inspection_date", { ascending: false });
 
       if (error) throw error;
-      return data as VehicleInspection[];
+      return data as any;
     },
   });
 
@@ -147,7 +147,9 @@ export default function VehicleInspections() {
   // Get unique inspectors for filter
   const inspectors = useMemo(() => {
     if (!inspections) return [];
-    const uniqueInspectors = new Set(inspections.map((i) => i.inspector_name));
+    const uniqueInspectors = new Set(
+      inspections.map((i: any) => i.inspector_name)
+    );
     return Array.from(uniqueInspectors);
   }, [inspections]);
 
@@ -155,7 +157,7 @@ export default function VehicleInspections() {
   const filteredInspections = useMemo(() => {
     if (!inspections) return [];
 
-    return inspections.filter((inspection) => {
+    return inspections.filter((inspection: any) => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -236,7 +238,7 @@ export default function VehicleInspections() {
       const { error } = await supabase
         .from("vehicle_inspections")
         .delete()
-        .eq("id", id);
+        .eq("id", id as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -335,7 +337,7 @@ export default function VehicleInspections() {
     dateRange?.to;
 
   return (
-            <div className="space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -381,8 +383,12 @@ export default function VehicleInspections() {
             <SelectContent>
               <SelectItem value="all">All Vehicles</SelectItem>
               {vehicles?.map((vehicle) => (
-                <SelectItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.make} {vehicle.model} ({vehicle.registration})
+                <SelectItem
+                  key={(vehicle as any).id}
+                  value={(vehicle as any).id}
+                >
+                  {(vehicle as any).make} {(vehicle as any).model} (
+                  {(vehicle as any).registration})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -407,8 +413,11 @@ export default function VehicleInspections() {
             <SelectContent>
               <SelectItem value="all">All Inspectors</SelectItem>
               {inspectors.map((inspector) => (
-                <SelectItem key={inspector} value={inspector}>
-                  {inspector}
+                <SelectItem
+                  key={inspector as string}
+                  value={inspector as string}
+                >
+                  {inspector as string}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -445,8 +454,22 @@ export default function VehicleInspections() {
           )}
           {vehicleFilter !== "all" && (
             <Badge variant="secondary" className="gap-1">
-              Vehicle: {vehicles?.find((v) => v.id === vehicleFilter)?.make}{" "}
-              {vehicles?.find((v) => v.id === vehicleFilter)?.model}
+              Vehicle:{" "}
+              {(() => {
+                const vehicle = vehicles?.find(
+                  (v) =>
+                    v &&
+                    typeof v === "object" &&
+                    "id" in v &&
+                    v.id === vehicleFilter
+                );
+                return vehicle &&
+                  typeof vehicle === "object" &&
+                  "make" in vehicle &&
+                  "model" in vehicle
+                  ? `${vehicle.make} ${vehicle.model}`
+                  : "Unknown Vehicle";
+              })()}
               <button
                 onClick={() => setVehicleFilter("all")}
                 className="ml-1 hover:text-destructive"
@@ -525,7 +548,7 @@ export default function VehicleInspections() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedInspections?.map((inspection) => (
+                  paginatedInspections?.map((inspection: any) => (
                     <TableRow key={inspection.id}>
                       <TableCell>
                         {formatDate(inspection.inspection_date)}

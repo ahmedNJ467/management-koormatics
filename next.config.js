@@ -5,8 +5,8 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
   },
 
-  // Use a custom build directory to avoid OneDrive file locking issues
-  distDir: ".next-dev",
+  // Use custom build directory to avoid OneDrive file locking issues
+  distDir: ".next-build",
 
   // Image optimization
   images: {
@@ -34,6 +34,9 @@ const nextConfig = {
 
   // Performance optimizations
   compress: true,
+
+  // Windows-specific optimizations
+  reactStrictMode: false, // Disable strict mode to reduce memory usage
 
   // Security headers
   async headers() {

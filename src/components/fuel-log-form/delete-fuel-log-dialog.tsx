@@ -26,7 +26,7 @@ export function DeleteFuelLogDialog({
       const { error } = await supabase
         .from("fuel_logs")
         .delete()
-        .eq("id", fuelLog.id)
+        .eq("id", fuelLog.id as any)
         .single();
 
       if (error) throw error;

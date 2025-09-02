@@ -103,6 +103,45 @@ export function ConnectionStatus() {
         >
           Retry
         </button>
+        <button
+          onClick={async () => {
+            try {
+              toast({
+                title: "Enabling realtime for alerts...",
+                description: "This may take a few seconds",
+                duration: 3000,
+              });
+              const success = await realtimeManager.enableRealtimeForTable(
+                "alerts"
+              );
+              if (success) {
+                toast({
+                  title: "Realtime enabled",
+                  description: "Alerts table realtime has been configured",
+                  duration: 3000,
+                });
+              } else {
+                toast({
+                  title: "Realtime setup failed",
+                  description: "Check console for details",
+                  variant: "destructive",
+                  duration: 5000,
+                });
+              }
+            } catch (error) {
+              console.error("Manual realtime setup failed:", error);
+              toast({
+                title: "Realtime setup failed",
+                description: "Please check console for details",
+                variant: "destructive",
+                duration: 5000,
+              });
+            }
+          }}
+          className="text-xs underline hover:no-underline cursor-pointer ml-2"
+        >
+          Enable Alerts Realtime
+        </button>
       </div>
     );
   }

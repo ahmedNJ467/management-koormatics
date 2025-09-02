@@ -132,7 +132,15 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
           </div>
           <Select
             value={formData.role_slug}
-            onValueChange={(v) => setFormData({ ...formData, role_slug: v })}
+            onValueChange={(v) =>
+              setFormData({
+                ...formData,
+                role_slug: v as
+                  | "fleet_manager"
+                  | "operations_manager"
+                  | "finance_manager",
+              })
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select role" />

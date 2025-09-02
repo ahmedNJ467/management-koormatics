@@ -91,7 +91,6 @@ const CostAnalytics = () => {
     sparePartsData,
     comparisonMaintenanceData,
     comparisonFuelData,
-    comparisonTripsData,
     comparisonSparePartsData,
     selectedYear,
     comparisonYear

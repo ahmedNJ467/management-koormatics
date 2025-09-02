@@ -83,6 +83,10 @@ export default function Trips() {
   // Fetch trip details data when a trip is viewed
   const { messages, assignments } = useTripDetails(viewTrip);
 
+  // Provide default values to prevent undefined errors
+  const safeMessages = messages || [];
+  const safeAssignments = assignments || [];
+
   // Helper function to wrap toast for passing to operations
   const toastWrapper = (props: {
     title: string;
@@ -218,8 +222,8 @@ export default function Trips() {
         vehicles={vehicles}
         drivers={drivers}
         trips={trips}
-        messages={messages}
-        assignments={assignments}
+        messages={safeMessages}
+        assignments={safeAssignments as any}
         assignVehicleOpen={assignVehicleOpen}
         tripToAssignVehicle={tripToAssignVehicle}
         setViewTrip={setViewTrip}

@@ -61,12 +61,12 @@ export function DriverFormDialog({
         status: driver.status,
         is_vip: driver.is_vip || false,
       });
-      setAvatarPreview(driver.avatar_url);
+      setAvatarPreview(driver.avatar_url || null);
       setDocumentName(
-        driver.document_url ? driver.document_url.split("/").pop() : null
+        driver.document_url ? driver.document_url.split("/").pop() || null : null
       );
       setAirportIdName(
-        driver.airport_id_url ? driver.airport_id_url.split("/").pop() : null
+        driver.airport_id_url ? driver.airport_id_url.split("/").pop() || null : null
       );
     } else {
       form.reset({
@@ -105,21 +105,21 @@ export function DriverFormDialog({
       if (driver) {
         const { error: updateError } = await supabase
           .from("drivers")
-          .update(driverData)
-          .eq("id", driver.id);
+          .update(driverData as any)
+          .eq("id", driver.id as any);
 
         if (updateError) throw updateError;
         driverId = driver.id;
       } else {
         const { data: newDriver, error: insertError } = await supabase
           .from("drivers")
-          .insert(driverData)
+          .insert(driverData as any)
           .select()
           .single();
 
         if (insertError) throw insertError;
         if (!newDriver) throw new Error("Failed to create driver");
-        driverId = newDriver.id;
+        driverId = (newDriver as any).id;
       }
 
       try {
@@ -149,8 +149,8 @@ export function DriverFormDialog({
           // Update the driver with airport ID URL
           await supabase
             .from("drivers")
-            .update({ airport_id_url: airportIdUrl })
-            .eq("id", driverId);
+            .update({ airport_id_url: airportIdUrl } as any)
+            .eq("id", driverId as any);
         }
 
         if (avatarUrl || documentUrl) {
@@ -159,8 +159,8 @@ export function DriverFormDialog({
             .update({
               ...(avatarUrl && { avatar_url: avatarUrl }),
               ...(documentUrl && { document_url: documentUrl }),
-            })
-            .eq("id", driverId);
+            } as any)
+            .eq("id", driverId as any);
 
           if (fileUpdateError) throw fileUpdateError;
         }

@@ -22,7 +22,7 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
       const { error: deleteError } = await supabase
         .from("drivers")
         .delete()
-        .eq("id", driver.id)
+        .eq("id", driver.id as any)
         .single();
 
       if (deleteError) throw deleteError;

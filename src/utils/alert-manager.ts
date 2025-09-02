@@ -36,7 +36,7 @@ export const createAlert = async ({
           related_type: relatedType,
           resolved: false,
           date: new Date().toISOString()
-        }
+        } as any
       ])
       .select()
       .single();
@@ -60,8 +60,8 @@ export const resolveAlert = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('alerts')
-      .update({ resolved: true })
-      .eq('id', id);
+      .update({ resolved: true } as any)
+      .eq('id', id as any);
     
     if (error) {
       console.error("Error resolving alert:", error);

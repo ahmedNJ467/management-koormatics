@@ -349,10 +349,10 @@ export const VehicleDetailsContent = memo(
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-sm font-medium ${
-                          isInsuranceExpired(selectedVehicle.insurance_expiry)
+                          isInsuranceExpired(selectedVehicle.insurance_expiry || null)
                             ? "text-red-600"
                             : isInsuranceExpiringSoon(
-                                selectedVehicle.insurance_expiry
+                                selectedVehicle.insurance_expiry || null
                               )
                             ? "text-orange-600"
                             : ""
@@ -363,13 +363,13 @@ export const VehicleDetailsContent = memo(
                         ).toLocaleDateString()}
                       </span>
                       {(isInsuranceExpiringSoon(
-                        selectedVehicle.insurance_expiry
+                        selectedVehicle.insurance_expiry || null
                       ) ||
                         isInsuranceExpired(
-                          selectedVehicle.insurance_expiry
+                          selectedVehicle.insurance_expiry || null
                         )) && (
                         <Badge variant="destructive" className="text-xs">
-                          {isInsuranceExpired(selectedVehicle.insurance_expiry)
+                          {isInsuranceExpired(selectedVehicle.insurance_expiry || null)
                             ? "Expired"
                             : "Expiring Soon"}
                         </Badge>

@@ -23,7 +23,7 @@ export function OperationMetrics({
     queryKey: ["escort_teams_count"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("escort_teams")
+        .from("escort_teams" as any)
         .select("id", { count: "exact", head: true });
       if (error) throw error;
       return count || 0;

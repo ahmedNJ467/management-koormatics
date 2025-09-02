@@ -33,7 +33,6 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
         storageKey="koormatics-theme"
-        suppressHydrationWarning
       >
         <TooltipProvider>
           <Toaster />

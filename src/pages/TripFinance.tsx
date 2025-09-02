@@ -46,7 +46,7 @@ export default function TripFinance() {
       `;
 
       const [completed, withDropoff] = await Promise.all([
-        supabase.from("trips").select(baseSelect).eq("status", "completed"),
+        supabase.from("trips").select(baseSelect).eq("status", "completed" as any),
         supabase
           .from("trips")
           .select(baseSelect)
@@ -126,8 +126,8 @@ export default function TripFinance() {
       setSavingId(trip.id);
       const { error: updateError } = await supabase
         .from("trips")
-        .update({ amount, status: "completed" })
-        .eq("id", trip.id);
+        .update({ amount, status: "completed" } as any)
+        .eq("id", trip.id as any);
       if (updateError) throw updateError;
 
       // Create invoice now that amount is set

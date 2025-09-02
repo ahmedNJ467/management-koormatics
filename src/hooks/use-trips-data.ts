@@ -117,7 +117,7 @@ export function useTripsData() {
         console.log("✅ Successfully fetched vehicles with escort fields:", {
           count: data?.length || 0,
           sample:
-            data?.slice(0, 2).map((v) => ({
+            data?.slice(0, 2).map((v: any) => ({
               id: v.id,
               make: v.make,
               model: v.model,
@@ -127,9 +127,9 @@ export function useTripsData() {
               escort_trip_id: v.escort_trip_id,
             })) || [],
           escortAssignedCount:
-            data?.filter((v) => v.is_escort_assigned)?.length || 0,
+            data?.filter((v: any) => v.is_escort_assigned)?.length || 0,
           statusBreakdown:
-            data?.reduce((acc, v) => {
+            data?.reduce((acc: any, v: any) => {
               acc[v.status] = (acc[v.status] || 0) + 1;
               return acc;
             }, {} as Record<string, number>) || {},
@@ -158,7 +158,7 @@ export function useTripsData() {
         });
 
         // Add default escort fields to maintain compatibility
-        return data.map((vehicle) => ({
+        return data.map((vehicle: any) => ({
           ...vehicle,
           is_escort_assigned: false,
           escort_trip_id: null,

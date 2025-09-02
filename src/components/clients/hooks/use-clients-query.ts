@@ -39,7 +39,7 @@ export function useClientsQuery() {
       const { data: activeContractData, error: contractError } = await supabase
         .from("contracts")
         .select("client_name")
-        .eq("status", "active");
+        .eq("status", "active" as any);
 
       if (contractError) {
         console.error("Error fetching active contracts:", contractError);
@@ -47,11 +47,13 @@ export function useClientsQuery() {
 
       // Use a Set for efficient look-ups of client names that have active contracts
       const clientsWithActiveContracts = new Set(
-        activeContractData?.map((contract) => contract.client_name) || []
+        (activeContractData as any[])?.map(
+          (contract) => contract.client_name
+        ) || []
       );
 
       // Add has_active_contract flag to clients
-      const clientsWithFlag = (data || []).map((client) => ({
+      const clientsWithFlag = (data || []).map((client: any) => ({
         ...client,
         has_active_contract: clientsWithActiveContracts.has(client.name),
       }));

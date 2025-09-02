@@ -179,7 +179,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Filter parts that have been used in the selected year
-        const relevantParts = (parts || []).filter((part) => {
+        const relevantParts = (parts || []).filter((part: any) => {
           const quantityUsed = Number(part.quantity_used || 0);
           if (quantityUsed <= 0) return false;
 
@@ -223,17 +223,21 @@ export function useCostAnalyticsData(selectedYear: string) {
 
         // Create a maintenance lookup map
         const maintenanceMap: Record<string, any> = {};
-        if (maintenanceRecords) {
-          maintenanceRecords.forEach((record) => {
-            maintenanceMap[record.id] = record;
+        if (maintenanceRecords && Array.isArray(maintenanceRecords)) {
+          maintenanceRecords.forEach((record: any) => {
+            if (record && record.id) {
+              maintenanceMap[record.id] = record;
+            }
           });
         }
 
         // Create vehicles lookup map
         const vehiclesMap: Record<string, any> = {};
-        if (vehiclesData) {
-          vehiclesData.forEach((vehicle) => {
-            vehiclesMap[vehicle.id] = vehicle;
+        if (vehiclesData && Array.isArray(vehiclesData)) {
+          vehiclesData.forEach((vehicle: any) => {
+            if (vehicle && vehicle.id) {
+              vehiclesMap[vehicle.id] = vehicle;
+            }
           });
         }
 
@@ -436,7 +440,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         }
 
         // Filter parts that have been used in the comparison year
-        const relevantParts = (parts || []).filter((part) => {
+        const relevantParts = (parts || []).filter((part: any) => {
           const quantityUsed = Number(part.quantity_used || 0);
           if (quantityUsed <= 0) return false;
 
@@ -483,17 +487,21 @@ export function useCostAnalyticsData(selectedYear: string) {
 
         // Create a maintenance lookup map
         const maintenanceMap: Record<string, any> = {};
-        if (maintenanceRecords) {
-          maintenanceRecords.forEach((record) => {
-            maintenanceMap[record.id] = record;
+        if (maintenanceRecords && Array.isArray(maintenanceRecords)) {
+          maintenanceRecords.forEach((record: any) => {
+            if (record && record.id) {
+              maintenanceMap[record.id] = record;
+            }
           });
         }
 
         // Create vehicles lookup map
         const vehiclesMap: Record<string, any> = {};
-        if (vehiclesData) {
-          vehiclesData.forEach((vehicle) => {
-            vehiclesMap[vehicle.id] = vehicle;
+        if (vehiclesData && Array.isArray(vehiclesData)) {
+          vehiclesData.forEach((vehicle: any) => {
+            if (vehicle && vehicle.id) {
+              vehiclesMap[vehicle.id] = vehicle;
+            }
           });
         }
 

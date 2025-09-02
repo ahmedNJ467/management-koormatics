@@ -79,6 +79,7 @@ const navigationGroups = [
 ];
 
 const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
+  "*": "*",
   management: "*",
   fleet: [
     "/dashboard-management",
@@ -173,7 +174,11 @@ const Sidebar = memo(function Sidebar() {
           (item) => pathname === item.href
         );
         if (hasActiveItem) {
-          setExpandedCategories((prev) => new Set([...prev, group.category]));
+          setExpandedCategories((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(group.category);
+            return newSet;
+          });
         }
       });
     }

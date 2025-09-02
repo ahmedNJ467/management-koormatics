@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { safeArrayResult } from "@/lib/utils/type-guards";
 
 interface Guard {
   id: string;
@@ -64,11 +65,11 @@ export default function SecurityEscorts() {
     queryKey: ["security_guards"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("security_guards")
+        .from("security_guards" as any)
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as Guard[];
+      return safeArrayResult<Guard>(data);
     },
   });
 
@@ -76,11 +77,11 @@ export default function SecurityEscorts() {
     queryKey: ["escort_teams"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("escort_teams")
+        .from("escort_teams" as any)
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as EscortTeam[];
+      return safeArrayResult<EscortTeam>(data);
     },
   });
 
@@ -92,7 +93,7 @@ export default function SecurityEscorts() {
         .select("id, make, model, registration")
         .order("registration", { ascending: true });
       if (error) throw error;
-      return (data || []) as VehicleRow[];
+      return safeArrayResult<VehicleRow>(data);
     },
   });
 
@@ -115,7 +116,9 @@ export default function SecurityEscorts() {
         status: gStatus,
         notes: gNotes,
       };
-      const { error } = await supabase.from("security_guards").insert(payload);
+      const { error } = await supabase
+        .from("security_guards" as any)
+        .insert([payload] as any);
       if (error) throw error;
     },
     onSuccess: async () => {
@@ -175,7 +178,9 @@ export default function SecurityEscorts() {
         guard_ids: selectedIds,
         vehicle_id: teamVehicleId,
       };
-      const { error } = await supabase.from("escort_teams").insert(payload);
+      const { error } = await supabase
+        .from("escort_teams" as any)
+        .insert([payload] as any);
       if (error) throw error;
     },
     onSuccess: async () => {

@@ -148,7 +148,7 @@ export default function VehicleLeasing() {
         .order("lease_start_date", { ascending: false });
 
       if (error) throw error;
-      return data as VehicleLease[];
+      return data as any;
     },
   });
 
@@ -181,17 +181,17 @@ export default function VehicleLeasing() {
 
     return {
       total: leases.length,
-      active: leases.filter((lease) => lease.lease_status === "active").length,
-      expiringSoon: leases.filter((lease) => {
+      active: leases.filter((lease: any) => lease.lease_status === "active").length,
+      expiringSoon: leases.filter((lease: any) => {
         const endDate = parseISO(lease.lease_end_date);
         return (
           isValid(endDate) && endDate <= thirtyDaysFromNow && endDate >= now
         );
       }).length,
       monthlyRevenue: leases
-        .filter((lease) => lease.lease_status === "active")
-        .reduce((sum, lease) => sum + lease.daily_rate * 30, 0), // Approximate monthly revenue
-      overdue: leases.filter((lease) => lease.payment_status === "overdue")
+        .filter((lease: any) => lease.lease_status === "active")
+        .reduce((sum: any, lease: any) => sum + lease.daily_rate * 30, 0), // Approximate monthly revenue
+      overdue: leases.filter((lease: any) => lease.payment_status === "overdue")
         .length,
     };
   }, [leases]);
@@ -200,7 +200,7 @@ export default function VehicleLeasing() {
   const filteredLeases = useMemo(() => {
     if (!leases) return [];
 
-    return leases.filter((lease) => {
+    return leases.filter((lease: any) => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -265,7 +265,7 @@ export default function VehicleLeasing() {
       const { error } = await supabase
         .from("vehicle_leases")
         .delete()
-        .eq("id", id);
+        .eq("id", id as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -305,31 +305,31 @@ export default function VehicleLeasing() {
         label: "Active",
         variant: "default" as const,
         icon: CheckCircle,
-        color: "text-green-600",
+        color: "text-green-600 dark:text-green-400",
       },
       pending: {
         label: "Pending",
         variant: "secondary" as const,
         icon: Clock,
-        color: "text-yellow-600",
+        color: "text-yellow-600 dark:text-yellow-400",
       },
       expired: {
         label: "Expired",
         variant: "destructive" as const,
         icon: XCircle,
-        color: "text-red-600",
+        color: "text-red-600 dark:text-red-400",
       },
       terminated: {
         label: "Terminated",
         variant: "outline" as const,
         icon: XCircle,
-        color: "text-gray-600",
+        color: "text-muted-foreground",
       },
       upcoming: {
         label: "Upcoming",
         variant: "secondary" as const,
         icon: Calendar,
-        color: "text-blue-600",
+        color: "text-blue-600 dark:text-blue-400",
       },
     };
 
@@ -350,22 +350,25 @@ export default function VehicleLeasing() {
       current: {
         label: "Current",
         variant: "default" as const,
-        color: "bg-green-100 text-green-800",
+        color:
+          "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400",
       },
       overdue: {
         label: "Overdue",
         variant: "destructive" as const,
-        color: "bg-red-100 text-red-800",
+        color: "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400",
       },
       partial: {
         label: "Partial",
         variant: "secondary" as const,
-        color: "bg-yellow-100 text-yellow-800",
+        color:
+          "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400",
       },
       paid_ahead: {
         label: "Paid Ahead",
         variant: "outline" as const,
-        color: "bg-blue-100 text-blue-800",
+        color:
+          "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400",
       },
     };
 
@@ -423,7 +426,7 @@ export default function VehicleLeasing() {
       "Payment Status",
     ];
 
-    const csvData = filteredLeases.map((lease) => [
+    const csvData = filteredLeases.map((lease: any) => [
       lease.contract_id || "N/A",
       lease.vehicle
         ? `${lease.vehicle.make} ${lease.vehicle.model} (${lease.vehicle.year})`
@@ -441,7 +444,7 @@ export default function VehicleLeasing() {
     ]);
 
     const csvContent = [headers, ...csvData]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .map((row) => row.map((cell: any) => `"${cell}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -461,104 +464,134 @@ export default function VehicleLeasing() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Vehicle Leasing
-          </h2>
-          <p className="text-muted-foreground">
-            Manage vehicle leases, contracts, and customer relationships
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="container mx-auto px-6 py-8 space-y-8">
+        {/* Header */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                Vehicle Leasing
+              </h1>
+            </div>
+            <Button
+              onClick={() => {
+                setSelectedLease(null);
+                setFormOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              New Lease Agreement
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            setSelectedLease(null);
-            setFormOpen(true);
-          }}
-          className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-        >
-          <Plus className="h-5 w-5" />
-          New Lease Agreement
-        </Button>
-      </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Leases</CardTitle>
-            <FileText className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {summaryStats.total}
+        {/* Summary Cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+          <div className="relative overflow-hidden rounded-2xl bg-card p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Leases
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {summaryStats.total}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  All lease agreements
+                </p>
+              </div>
+              <div className="rounded-full bg-blue-100 dark:bg-blue-900/20 p-3">
+                <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              All lease agreements
-            </p>
-          </CardContent>
-        </Card>
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-blue-50 dark:bg-blue-900/10"></div>
+          </div>
 
-        <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Leases</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {summaryStats.active}
+          <div className="relative overflow-hidden rounded-2xl bg-card p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Active Leases
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {summaryStats.active}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Currently active
+                </p>
+              </div>
+              <div className="rounded-full bg-green-100 dark:bg-green-900/20 p-3">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Currently active</p>
-          </CardContent>
-        </Card>
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-green-50 dark:bg-green-900/10"></div>
+          </div>
 
-        <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {summaryStats.expiringSoon}
+          <div className="relative overflow-hidden rounded-2xl bg-card p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Expiring Soon
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {summaryStats.expiringSoon}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Within 30 days
+                </p>
+              </div>
+              <div className="rounded-full bg-orange-100 dark:bg-orange-900/20 p-3">
+                <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Within 30 days</p>
-          </CardContent>
-        </Card>
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-orange-50 dark:bg-orange-900/10"></div>
+          </div>
 
-        <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Monthly Revenue
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              ${summaryStats.monthlyRevenue.toLocaleString()}
+          <div className="relative overflow-hidden rounded-2xl bg-card p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Monthly Revenue
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  ${summaryStats.monthlyRevenue.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From active leases
+                </p>
+              </div>
+              <div className="rounded-full bg-purple-100 dark:bg-purple-900/20 p-3">
+                <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">From active leases</p>
-          </CardContent>
-        </Card>
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-purple-50 dark:bg-purple-900/10"></div>
+          </div>
 
-        <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {summaryStats.overdue}
+          <div className="relative overflow-hidden rounded-2xl bg-card p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Overdue
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {summaryStats.overdue}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Payment overdue
+                </p>
+              </div>
+              <div className="rounded-full bg-red-100 dark:bg-red-900/20 p-3">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Payment overdue</p>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-red-50 dark:bg-red-900/10"></div>
+          </div>
+        </div>
 
-      {/* Filters */}
-      <Card className="shadow-sm">
-        <CardContent className="pt-6">
+        {/* Filters */}
+        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="flex-1">
               <div className="relative">
@@ -579,8 +612,8 @@ export default function VehicleLeasing() {
               <SelectContent>
                 <SelectItem value="all">All Vehicles</SelectItem>
                 {vehicles?.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.make} {vehicle.model} ({vehicle.registration})
+                  <SelectItem key={(vehicle as any).id} value={(vehicle as any).id}>
+                    {(vehicle as any).make} {(vehicle as any).model} ({(vehicle as any).registration})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -633,12 +666,10 @@ export default function VehicleLeasing() {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Leases Table */}
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
+        {/* Leases Table */}
+        <div className="bg-card rounded-2xl shadow-sm border border-border">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -673,7 +704,7 @@ export default function VehicleLeasing() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLeases?.map((lease) => {
+                  filteredLeases?.map((lease: any) => {
                     const daysUntilExpiry = getDaysUntilExpiry(
                       lease.lease_end_date
                     );
@@ -686,7 +717,7 @@ export default function VehicleLeasing() {
                       <TableRow key={lease.id} className="hover:bg-muted/50">
                         <TableCell>
                           <div className="space-y-1">
-                            <div className="font-medium text-blue-600">
+                            <div className="font-medium text-blue-600 dark:text-blue-400">
                               Contract{" "}
                               {lease.contract?.contract_number ||
                                 "#" + (lease.contract_id?.slice(0, 8) || "N/A")}
@@ -728,7 +759,7 @@ export default function VehicleLeasing() {
                               {formatDate(lease.lease_end_date)}
                             </div>
                             {isExpiringSoon && (
-                              <div className="text-xs text-orange-600 font-medium flex items-center gap-1">
+                              <div className="text-xs text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" />
                                 Expires in {daysUntilExpiry} days
                               </div>
@@ -737,7 +768,7 @@ export default function VehicleLeasing() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            <div className="text-sm font-medium text-green-600">
+                            <div className="text-sm font-medium text-green-600 dark:text-green-400">
                               ${lease.daily_rate?.toLocaleString() || "0"}/day
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -775,7 +806,7 @@ export default function VehicleLeasing() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleDelete(lease.id)}
-                                className="text-red-600"
+                                className="text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
@@ -790,45 +821,45 @@ export default function VehicleLeasing() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Form Dialog */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedLease ? "Edit Lease Agreement" : "New Lease Agreement"}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedLease
-                ? "Update the lease agreement details and terms."
-                : "Create a new vehicle lease agreement with customer details and terms."}
-            </DialogDescription>
-          </DialogHeader>
-          <LeaseForm
-            lease={selectedLease}
-            onSuccess={() => {
-              setFormOpen(false);
-              setSelectedLease(null);
-              queryClient.invalidateQueries({
-                queryKey: ["vehicle-leases"],
-              });
-            }}
-            onCancel={() => {
-              setFormOpen(false);
-              setSelectedLease(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+        {/* Form Dialog */}
+        <Dialog open={formOpen} onOpenChange={setFormOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedLease ? "Edit Lease Agreement" : "New Lease Agreement"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedLease
+                  ? "Update the lease agreement details and terms."
+                  : "Create a new vehicle lease agreement with customer details and terms."}
+              </DialogDescription>
+            </DialogHeader>
+            <LeaseForm
+              lease={selectedLease}
+              onSuccess={() => {
+                setFormOpen(false);
+                setSelectedLease(null);
+                queryClient.invalidateQueries({
+                  queryKey: ["vehicle-leases"],
+                });
+              }}
+              onCancel={() => {
+                setFormOpen(false);
+                setSelectedLease(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
-      {/* Details Dialog */}
-      <LeaseDetailsDialog
-        lease={selectedLease}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-      />
+        {/* Details Dialog */}
+        <LeaseDetailsDialog
+          lease={selectedLease}
+          open={detailsOpen}
+          onOpenChange={setDetailsOpen}
+        />
+      </div>
     </div>
   );
 }

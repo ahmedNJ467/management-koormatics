@@ -104,62 +104,40 @@ const Navbar = memo(function Navbar({
 
   const handleLogoutClick = useCallback(async () => {
     try {
-      // First, try to get current session to verify auth state
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        // No active session, just redirect to auth
-        toast({
-          title: "No active session",
-          description: "Redirecting to login page",
-        });
-        router.push("/auth");
-        return;
-      }
-
-      // Clear any local auth state first
+      // Immediately clear local state for instant logout
       localStorage.removeItem("supabase.auth.token");
       sessionStorage.clear();
-
-      // Only attempt signOut if we have a valid session
-      if (session.access_token) {
-        try {
-          const { error } = await supabase.auth.signOut({
-            scope: "local", // Only clear local session, don't call server
-          });
-
-          if (error) {
-            console.error("Logout error:", error);
-          }
-        } catch (signOutError) {
-          console.error("SignOut error:", signOutError);
-          // Continue with logout process even if signOut fails
-        }
-      }
-
-      // Always show success message and redirect
+      
+      // Show immediate success message
       toast({
         title: "Logged out successfully",
         description: "You have been signed out of the system",
       });
 
-      // Redirect to auth page
+      // Immediately redirect to auth page
       router.push("/auth");
-    } catch (error) {
-      console.error("Logout exception:", error);
 
+      // Perform cleanup in background (non-blocking)
+      setTimeout(async () => {
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch (error) {
+          console.error("Background logout cleanup error:", error);
+        }
+      }, 100);
+
+    } catch (error) {
+      console.error("Logout error:", error);
+      
       // Even if there's an error, clear local state and redirect
       localStorage.removeItem("supabase.auth.token");
       sessionStorage.clear();
-
+      
       toast({
         title: "Logout completed",
         description: "Redirecting to login page",
       });
-
-      // Force redirect even if logout fails
+      
       router.push("/auth");
     }
   }, [router, toast]);

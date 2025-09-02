@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SparePart } from "../types";
+import { safeArrayResult } from "@/lib/utils/type-guards";
 
 export const useSparePartsQuery = (sortConfig: {column: string, direction: 'asc' | 'desc'}) => {
   return useQuery({
@@ -18,7 +19,7 @@ export const useSparePartsQuery = (sortConfig: {column: string, direction: 'asc'
           throw new Error(error.message);
         }
 
-        return data as SparePart[];
+        return safeArrayResult<SparePart>(data);
       } catch (error) {
         console.error("Error in spare parts query:", error);
         throw error;

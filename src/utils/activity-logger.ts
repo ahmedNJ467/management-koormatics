@@ -114,7 +114,7 @@ export const logActivity = async ({
         type,
         related_id: relatedId,
         timestamp: timestamp.toISOString(),
-      },
+      } as any,
     ]);
 
     if (error) {
@@ -172,7 +172,7 @@ export const getActivities = async (
       return t;
     };
 
-    return data.map((item) => {
+    return data.map((item: any) => {
       let formattedTitle = item.title;
 
       // Format trip IDs in existing activity titles
@@ -221,7 +221,7 @@ export const logTripActivity = async (
         drivers:driver_id(name)
       `
       )
-      .eq("id", tripId)
+      .eq("id", tripId as any)
       .single();
 
     if (error || !trip) {
@@ -229,24 +229,24 @@ export const logTripActivity = async (
       return;
     }
 
-    const clientName = trip.clients?.name || "Unknown Client";
-    const vehicleDetails = trip.vehicles
-      ? `${trip.vehicles.make} ${trip.vehicles.model}`
+    const clientName = (trip as any).clients?.name || "Unknown Client";
+    const vehicleDetails = (trip as any).vehicles
+      ? `${(trip as any).vehicles.make} ${(trip as any).vehicles.model}`
       : "Unknown Vehicle";
-    const driverName = trip.drivers?.name || "Unassigned Driver";
+    const driverName = (trip as any).drivers?.name || "Unassigned Driver";
     const formattedTripId = formatTripId(tripId);
 
     let title = "";
     switch (action) {
       case "created":
         title = `New Trip ${formattedTripId} created: ${
-          trip.pickup_location || "Unknown"
-        } to ${trip.dropoff_location || "Unknown"}`;
+          (trip as any).pickup_location || "Unknown"
+        } to ${(trip as any).dropoff_location || "Unknown"}`;
         break;
       case "updated":
         title = `Trip ${formattedTripId} updated: ${clientName} - ${
-          trip.pickup_location || "Unknown"
-        } to ${trip.dropoff_location || "Unknown"}`;
+          (trip as any).pickup_location || "Unknown"
+        } to ${(trip as any).dropoff_location || "Unknown"}`;
         break;
       case "assigned":
         title = `Vehicle assigned to trip ${formattedTripId}: ${vehicleDetails} for ${clientName}`;
@@ -256,8 +256,8 @@ export const logTripActivity = async (
         break;
       case "completed":
         title = `Trip ${formattedTripId} completed: ${clientName} - ${
-          trip.pickup_location || "Unknown"
-        } to ${trip.dropoff_location || "Unknown"}`;
+          (trip as any).pickup_location || "Unknown"
+        } to ${(trip as any).dropoff_location || "Unknown"}`;
         break;
       default:
         title = `Trip ${formattedTripId} ${action}: ${clientName}`;
@@ -269,8 +269,8 @@ export const logTripActivity = async (
       relatedId: tripId,
       tripDetails: {
         clientName,
-        pickupLocation: trip.pickup_location,
-        dropoffLocation: trip.dropoff_location,
+        pickupLocation: (trip as any).pickup_location,
+        dropoffLocation: (trip as any).dropoff_location,
       },
     });
   } catch (err) {
@@ -296,7 +296,7 @@ export const generateSampleActivities = async (): Promise<void> => {
       .single();
 
     // Only seed if there are no activities and no error occurred
-    if (!error && data && data.count === 0) {
+    if (!error && data && (data as any).count === 0) {
       const sampleActivities: ActivityLogParams[] = [
         {
           title: "Trip completed: Airport pickup",

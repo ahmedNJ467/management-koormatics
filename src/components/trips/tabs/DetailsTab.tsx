@@ -39,7 +39,9 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
     : [];
 
   // Combine both sources and remove duplicates
-  const allPassengers = [...new Set([...arrayPassengers, ...notesPassengers])];
+  const allPassengers = Array.from(
+    new Set([...arrayPassengers, ...notesPassengers])
+  );
 
   // Check if we have passengers to display
   const hasPassengers =

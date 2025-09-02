@@ -2,17 +2,15 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-// Read from Next.js environment variables
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
-const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as
-  | string
-  | undefined;
+// Import centralized API keys configuration
+import {
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  validateAPIKeys,
+} from "@/config/api-keys";
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Please set them in your .env.local file."
-  );
-}
+// Validate API keys on startup
+validateAPIKeys();
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -37,7 +35,7 @@ const FUNCTIONS_URL = (() => {
 
 export const supabase = createClient<Database>(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_ANON_KEY,
   {
     // Direct edge function calls to the dedicated Functions domain
     ...(FUNCTIONS_URL ? { functions: { url: FUNCTIONS_URL } } : {}),
@@ -47,10 +45,7 @@ export const supabase = createClient<Database>(
       persistSession: true,
       detectSessionInUrl: true,
       flowType: "pkce",
-      // Ensure proper logout handling
-      onAuthStateChange: (event, session) => {
-        console.log("Auth state change:", event, session?.user?.email);
-      },
+      // Note: onAuthStateChange is not supported in this version
     },
     // Global headers for better compatibility
     global: {

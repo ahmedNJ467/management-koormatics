@@ -29,7 +29,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     queryFn: async () => {
       const result = await getVehicles();
       return result.map((vehicle) => ({
-        ...vehicle,
+        ...(vehicle as any),
         fuel_type: (vehicle as any).fuel_type || "diesel", // Ensure fuel_type is always present
       }));
     },

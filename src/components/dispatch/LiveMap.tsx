@@ -1,12 +1,90 @@
 import { DisplayTrip } from "@/lib/types/trip";
+import { InterestPoint } from "@/lib/types/interest-point";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+// Helper function to create professional SVG icons
+const createProfessionalIcon = (category: string, color: string): string => {
+  const iconPath = getCategoryIconPath(category);
+  return `
+    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)"/>
+        </filter>
+      </defs>
+      <circle cx="16" cy="16" r="14" fill="${color}" filter="url(#shadow)"/>
+      <circle cx="16" cy="16" r="12" fill="${color}"/>
+      <path d="${iconPath}" fill="white" stroke="white" stroke-width="0.5"/>
+    </svg>
+  `;
+};
+
+// Helper function to get SVG path for each category
+const getCategoryIconPath = (category: string): string => {
+  switch (category) {
+    case 'airport':
+      return 'M16 8l-2 2v4l2 2 2-2v-4l-2-2zm0 8l-2 2v4l2 2 2-2v-4l-2-2z';
+    case 'port':
+      return 'M8 12h16v8H8v-8zm2 2v4h12v-4H10z';
+    case 'market':
+      return 'M8 8h16v16H8V8zm2 2v12h12V10H10z M12 12h8v2h-8v-2z M12 16h8v2h-8v-2z';
+    case 'city':
+      return 'M8 8h6v6H8V8zm10 0h6v6h-6V8z M8 16h6v6H8v-6zm10 0h6v6h-6v-6z';
+    case 'security':
+      return 'M16 8l-4 4v4l4 4 4-4v-4l-4-4zm0 2l2 2v2l-2 2-2-2v-2l2-2z';
+    case 'fuel':
+      return 'M16 8l-2 2v8l2 2 2-2V10l-2-2zm0 4l-1 1v2l1 1 1-1v-2l-1-1z';
+    case 'health':
+      return 'M16 8l-4 4v8l4 4 4-4V12l-4-4zm0 2l2 2v6l-2 2-2-2V12l2-2z';
+    case 'restaurant':
+      return 'M8 8h16v4H8V8zm0 6h16v2H8v-2zm0 4h16v2H8v-2z';
+    case 'hotel':
+      return 'M8 8h16v16H8V8zm2 2v12h12V10H10z M12 12h8v2h-8v-2z M12 16h8v2h-8v-2z';
+    case 'bank':
+      return 'M16 8l-6 4v8h12V12l-6-4zm0 2l4 2v6H12V12l4-2z';
+    case 'school':
+      return 'M16 8l-6 4v8h12V12l-6-4zm0 2l4 2v6H12V12l4-2z';
+    case 'mosque':
+      return 'M16 8l-4 4v8l4 4 4-4V12l-4-4zm0 2l2 2v6l-2 2-2-2V12l2-2z';
+    default:
+      return 'M16 8l-4 4v8l4 4 4-4V12l-4-4z';
+  }
+};
+
+// Helper function to get emoji icon for info windows
+const getCategoryIcon = (category: string): string => {
+  switch (category) {
+    case 'airport': return '✈️';
+    case 'port': return '🚢';
+    case 'market': return '🛒';
+    case 'city': return '🏙️';
+    case 'security': return '🚨';
+    case 'fuel': return '⛽';
+    case 'health': return '🏥';
+    case 'restaurant': return '🍽️';
+    case 'hotel': return '🏨';
+    case 'bank': return '🏦';
+    case 'school': return '🏫';
+    case 'mosque': return '🕌';
+    default: return '📍';
+  }
+};
 
 interface LiveMapProps {
   trips: DisplayTrip[];
+  interestPoints?: InterestPoint[];
   variant?: "card" | "fullscreen";
+  onMapClick?: (lat: number, lng: number) => void;
+  showInterestPoints?: boolean;
 }
 
-export function LiveMap({ trips, variant = "card" }: LiveMapProps) {
+export function LiveMap({ 
+  trips, 
+  interestPoints = [], 
+  variant = "card", 
+  onMapClick,
+  showInterestPoints = true 
+}: LiveMapProps) {
   // Filter active trips that are in progress
   const activeTrips = trips.filter((trip) => trip.status === "in_progress");
 
@@ -16,6 +94,7 @@ export function LiveMap({ trips, variant = "card" }: LiveMapProps) {
   const gmapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const interestPointMarkersRef = useRef<any[]>([]);
 
   // Debug logging
   console.log("LiveMap Debug:", {
@@ -129,6 +208,15 @@ export function LiveMap({ trips, variant = "card" }: LiveMapProps) {
           mapTypeId: "satellite",
         });
 
+        // Add click listener for adding interest points
+        if (onMapClick) {
+          map.addListener('click', (event: any) => {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            onMapClick(lat, lng);
+          });
+        }
+
         console.log("Google Maps initialization complete!");
         mapInstanceRef.current = map;
         setMapReady(true);
@@ -148,8 +236,12 @@ export function LiveMap({ trips, variant = "card" }: LiveMapProps) {
         if (markersRef.current) {
           markersRef.current.forEach((m) => m.setMap && m.setMap(null));
         }
+        if (interestPointMarkersRef.current) {
+          interestPointMarkersRef.current.forEach((m) => m.setMap && m.setMap(null));
+        }
       } catch {}
       markersRef.current = [];
+      interestPointMarkersRef.current = [];
       mapInstanceRef.current = null;
     };
   }, [gmapsKey]);
@@ -158,13 +250,15 @@ export function LiveMap({ trips, variant = "card" }: LiveMapProps) {
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     
-    // Clear previous markers
-    try {
-      markersRef.current.forEach((m) => m.setMap(null));
-    } catch {}
-    markersRef.current = [];
+          // Clear previous markers
+      try {
+        markersRef.current.forEach((m) => m.setMap(null));
+        interestPointMarkersRef.current.forEach((m) => m.setMap(null));
+      } catch {}
+      markersRef.current = [];
+      interestPointMarkersRef.current = [];
 
-    if (points.length === 0 && routes.length === 0) return;
+      if (points.length === 0 && routes.length === 0 && (!showInterestPoints || interestPoints.length === 0)) return;
 
     const g = (window as any).google;
     if (!g?.maps) return;
@@ -179,19 +273,64 @@ export function LiveMap({ trips, variant = "card" }: LiveMapProps) {
       markersRef.current.push(marker);
     });
 
-    // Draw polylines for routes
-    routes.forEach((r) => {
-      const poly = new g.maps.Polyline({
-        path: [r.start, r.end],
-        geodesic: true,
-        strokeColor: "#00B3FF",
-        strokeOpacity: 0.8,
-        strokeWeight: 3,
-        map: mapInstanceRef.current,
+          // Draw polylines for routes
+      routes.forEach((r) => {
+        const poly = new g.maps.Polyline({
+          path: [r.start, r.end],
+          geodesic: true,
+          strokeColor: "#00B3FF",
+          strokeOpacity: 0.8,
+          strokeWeight: 3,
+          map: mapInstanceRef.current,
+        });
+        markersRef.current.push(poly as any);
       });
-      markersRef.current.push(poly as any);
-    });
-  }, [points, routes]);
+
+      // Add interest point markers
+      if (showInterestPoints && interestPoints.length > 0) {
+        interestPoints.forEach((point) => {
+          if (point.is_active) {
+            // Create professional SVG icon based on category
+            const iconSvg = createProfessionalIcon(point.category, point.color);
+            
+            const marker = new g.maps.Marker({
+              position: { lat: point.latitude, lng: point.longitude },
+              map: mapInstanceRef.current,
+              title: point.name,
+              icon: {
+                url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(iconSvg)}`,
+                scaledSize: new g.maps.Size(32, 32),
+                anchor: new g.maps.Point(16, 32) // Bottom center for proper positioning
+              }
+            });
+
+            // Add info window for interest points
+            const infoWindow = new g.maps.InfoWindow({
+              content: `
+                <div style="padding: 12px; min-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: ${point.color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">
+                      ${getCategoryIcon(point.category)}
+                    </div>
+                    <div style="font-weight: 600; font-size: 14px; color: #1f2937;">${point.name}</div>
+                  </div>
+                  ${point.description ? `<div style="margin-bottom: 8px; color: #6b7280; font-size: 13px; line-height: 1.4;">${point.description}</div>` : ''}
+                  <div style="font-size: 11px; color: #9ca3af; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;">
+                    ${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}
+                  </div>
+                </div>
+              `
+            });
+
+            marker.addListener('click', () => {
+              infoWindow.open(mapInstanceRef.current, marker);
+            });
+
+            interestPointMarkersRef.current.push(marker);
+          }
+        });
+      }
+    }, [points, routes, interestPoints, showInterestPoints]);
 
   if (variant === "fullscreen") {
     return (

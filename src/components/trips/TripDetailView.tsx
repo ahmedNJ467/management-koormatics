@@ -100,7 +100,7 @@ export function TripDetailView({
           {formatDate(viewTrip.date)}
           <span className="mx-2 text-muted-foreground">•</span>
           <MapPin className="h-5 w-5 mr-2 text-primary" />
-          {viewTrip.pickup_location.split(",")[0]}
+          {(viewTrip.pickup_location || 'Unknown').split(",")[0]}
         </DialogTitle>
 
         <div className="flex flex-wrap items-center gap-2 mb-3">

@@ -99,7 +99,7 @@ export function DispatchTrips({
           escort_status: t.escort_status,
           escort_vehicle_ids: t.escort_vehicle_ids,
         })) || [],
-    onAssignEscortCallback: typeof onAssignEscort,
+
     vehiclesAvailable: vehicles?.length || 0,
     vehiclesSample:
       vehicles?.slice(0, 3).map((v) => ({
@@ -114,7 +114,7 @@ export function DispatchTrips({
   // Additional debug for escort vehicle lookup issues
   const escortTrips =
     trips?.filter(
-      (t) => t.has_security_escort && t.escort_vehicle_ids?.length > 0
+      (t) => t.has_security_escort && (t.escort_vehicle_ids?.length || 0) > 0
     ) || [];
   if (escortTrips.length > 0) {
     console.log("🔍 ESCORT VEHICLE DEBUGGING:", {

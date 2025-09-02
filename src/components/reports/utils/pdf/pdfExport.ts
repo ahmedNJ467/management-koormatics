@@ -325,7 +325,7 @@ function generateProfessionalVehiclesTable(
       return (
         sum +
         vehicle.maintenance.reduce(
-          (itemSum, item) => itemSum + Number(item.cost || 0),
+          (itemSum: number, item: any) => itemSum + Number(item.cost || 0),
           0
         )
       );

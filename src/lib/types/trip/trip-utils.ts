@@ -1,6 +1,4 @@
 import { DbTrip, Trip, DisplayTrip } from "./trip-data";
-import { extractTripStatus } from "@/components/trips/utils";
-import { tripTypeDisplayMap } from "./base-types";
 import { TripStatus } from "./base-types";
 
 // Map from database fields to the application trip model
@@ -24,13 +22,11 @@ export function mapDatabaseFieldsToTrip(dbTrip: any): DisplayTrip {
   // Get the trip status from the status field, rather than extracting from notes
   // with a fallback to the legacy method for backward compatibility
   // Ensure status is a valid TripStatus type
-  const rawStatus =
-    tripData.status || extractTripStatus(tripData.notes) || "scheduled";
+  const rawStatus = tripData.status || "scheduled";
   const status = validateTripStatus(rawStatus);
 
   // Format type for display
-  const displayType =
-    tripTypeDisplayMap[tripData.service_type] || "Other Service";
+  const displayType = tripData.service_type || "Other Service";
 
   // Create the merged trip object
   const trip: DisplayTrip = {
@@ -78,9 +74,6 @@ export function validateTripStatus(status: string): TripStatus {
 
   return "scheduled"; // Default fallback
 }
-
-// Re-export extractFlightInfo for backward compatibility
-export { extractFlightInfo } from "@/components/trips/utils";
 
 // Determine how many vehicles are required vs assigned for a trip
 export function vehicleAssignmentStatus(trip: DisplayTrip) {

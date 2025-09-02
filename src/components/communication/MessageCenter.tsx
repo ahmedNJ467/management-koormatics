@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,17 +45,17 @@ export function MessageCenter() {
   const fetchMessages = async () => {
     try {
       const { data, error } = await supabase
-        .from('trip_messages')
-        .select('*')
-        .order('timestamp', { ascending: false });
+        .from("trip_messages")
+        .select("*")
+        .order("timestamp", { ascending: false });
 
       if (error) {
-        console.error('Error fetching messages:', error);
+        console.error("Error fetching messages:", error);
         return;
       }
-      setMessages(data || []);
+      setMessages((data as any[]) || []);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error("Error fetching messages:", error);
       setMessages([]);
     }
   };
@@ -64,36 +63,39 @@ export function MessageCenter() {
   const fetchTrips = async () => {
     try {
       const { data, error } = await supabase
-        .from('trips')
-        .select(`
+        .from("trips")
+        .select(
+          `
           id,
           pickup_location,
           dropoff_location,
           date,
           drivers!inner(name),
           clients(name)
-        `)
-        .in('status', ['scheduled', 'in_progress'])
-        .order('date', { ascending: true });
+        `
+        )
+        .in("status", ["scheduled", "in_progress"] as any)
+        .order("date", { ascending: true });
 
       if (error) {
-        console.error('Error fetching trips:', error);
+        console.error("Error fetching trips:", error);
         setTrips([]);
         return;
       }
-      
-      const formattedTrips = data?.map(trip => ({
-        id: trip.id,
-        pickup_location: trip.pickup_location || 'Unknown Location',
-        dropoff_location: trip.dropoff_location || 'Unknown Destination',
-        date: trip.date,
-        driver_name: (trip.drivers as any)?.name || 'Unassigned',
-        client_name: (trip.clients as any)?.name || 'Unknown Client'
-      })) || [];
+
+      const formattedTrips =
+        (data as any[])?.map((trip) => ({
+          id: trip.id,
+          pickup_location: trip.pickup_location || "Unknown Location",
+          dropoff_location: trip.dropoff_location || "Unknown Destination",
+          date: trip.date,
+          driver_name: (trip.drivers as any)?.name || "Unassigned",
+          client_name: (trip.clients as any)?.name || "Unknown Client",
+        })) || [];
 
       setTrips(formattedTrips);
     } catch (error) {
-      console.error('Error fetching trips:', error);
+      console.error("Error fetching trips:", error);
       setTrips([]);
     }
   };
@@ -103,37 +105,40 @@ export function MessageCenter() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('trip_messages')
-        .insert({
-          trip_id: selectedTrip,
-          sender_type: 'admin',
-          sender_name: 'Fleet Manager',
-          message: newMessage.trim(),
-          timestamp: new Date().toISOString(),
-          is_read: false
-        });
+      const { error } = await supabase.from("trip_messages").insert({
+        trip_id: selectedTrip,
+        sender_type: "admin",
+        sender_name: "Fleet Manager",
+        message: newMessage.trim(),
+        timestamp: new Date().toISOString(),
+        is_read: false,
+      } as any);
 
       if (error) throw error;
 
       setNewMessage("");
       fetchMessages();
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filteredTrips = trips.filter(trip =>
-    trip.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trip.dropoff_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trip.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trip.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTrips = trips.filter(
+    (trip) =>
+      trip.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.dropoff_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const selectedTripMessages = messages.filter(msg => msg.trip_id === selectedTrip);
-  const unreadCount = messages.filter(msg => !msg.is_read && msg.sender_type === 'driver').length;
+  const selectedTripMessages = messages.filter(
+    (msg) => msg.trip_id === selectedTrip
+  );
+  const unreadCount = messages.filter(
+    (msg) => !msg.is_read && msg.sender_type === "driver"
+  ).length;
 
   if (trips.length === 0) {
     return (
@@ -182,14 +187,18 @@ export function MessageCenter() {
         <CardContent className="p-0">
           <ScrollArea className="h-[280px]">
             {filteredTrips.map((trip) => {
-              const tripMessages = messages.filter(msg => msg.trip_id === trip.id);
-              const hasUnread = tripMessages.some(msg => !msg.is_read && msg.sender_type === 'driver');
-              
+              const tripMessages = messages.filter(
+                (msg) => msg.trip_id === trip.id
+              );
+              const hasUnread = tripMessages.some(
+                (msg) => !msg.is_read && msg.sender_type === "driver"
+              );
+
               return (
                 <div
                   key={trip.id}
                   className={`p-3 border-b cursor-pointer hover:bg-muted/50 text-xs ${
-                    selectedTrip === trip.id ? 'bg-muted' : ''
+                    selectedTrip === trip.id ? "bg-muted" : ""
                   }`}
                   onClick={() => setSelectedTrip(trip.id)}
                 >
@@ -199,7 +208,7 @@ export function MessageCenter() {
                         {trip.pickup_location} → {trip.dropoff_location}
                       </div>
                       <div className="text-muted-foreground mt-1">
-                        {format(new Date(trip.date), 'MMM d, yyyy')}
+                        {format(new Date(trip.date), "MMM d, yyyy")}
                       </div>
                       <div className="text-muted-foreground">
                         Driver: {trip.driver_name}
@@ -224,7 +233,7 @@ export function MessageCenter() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <MessageCircle className="h-4 w-4" />
-            {selectedTrip ? 'Trip Communication' : 'Select a Trip'}
+            {selectedTrip ? "Trip Communication" : "Select a Trip"}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -241,13 +250,17 @@ export function MessageCenter() {
                     {selectedTripMessages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${
+                          message.sender_type === "admin"
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
                       >
                         <div
                           className={`max-w-[80%] rounded-lg p-2 text-xs ${
-                            message.sender_type === 'admin'
-                              ? 'bg-primary text-primary-foreground ml-auto'
-                              : 'bg-muted'
+                            message.sender_type === "admin"
+                              ? "bg-primary text-primary-foreground ml-auto"
+                              : "bg-muted"
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
@@ -260,7 +273,10 @@ export function MessageCenter() {
                           </div>
                           <p>{message.message}</p>
                           <p className="mt-1 opacity-70">
-                            {format(new Date(message.timestamp), "MMM d, h:mm a")}
+                            {format(
+                              new Date(message.timestamp),
+                              "MMM d, h:mm a"
+                            )}
                           </p>
                         </div>
                       </div>
@@ -278,7 +294,7 @@ export function MessageCenter() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     className="min-h-[40px] resize-none text-xs"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         sendMessage();
                       }

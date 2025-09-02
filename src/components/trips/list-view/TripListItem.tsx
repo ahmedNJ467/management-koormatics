@@ -141,9 +141,9 @@ export function TripListItem({
   const passengersFromNotes = parsePassengers(trip.notes);
 
   // Combine both sources, remove duplicates
-  const allPassengers = [
-    ...new Set([...passengersFromArray, ...passengersFromNotes]),
-  ];
+  const allPassengers = Array.from(
+    new Set([...passengersFromArray, ...passengersFromNotes])
+  );
   const hasPassengers = allPassengers.length > 0;
 
   return (

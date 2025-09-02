@@ -72,8 +72,8 @@ export default function Clients() {
     try {
       const { error } = await supabase
         .from("clients")
-        .update({ is_archived: false })
-        .eq("id", client.id);
+        .update({ is_archived: false } as any)
+        .eq("id", client.id as any);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast({
@@ -104,7 +104,7 @@ export default function Clients() {
       const { error } = await supabase
         .from("clients")
         .delete()
-        .eq("id", clientToDelete.id);
+        .eq("id", clientToDelete.id as any);
       if (error) throw error;
       setDeleteDialogOpen(false);
       setClientToDelete(null);
@@ -201,7 +201,7 @@ export default function Clients() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div>
           <h2 className="text-xl font-semibold">Clients</h2>
         </div>
         <div className="flex items-center gap-2">

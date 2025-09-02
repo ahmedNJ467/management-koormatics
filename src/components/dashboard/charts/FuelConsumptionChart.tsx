@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
   Line,
@@ -20,6 +19,7 @@ interface FuelConsumptionData {
 
 interface FuelConsumptionChartProps {
   data?: FuelConsumptionData[];
+  compact?: boolean;
 }
 
 // Mock data for fallback
@@ -35,45 +35,56 @@ const mockData: FuelConsumptionData[] = [
 
 export function FuelConsumptionChart({
   data = mockData,
+  compact = false,
 }: FuelConsumptionChartProps) {
+  const height = compact ? 300 : 350;
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Fuel Consumption Trend</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(value) => new Date(value).toLocaleDateString()}
-            />
-            <YAxis />
-            <Tooltip
-              labelFormatter={(value) => new Date(value).toLocaleDateString()}
-              formatter={(value: number, name: string) => [
-                name === "consumption" ? `${value}L` : `${value} km/L`,
-                name === "consumption" ? "Consumption" : "Efficiency",
-              ]}
-            />
-            <Line
-              type="monotone"
-              dataKey="consumption"
-              stroke="#8884d8"
-              strokeWidth={2}
-              name="consumption"
-            />
-            <Line
-              type="monotone"
-              dataKey="efficiency"
-              stroke="#82ca9d"
-              strokeWidth={2}
-              name="efficiency"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+        <XAxis
+          dataKey="date"
+          tickFormatter={(value) => new Date(value).toLocaleDateString()}
+          tick={{ fontSize: 12, fill: '#64748b' }}
+          axisLine={{ stroke: '#e2e8f0' }}
+        />
+        <YAxis 
+          tick={{ fontSize: 12, fill: '#64748b' }}
+          axisLine={{ stroke: '#e2e8f0' }}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          }}
+          labelFormatter={(value) => new Date(value).toLocaleDateString()}
+          formatter={(value: number, name: string) => [
+            name === "consumption" ? `${value}L` : `${value} km/L`,
+            name === "consumption" ? "Consumption" : "Efficiency",
+          ]}
+        />
+        <Line
+          type="monotone"
+          dataKey="consumption"
+          stroke="#8b5cf6"
+          strokeWidth={3}
+          name="consumption"
+          dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+          activeDot={{ r: 6, stroke: '#8b5cf6', strokeWidth: 2 }}
+        />
+        <Line
+          type="monotone"
+          dataKey="efficiency"
+          stroke="#10b981"
+          strokeWidth={3}
+          name="efficiency"
+          dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+          activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }

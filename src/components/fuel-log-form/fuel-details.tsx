@@ -35,7 +35,7 @@ type FuelDetailsProps = {
 };
 
 export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
-  const [tanks, setTanks] = useState([]);
+  const [tanks, setTanks] = useState<any[]>([]);
   const fuelType = form.watch("fuel_type");
   const vehicleId = form.watch("vehicle_id");
 
