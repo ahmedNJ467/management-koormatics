@@ -644,6 +644,9 @@ const CostAnalytics = () => {
                               <Tooltip />
                             </PieChart>
                           </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    </div>
 
                     {/* Inventory Overview */}
                     <div className="space-y-4 mb-6">
