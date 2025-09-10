@@ -252,13 +252,16 @@ const CostAnalytics = () => {
                 <div className="text-2xl font-bold text-green-600">
                   ${financialData.totalRevenue.toFixed(2)}
                 </div>
-<<<<<<< HEAD
-                <div className="text-xs">
-                  Avg: ${financialData.averageTripRevenue.toFixed(2)}/trip
+                <div className="flex justify-between items-center mt-2">
+                  <div className="text-xs text-muted-foreground">
+                    From {financialData.tripCount} trips
+                  </div>
+                  <div className="text-xs">
+                    Avg: ${financialData.averageTripRevenue.toFixed(2)}/trip
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
           <Card>
             <CardHeader className="pb-2">
@@ -335,16 +338,12 @@ const CostAnalytics = () => {
                     )}
                     {Math.abs(profitTrend.trend).toFixed(1)}% from previous
                     month
-=======
-                <div className="flex justify-between items-center mt-2">
-                  <div className="text-xs text-muted-foreground">
-                    From {financialData.tripCount} trips
->>>>>>> origin/main
                   </div>
-                  <div className="text-xs">
-                    Avg: ${financialData.averageTripRevenue.toFixed(2)}/trip
-                  </div>
+                )}
+                <div className="text-xs">
+                  Avg: ${financialData.averageTripRevenue.toFixed(2)}/trip
                 </div>
+              </div>
               </CardContent>
             </Card>
 
@@ -465,57 +464,7 @@ const CostAnalytics = () => {
                   <TabsTrigger value="comparison">Comparison</TabsTrigger>
                 )}
               </TabsList>
-
-<<<<<<< HEAD
-      {!isLoading && (!vehicleCosts || vehicleCosts.length === 0) && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No data available</AlertTitle>
-          <AlertDescription>
-            There is no expense or revenue data available for the selected year.
-            Please try selecting a different year or add some data.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!isLoading && vehicleCosts && vehicleCosts.length > 0 && (
-        <>
-          <Tabs
-            value={activeTab}
-            onValueChange={handleTabChange}
-            className="space-y-4"
-          >
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="vehicles">By Vehicle</TabsTrigger>
-              <TabsTrigger value="details">Detailed Records</TabsTrigger>
-              <TabsTrigger value="spare-parts">
-                Spare Parts Analysis
-              </TabsTrigger>
-              {comparisonYear && (
-                <TabsTrigger value="comparison">Comparison</TabsTrigger>
-              )}
-            </TabsList>
-
-            {monthlyData && <OverviewTab monthlyData={monthlyData} />}
-            {maintenanceCategories && fuelTypes && (
-              <CategoriesTab
-                maintenanceCategories={maintenanceCategories}
-                fuelTypes={fuelTypes}
-              />
-            )}
-            {vehicleCosts && <VehiclesTab vehicleCosts={vehicleCosts} />}
-            {vehicleCosts && <DetailsTab vehicleCosts={vehicleCosts} />}
-            <TabsContent value="spare-parts" className="pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Spare Parts Analysis</CardTitle>
-                  <CardDescription>
-                    Inventory overview, stock levels, and purchasing patterns
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+            
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
@@ -891,34 +840,6 @@ const CostAnalytics = () => {
                               </Pie>
                               <Tooltip />
                             </PieChart>
-=======
-              {monthlyData && <OverviewTab monthlyData={monthlyData} />}
-              {vehicleCosts && <VehiclesTab vehicleCosts={vehicleCosts} />}
-              <TabsContent value="spare-parts" className="pt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Spare Parts Analysis</CardTitle>
-                    <CardDescription>
-                      Inventory overview, stock levels, and purchasing patterns
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                          $
-                          {validSparePartsData
-                            .reduce((sum, part) => {
-                              const quantity = Number(part.quantity || 0);
-                              const costPerUnit = Number(part.unit_price || 0);
-                              return sum + quantity * costPerUnit;
-                            }, 0)
-                            .toFixed(2)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Total Inventory Value
-                        </div>
-                      </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                           {validSparePartsData.length}
@@ -1404,7 +1325,6 @@ const CostAnalytics = () => {
           </Tabs>
         </>
       )}
-=======
                       {/* Category Distribution */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
@@ -1578,7 +1498,6 @@ const CostAnalytics = () => {
           </>
         )}
       </div>
->>>>>>> origin/main
     </div>
   );
 };
