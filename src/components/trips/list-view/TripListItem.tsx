@@ -141,9 +141,9 @@ export function TripListItem({
   const passengersFromNotes = parsePassengers(trip.notes);
 
   // Combine both sources, remove duplicates
-  const allPassengers = [
-    ...new Set([...passengersFromArray, ...passengersFromNotes]),
-  ];
+  const allPassengers = Array.from(
+    new Set([...passengersFromArray, ...passengersFromNotes])
+  );
   const hasPassengers = allPassengers.length > 0;
 
   return (
@@ -228,6 +228,27 @@ export function TripListItem({
             <ArrowRight className="h-3 w-3 mt-1 shrink-0" />
             <span className="truncate">{trip.dropoff_location}</span>
           </div>
+        )}
+      </TableCell>
+      <TableCell className="max-w-[150px]">
+        {trip.stops && trip.stops.length > 0 ? (
+          <div className="space-y-1">
+            {trip.stops.slice(0, 2).map((stop, index) => (
+              <div
+                key={index}
+                className="text-xs text-muted-foreground truncate"
+              >
+                • {stop}
+              </div>
+            ))}
+            {trip.stops.length > 2 && (
+              <div className="text-xs text-muted-foreground italic">
+                +{trip.stops.length - 2} more
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
         )}
       </TableCell>
       <TableCell>

@@ -28,7 +28,7 @@ export function useClientDialog(
       // We're not actually deleting the client, just marking it as archived
       const { error } = await supabase
         .from("clients")
-        .update({ is_archived: true })
+        .update({ is_archived: true } as any)
         .eq("id", client.id);
       
       if (error) throw error;
@@ -65,7 +65,7 @@ export function useClientDialog(
       // Mark the client as not archived
       const { error } = await supabase
         .from("clients")
-        .update({ is_archived: false })
+        .update({ is_archived: false } as any)
         .eq("id", client.id);
       
       if (error) throw error;

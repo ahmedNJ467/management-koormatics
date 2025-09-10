@@ -172,9 +172,9 @@ export function AssignVehicleDialog({
         .from("trips")
         .update({
           vehicle_id: vehicleIds[0], // Assuming the first selected vehicle is the primary one
-          assigned_vehicle_ids: vehicleIds,
-        })
-        .eq("id", tripId);
+          assigned_vehicle_ids: vehicleIds as any,
+        } as any)
+        .eq("id", tripId as any);
 
       if (error) throw error;
     },
@@ -281,18 +281,18 @@ export function AssignVehicleDialog({
             {trip?.id ? trip.id.substring(0, 8).toUpperCase() : ""}. This trip
             requires:
             <ul className="list-disc list-inside mt-2">
-              {trip?.soft_skin_count > 0 && (
+              {(trip?.soft_skin_count || 0) > 0 && (
                 <li>
                   <Badge variant="secondary" className="mr-1">
-                    {trip.soft_skin_count}
+                    {trip?.soft_skin_count || 0}
                   </Badge>
                   Soft Skin vehicle(s)
                 </li>
               )}
-              {trip?.armoured_count > 0 && (
+              {(trip?.armoured_count || 0) > 0 && (
                 <li>
                   <Badge variant="default" className="mr-1">
-                    {trip.armoured_count}
+                    {trip?.armoured_count || 0}
                   </Badge>
                   Armoured vehicle(s)
                 </li>

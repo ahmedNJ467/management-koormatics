@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { FuelLog, StorageFill } from "@/lib/types";
 import { FuelLogFormValues } from "../schemas/fuel-log-schema";
+import { ensureArray, extractData } from "@/lib/type-utils";
 
 export async function getVehicles() {
   try {
@@ -44,7 +45,7 @@ export async function getLatestMileage(
   const { data, error } = await supabase
     .from("fuel_logs")
     .select("current_mileage, date, created_at")
-    .eq("vehicle_id", vehicleId)
+    .eq("vehicle_id", vehicleId as any)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1);
@@ -60,7 +61,7 @@ export async function getLatestMileage(
   if (!data || data.length === 0) {
     return { value: 0, hasPrevious: false };
   }
-  const latestValue = Number(data[0]?.current_mileage ?? 0) || 0;
+  const latestValue = Number((data[0] as any)?.current_mileage ?? 0) || 0;
   return { value: latestValue, hasPrevious: true };
 }
 
@@ -77,11 +78,11 @@ export async function getFuelLogById(fuelLogId: string) {
       )
     `
     )
-    .eq("id", fuelLogId)
+    .eq("id", fuelLogId as any)
     .single();
 
   if (error) throw error;
-  return data as FuelLog;
+  return data as any;
 }
 
 export async function saveFuelLog(
@@ -108,7 +109,10 @@ export async function saveFuelLog(
       current_mileage: Number(values.current_mileage),
       mileage: Number(values.mileage),
       notes: values.notes || null,
-      fuel_management_id: values.fuel_management_id ? values.fuel_management_id : null, // Normalize empty string to null
+      filled_by: values.filled_by || null,
+      fuel_management_id: values.fuel_management_id
+        ? values.fuel_management_id
+        : null, // Normalize empty string to null
     };
 
     // Add price_per_liter if available (for future database compatibility)
@@ -127,16 +131,18 @@ export async function saveFuelLog(
         const { data: storage, error: storageError } = await supabase
           .from("fuel_management")
           .select("id, fuel_type")
-          .eq("id", baseValues.fuel_management_id)
+          .eq("id", baseValues.fuel_management_id as any)
           .single();
         if (storageError) throw storageError;
         if (
           storage &&
-          storage.fuel_type &&
-          storage.fuel_type !== baseValues.fuel_type
+          (storage as any).fuel_type &&
+          (storage as any).fuel_type !== baseValues.fuel_type
         ) {
           throw new Error(
-            `Selected storage fuel type (${storage.fuel_type}) does not match log fuel type (${baseValues.fuel_type}).`
+            `Selected storage fuel type (${
+              (storage as any).fuel_type
+            }) does not match log fuel type (${baseValues.fuel_type}).`
           );
         }
       } catch (tankCheckError) {
@@ -150,7 +156,7 @@ export async function saveFuelLog(
       const { data, error } = await supabase
         .from("fuel_logs")
         .update(formattedValues as any)
-        .eq("id", fuelLogId)
+        .eq("id", fuelLogId as any)
         .select(
           `
           *,
@@ -239,7 +245,7 @@ export async function getFuelStorages() {
       throw error;
     }
 
-    return data || [];
+    return ensureArray(data);
   } catch (error) {
     console.error("Exception in getFuelStorages:", error);
     throw error;
@@ -251,7 +257,7 @@ export async function getFuelFills(storageId: string) {
     const { data, error } = await supabase
       .from("fuel_fills")
       .select("*")
-      .eq("fuel_management_id", storageId)
+      .eq("fuel_management_id", storageId as any)
       .order("fill_date", { ascending: false });
 
     if (error) {
@@ -259,7 +265,7 @@ export async function getFuelFills(storageId: string) {
       throw error;
     }
 
-    return data || [];
+    return ensureArray(data);
   } catch (error) {
     console.error(`Exception in getFuelFills for ${storageId}:`, error);
     throw error;
@@ -277,11 +283,11 @@ export async function addFuelFill(fill: {
 }) {
   const { data, error } = await supabase
     .from("fuel_fills")
-    .insert([fill])
+    .insert([fill] as any)
     .select("*")
     .single();
   if (error) throw error;
-  return data;
+  return data as any;
 }
 
 export async function getStorageDispensed(storageId: string) {
@@ -290,14 +296,14 @@ export async function getStorageDispensed(storageId: string) {
     const { data, error } = await supabase
       .from("fuel_logs")
       .select("volume")
-      .eq("fuel_management_id", storageId);
+      .eq("fuel_management_id", storageId as any);
 
     if (error) {
       console.error(`Error in getStorageDispensed for ${storageId}:`, error);
       throw error;
     }
 
-    return data?.reduce((sum, log) => sum + (log.volume || 0), 0) || 0;
+    return data?.reduce((sum, log) => sum + ((log as any).volume || 0), 0) || 0;
   } catch (error) {
     console.error(`Error in getStorageDispensed for ${storageId}:`, error);
     throw error;
@@ -308,18 +314,21 @@ export async function getStorageDispensed(storageId: string) {
 export async function refreshStorageStats() {
   try {
     const tanks = await getFuelStorages();
-    const stats = {};
+    const stats: any = {};
 
     for (const tank of tanks) {
-      const fills = await getFuelFills(tank.id);
-      const dispensed = await getStorageDispensed(tank.id);
-      const totalFilled = fills.reduce((sum, f) => sum + (f.amount || 0), 0);
+      const fills = await getFuelFills((tank as any).id);
+      const dispensed = await getStorageDispensed((tank as any).id);
+      const totalFilled = fills.reduce(
+        (sum, f) => sum + ((f as any).amount || 0),
+        0
+      );
       const lastFill = fills[0];
 
-      stats[tank.id] = {
+      stats[(tank as any).id] = {
         currentLevel: totalFilled - dispensed,
-        lastFillDate: lastFill?.fill_date,
-        lastFillAmount: lastFill?.amount,
+        lastFillDate: (lastFill as any)?.fill_date,
+        lastFillAmount: (lastFill as any)?.amount,
         totalFilled,
         totalDispensed: dispensed,
       };

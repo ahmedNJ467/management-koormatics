@@ -8,13 +8,8 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  Phone,
-  MessageCircle,
-  Navigation,
   Shield,
   User,
-  Car,
-  Bell,
   RefreshCw,
 } from "lucide-react";
 import { DisplayTrip } from "@/lib/types/trip";
@@ -72,33 +67,7 @@ export function OperationCenter({ trips, onRefresh }: OperationCenterProps) {
     },
   ];
 
-  // Active communications
-  const communications = [
-    {
-      id: 1,
-      type: "incoming_call",
-      from: "Driver Ahmed Ali",
-      message: "Requesting route assistance",
-      time: new Date(Date.now() - 2 * 60000),
-      unread: true,
-    },
-    {
-      id: 2,
-      type: "message",
-      from: "Client Services",
-      message: "VIP client arrival update needed",
-      time: new Date(Date.now() - 8 * 60000),
-      unread: true,
-    },
-    {
-      id: 3,
-      type: "system_alert",
-      from: "System",
-      message: "Vehicle maintenance reminder",
-      time: new Date(Date.now() - 15 * 60000),
-      unread: false,
-    },
-  ];
+  // Communications moved to dedicated Chat page under Operations
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -147,20 +116,31 @@ export function OperationCenter({ trips, onRefresh }: OperationCenterProps) {
                 return (
                   <div
                     key={activity.id}
-                    className={`p-3 rounded-lg border ${getPriorityBg(activity.priority)}`}
+                    className={`p-3 rounded-lg border ${getPriorityBg(
+                      activity.priority
+                    )}`}
                   >
                     <div className="flex items-start gap-3">
-                      <IconComponent className={`h-4 w-4 mt-0.5 ${getPriorityColor(activity.priority)}`} />
+                      <IconComponent
+                        className={`h-4 w-4 mt-0.5 ${getPriorityColor(
+                          activity.priority
+                        )}`}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-card-foreground">
                           {activity.message}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(activity.time, "HH:mm")} - {format(activity.time, "MMM d")}
+                          {format(activity.time, "HH:mm")} -{" "}
+                          {format(activity.time, "MMM d")}
                         </p>
                       </div>
                       <Badge
-                        variant={activity.priority === "urgent" ? "destructive" : "secondary"}
+                        variant={
+                          activity.priority === "urgent"
+                            ? "destructive"
+                            : "secondary"
+                        }
                         className="text-xs"
                       >
                         {activity.priority}
@@ -174,61 +154,7 @@ export function OperationCenter({ trips, onRefresh }: OperationCenterProps) {
         </CardContent>
       </Card>
 
-      {/* Communications Center */}
-      <Card className="bg-gradient-to-br from-card to-card/80 border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-primary" />
-            Communications
-            <Badge variant="secondary" className="ml-auto">
-              {communications.filter(c => c.unread).length} unread
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[300px]">
-            <div className="space-y-3">
-              {communications.map((comm) => (
-                <div
-                  key={comm.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
-                    comm.unread ? "bg-primary/5 border-primary/20" : "bg-muted/30"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="relative">
-                      {comm.type === "incoming_call" ? (
-                        <Phone className="h-4 w-4 text-green-500" />
-                      ) : comm.type === "message" ? (
-                        <MessageCircle className="h-4 w-4 text-blue-500" />
-                      ) : (
-                        <Bell className="h-4 w-4 text-amber-500" />
-                      )}
-                      {comm.unread && (
-                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-card-foreground">
-                          {comm.from}
-                        </p>
-                        <span className="text-xs text-muted-foreground">
-                          {format(comm.time, "HH:mm")}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1 truncate">
-                        {comm.message}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+      {/* Communications panel removed; use Chat page under Operations */}
     </div>
   );
 }

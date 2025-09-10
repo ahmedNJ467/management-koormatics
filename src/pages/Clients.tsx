@@ -72,8 +72,8 @@ export default function Clients() {
     try {
       const { error } = await supabase
         .from("clients")
-        .update({ is_archived: false })
-        .eq("id", client.id);
+        .update({ is_archived: false } as any)
+        .eq("id", client.id as any);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast({
@@ -104,7 +104,7 @@ export default function Clients() {
       const { error } = await supabase
         .from("clients")
         .delete()
-        .eq("id", clientToDelete.id);
+        .eq("id", clientToDelete.id as any);
       if (error) throw error;
       setDeleteDialogOpen(false);
       setClientToDelete(null);
@@ -186,11 +186,14 @@ export default function Clients() {
 
   if (clientsLoading) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Clients</h2>
-            <p className="text-muted-foreground">Loading clients...</p>
+      <div className="min-h-screen bg-background">
+        <div className="p-4 px-6 space-y-6">
+          <div className="border-b border-border pb-4 pt-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Clients
+              </h1>
+            </div>
           </div>
         </div>
       </div>
@@ -198,77 +201,83 @@ export default function Clients() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold">Clients</h2>
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header */}
+        <div className="border-b border-border pb-4 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Clients
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportClients}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedClient(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Client
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportClients}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
-          </Button>
-          <Button
-            onClick={() => {
-              setSelectedClient(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add Client
-          </Button>
-        </div>
+
+        {/* Simplified filters like Vehicles page */}
+        <ClientFilters
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          withContractsOnly={withContractsOnly}
+          setWithContractsOnly={setWithContractsOnly}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+        />
+
+        {/* Client Tabs */}
+        <ClientTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          activeClients={activeClients}
+          archivedClients={archivedClients}
+          filteredActiveClients={filteredActiveClients}
+          filteredArchivedClients={filteredArchivedClients}
+          contactCounts={contactCounts}
+          memberCounts={memberCounts}
+          onClientClick={handleClientClick}
+          onClientRestore={handleClientRestore}
+          onClientDelete={handleClientDeleteClick}
+          viewMode={viewMode}
+          sortBy={"name"}
+          sortOrder={"asc"}
+        />
+
+        {formOpen && (
+          <ClientFormDialog
+            open={formOpen}
+            onOpenChange={handleFormClose}
+            client={selectedClient}
+            onClientDeleted={handleClientDeleted}
+          />
+        )}
+
+        {deleteDialogOpen && (
+          <DeleteClientDialog
+            clientName={clientToDelete?.name}
+            isOpen={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            onConfirm={handlePermanentDelete}
+            error={deleteError}
+            isSubmitting={isDeleting}
+            permanentDelete={true}
+          />
+        )}
       </div>
-
-      {/* Simplified filters like Vehicles page */}
-      <ClientFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        typeFilter={typeFilter}
-        setTypeFilter={setTypeFilter}
-        withContractsOnly={withContractsOnly}
-        setWithContractsOnly={setWithContractsOnly}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-      />
-
-      {/* Client Tabs */}
-      <ClientTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        activeClients={activeClients}
-        archivedClients={archivedClients}
-        filteredActiveClients={filteredActiveClients}
-        filteredArchivedClients={filteredArchivedClients}
-        contactCounts={contactCounts}
-        memberCounts={memberCounts}
-        onClientClick={handleClientClick}
-        onClientRestore={handleClientRestore}
-        onClientDelete={handleClientDeleteClick}
-        viewMode={viewMode}
-        sortBy={"name"}
-        sortOrder={"asc"}
-      />
-
-      {formOpen && (
-        <ClientFormDialog
-          open={formOpen}
-          onOpenChange={handleFormClose}
-          client={selectedClient}
-          onClientDeleted={handleClientDeleted}
-        />
-      )}
-
-      {deleteDialogOpen && (
-        <DeleteClientDialog
-          clientName={clientToDelete?.name}
-          isOpen={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          onConfirm={handlePermanentDelete}
-          error={deleteError}
-          isSubmitting={isDeleting}
-          permanentDelete={true}
-        />
-      )}
     </div>
   );
 }

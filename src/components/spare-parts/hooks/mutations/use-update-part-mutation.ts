@@ -39,8 +39,8 @@ export const useUpdatePartMutation = () => {
 
       const { data, error } = await supabase
         .from("spare_parts")
-        .update(partToUpdate)
-        .eq("id", partId)
+        .update(partToUpdate as any)
+        .eq("id", partId as any)
         .select()
         .single();
 

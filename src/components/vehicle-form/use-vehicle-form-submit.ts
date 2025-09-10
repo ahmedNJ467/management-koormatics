@@ -67,31 +67,38 @@ export function useVehicleFormSubmit(
       const shouldNotifyFuelType = !fuelTypeSupported && data.fuel_type;
 
       if (vehicle) {
-        // Check for existing vehicle with same registration
-        const { data: existingVehicle, error: checkError } = await supabase
-          .from("vehicles")
-          .select("id")
-          .eq("registration", formattedData.registration)
-          .not("id", "eq", vehicle.id)
-          .maybeSingle();
+        // Check for existing vehicle with same registration (for updates)
+        try {
+          const { data: existingVehicle, error: checkError } = await supabase
+            .from("vehicles")
+            .select("id")
+            .eq("registration", formattedData.registration as any)
+            .not("id", "eq", vehicle.id as any)
+            .maybeSingle();
 
-        if (checkError) {
-          console.error("Check existing vehicle error:", checkError);
-          throw checkError;
-        }
+          if (checkError) {
+            console.error("Check existing vehicle error:", checkError);
+            throw checkError;
+          }
 
-        if (existingVehicle) {
-          throw new ApiError(
-            `A vehicle with registration ${formattedData.registration} already exists`,
-            409
-          );
+          if (existingVehicle) {
+            throw new ApiError(
+              `A vehicle with registration ${formattedData.registration} already exists`,
+              409
+            );
+          }
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 409) {
+            throw error;
+          }
+          console.warn("Error checking existing vehicle:", error);
         }
 
         // Try to update the vehicle
         const { error } = await supabase
           .from("vehicles")
-          .update(dataToSend)
-          .eq("id", vehicle.id);
+          .update(dataToSend as any)
+          .eq("id", vehicle.id as any);
 
         if (error) {
           console.error("Update vehicle error:", error);
@@ -110,8 +117,8 @@ export function useVehicleFormSubmit(
 
             const { error: retryError } = await supabase
               .from("vehicles")
-              .update(dataWithoutFuelType)
-              .eq("id", vehicle.id);
+              .update(dataWithoutFuelType as any)
+              .eq("id", vehicle.id as any);
 
             if (retryError) {
               console.error("Retry error:", retryError);
@@ -133,7 +140,7 @@ export function useVehicleFormSubmit(
           const { data: existingVehicle, error: checkError } = await supabase
             .from("vehicles")
             .select("id")
-            .eq("registration", formattedData.registration)
+            .eq("registration", formattedData.registration as any)
             .maybeSingle();
 
           if (checkError) {
@@ -157,7 +164,7 @@ export function useVehicleFormSubmit(
         // Try to insert the new vehicle
         const { data: newVehicle, error } = await supabase
           .from("vehicles")
-          .insert(dataToSend)
+          .insert([dataToSend] as any)
           .select()
           .single();
 
@@ -181,7 +188,7 @@ export function useVehicleFormSubmit(
 
             const { data: retryVehicle, error: retryError } = await supabase
               .from("vehicles")
-              .insert(dataWithoutFuelType)
+              .insert([dataWithoutFuelType] as any)
               .select()
               .single();
 

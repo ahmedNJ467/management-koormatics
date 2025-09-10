@@ -18,6 +18,7 @@ import TripAnalytics from "@/pages/TripAnalytics";
 import CostAnalytics from "@/pages/CostAnalytics";
 import CombinedAnalytics from "@/pages/CombinedAnalytics";
 import Dispatch from "@/pages/Dispatch";
+import Chat from "@/pages/Chat";
 import InvitationLetter from "@/pages/InvitationLetter";
 import VehicleInspections from "@/pages/VehicleInspections";
 import VehicleIncidentReports from "@/pages/VehicleIncidentReports";
@@ -88,6 +89,7 @@ export const pathToComponent: Record<string, any> = {
   "/cost-analytics": CostAnalytics,
   "/combined-analytics": CombinedAnalytics,
   "/dispatch": Dispatch,
+  "/chat": Chat,
   "/security-escorts": SecurityEscorts,
   "/invitation-letter": InvitationLetter,
   "/vehicle-inspections": VehicleInspections,

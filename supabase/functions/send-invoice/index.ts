@@ -410,7 +410,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate PDF
     console.log("Generating PDF for invoice:", invoiceId);
     const pdfBuffer = generateInvoicePDF(invoice);
-    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+    const pdfBase64 = btoa(
+      String.fromCharCode(...Array.from(new Uint8Array(pdfBuffer)))
+    );
 
     // Format invoice ID for display
     const shortId = formatInvoiceId(invoiceId);

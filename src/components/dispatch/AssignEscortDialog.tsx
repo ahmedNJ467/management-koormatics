@@ -110,11 +110,11 @@ export function AssignEscortDialog({
       const { error: tripError } = await supabase
         .from("trips")
         .update({
-          escort_vehicle_ids: validEscorts,
+          escort_vehicle_ids: validEscorts as any,
           escort_status: escortStatus,
           escort_assigned_at: new Date().toISOString(),
-        })
-        .eq("id", tripId);
+        } as any)
+        .eq("id", tripId as any);
 
       if (tripError) throw tripError;
 
@@ -126,8 +126,8 @@ export function AssignEscortDialog({
           is_escort_assigned: false,
           escort_trip_id: null,
           escort_assigned_at: null,
-        })
-        .eq("escort_trip_id", tripId);
+        } as any)
+        .eq("escort_trip_id", tripId as any);
 
       if (clearError)
         console.warn("Error clearing old escort assignments:", clearError);
@@ -140,8 +140,8 @@ export function AssignEscortDialog({
             is_escort_assigned: true,
             escort_trip_id: tripId,
             escort_assigned_at: new Date().toISOString(),
-          })
-          .in("id", validEscorts);
+          } as any)
+          .in("id", validEscorts as any);
 
         if (assignError) throw assignError;
       }

@@ -136,7 +136,7 @@ export default function VehicleIncidentReports() {
         .order("incident_date", { ascending: false });
 
       if (error) throw error;
-      return data as VehicleIncidentReport[];
+      return data as any;
     },
   });
 
@@ -157,7 +157,7 @@ export default function VehicleIncidentReports() {
   const filteredReports = useMemo(() => {
     if (!incidentReports) return [];
 
-    return incidentReports.filter((report) => {
+    return incidentReports.filter((report: any) => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -252,19 +252,20 @@ export default function VehicleIncidentReports() {
     thisMonth.setDate(1);
 
     const thisMonthReports = filteredReports.filter(
-      (r) => parseISO(r.incident_date) >= thisMonth
+      (r: any) => parseISO(r.incident_date) >= thisMonth
     ).length;
 
     const severeReports = filteredReports.filter(
-      (r) => r.severity === "severe" || r.severity === "critical"
+      (r: any) => r.severity === "severe" || r.severity === "critical"
     ).length;
 
     const pendingReports = filteredReports.filter(
-      (r) => r.status === "reported" || r.status === "investigating"
+      (r: any) => r.status === "reported" || r.status === "investigating"
     ).length;
 
     const totalCost = filteredReports.reduce(
-      (sum, r) => sum + (r.actual_repair_cost || r.estimated_damage_cost || 0),
+      (sum: any, r: any) =>
+        sum + (r.actual_repair_cost || r.estimated_damage_cost || 0),
       0
     );
 
@@ -283,7 +284,7 @@ export default function VehicleIncidentReports() {
       const { error } = await supabase
         .from("vehicle_incident_reports")
         .delete()
-        .eq("id", id);
+        .eq("id", id as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -459,7 +460,7 @@ export default function VehicleIncidentReports() {
       "Description",
     ];
 
-    const csvData = filteredReports.map((report) => [
+    const csvData = filteredReports.map((report: any) => [
       formatDate(report.incident_date),
       report.incident_time || "",
       report.vehicle
@@ -479,7 +480,7 @@ export default function VehicleIncidentReports() {
     ]);
 
     const csvContent = [headers, ...csvData]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .map((row) => row.map((cell: any) => `"${cell}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -510,7 +511,7 @@ export default function VehicleIncidentReports() {
 
     try {
       // Transform the data to match the expected interface
-      const exportData = filteredReports.map((report) => ({
+      const exportData = filteredReports.map((report: any) => ({
         ...report,
         driver: report.driver
           ? {
@@ -553,461 +554,486 @@ export default function VehicleIncidentReports() {
     !!dateRange?.to;
 
   return (
-            <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">
-            Vehicle Incident Reports
-          </h2>
-        </div>
-        <Button
-          onClick={() => {
-            setSelectedReport(null);
-            setFormOpen(true);
-          }}
-          variant="outline"
-          className="h-9 px-4"
-        >
-          New Incident Report
-        </Button>
-      </div>
-
-      {/* Summary cards removed to match Vehicle Inspections minimalist header */}
-
-      {/* Filters */}
-      <div className="space-y-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by vehicle, location, or reporter..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header */}
+        <div className="border-b border-border pb-4 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Vehicle Incident Reports
+              </h1>
             </div>
+            <Button
+              onClick={() => {
+                setSelectedReport(null);
+                setFormOpen(true);
+              }}
+              variant="outline"
+              className="h-9 px-4"
+            >
+              New Incident Report
+            </Button>
+          </div>
+        </div>
+
+        {/* Summary cards removed to match Vehicle Inspections minimalist header */}
+
+        {/* Filters */}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by vehicle, location, or reporter..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+
+            <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Vehicles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Vehicles</SelectItem>
+                {vehicles?.map((vehicle) => (
+                  <SelectItem
+                    key={(vehicle as any).id}
+                    value={(vehicle as any).id}
+                  >
+                    {(vehicle as any).make} {(vehicle as any).model} (
+                    {(vehicle as any).registration})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="accident">Accident</SelectItem>
+                <SelectItem value="theft">Theft</SelectItem>
+                <SelectItem value="vandalism">Vandalism</SelectItem>
+                <SelectItem value="breakdown">Breakdown</SelectItem>
+                <SelectItem value="traffic_violation">
+                  Traffic Violation
+                </SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="All Severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Severity</SelectItem>
+                <SelectItem value="minor">Minor</SelectItem>
+                <SelectItem value="moderate">Moderate</SelectItem>
+                <SelectItem value="severe">Severe</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="reported">Reported</SelectItem>
+                <SelectItem value="investigating">Investigating</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              className="w-[240px]"
+            />
+
+            {hasActiveFilters && (
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                <Filter className="h-4 w-4 mr-2" />
+                Clear
+              </Button>
+            )}
           </div>
 
-          <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Vehicles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Vehicles</SelectItem>
-              {vehicles?.map((vehicle) => (
-                <SelectItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.make} {vehicle.model} ({vehicle.registration})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="accident">Accident</SelectItem>
-              <SelectItem value="theft">Theft</SelectItem>
-              <SelectItem value="vandalism">Vandalism</SelectItem>
-              <SelectItem value="breakdown">Breakdown</SelectItem>
-              <SelectItem value="traffic_violation">
-                Traffic Violation
-              </SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={severityFilter} onValueChange={setSeverityFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="All Severity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Severity</SelectItem>
-              <SelectItem value="minor">Minor</SelectItem>
-              <SelectItem value="moderate">Moderate</SelectItem>
-              <SelectItem value="severe">Severe</SelectItem>
-              <SelectItem value="critical">Critical</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="reported">Reported</SelectItem>
-              <SelectItem value="investigating">Investigating</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <DateRangePicker
-            value={dateRange}
-            onChange={setDateRange}
-            className="w-[240px]"
-          />
-
-          {hasActiveFilters && (
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              <Filter className="h-4 w-4 mr-2" />
-              Clear
-            </Button>
-          )}
+          {/* Results summary removed per request */}
         </div>
 
-        {/* Results summary removed per request */}
-      </div>
-
-      {/* Reports Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Report ID</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Cost</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+        {/* Reports Table */}
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      Loading incident reports...
-                    </TableCell>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Report ID</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Severity</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Cost</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : paginatedReports?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      No incident reports found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedReports?.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {formatDate(report.incident_date)}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {report.incident_time || "Time not specified"}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {report.id
-                            ?.replace(/[^a-zA-Z0-9]/g, "")
-                            .slice(0, 8)
-                            .toUpperCase()}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {report.vehicle
-                              ? `${report.vehicle.make} ${report.vehicle.model}`
-                              : "Unknown Vehicle"}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {report.vehicle?.registration}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getTypeBadge(report.incident_type)}
-                      </TableCell>
-                      <TableCell>{getSeverityBadge(report.severity)}</TableCell>
-                      <TableCell>{getStatusBadge(report.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">{report.location}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {report.actual_repair_cost ? (
-                            <span className="font-medium">
-                              ${report.actual_repair_cost.toLocaleString()}
-                            </span>
-                          ) : report.estimated_damage_cost ? (
-                            <span className="text-muted-foreground">
-                              ~${report.estimated_damage_cost.toLocaleString()}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Not assessed
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleViewDetails(report)}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleEditReport(report)}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={async () => {
-                                try {
-                                  const exportData = {
-                                    ...report,
-                                    driver: report.driver
-                                      ? {
-                                          name: report.driver.name,
-                                          license_number:
-                                            report.driver.license_number,
-                                        }
-                                      : undefined,
-                                    vehicle: report.vehicle
-                                      ? {
-                                          make: report.vehicle.make,
-                                          model: report.vehicle.model,
-                                          registration:
-                                            report.vehicle.registration,
-                                        }
-                                      : undefined,
-                                  } as any;
-
-                                  // Prefer DB-stored image URLs; fallback to storage listing
-                                  try {
-                                    const { data: dbImages } = await supabase
-                                      .from("vehicle_incident_images")
-                                      .select("image_url, name")
-                                      .eq("incident_id", report.id);
-                                    if (dbImages && dbImages.length > 0) {
-                                      (exportData as any).photos = dbImages.map(
-                                        (r) => ({
-                                          url: r.image_url,
-                                          name: r.name ?? undefined,
-                                        })
-                                      );
-                                    } else {
-                                      const listRes = await supabase.storage
-                                        .from("images")
-                                        .list(`incidents/${report.id}`, {
-                                          limit: 50,
-                                        });
-                                      if (
-                                        listRes.data &&
-                                        listRes.data.length > 0
-                                      ) {
-                                        const photos = listRes.data
-                                          .filter(
-                                            (f) => !f.name.startsWith(".")
-                                          )
-                                          .map((f) => {
-                                            const { data } = supabase.storage
-                                              .from("images")
-                                              .getPublicUrl(
-                                                `incidents/${report.id}/${f.name}`
-                                              );
-                                            return {
-                                              url: data.publicUrl,
-                                              name: f.name,
-                                            };
-                                          });
-                                        (exportData as any).photos = photos;
-                                      }
-                                    }
-                                  } catch (e) {
-                                    // ignore
-                                  }
-
-                                  await generateIncidentReportPdf(exportData, {
-                                    logoUrl:
-                                      window.location.origin +
-                                      "/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png",
-                                  });
-                                  toast({
-                                    title: "PDF exported successfully",
-                                    description:
-                                      "Incident report has been exported to PDF.",
-                                  });
-                                } catch (error) {
-                                  console.error("Error exporting PDF:", error);
-                                  toast({
-                                    title: "Export failed",
-                                    description:
-                                      "Failed to export incident report to PDF. Please try again.",
-                                    variant: "destructive",
-                                  });
-                                }
-                              }}
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              Export PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(report.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8">
+                        Loading incident reports...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  ) : paginatedReports?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8">
+                        No incident reports found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedReports?.map((report: any) => (
+                      <TableRow key={report.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {formatDate(report.incident_date)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {report.incident_time || "Time not specified"}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {report.id
+                              ?.replace(/[^a-zA-Z0-9]/g, "")
+                              .slice(0, 8)
+                              .toUpperCase()}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {report.vehicle
+                                ? `${report.vehicle.make} ${report.vehicle.model}`
+                                : "Unknown Vehicle"}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {report.vehicle?.registration}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getTypeBadge(report.incident_type)}
+                        </TableCell>
+                        <TableCell>
+                          {getSeverityBadge(report.severity)}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(report.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm">{report.location}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {report.actual_repair_cost ? (
+                              <span className="font-medium">
+                                ${report.actual_repair_cost.toLocaleString()}
+                              </span>
+                            ) : report.estimated_damage_cost ? (
+                              <span className="text-muted-foreground">
+                                ~$
+                                {report.estimated_damage_cost.toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">
+                                Not assessed
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleViewDetails(report)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditReport(report)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={async () => {
+                                  try {
+                                    const exportData = {
+                                      ...report,
+                                      driver: report.driver
+                                        ? {
+                                            name: report.driver.name,
+                                            license_number:
+                                              report.driver.license_number,
+                                          }
+                                        : undefined,
+                                      vehicle: report.vehicle
+                                        ? {
+                                            make: report.vehicle.make,
+                                            model: report.vehicle.model,
+                                            registration:
+                                              report.vehicle.registration,
+                                          }
+                                        : undefined,
+                                    } as any;
 
-      {/* Pagination summary removed per request; keeping only controls below */}
+                                    // Prefer DB-stored image URLs; fallback to storage listing
+                                    try {
+                                      const { data: dbImages } = await supabase
+                                        .from("vehicle_incident_images")
+                                        .select("image_url, name")
+                                        .eq("incident_id", report.id as any);
+                                      if (dbImages && dbImages.length > 0) {
+                                        (exportData as any).photos =
+                                          dbImages.map((r) => ({
+                                            url: (r as any).image_url,
+                                            name: (r as any).name ?? undefined,
+                                          }));
+                                      } else {
+                                        const listRes = await supabase.storage
+                                          .from("images")
+                                          .list(`incidents/${report.id}`, {
+                                            limit: 50,
+                                          });
+                                        if (
+                                          listRes.data &&
+                                          listRes.data.length > 0
+                                        ) {
+                                          const photos = listRes.data
+                                            .filter(
+                                              (f) => !f.name.startsWith(".")
+                                            )
+                                            .map((f) => {
+                                              const { data } = supabase.storage
+                                                .from("images")
+                                                .getPublicUrl(
+                                                  `incidents/${report.id}/${f.name}`
+                                                );
+                                              return {
+                                                url: data.publicUrl,
+                                                name: f.name,
+                                              };
+                                            });
+                                          (exportData as any).photos = photos;
+                                        }
+                                      }
+                                    } catch (e) {
+                                      // ignore
+                                    }
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="h-8 px-3"
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                if (totalPages <= 5) {
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                }
-
-                // Show first page, last page, current page, and pages around current
-                if (
-                  pageNum === 1 ||
-                  pageNum === totalPages ||
-                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                ) {
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                }
-
-                if (
-                  pageNum === currentPage - 2 ||
-                  pageNum === currentPage + 2
-                ) {
-                  return (
-                    <span key={pageNum} className="px-2 text-muted-foreground">
-                      ...
-                    </span>
-                  );
-                }
-
-                return null;
-              })}
+                                    await generateIncidentReportPdf(
+                                      exportData,
+                                      {
+                                        logoUrl:
+                                          window.location.origin +
+                                          "/images/Koormatics-logo.png",
+                                      }
+                                    );
+                                    toast({
+                                      title: "PDF exported successfully",
+                                      description:
+                                        "Incident report has been exported to PDF.",
+                                    });
+                                  } catch (error) {
+                                    console.error(
+                                      "Error exporting PDF:",
+                                      error
+                                    );
+                                    toast({
+                                      title: "Export failed",
+                                      description:
+                                        "Failed to export incident report to PDF. Please try again.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                <Download className="mr-2 h-4 w-4" />
+                                Export PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(report.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="h-8 px-3"
-            >
-              Next
-            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Pagination summary removed per request; keeping only controls below */}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  if (totalPages <= 5) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+
+                  // Show first page, last page, current page, and pages around current
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+
+                  if (
+                    pageNum === currentPage - 2 ||
+                    pageNum === currentPage + 2
+                  ) {
+                    return (
+                      <span
+                        key={pageNum}
+                        className="px-2 text-muted-foreground"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-8 px-3"
+              >
+                Next
+              </Button>
+            </div>
+
+            {/* Timestamp at bottom */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>•</span>
+              <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            </div>
           </div>
+        )}
 
-          {/* Timestamp at bottom */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>•</span>
-            <span>Last updated: {new Date().toLocaleTimeString()}</span>
-          </div>
-        </div>
-      )}
+        {/* Form Dialog */}
+        <Dialog open={formOpen} onOpenChange={setFormOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedReport
+                  ? "Edit Incident Report"
+                  : "New Incident Report"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedReport
+                  ? "Update the incident report details and status."
+                  : "Create a new incident report for vehicle-related incidents."}
+              </DialogDescription>
+            </DialogHeader>
+            <IncidentReportForm
+              report={selectedReport}
+              onSuccess={() => {
+                setFormOpen(false);
+                setSelectedReport(null);
+                queryClient.invalidateQueries({
+                  queryKey: ["vehicle-incident-reports"],
+                });
+              }}
+              onCancel={() => {
+                setFormOpen(false);
+                setSelectedReport(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
-      {/* Form Dialog */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedReport ? "Edit Incident Report" : "New Incident Report"}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedReport
-                ? "Update the incident report details and status."
-                : "Create a new incident report for vehicle-related incidents."}
-            </DialogDescription>
-          </DialogHeader>
-          <IncidentReportForm
-            report={selectedReport}
-            onSuccess={() => {
-              setFormOpen(false);
-              setSelectedReport(null);
-              queryClient.invalidateQueries({
-                queryKey: ["vehicle-incident-reports"],
-              });
-            }}
-            onCancel={() => {
-              setFormOpen(false);
-              setSelectedReport(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Details Dialog */}
-      <IncidentDetailsDialog
-        report={selectedReport}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-      />
+        {/* Details Dialog */}
+        <IncidentDetailsDialog
+          report={selectedReport}
+          open={detailsOpen}
+          onOpenChange={setDetailsOpen}
+        />
+      </div>
     </div>
   );
 }

@@ -37,7 +37,13 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -148,7 +154,7 @@ export default function VehicleLeasing() {
         .order("lease_start_date", { ascending: false });
 
       if (error) throw error;
-      return data as VehicleLease[];
+      return data as any;
     },
   });
 
@@ -181,17 +187,18 @@ export default function VehicleLeasing() {
 
     return {
       total: leases.length,
-      active: leases.filter((lease) => lease.lease_status === "active").length,
-      expiringSoon: leases.filter((lease) => {
+      active: leases.filter((lease: any) => lease.lease_status === "active")
+        .length,
+      expiringSoon: leases.filter((lease: any) => {
         const endDate = parseISO(lease.lease_end_date);
         return (
           isValid(endDate) && endDate <= thirtyDaysFromNow && endDate >= now
         );
       }).length,
       monthlyRevenue: leases
-        .filter((lease) => lease.lease_status === "active")
-        .reduce((sum, lease) => sum + lease.daily_rate * 30, 0), // Approximate monthly revenue
-      overdue: leases.filter((lease) => lease.payment_status === "overdue")
+        .filter((lease: any) => lease.lease_status === "active")
+        .reduce((sum: any, lease: any) => sum + lease.daily_rate * 30, 0), // Approximate monthly revenue
+      overdue: leases.filter((lease: any) => lease.payment_status === "overdue")
         .length,
     };
   }, [leases]);
@@ -200,7 +207,7 @@ export default function VehicleLeasing() {
   const filteredLeases = useMemo(() => {
     if (!leases) return [];
 
-    return leases.filter((lease) => {
+    return leases.filter((lease: any) => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -265,7 +272,7 @@ export default function VehicleLeasing() {
       const { error } = await supabase
         .from("vehicle_leases")
         .delete()
-        .eq("id", id);
+        .eq("id", id as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -305,31 +312,31 @@ export default function VehicleLeasing() {
         label: "Active",
         variant: "default" as const,
         icon: CheckCircle,
-        color: "text-green-600",
+        color: "text-green-600 dark:text-green-400",
       },
       pending: {
         label: "Pending",
         variant: "secondary" as const,
         icon: Clock,
-        color: "text-yellow-600",
+        color: "text-yellow-600 dark:text-yellow-400",
       },
       expired: {
         label: "Expired",
         variant: "destructive" as const,
         icon: XCircle,
-        color: "text-red-600",
+        color: "text-red-600 dark:text-red-400",
       },
       terminated: {
         label: "Terminated",
         variant: "outline" as const,
         icon: XCircle,
-        color: "text-gray-600",
+        color: "text-muted-foreground",
       },
       upcoming: {
         label: "Upcoming",
         variant: "secondary" as const,
         icon: Calendar,
-        color: "text-blue-600",
+        color: "text-blue-600 dark:text-blue-400",
       },
     };
 
@@ -350,22 +357,25 @@ export default function VehicleLeasing() {
       current: {
         label: "Current",
         variant: "default" as const,
-        color: "bg-green-100 text-green-800",
+        color:
+          "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400",
       },
       overdue: {
         label: "Overdue",
         variant: "destructive" as const,
-        color: "bg-red-100 text-red-800",
+        color: "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400",
       },
       partial: {
         label: "Partial",
         variant: "secondary" as const,
-        color: "bg-yellow-100 text-yellow-800",
+        color:
+          "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400",
       },
       paid_ahead: {
         label: "Paid Ahead",
         variant: "outline" as const,
-        color: "bg-blue-100 text-blue-800",
+        color:
+          "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400",
       },
     };
 
@@ -423,7 +433,7 @@ export default function VehicleLeasing() {
       "Payment Status",
     ];
 
-    const csvData = filteredLeases.map((lease) => [
+    const csvData = filteredLeases.map((lease: any) => [
       lease.contract_id || "N/A",
       lease.vehicle
         ? `${lease.vehicle.make} ${lease.vehicle.model} (${lease.vehicle.year})`
@@ -441,7 +451,7 @@ export default function VehicleLeasing() {
     ]);
 
     const csvContent = [headers, ...csvData]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .map((row) => row.map((cell: any) => `"${cell}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -461,104 +471,105 @@ export default function VehicleLeasing() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Vehicle Leasing
-          </h2>
-          <p className="text-muted-foreground">
-            Manage vehicle leases, contracts, and customer relationships
-          </p>
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        <div className="border-b border-border pb-4 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Vehicle Leasing
+              </h1>
+            </div>
+            <Button
+              onClick={() => {
+                setSelectedLease(null);
+                setFormOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              New Lease Agreement
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            setSelectedLease(null);
-            setFormOpen(true);
-          }}
-          className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-        >
-          <Plus className="h-5 w-5" />
-          New Lease Agreement
-        </Button>
-      </div>
+        {/* Header removed in favor of standardized header above */}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Leases</CardTitle>
-            <FileText className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {summaryStats.total}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              All lease agreements
-            </p>
-          </CardContent>
-        </Card>
+        {/* Summary Cards - match Quotations */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Leases
+              </CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{summaryStats.total}</div>
+              <p className="text-xs text-muted-foreground">
+                All lease agreements
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Leases</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {summaryStats.active}
-            </div>
-            <p className="text-xs text-muted-foreground">Currently active</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Leases
+              </CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{summaryStats.active}</div>
+              <p className="text-xs text-muted-foreground">Currently active</p>
+            </CardContent>
+          </Card>
 
-        <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {summaryStats.expiringSoon}
-            </div>
-            <p className="text-xs text-muted-foreground">Within 30 days</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Expiring Soon
+              </CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {summaryStats.expiringSoon}
+              </div>
+              <p className="text-xs text-muted-foreground">Within 30 days</p>
+            </CardContent>
+          </Card>
 
-        <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Monthly Revenue
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              ${summaryStats.monthlyRevenue.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">From active leases</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Monthly Revenue
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${summaryStats.monthlyRevenue.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                From active leases
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {summaryStats.overdue}
-            </div>
-            <p className="text-xs text-muted-foreground">Payment overdue</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{summaryStats.overdue}</div>
+              <p className="text-xs text-muted-foreground">Payment overdue</p>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Filters */}
-      <Card className="shadow-sm">
-        <CardContent className="pt-6">
+        {/* Filters */}
+        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="flex-1">
               <div className="relative">
@@ -579,8 +590,12 @@ export default function VehicleLeasing() {
               <SelectContent>
                 <SelectItem value="all">All Vehicles</SelectItem>
                 {vehicles?.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.make} {vehicle.model} ({vehicle.registration})
+                  <SelectItem
+                    key={(vehicle as any).id}
+                    value={(vehicle as any).id}
+                  >
+                    {(vehicle as any).make} {(vehicle as any).model} (
+                    {(vehicle as any).registration})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -633,202 +648,214 @@ export default function VehicleLeasing() {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Leases Table */}
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Contract & Vehicle</TableHead>
-                  <TableHead>Lessee</TableHead>
-                  <TableHead>Lease Period</TableHead>
-                  <TableHead>Financial</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <div className="flex items-center justify-center gap-2">
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Loading vehicle leases...
-                      </div>
-                    </TableCell>
+        {/* Leases Table */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardDescription>
+                  {filteredLeases.length} of {summaryStats.total} leases
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Contract & Vehicle</TableHead>
+                    <TableHead>Lessee</TableHead>
+                    <TableHead>Lease Period</TableHead>
+                    <TableHead>Financial</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : filteredLeases?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <div className="flex flex-col items-center gap-2">
-                        <Car className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          No vehicle leases found
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredLeases?.map((lease) => {
-                    const daysUntilExpiry = getDaysUntilExpiry(
-                      lease.lease_end_date
-                    );
-                    const isExpiringSoon =
-                      daysUntilExpiry !== null &&
-                      daysUntilExpiry <= 30 &&
-                      daysUntilExpiry >= 0;
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="flex items-center justify-center gap-2">
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          Loading vehicle leases...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredLeases?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="flex flex-col items-center gap-2">
+                          <Car className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-muted-foreground">
+                            No vehicle leases found
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredLeases?.map((lease: any) => {
+                      const daysUntilExpiry = getDaysUntilExpiry(
+                        lease.lease_end_date
+                      );
+                      const isExpiringSoon =
+                        daysUntilExpiry !== null &&
+                        daysUntilExpiry <= 30 &&
+                        daysUntilExpiry >= 0;
 
-                    return (
-                      <TableRow key={lease.id} className="hover:bg-muted/50">
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium text-blue-600">
-                              Contract{" "}
-                              {lease.contract?.contract_number ||
-                                "#" + (lease.contract_id?.slice(0, 8) || "N/A")}
-                            </div>
-                            <div className="text-sm">
-                              {lease.vehicle
-                                ? `${lease.vehicle.make} ${lease.vehicle.model} (${lease.vehicle.year})`
-                                : "Unknown Vehicle"}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {lease.vehicle?.registration}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {lease.lessee_name}
-                            </div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {lease.lessee_email}
-                            </div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {lease.lessee_phone}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">
-                              <span className="font-medium">Start:</span>{" "}
-                              {formatDate(lease.lease_start_date)}
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-medium">End:</span>{" "}
-                              {formatDate(lease.lease_end_date)}
-                            </div>
-                            {isExpiringSoon && (
-                              <div className="text-xs text-orange-600 font-medium flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Expires in {daysUntilExpiry} days
+                      return (
+                        <TableRow key={lease.id} className="hover:bg-muted/50">
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium text-blue-600 dark:text-blue-400">
+                                Contract{" "}
+                                {lease.contract?.contract_number ||
+                                  "#" +
+                                    (lease.contract_id?.slice(0, 8) || "N/A")}
                               </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm font-medium text-green-600">
-                              ${lease.daily_rate?.toLocaleString() || "0"}/day
+                              <div className="text-sm">
+                                {lease.vehicle
+                                  ? `${lease.vehicle.make} ${lease.vehicle.model} (${lease.vehicle.year})`
+                                  : "Unknown Vehicle"}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {lease.vehicle?.registration}
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              Monthly: $
-                              {((lease.daily_rate || 0) * 30).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {lease.lessee_name}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {lease.lessee_email}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {lease.lessee_phone}
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            {getStatusBadge(lease.lease_status)}
-                            {getPaymentStatusBadge(lease.payment_status)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleViewDetails(lease)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleEditLease(lease)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Lease
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(lease.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="font-medium">Start:</span>{" "}
+                                {formatDate(lease.lease_start_date)}
+                              </div>
+                              <div className="text-sm">
+                                <span className="font-medium">End:</span>{" "}
+                                {formatDate(lease.lease_end_date)}
+                              </div>
+                              {isExpiringSoon && (
+                                <div className="text-xs text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Expires in {daysUntilExpiry} days
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                                ${lease.daily_rate?.toLocaleString() || "0"}/day
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Monthly: $
+                                {(
+                                  (lease.daily_rate || 0) * 30
+                                ).toLocaleString()}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-2">
+                              {getStatusBadge(lease.lease_status)}
+                              {getPaymentStatusBadge(lease.payment_status)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => handleViewDetails(lease)}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleEditLease(lease)}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit Lease
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDelete(lease.id)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Form Dialog */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedLease ? "Edit Lease Agreement" : "New Lease Agreement"}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedLease
-                ? "Update the lease agreement details and terms."
-                : "Create a new vehicle lease agreement with customer details and terms."}
-            </DialogDescription>
-          </DialogHeader>
-          <LeaseForm
-            lease={selectedLease}
-            onSuccess={() => {
-              setFormOpen(false);
-              setSelectedLease(null);
-              queryClient.invalidateQueries({
-                queryKey: ["vehicle-leases"],
-              });
-            }}
-            onCancel={() => {
-              setFormOpen(false);
-              setSelectedLease(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+        {/* Form Dialog */}
+        <Dialog open={formOpen} onOpenChange={setFormOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedLease ? "Edit Lease Agreement" : "New Lease Agreement"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedLease
+                  ? "Update the lease agreement details and terms."
+                  : "Create a new vehicle lease agreement with customer details and terms."}
+              </DialogDescription>
+            </DialogHeader>
+            <LeaseForm
+              lease={selectedLease}
+              onSuccess={() => {
+                setFormOpen(false);
+                setSelectedLease(null);
+                queryClient.invalidateQueries({
+                  queryKey: ["vehicle-leases"],
+                });
+              }}
+              onCancel={() => {
+                setFormOpen(false);
+                setSelectedLease(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
-      {/* Details Dialog */}
-      <LeaseDetailsDialog
-        lease={selectedLease}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-      />
+        {/* Details Dialog */}
+        <LeaseDetailsDialog
+          lease={selectedLease}
+          open={detailsOpen}
+          onOpenChange={setDetailsOpen}
+        />
+      </div>
     </div>
   );
 }

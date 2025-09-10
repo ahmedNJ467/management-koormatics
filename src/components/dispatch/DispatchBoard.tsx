@@ -106,7 +106,6 @@ export function DispatchBoard({
             onSendMessage={onSendMessage}
             onCompleteTrip={onCompleteTrip}
             onUpdateStatus={onUpdateStatus}
-            onAssignEscort={onAssignEscort}
           />
         </TabsContent>
         <TabsContent value="in-progress" className="mt-0">
@@ -116,7 +115,6 @@ export function DispatchBoard({
             onSendMessage={onSendMessage}
             onCompleteTrip={onCompleteTrip}
             onUpdateStatus={onUpdateStatus}
-            onAssignEscort={onAssignEscort}
           />
         </TabsContent>
         <TabsContent value="scheduled" className="mt-0">
@@ -126,7 +124,6 @@ export function DispatchBoard({
             onSendMessage={onSendMessage}
             onCompleteTrip={onCompleteTrip}
             onUpdateStatus={onUpdateStatus}
-            onAssignEscort={onAssignEscort}
           />
         </TabsContent>
         <TabsContent value="completed" className="mt-0">
@@ -136,7 +133,6 @@ export function DispatchBoard({
             onSendMessage={onSendMessage}
             onCompleteTrip={onCompleteTrip}
             onUpdateStatus={onUpdateStatus}
-            onAssignEscort={onAssignEscort}
           />
         </TabsContent>
       </div>

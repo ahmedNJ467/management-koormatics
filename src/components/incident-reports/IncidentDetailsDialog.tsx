@@ -110,7 +110,7 @@ export function IncidentDetailsDialog({
       const { data, error } = await supabase
         .from("vehicle_incident_images")
         .select("image_url, name")
-        .eq("incident_id", report.id);
+        .eq("incident_id", report.id as any);
       if (error) throw error;
       return data || [];
     },
@@ -571,14 +571,14 @@ export function IncidentDetailsDialog({
                     >
                       <div className="aspect-square bg-muted">
                         <img
-                          src={img.image_url}
-                          alt={img.name || `Photo ${idx + 1}`}
+                          src={(img as any).image_url}
+                          alt={(img as any).name || `Photo ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      {img.name && (
+                      {(img as any).name && (
                         <div className="px-2 py-1 text-xs text-muted-foreground truncate">
-                          {img.name}
+                          {(img as any).name}
                         </div>
                       )}
                     </div>

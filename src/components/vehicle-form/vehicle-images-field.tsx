@@ -62,8 +62,8 @@ export function VehicleImagesField({
         const { error } = await supabase
           .from("vehicle_images")
           .delete()
-          .eq("vehicle_id", vehicle.id)
-          .eq("image_url", imageUrl);
+          .eq("vehicle_id", vehicle.id as any)
+          .eq("image_url", imageUrl as any);
 
         if (error) {
           toast({

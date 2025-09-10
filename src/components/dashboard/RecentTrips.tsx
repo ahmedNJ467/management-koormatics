@@ -21,38 +21,6 @@ interface RecentTripsProps {
   trips?: Trip[];
 }
 
-// Mock trips for fallback
-const mockTrips: Trip[] = [
-  {
-    id: "T001",
-    clientName: "ABC Corporation",
-    destination: "Downtown Office",
-    status: "completed",
-    startTime: "2024-01-15T09:00:00Z",
-    endTime: "2024-01-15T10:30:00Z",
-    driver: "John Doe",
-    vehicle: "V001",
-  },
-  {
-    id: "T002",
-    clientName: "XYZ Ltd",
-    destination: "Airport Terminal 1",
-    status: "in_progress",
-    startTime: "2024-01-15T11:00:00Z",
-    driver: "Sarah Wilson",
-    vehicle: "V002",
-  },
-  {
-    id: "T003",
-    clientName: "Tech Solutions",
-    destination: "Business Park",
-    status: "scheduled",
-    startTime: "2024-01-15T14:00:00Z",
-    driver: "Mike Johnson",
-    vehicle: "V003",
-  },
-];
-
 const getStatusColor = (status: Trip["status"]) => {
   switch (status) {
     case "completed":
@@ -69,13 +37,18 @@ const getStatusColor = (status: Trip["status"]) => {
 };
 
 const formatTime = (timeString: string) => {
-  return new Date(timeString).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  if (!timeString) return "N/A";
+  try {
+    return new Date(timeString).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (error) {
+    return "N/A";
+  }
 };
 
-export default function RecentTrips({ trips = mockTrips }: RecentTripsProps) {
+export default function RecentTrips({ trips = [] }: RecentTripsProps) {
   return (
     <Card>
       <CardHeader>

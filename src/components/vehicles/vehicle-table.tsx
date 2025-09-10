@@ -162,10 +162,10 @@ export const VehicleTable = memo(
               }
 
               const insuranceExpiringSoon = isInsuranceExpiringSoon(
-                vehicle.insurance_expiry
+                vehicle.insurance_expiry || null
               );
               const insuranceExpired = isInsuranceExpired(
-                vehicle.insurance_expiry
+                vehicle.insurance_expiry || null
               );
 
               return (

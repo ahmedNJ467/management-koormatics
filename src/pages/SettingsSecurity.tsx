@@ -59,14 +59,16 @@ export default function SettingsSecurity() {
       const { error: delErr } = await supabase
         .from("user_roles")
         .delete()
-        .eq("user_id", userId)
-        .neq("role_slug", "super_admin");
+        .eq("user_id", userId as any)
+        .neq("role_slug", "super_admin" as any);
       if (delErr) throw delErr;
 
       if (roleSlug) {
         const { error: insErr } = await supabase
           .from("user_roles")
-          .insert({ user_id: userId, role_slug: roleSlug });
+          .insert([
+            { user_id: userId as any, role_slug: roleSlug as any },
+          ] as any);
         if (insErr) throw insErr;
       }
 

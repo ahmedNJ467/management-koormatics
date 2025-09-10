@@ -13,29 +13,43 @@ export const useRole = () => {
       const userId = session?.user.id;
       if (!userId) return [];
 
-      const { data, error } = await supabase
-        .from("vw_user_roles")
-        .select("roles")
-        .eq("user_id", userId!)
-        .maybeSingle();
-
-      if (error) return [];
-
-      const dbRoles = (data?.roles as string[]) || [];
-      if (dbRoles.length > 0) return dbRoles;
-
+      // Try to get roles from user metadata first (faster)
       const meta = (session?.user.user_metadata as any) || {};
       const metaRoles: string[] = Array.isArray(meta?.koormatics_role)
         ? meta.koormatics_role
         : meta?.role
         ? [meta.role]
         : [];
-      return metaRoles;
+
+      // If we have roles from metadata, return them immediately
+      if (metaRoles.length > 0) return metaRoles;
+
+      // Fallback to database query only if no metadata roles
+      try {
+        const { data, error } = await supabase
+          .from("vw_user_roles")
+          .select("roles")
+          .eq("user_id", userId!)
+          .maybeSingle();
+
+        if (error) return metaRoles; // Return metadata roles as fallback
+
+        const dbRoles = (data?.roles as string[]) || [];
+        return dbRoles.length > 0 ? dbRoles : metaRoles;
+      } catch (error) {
+        console.error("Error fetching roles from database:", error);
+        return metaRoles; // Return metadata roles as fallback
+      }
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in memory for 30 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    retry: 1, // Only retry once on failure
+    // Add timeout to prevent hanging
+    meta: {
+      timeout: 5000, // 5 second timeout
+    },
   });
 
   // Debug logging

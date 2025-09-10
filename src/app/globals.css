@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom styles for map labels */
+.interest-point-label {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  color: #1f2937 !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  white-space: nowrap !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -53,6 +67,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -61,5 +76,16 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Hide number input spinners */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
   }
 }

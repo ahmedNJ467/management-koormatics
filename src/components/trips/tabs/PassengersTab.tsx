@@ -69,8 +69,8 @@ export function PassengersTab({
         .from("trips")
         .update({
           passengers: passengers,
-        })
-        .eq("id", viewTrip.id);
+        } as any)
+        .eq("id", viewTrip.id as any);
 
       if (error) throw error;
 

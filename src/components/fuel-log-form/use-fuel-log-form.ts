@@ -29,7 +29,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
     queryFn: async () => {
       const result = await getVehicles();
       return result.map((vehicle) => ({
-        ...vehicle,
+        ...(vehicle as any),
         fuel_type: (vehicle as any).fuel_type || "diesel", // Ensure fuel_type is always present
       }));
     },
@@ -51,6 +51,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           current_mileage: fuelLog.current_mileage || 0,
           mileage: fuelLog.mileage || 0,
           notes: fuelLog.notes || "",
+          filled_by: fuelLog.filled_by || "",
           fuel_management_id: (fuelLog as any).fuel_management_id || "",
         }
       : {
@@ -64,6 +65,7 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
           current_mileage: 0,
           mileage: 0,
           notes: "",
+          filled_by: "",
           fuel_management_id: "",
         },
   });
@@ -77,6 +79,42 @@ export function useFuelLogForm(fuelLog?: FuelLog) {
       setHasPreviousMileage(true);
     }
   }, [fuelLog]);
+
+  // Reset form when fuelLog changes (for edit mode)
+  useEffect(() => {
+    if (fuelLog) {
+      form.reset({
+        vehicle_id: fuelLog.vehicle_id,
+        date: fuelLog.date,
+        fuel_type: fuelLog.fuel_type,
+        volume: fuelLog.volume,
+        price_per_liter: fuelLog.volume > 0 ? fuelLog.cost / fuelLog.volume : 0,
+        cost: fuelLog.cost,
+        previous_mileage: fuelLog.previous_mileage || 0,
+        current_mileage: fuelLog.current_mileage || 0,
+        mileage: fuelLog.mileage || 0,
+        notes: fuelLog.notes || "",
+        filled_by: fuelLog.filled_by || "",
+        fuel_management_id: (fuelLog as any).fuel_management_id || "",
+      });
+    } else {
+      // Reset to default values for add mode
+      form.reset({
+        vehicle_id: "",
+        date: new Date().toISOString().split("T")[0],
+        fuel_type: "diesel",
+        volume: 0,
+        price_per_liter: 0,
+        cost: 0,
+        previous_mileage: 0,
+        current_mileage: 0,
+        mileage: 0,
+        notes: "",
+        filled_by: "",
+        fuel_management_id: "",
+      });
+    }
+  }, [fuelLog, form]);
 
   const vehicleId = form.watch("vehicle_id");
 

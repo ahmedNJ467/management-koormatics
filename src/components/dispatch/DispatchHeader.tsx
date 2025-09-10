@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Calendar, List, PlusCircle, ChevronLeft } from "lucide-react";
+import { Plus, Calendar, List, PlusCircle, ChevronLeft, LayoutGrid } from "lucide-react";
 
 export function DispatchHeader() {
-  const navigate = useRouter();
+  const router = useRouter();
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -27,7 +27,7 @@ export function DispatchHeader() {
           variant="outline"
           size="sm"
           className="h-9 gap-1"
-          onClick={() => navigate("/drivers")}
+          onClick={() => router.push("/drivers")}
         >
           <LayoutGrid className="h-4 w-4" />
           <span className="hidden sm:inline">Manage Drivers</span>

@@ -17,14 +17,18 @@ import { RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { OperationMetrics } from "@/components/dispatch/OperationMetrics";
 import { LiveMap } from "@/components/dispatch/LiveMap";
+import { InterestPointsManager } from "@/components/dispatch/InterestPointsManager";
 // status filter removed from header
 import { handleSendMessage as persistTripMessage } from "@/components/trips/operations/message-operations";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useInterestPoints } from "@/hooks/use-interest-points";
+import { AddInterestPointDialog } from "@/components/dispatch/AddInterestPointDialog";
 
 export default function Dispatch() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { trips = [], isLoading, drivers = [], vehicles = [] } = useTripsData();
+  const { interestPoints = [] } = useInterestPoints();
 
   // Add a refresh trigger state to force re-renders
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -46,9 +50,16 @@ export default function Dispatch() {
   const [assignEscortOpen, setAssignEscortOpen] = useState(false);
   const [tripToAssignEscort, setTripToAssignEscort] =
     useState<DisplayTrip | null>(null);
-  const [pageTab, setPageTab] = useState<"overview" | "trips" | "map">(
-    "overview"
-  );
+
+  // Interest points state
+  const [addInterestPointOpen, setAddInterestPointOpen] = useState(false);
+  const [clickedCoordinates, setClickedCoordinates] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [pageTab, setPageTab] = useState<
+    "overview" | "trips" | "map" | "interest-points"
+  >("overview");
 
   // New state for enhanced features
   // status filter removed; show all trips
@@ -241,8 +252,8 @@ export default function Dispatch() {
       try {
         const { error } = await supabase
           .from("trips")
-          .update({ status })
-          .eq("id", tripId);
+          .update({ status } as any)
+          .eq("id", tripId as any);
 
         if (error) throw error;
 
@@ -333,8 +344,8 @@ export default function Dispatch() {
 
         const { error: tripUpdateError } = await supabase
           .from("trips")
-          .update({ status: "completed", log_sheet_url })
-          .eq("id", trip.id);
+          .update({ status: "completed", log_sheet_url } as any)
+          .eq("id", trip.id as any);
 
         if (tripUpdateError) {
           throw new Error(`Failed to update trip: ${tripUpdateError.message}`);
@@ -365,33 +376,47 @@ export default function Dispatch() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div>
-          <h2 className="text-lg font-medium">Dispatch</h2>
-          <p className="text-sm text-muted-foreground">
-            Loading dispatch data...
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="border rounded-md p-4 bg-card animate-pulse"
-            >
-              <div className="h-4 bg-muted rounded w-1/2"></div>
-              <div className="h-6 bg-muted rounded w-3/4 mt-3"></div>
+      <div className="min-h-screen bg-background">
+        <div className="p-4 px-6 space-y-6">
+          <div className="border-b border-border pb-4 pt-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Dispatch
+              </h1>
             </div>
-          ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="border rounded-md p-4 bg-card animate-pulse"
+              >
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+                <div className="h-6 bg-muted rounded w-3/4 mt-3"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative h-[calc(100vh-56px)] w-full overflow-hidden m-0 p-0">
+    <div className="relative h-full w-full overflow-hidden m-0 p-0">
       {/* Map fills available space inside page wrapper so sidebar can push it */}
       <div className="absolute inset-0 z-0 m-0 p-0 overflow-hidden">
-        <LiveMap trips={dispatchTrips} variant="fullscreen" />
+        <LiveMap
+          trips={dispatchTrips}
+          interestPoints={interestPoints as any}
+          variant="fullscreen"
+          onMapClick={(lat, lng) => {
+            setClickedCoordinates({ lat, lng });
+            setAddInterestPointOpen(true);
+          }}
+          showInterestPoints={
+            pageTab === "map" || pageTab === "interest-points"
+          }
+        />
       </div>
 
       {/* Page navbar centered with rectangular tabs and glassy active state */}
@@ -416,9 +441,15 @@ export default function Dispatch() {
               </TabsTrigger>
               <TabsTrigger
                 value="map"
-                className="px-3 py-1.5 text-xs md:text-sm rounded-md border border-transparent text-muted-foreground hover:bg-foreground/5 data-[state=active]:text-foreground data-[state=active]:bg-white/10 data-[state=active]:backdrop-blur data-[state=active]:border-white/20 data-[state=active]:shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)] transition-colors"
+                className="px-3 py-1.5 text-xs md:text-sm rounded-md border border-transparent text-muted-foreground hover:bg-foreground/5 data-[state=active]:text-foreground data-[state=active]:bg-white/10 data-[state=active]:backdrop-blur data-[state=active]:border-white/20 data-[state=active]:shadow-[0_8px_24px_-10px_rgba(0,0,0,0.0)] transition-colors"
               >
                 Map
+              </TabsTrigger>
+              <TabsTrigger
+                value="interest-points"
+                className="px-3 py-1.5 text-xs md:text-sm rounded-md border border-transparent text-muted-foreground hover:bg-foreground/5 data-[state=active]:text-foreground data-[state=active]:bg-white/10 data-[state=active]:backdrop-blur data-[state=active]:border-white/20 data-[state=active]:shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)] transition-colors"
+              >
+                Interest Points
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -426,7 +457,7 @@ export default function Dispatch() {
       </div>
 
       {/* Overlay panel toggled by navbar */}
-      {pageTab !== "map" && (
+      {pageTab !== "map" && pageTab !== "interest-points" && (
         <div
           className={`absolute left-4 top-24 z-10 ${
             pageTab === "overview" ? "w-max" : "w-[760px]"
@@ -484,6 +515,37 @@ export default function Dispatch() {
         </div>
       )}
 
+      {/* Interest Points Panel */}
+      {pageTab === "interest-points" && (
+        <div className="absolute left-4 top-24 z-10 w-[760px] max-w-[95vw]">
+          <div className="bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border border-border/40 rounded-md overflow-hidden h-[72vh] flex flex-col">
+            <div className="flex-1 overflow-hidden p-0 m-0">
+              <div className="h-full overflow-hidden">
+                <InterestPointsManager
+                  onInterestPointSelected={(point) => {
+                    // Center map on selected interest point
+                    if ((window as any).google?.maps) {
+                      const map = (window as any).google.maps;
+                      const center = new map.LatLng(
+                        point.latitude,
+                        point.longitude
+                      );
+                      // You would need to access the map instance here to center it
+                    }
+                  }}
+                  onInterestPointUpdated={() => {
+                    // Refresh interest points data
+                    queryClient.invalidateQueries({
+                      queryKey: ["interest-points"],
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dialogs */}
       <TripMessageDialog
         open={messageOpen}
@@ -504,6 +566,19 @@ export default function Dispatch() {
         trip={tripToAssignEscort}
         onClose={() => setAssignEscortOpen(false)}
         onEscortAssigned={handleEscortAssigned}
+      />
+
+      {/* Add Interest Point Dialog */}
+      <AddInterestPointDialog
+        open={addInterestPointOpen}
+        onClose={() => {
+          setAddInterestPointOpen(false);
+          setClickedCoordinates(null);
+        }}
+        initialCoordinates={clickedCoordinates || undefined}
+        onInterestPointAdded={() => {
+          queryClient.invalidateQueries({ queryKey: ["interest-points"] });
+        }}
       />
     </div>
   );

@@ -38,7 +38,7 @@ export const fetchContracts = async (): Promise<Contract[]> => {
     throw error;
   }
 
-  return data as Contract[];
+  return data as any[] as Contract[];
 };
 
 // Utility to generate a friendly contract number, e.g. C240701-1234
@@ -83,7 +83,7 @@ export const addContract = async (
 
   const { data, error } = await supabase
     .from("contracts")
-    .insert(contractToInsert)
+    .insert(contractToInsert as any)
     .select()
     .single();
 
@@ -93,7 +93,7 @@ export const addContract = async (
   }
 
   // Upload contract file if provided
-  if (contractFile && data.id) {
+  if (contractFile && data && "id" in data) {
     try {
       // Validate file
       if (contractFile.size > 10 * 1024 * 1024) {
@@ -140,8 +140,8 @@ export const addContract = async (
       // Update contract with file path
       const { error: updateError } = await supabase
         .from("contracts")
-        .update({ contract_file: filePath })
-        .eq("id", data.id);
+        .update({ contract_file: filePath } as any)
+        .eq("id", (data as any).id);
 
       if (updateError) {
         console.error("Error updating contract with file path:", updateError);
@@ -154,7 +154,7 @@ export const addContract = async (
     }
   }
 
-  return data as Contract;
+  return data as any as Contract;
 };
 
 export const updateContract = async (
@@ -177,8 +177,8 @@ export const updateContract = async (
   // Update the contract data first
   const { data, error } = await supabase
     .from("contracts")
-    .update(updatedContract)
-    .eq("id", contractId)
+    .update(updatedContract as any)
+    .eq("id", contractId as any)
     .select()
     .single();
 
@@ -233,11 +233,15 @@ export const updateContract = async (
       console.log("File uploaded successfully during update:", uploadData);
 
       // Update contract with file path if needed
-      if (data.contract_file !== filePath) {
+      if (
+        data &&
+        "contract_file" in data &&
+        (data as any).contract_file !== filePath
+      ) {
         const { error: updateError } = await supabase
           .from("contracts")
-          .update({ contract_file: filePath })
-          .eq("id", contractId);
+          .update({ contract_file: filePath } as any)
+          .eq("id", contractId as any);
 
         if (updateError) {
           console.error(
@@ -253,7 +257,7 @@ export const updateContract = async (
     }
   }
 
-  return data as Contract;
+  return data as any as Contract;
 };
 
 export const deleteContract = async (id: string): Promise<string> => {
@@ -261,7 +265,7 @@ export const deleteContract = async (id: string): Promise<string> => {
   const { data: contract, error: fetchError } = await supabase
     .from("contracts")
     .select("contract_file")
-    .eq("id", id)
+    .eq("id", id as any)
     .single();
 
   if (fetchError) {
@@ -270,7 +274,10 @@ export const deleteContract = async (id: string): Promise<string> => {
   }
 
   // Delete the contract
-  const { error } = await supabase.from("contracts").delete().eq("id", id);
+  const { error } = await supabase
+    .from("contracts")
+    .delete()
+    .eq("id", id as any);
 
   if (error) {
     console.error("Error deleting contract:", error);
@@ -278,11 +285,15 @@ export const deleteContract = async (id: string): Promise<string> => {
   }
 
   // Also delete the file from storage if it exists
-  if (contract?.contract_file) {
+  if (
+    contract &&
+    "contract_file" in contract &&
+    (contract as any).contract_file
+  ) {
     try {
       const { error: deleteFileError } = await supabase.storage
         .from("documents")
-        .remove([contract.contract_file]);
+        .remove([(contract as any).contract_file]);
 
       if (deleteFileError) {
         console.error("Error deleting file:", deleteFileError);

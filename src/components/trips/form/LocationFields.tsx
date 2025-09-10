@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DisplayTrip } from "@/lib/types/trip";
 import { UIServiceType } from "./types";
 import { useEffect, useState } from "react";
+import { loadGoogleMaps } from "@/lib/google-maps-loader";
 
 interface LocationFieldsProps {
   editTrip: DisplayTrip | null;
@@ -23,21 +24,10 @@ export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
           if (!cancelled) setGmapsReady(true);
           return;
         }
-        const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-        if (!key) return;
-        const existing = document.getElementById("gmaps-places");
-        if (!existing) {
-          const s = document.createElement("script");
-          s.id = "gmaps-places";
-          s.async = true;
-          s.defer = true;
-          s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&v=weekly&libraries=places&loading=async&callback=initPlacesLib`;
-          document.head.appendChild(s);
-          await new Promise((res, rej) => {
-            (window as any).initPlacesLib = () => res(null);
-            s.onerror = rej as any;
-          });
-        }
+
+        // Use centralized Google Maps loader with Places library
+        await loadGoogleMaps({ libraries: ["places"] });
+
         // Ensure suggestions appear above dialogs
         const styleId = "gmaps-places-zindex";
         if (!document.getElementById(styleId)) {
@@ -46,6 +36,7 @@ export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
           st.textContent = `.pac-container{z-index:99999 !important}`;
           document.head.appendChild(st);
         }
+
         if (!cancelled) setGmapsReady(true);
       } catch {
         // ignore failures; inputs remain plain

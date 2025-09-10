@@ -7,14 +7,10 @@ interface MaintenanceStatusBadgeProps {
 }
 
 const statusStyles: Record<MaintenanceStatus, string> = {
-  completed:
-    "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400 border-green-200 dark:border-green-800/30",
-  in_progress:
-    "bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400 border-blue-200 dark:border-blue-800/30",
-  scheduled:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800/30",
-  cancelled:
-    "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400 border-red-200 dark:border-red-800/30",
+  completed: "bg-green-500/20 text-green-600 border-green-500/30",
+  in_progress: "bg-blue-500/20 text-blue-600 border-blue-500/30",
+  scheduled: "bg-yellow-500/20 text-yellow-600 border-yellow-500/30",
+  cancelled: "bg-red-500/20 text-red-600 border-red-500/30",
 };
 
 const statusLabels: Record<MaintenanceStatus, string> = {

@@ -35,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ContractTable from "@/components/contracts/ContractTable";
@@ -419,25 +418,28 @@ export default function Contracts() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Contracts</h2>
-            <p className="text-muted-foreground">Loading contracts...</p>
+      <div className="min-h-screen bg-background">
+        <div className="p-4 px-6 space-y-6">
+          <div className="border-b border-border pb-4 pt-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Contracts
+              </h1>
+            </div>
           </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="space-y-2">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-muted rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader className="space-y-2">
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 bg-muted rounded"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -445,95 +447,123 @@ export default function Contracts() {
 
   if (isError) {
     return (
-      <div className="container mx-auto py-6">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Failed to load contracts data. Please try refreshing the page.
-          </AlertDescription>
-        </Alert>
+      <div className="min-h-screen bg-background">
+        <div className="p-4 px-6 space-y-6">
+          <div className="border-b border-border pb-4 pt-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Error</h1>
+              <p className="text-destructive text-sm mt-1">
+                Failed to load contracts data. Please try refreshing the page.
+              </p>
+            </div>
+          </div>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              Failed to load contracts data. Please try refreshing the page.
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            Contracts Management
-          </h2>
-          <p className="text-muted-foreground">
-            Manage and track your contracts and agreements
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportContracts}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button onClick={handleAddButtonClick}>
-            <Plus className="mr-2 h-4 w-4" /> Add Contract
-          </Button>
-        </div>
-      </div>
-
-      {!isStorageAvailable && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Storage Service Issue</AlertTitle>
-          <AlertDescription>
-            Document uploads and downloads are currently unavailable.
-            {storageError && (
-              <div className="mt-2 text-sm">Error: {storageError}</div>
-            )}
-            <div className="mt-2">
-              Contracts can still be managed, but without document attachments.
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Analytics Dashboard */}
-      <ContractsSummaryDashboard contracts={contracts} />
-
-      {/* Enhanced Filters */}
-      <Card>
-        <CardHeader>
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header Section */}
+        <div className="border-b border-border pb-4 pt-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle className="text-lg">Contract Management</CardTitle>
-              <CardDescription>
-                Search, filter, and manage your contracts
-              </CardDescription>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Contracts
+              </h1>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-muted-foreground">View:</span>
-                <ToggleGroup
-                  type="single"
-                  value={viewMode}
-                  onValueChange={(value) => value && setViewMode(value as any)}
-                  size="sm"
-                >
-                  <ToggleGroupItem value="table" aria-label="Table view">
-                    <LayoutList className="h-4 w-4" />
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="cards" aria-label="Cards view">
-                    <LayoutGrid className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </ToggleGroup>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportContracts}
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+              <Button onClick={handleAddButtonClick}>
+                <Plus className="mr-2 h-4 w-4" /> Add Contract
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {!isStorageAvailable && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Storage Service Issue</AlertTitle>
+            <AlertDescription>
+              Document uploads and downloads are currently unavailable.
+              {storageError && (
+                <div className="mt-2 text-sm">Error: {storageError}</div>
+              )}
+              <div className="mt-2">
+                Contracts can still be managed, but without document
+                attachments.
               </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Analytics Dashboard */}
+        <ContractsSummaryDashboard contracts={contracts} />
+
+        {/* Search & Filters - match Drivers/Vehicles style */}
+        <div className="space-y-4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative group">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Input
+                placeholder="Search contracts by name or client..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1 h-7 w-7 p-0 hover:bg-muted/50"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                >
+                  <XCircle className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Sort:</span>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[160px] h-11 border-border/50 focus:border-primary/50">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="terminated">Terminated</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <Select
                   value={sortBy}
-                  onValueChange={(value) => setSortBy(value as any)}
+                  onValueChange={(v) => setSortBy(v as any)}
                 >
-                  <SelectTrigger className="w-36">
-                    <SelectValue />
+                  <SelectTrigger className="w-[160px] h-11 border-border/50 focus:border-primary/50">
+                    <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="created_at">Created Date</SelectItem>
@@ -543,12 +573,15 @@ export default function Contracts() {
                     <SelectItem value="end_date">End Date</SelectItem>
                   </SelectContent>
                 </Select>
+
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() =>
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc")
                   }
+                  className="h-11 px-3"
+                  aria-label="Toggle sort direction"
                 >
                   {sortOrder === "asc" ? (
                     <SortAsc className="h-4 w-4" />
@@ -557,170 +590,240 @@ export default function Contracts() {
                   )}
                 </Button>
               </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search contracts by name or client..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Filter by status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Contract Display */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Contract List
-            <Badge variant="outline">
-              {filteredAndSortedContracts.length} contracts
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all">
-            <TabsList className="mb-6">
-              <TabsTrigger value="all" className="flex items-center gap-2">
-                All
-                <Badge variant="secondary">
-                  {filteredAndSortedContracts.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="active" className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Active
-                <Badge variant="secondary">
-                  {activeContractsFiltered.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Pending
-                <Badge variant="secondary">
-                  {pendingContractsFiltered.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="expired" className="flex items-center gap-2">
-                <XCircle className="h-4 w-4" />
-                Expired
-                <Badge variant="secondary">
-                  {expiredContractsFiltered.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger
-                value="terminated"
-                className="flex items-center gap-2"
+              {/* View toggle */}
+              <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-lg border border-border/50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-8 px-3 rounded-md transition-all ${
+                    viewMode === "table"
+                      ? "bg-background text-foreground shadow-sm border border-border/50"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setViewMode("table")}
+                  aria-label="Table view"
+                >
+                  <LayoutList className="h-4 w-4 mr-2" />
+                  Table
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-8 px-3 rounded-md transition-all ${
+                    viewMode === "cards"
+                      ? "bg-background text-foreground shadow-sm border border-border/50"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setViewMode("cards")}
+                  aria-label="Cards view"
+                >
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  Cards
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Active filters chips */}
+          {(searchQuery ||
+            statusFilter !== "all" ||
+            sortBy !== "created_at" ||
+            sortOrder !== "desc") && (
+            <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2">
+                {searchQuery && (
+                  <Badge variant="secondary" className="gap-1">
+                    Search: "{searchQuery}"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setSearchQuery("")}
+                      aria-label="Clear search chip"
+                    >
+                      <XCircle className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {statusFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1">
+                    Status: {statusFilter}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setStatusFilter("all")}
+                      aria-label="Clear status chip"
+                    >
+                      <XCircle className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {(sortBy !== "created_at" || sortOrder !== "desc") && (
+                  <Badge variant="secondary" className="gap-1">
+                    Sort: {sortBy.replace("_", " ")} ({sortOrder})
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => {
+                        setSortBy("created_at");
+                        setSortOrder("desc");
+                      }}
+                      aria-label="Reset sort chip"
+                    >
+                      <XCircle className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                  setSortBy("created_at");
+                  setSortOrder("desc");
+                }}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
               >
-                <XCircle className="h-4 w-4" />
-                Terminated
-                <Badge variant="secondary">
-                  {terminatedContractsFiltered.length}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
+                <XCircle className="mr-2 h-4 w-4" />
+                Clear All
+              </Button>
+            </div>
+          )}
+        </div>
 
-            <TabsContent value="all">
-              <ContractTable
-                contracts={filteredAndSortedContracts}
-                onEdit={openEditDialog}
-                onDelete={confirmDelete}
-                onDownload={handleDownloadContract}
-                viewMode={viewMode}
-              />
-            </TabsContent>
+        {/* Contract Display */}
+        <Card>
+          <CardContent className="pt-6">
+            <Tabs defaultValue="all">
+              <TabsList className="mb-6 w-full justify-start">
+                <TabsTrigger value="all" className="flex items-center gap-2">
+                  All
+                  <Badge variant="secondary">
+                    {filteredAndSortedContracts.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="active" className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Active
+                  <Badge variant="secondary">
+                    {activeContractsFiltered.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pending"
+                  className="flex items-center gap-2"
+                >
+                  <Clock className="h-4 w-4" />
+                  Pending
+                  <Badge variant="secondary">
+                    {pendingContractsFiltered.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="expired"
+                  className="flex items-center gap-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Expired
+                  <Badge variant="secondary">
+                    {expiredContractsFiltered.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="terminated"
+                  className="flex items-center gap-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Terminated
+                  <Badge variant="secondary">
+                    {terminatedContractsFiltered.length}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="active">
-              <ContractTable
-                contracts={activeContractsFiltered}
-                onEdit={openEditDialog}
-                onDelete={confirmDelete}
-                onDownload={handleDownloadContract}
-                viewMode={viewMode}
-              />
-            </TabsContent>
+              <TabsContent value="all">
+                <ContractTable
+                  contracts={filteredAndSortedContracts}
+                  onEdit={openEditDialog}
+                  onDelete={confirmDelete}
+                  onDownload={handleDownloadContract}
+                  viewMode={viewMode}
+                />
+              </TabsContent>
 
-            <TabsContent value="pending">
-              <ContractTable
-                contracts={pendingContractsFiltered}
-                onEdit={openEditDialog}
-                onDelete={confirmDelete}
-                onDownload={handleDownloadContract}
-                viewMode={viewMode}
-              />
-            </TabsContent>
+              <TabsContent value="active">
+                <ContractTable
+                  contracts={activeContractsFiltered}
+                  onEdit={openEditDialog}
+                  onDelete={confirmDelete}
+                  onDownload={handleDownloadContract}
+                  viewMode={viewMode}
+                />
+              </TabsContent>
 
-            <TabsContent value="expired">
-              <ContractTable
-                contracts={expiredContractsFiltered}
-                onEdit={openEditDialog}
-                onDelete={confirmDelete}
-                onDownload={handleDownloadContract}
-                viewMode={viewMode}
-              />
-            </TabsContent>
+              <TabsContent value="pending">
+                <ContractTable
+                  contracts={pendingContractsFiltered}
+                  onEdit={openEditDialog}
+                  onDelete={confirmDelete}
+                  onDownload={handleDownloadContract}
+                  viewMode={viewMode}
+                />
+              </TabsContent>
 
-            <TabsContent value="terminated">
-              <ContractTable
-                contracts={terminatedContractsFiltered}
-                onEdit={openEditDialog}
-                onDelete={confirmDelete}
-                onDownload={handleDownloadContract}
-                viewMode={viewMode}
-              />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+              <TabsContent value="expired">
+                <ContractTable
+                  contracts={expiredContractsFiltered}
+                  onEdit={openEditDialog}
+                  onDelete={confirmDelete}
+                  onDownload={handleDownloadContract}
+                  viewMode={viewMode}
+                />
+              </TabsContent>
 
-      <AddContractDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        formData={formData as any}
-        handleInputChange={handleInputChange}
-        handleFileChange={handleFileChange}
-        handleSubmit={handleAddSubmit}
-        isPending={addContractMutation.isPending}
-        isStorageAvailable={isStorageAvailable}
-      />
+              <TabsContent value="terminated">
+                <ContractTable
+                  contracts={terminatedContractsFiltered}
+                  onEdit={openEditDialog}
+                  onDelete={confirmDelete}
+                  onDownload={handleDownloadContract}
+                  viewMode={viewMode}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-      <EditContractDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        formData={formData}
-        selectedContract={selectedContract}
-        handleInputChange={handleInputChange}
-        handleFileChange={handleFileChange}
-        handleSubmit={handleEditSubmit}
-        isPending={updateContractMutation.isPending}
-        isStorageAvailable={isStorageAvailable}
-        onDownload={handleDownloadContract}
-      />
+        {/* Dialogs */}
+        <AddContractDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          formData={formData as any}
+          handleInputChange={handleInputChange}
+          handleFileChange={handleFileChange}
+          handleSubmit={handleAddSubmit}
+          isPending={addContractMutation.isPending}
+          isStorageAvailable={isStorageAvailable}
+        />
+
+        <EditContractDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          formData={formData}
+          selectedContract={selectedContract}
+          handleInputChange={handleInputChange}
+          handleFileChange={handleFileChange}
+          handleSubmit={handleEditSubmit}
+          isPending={updateContractMutation.isPending}
+          isStorageAvailable={isStorageAvailable}
+          onDownload={handleDownloadContract}
+        />
+      </div>
     </div>
   );
 }

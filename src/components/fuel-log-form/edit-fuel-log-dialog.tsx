@@ -7,28 +7,28 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useFuelLogForm } from "./fuel-log-form/use-fuel-log-form";
-import { VehicleSelect } from "./fuel-log-form/vehicle-select";
-import { FuelDetails } from "./fuel-log-form/fuel-details";
-import { VolumePrice } from "./fuel-log-form/volume-price";
-import { MileageFields } from "./fuel-log-form/mileage-fields";
-import { NotesField } from "./fuel-log-form/notes-field";
-import { FormActions } from "./fuel-log-form/form-actions";
-import { DeleteFuelLogDialog } from "./fuel-log-form/delete-fuel-log-dialog";
+import { useFuelLogForm } from "./use-fuel-log-form";
+import { VehicleSelect } from "./vehicle-select";
+import { FuelDetails } from "./fuel-details";
+import { VolumePrice } from "./volume-price";
+import { MileageFields } from "./mileage-fields";
+import { NotesField } from "./notes-field";
+import { FormActions } from "./form-actions";
+import { DeleteFuelLogDialog } from "./delete-fuel-log-dialog";
 import type { FuelLog } from "@/lib/types";
 import { Form } from "@/components/ui/form";
 
-interface FuelLogFormDialogProps {
+interface EditFuelLogDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fuelLog?: FuelLog;
+  fuelLog: FuelLog;
 }
 
-export function FuelLogFormDialog({
+export function EditFuelLogDialog({
   open,
   onOpenChange,
   fuelLog,
-}: FuelLogFormDialogProps) {
+}: EditFuelLogDialogProps) {
   const {
     form,
     vehicles,
@@ -37,7 +37,8 @@ export function FuelLogFormDialog({
     shouldCloseDialog,
     resetCloseDialog,
     hasPreviousMileage,
-  } = useFuelLogForm(fuelLog);
+  } = useFuelLogForm(fuelLog); // Pass fuelLog for edit mode
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Effect to close dialog when shouldCloseDialog is true
@@ -62,11 +63,9 @@ export function FuelLogFormDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>
-              {fuelLog ? "Edit Fuel Log" : "Add New Fuel Log"}
-            </DialogTitle>
+            <DialogTitle>Edit Fuel Log</DialogTitle>
             <DialogDescription>
-              Enter the fuel log details below. Required fields are marked with
+              Update the fuel log details below. Required fields are marked with
               an asterisk.
             </DialogDescription>
           </DialogHeader>
@@ -87,8 +86,8 @@ export function FuelLogFormDialog({
                 <FormActions
                   onCancel={() => onOpenChange(false)}
                   isSubmitting={isSubmitting}
-                  isEdit={!!fuelLog}
-                  onDelete={fuelLog ? handleDeleteClick : undefined}
+                  isEdit={true}
+                  onDelete={handleDeleteClick}
                 />
               </form>
             </Form>

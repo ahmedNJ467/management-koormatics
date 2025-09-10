@@ -19,14 +19,15 @@ export const handleSendMessage = async (
   
   try {
     // Skip the RPC and use direct insertion
-    const { error } = await supabase.from('trip_messages').insert({
+    const messageData = {
       trip_id: tripToMessage.id,
       sender_type: "admin",
       sender_name: "Fleet Manager", // In a real app, use the current user's name
       message: newMessage.trim(),
       timestamp: new Date().toISOString(),
       is_read: false
-    });
+    };
+    const { error } = await supabase.from("trip_messages").insert([messageData] as any);
     
     if (error) throw error;
     

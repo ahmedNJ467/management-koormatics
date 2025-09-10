@@ -44,7 +44,7 @@ export function VehiclesReport({
 
     return Array.isArray(vehicle.maintenance)
       ? vehicle.maintenance.reduce(
-          (sum, item) => sum + Number(item.cost || 0),
+          (sum: number, item: any) => sum + Number(item.cost || 0),
           0
         )
       : 0;
@@ -63,8 +63,8 @@ export function VehiclesReport({
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              exportToPDF(
+            onClick={async () =>
+              await exportToPDF(
                 vehiclesData || [],
                 "Vehicles Report",
                 "vehicles-report"

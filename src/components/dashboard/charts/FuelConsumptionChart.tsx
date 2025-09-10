@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
   Line,
@@ -20,60 +19,75 @@ interface FuelConsumptionData {
 
 interface FuelConsumptionChartProps {
   data?: FuelConsumptionData[];
+  compact?: boolean;
 }
 
-// Mock data for fallback
-const mockData: FuelConsumptionData[] = [
-  { date: "2024-01-01", consumption: 120, efficiency: 12.5 },
-  { date: "2024-01-02", consumption: 135, efficiency: 11.8 },
-  { date: "2024-01-03", consumption: 110, efficiency: 13.2 },
-  { date: "2024-01-04", consumption: 145, efficiency: 11.5 },
-  { date: "2024-01-05", consumption: 125, efficiency: 12.8 },
-  { date: "2024-01-06", consumption: 140, efficiency: 12.0 },
-  { date: "2024-01-07", consumption: 115, efficiency: 13.5 },
-];
-
 export function FuelConsumptionChart({
-  data = mockData,
+  data = [],
+  compact = false,
 }: FuelConsumptionChartProps) {
+  const height = compact ? 300 : 350;
+
+  // Show no data state if no data available
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm">No fuel data available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Fuel Consumption Trend</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(value) => new Date(value).toLocaleDateString()}
-            />
-            <YAxis />
-            <Tooltip
-              labelFormatter={(value) => new Date(value).toLocaleDateString()}
-              formatter={(value: number, name: string) => [
-                name === "consumption" ? `${value}L` : `${value} km/L`,
-                name === "consumption" ? "Consumption" : "Efficiency",
-              ]}
-            />
-            <Line
-              type="monotone"
-              dataKey="consumption"
-              stroke="#8884d8"
-              strokeWidth={2}
-              name="consumption"
-            />
-            <Line
-              type="monotone"
-              dataKey="efficiency"
-              stroke="#82ca9d"
-              strokeWidth={2}
-              name="efficiency"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart
+        data={data}
+        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+      >
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 12, fill: "#64748b" }}
+          axisLine={{ stroke: "#e2e8f0" }}
+          tickLine={{ stroke: "#e2e8f0" }}
+        />
+        <YAxis
+          tick={{ fontSize: 12, fill: "#64748b" }}
+          axisLine={{ stroke: "#e2e8f0" }}
+          tickLine={{ stroke: "#e2e8f0" }}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "white",
+            border: "1px solid #e2e8f0",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          }}
+          labelFormatter={(value) => value}
+          formatter={(value: number, name: string) => [
+            name === "consumption" ? `${value}L` : `${value} km/L`,
+            name === "consumption" ? "Consumption" : "Efficiency",
+          ]}
+        />
+        <Line
+          type="monotone"
+          dataKey="consumption"
+          stroke="#3b82f6"
+          strokeWidth={2}
+          name="consumption"
+          dot={{ fill: "#3b82f6", strokeWidth: 2, r: 3 }}
+          activeDot={{ r: 5, stroke: "#3b82f6", strokeWidth: 2, fill: "white" }}
+        />
+        <Line
+          type="monotone"
+          dataKey="efficiency"
+          stroke="#10b981"
+          strokeWidth={2}
+          name="efficiency"
+          dot={{ fill: "#10b981", strokeWidth: 2, r: 3 }}
+          activeDot={{ r: 5, stroke: "#10b981", strokeWidth: 2, fill: "white" }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }

@@ -1,7 +1,21 @@
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { YearComparisonData } from "@/lib/types/cost-analytics";
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from "lucide-react";
 
@@ -21,14 +35,17 @@ export const ComparisonTab = ({ comparisonData }: ComparisonTabProps) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-center h-[300px]">
-            <p className="text-muted-foreground">No comparison data available. Please select a different year.</p>
+            <p className="text-muted-foreground">
+              No comparison data available. Please select a different year.
+            </p>
           </CardContent>
         </Card>
       </TabsContent>
     );
   }
 
-  const { currentYear, previousYear, maintenance, fuel, total } = comparisonData;
+  const { currentYear, previousYear, maintenance, fuel, total } =
+    comparisonData;
 
   // Create data for comparison chart
   const chartData = [
@@ -85,19 +102,21 @@ export const ComparisonTab = ({ comparisonData }: ComparisonTabProps) => {
         </CardHeader>
         <CardContent className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={chartData} 
+            <BarChart
+              data={chartData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="category" />
               <YAxis />
-              <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  borderColor: 'hsl(var(--border))', 
-                  borderRadius: '6px' 
+              <Tooltip
+                formatter={(value: number) => [
+                  `$${value.toFixed(2)}`,
+                  undefined,
+                ]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  borderColor: "hsl(var(--border))",
+                  borderRadius: "6px",
                 }}
               />
               <Legend />
@@ -116,8 +135,12 @@ export const ComparisonTab = ({ comparisonData }: ComparisonTabProps) => {
           <CardContent>
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-2xl font-bold">${maintenance.current.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">vs ${maintenance.previous.toFixed(2)}</p>
+                <div className="text-2xl font-bold">
+                  ${maintenance.current.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs ${maintenance.previous.toFixed(2)}
+                </p>
               </div>
               <div className="text-lg">
                 {renderPercentChange(maintenance.percentChange)}
@@ -125,7 +148,7 @@ export const ComparisonTab = ({ comparisonData }: ComparisonTabProps) => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Fuel</CardTitle>
@@ -133,8 +156,12 @@ export const ComparisonTab = ({ comparisonData }: ComparisonTabProps) => {
           <CardContent>
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-2xl font-bold">${fuel.current.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">vs ${fuel.previous.toFixed(2)}</p>
+                <div className="text-2xl font-bold">
+                  ${fuel.current.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs ${fuel.previous.toFixed(2)}
+                </p>
               </div>
               <div className="text-lg">
                 {renderPercentChange(fuel.percentChange)}
@@ -142,7 +169,7 @@ export const ComparisonTab = ({ comparisonData }: ComparisonTabProps) => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Costs</CardTitle>
@@ -150,8 +177,12 @@ export const ComparisonTab = ({ comparisonData }: ComparisonTabProps) => {
           <CardContent>
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-2xl font-bold">${total.current.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">vs ${total.previous.toFixed(2)}</p>
+                <div className="text-2xl font-bold">
+                  ${total.current.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs ${total.previous.toFixed(2)}
+                </p>
               </div>
               <div className="text-lg">
                 {renderPercentChange(total.percentChange)}

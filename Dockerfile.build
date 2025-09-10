@@ -1,0 +1,21 @@
+# Dockerfile for building the application in a Linux environment
+# This bypasses Windows EPERM issues by building in a container
+
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# The build output will be in .next-build directory

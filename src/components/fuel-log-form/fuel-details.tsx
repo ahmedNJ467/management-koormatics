@@ -35,7 +35,7 @@ type FuelDetailsProps = {
 };
 
 export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
-  const [tanks, setTanks] = useState([]);
+  const [tanks, setTanks] = useState<any[]>([]);
   const fuelType = form.watch("fuel_type");
   const vehicleId = form.watch("vehicle_id");
 
@@ -145,7 +145,6 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
         )}
       />
 
-      {/* Temporarily commented out - filled_by column doesn't exist in database yet
       <FormField
         control={form.control}
         name="filled_by"
@@ -163,7 +162,6 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
           </FormItem>
         )}
       />
-      */}
 
       {/* Storage selection removed from fuel log form */}
     </>

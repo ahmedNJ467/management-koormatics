@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SparePart } from "@/components/spare-parts/types";
+import { safeArrayResult } from "@/lib/utils/type-guards";
 
 export function useReportsData() {
   // Fetch vehicles data
@@ -99,23 +100,27 @@ export function useReportsData() {
       if (maintenanceError) throw maintenanceError;
 
       // Create a maintenance lookup map
-      const maintenanceMap = {};
-      if (maintenanceRecords) {
-        maintenanceRecords.forEach((record) => {
-          maintenanceMap[record.id] = record;
+      const maintenanceMap: Record<string, any> = {};
+      if (maintenanceRecords && Array.isArray(maintenanceRecords)) {
+        maintenanceRecords.forEach((record: any) => {
+          if (record && record.id) {
+            maintenanceMap[record.id] = record;
+          }
         });
       }
 
       // Manual lookup for vehicle data
-      const vehiclesMap = {};
-      if (vehicles) {
-        vehicles.forEach((vehicle) => {
-          vehiclesMap[vehicle.id] = vehicle;
+      const vehiclesMap: Record<string, any> = {};
+      if (vehicles && Array.isArray(vehicles)) {
+        vehicles.forEach((vehicle: any) => {
+          if (vehicle && vehicle.id) {
+            vehiclesMap[vehicle.id] = vehicle;
+          }
         });
       }
 
       // Combine spare parts with vehicle and maintenance data
-      const partsWithRelationships = (parts as SparePart[]).map((part) => {
+      const partsWithRelationships = safeArrayResult<SparePart>(parts).map((part: SparePart) => {
         let vehicleInfo = null;
 
         // Try to get vehicle info directly from part's vehicle_id

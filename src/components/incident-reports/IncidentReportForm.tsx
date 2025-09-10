@@ -61,7 +61,7 @@ function ExistingIncidentImages({
       const { data, error } = await supabase
         .from("vehicle_incident_images")
         .select("image_url, name")
-        .eq("incident_id", incidentId);
+        .eq("incident_id", incidentId as any);
       if (error) throw error;
       return data || [];
     },
@@ -114,8 +114,8 @@ function ExistingIncidentImages({
     const { error: dbErr } = await supabase
       .from("vehicle_incident_images")
       .delete()
-      .eq("incident_id", incidentId)
-      .eq("name", fileName);
+      .eq("incident_id", incidentId as any)
+      .eq("name", fileName as any);
     if (dbErr) {
       console.error(dbErr);
       toast({
@@ -129,12 +129,12 @@ function ExistingIncidentImages({
     const { count } = await supabase
       .from("vehicle_incident_images")
       .select("id", { count: "exact", head: true })
-      .eq("incident_id", incidentId);
+              .eq("incident_id", incidentId as any);
     if ((count ?? 0) === 0) {
       await supabase
         .from("vehicle_incident_reports")
-        .update({ photos_attached: false })
-        .eq("id", incidentId);
+        .update({ photos_attached: false } as any)
+        .eq("id", incidentId as any);
     }
     await queryClient.invalidateQueries({
       queryKey: ["incident-images", incidentId],
@@ -400,8 +400,8 @@ export function IncidentReportForm({
         // Update existing report
         const { error } = await supabase
           .from("vehicle_incident_reports")
-          .update(cleanedValues)
-          .eq("id", report.id);
+          .update(cleanedValues as any)
+          .eq("id", report.id as any);
 
         if (error) throw error;
 
@@ -439,15 +439,15 @@ export function IncidentReportForm({
           if (insertedImageRows.length > 0) {
             await supabase.from("vehicle_incident_images").insert(
               insertedImageRows.map((r) => ({
-                incident_id: report.id,
+                incident_id: report.id as any,
                 image_url: r.image_url,
                 name: r.name || null,
-              }))
+              })) as any
             );
             await supabase
               .from("vehicle_incident_reports")
-              .update({ photos_attached: true })
-              .eq("id", report.id);
+              .update({ photos_attached: true } as any)
+              .eq("id", report.id as any);
           }
         }
 
@@ -459,14 +459,14 @@ export function IncidentReportForm({
         // Create new report
         const { data: created, error } = await supabase
           .from("vehicle_incident_reports")
-          .insert(cleanedValues)
+          .insert(cleanedValues as any)
           .select("id")
           .single();
 
         if (error) throw error;
 
         // Upload images for new report and insert DB rows
-        if (created?.id && imagesToUpload.length > 0) {
+        if (created && 'id' in created && created.id && imagesToUpload.length > 0) {
           const insertedImageRows: { image_url: string; name?: string }[] = [];
           for (const img of imagesToUpload) {
             const file = img.file as File;
@@ -476,7 +476,7 @@ export function IncidentReportForm({
               /[^a-zA-Z0-9_.-]/g,
               "_"
             )}`;
-            const path = `incidents/${created.id}/${safeName}`;
+            const path = `incidents/${created.id as string}/${safeName}`;
             const { error: uploadErr } = await supabase.storage
               .from("images")
               .upload(path, file, {
@@ -499,15 +499,15 @@ export function IncidentReportForm({
           if (insertedImageRows.length > 0) {
             await supabase.from("vehicle_incident_images").insert(
               insertedImageRows.map((r) => ({
-                incident_id: created.id,
+                incident_id: created.id as any,
                 image_url: r.image_url,
                 name: r.name || null,
-              }))
+              })) as any
             );
             await supabase
               .from("vehicle_incident_reports")
-              .update({ photos_attached: true })
-              .eq("id", created.id);
+              .update({ photos_attached: true } as any)
+              .eq("id", created.id as any);
           }
         }
 
@@ -557,9 +557,9 @@ export function IncidentReportForm({
                       </FormControl>
                       <SelectContent>
                         {vehicles?.map((vehicle) => (
-                          <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.make} {vehicle.model} (
-                            {vehicle.registration})
+                          <SelectItem key={(vehicle as any).id} value={(vehicle as any).id}>
+                            {(vehicle as any).make} {(vehicle as any).model} (
+                            {(vehicle as any).registration})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -586,8 +586,8 @@ export function IncidentReportForm({
                           No driver specified
                         </SelectItem>
                         {drivers?.map((driver) => (
-                          <SelectItem key={driver.id} value={driver.id}>
-                            {driver.name} ({driver.license_number})
+                          <SelectItem key={(driver as any).id} value={(driver as any).id}>
+                            {(driver as any).name} ({(driver as any).license_number})
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -338,7 +338,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate PDF
     console.log("Generating PDF for quotation:", quotationId);
     const pdfBuffer = generateQuotationPDF(quotation);
-    const pdfBase64 = btoa(String.fromCharCode(...pdfBuffer));
+    const pdfBase64 = btoa(String.fromCharCode(...Array.from(pdfBuffer)));
 
     // Format the quotation ID to be shorter
     const shortId = quotationId.substring(0, 8).toUpperCase();

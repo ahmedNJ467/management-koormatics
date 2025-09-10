@@ -18,7 +18,7 @@ export function useInvoiceMutations() {
       };
       
       if (editInvoice) {
-        const { error } = await supabase.from("invoices").update(dbData).eq("id", editInvoice.id);
+        const { error } = await supabase.from("invoices").update(dbData as any).eq("id", editInvoice.id as any);
         if (error) {
           console.error("Error updating invoice:", error)
           throw error;
@@ -31,8 +31,8 @@ export function useInvoiceMutations() {
           throw error;
         }
         const newInvoice = data[0];
-        if (selectedTrips.length > 0) {
-          const { error: updateError } = await supabase.from("trips").update({ invoice_id: newInvoice.id }).in("id", selectedTrips);
+        if (newInvoice && 'id' in newInvoice && selectedTrips.length > 0) {
+          const { error: updateError } = await supabase.from("trips").update({ invoice_id: newInvoice.id as any } as any).in("id", selectedTrips as any);
           if (updateError) throw new Error("Invoice created, but failed to link trips.");
         }
         return newInvoice;
@@ -61,7 +61,7 @@ export function useInvoiceMutations() {
         payment_method: method,
         status: newStatus,
         notes: newNotes,
-      }).eq("id", invoice.id);
+      } as any).eq("id", invoice.id as any);
 
       if (error) throw error;
       return newStatus;
@@ -77,8 +77,8 @@ export function useInvoiceMutations() {
 
   const deleteInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      await supabase.from("trips").update({ invoice_id: null }).eq("invoice_id", invoiceId);
-      const { error } = await supabase.from("invoices").delete().eq("id", invoiceId);
+      await supabase.from("trips").update({ invoice_id: null } as any).eq("invoice_id", invoiceId as any);
+      const { error } = await supabase.from("invoices").delete().eq("id", invoiceId as any);
       if (error) throw error;
     },
     onSuccess: () => {

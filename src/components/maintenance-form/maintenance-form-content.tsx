@@ -69,7 +69,7 @@ export function MaintenanceFormContent({
         .order("make", { ascending: true });
 
       if (error) throw error;
-      return data as Vehicle[];
+      return (data || []) as unknown as Vehicle[];
     },
   });
 
@@ -80,11 +80,11 @@ export function MaintenanceFormContent({
         .from("spare_parts")
         .select("*")
         .gt("quantity", 0)
-        .in("status", ["in_stock", "low_stock"])
+        .in("status", ["in_stock", "low_stock"] as any)
         .order("name", { ascending: true });
 
       if (error) throw error;
-      return data as SparePart[];
+      return (data || []) as unknown as SparePart[];
     },
   });
 

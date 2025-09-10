@@ -58,10 +58,10 @@ export function AssignResourcesDialog({
     queryKey: ["escort_teams"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("escort_teams")
+        .from("escort_teams" as any)
         .select("id, team_name, guard_ids, vehicle_id");
       if (error) throw error;
-      return (data || []) as EscortTeamRow[];
+      return (data || []) as unknown as EscortTeamRow[];
     },
     enabled: open,
     refetchOnWindowFocus: false,
@@ -218,10 +218,10 @@ export function AssignResourcesDialog({
         .update({
           driver_id: carrierDriverIds[0] || null,
           vehicle_id: mainVehicles[0] || null,
-          assigned_vehicle_ids: mainVehicles,
-          escort_vehicle_ids: selectedEscorts.filter(Boolean),
-        })
-        .eq("id", trip.id);
+          assigned_vehicle_ids: mainVehicles as any,
+          escort_vehicle_ids: selectedEscorts.filter(Boolean) as any,
+        } as any)
+        .eq("id", trip.id as any);
       if (tripError) throw tripError;
 
       // Insert assignment records for main drivers (optional)

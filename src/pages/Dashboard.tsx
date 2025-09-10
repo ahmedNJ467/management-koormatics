@@ -1,18 +1,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { EnhancedOverview } from "@/components/dashboard/EnhancedOverview";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import RecentTrips from "@/components/dashboard/RecentTrips";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  LazyRecentActivity,
+  LazyRecentTrips,
+  LazyWrapper,
+} from "@/components/LazyWrapper";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { realtimeManager } from "@/utils/realtime-manager";
 import { ActivityItemProps } from "@/types/dashboard";
 import { getActivities, logTripActivity } from "@/utils/activity-logger";
 import dynamic from "next/dynamic";
 import { useDashboardChartsData } from "@/hooks/use-dashboard-charts-data";
+import { useMaintenanceData } from "@/hooks/use-maintenance-data";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import KoormaticsLogo from "@/components/ui/koormatics-logo";
+import {
+  DashboardSkeleton,
+  ChartSkeleton,
+} from "@/components/ui/loading-skeleton";
+import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 import {
   TrendingUp,
   TrendingDown,
@@ -26,24 +35,12 @@ import {
   PieChart,
   LineChart,
   Target,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 
 // Dynamically import charts to avoid SSR layout/measurement issues
-const FleetDistributionChart = dynamic(
-  () =>
-    import("@/components/dashboard/charts/FleetDistributionChart").then(
-      (m) => m.FleetDistributionChart
-    ),
-  { ssr: false }
-);
-
-const DriverStatusChart = dynamic(
-  () =>
-    import("@/components/dashboard/charts/DriverStatusChart").then(
-      (m) => m.DriverStatusChart
-    ),
-  { ssr: false }
-);
 
 const FuelConsumptionChart = dynamic(
   () =>
@@ -61,19 +58,85 @@ const MaintenanceCostsChart = dynamic(
   { ssr: false }
 );
 
+const PerformanceMetricsChart = dynamic(
+  () =>
+    import("@/components/dashboard/charts/PerformanceMetricsChart").then(
+      (m) => m.PerformanceMetricsChart
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-32">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      </div>
+    ),
+  }
+);
+
 export default function Dashboard() {
+  // ALL HOOKS MUST BE CALLED AT THE TOP LEVEL - NO CONDITIONAL HOOKS
+  const [mounted, setMounted] = useState(false);
   const queryClient = useQueryClient();
-  const { domain } = useTenantScope();
+  const { domain, isAllowed, loading: tenantLoading } = useTenantScope();
   const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>(
     []
   );
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [maintenance, setMaintenance] = useState<any[]>([]);
-  const [fuelLogs, setFuelLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false); // Start with false for better UX
-  const [dataInitialized, setDataInitialized] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+
+  // Performance monitoring - call at the top level
+  const { markRenderStart, markRenderEnd } = usePerformanceMonitor("Dashboard");
+
+  // Use data hooks for all data fetching
+  const { data: maintenance = [], isLoading: maintenanceLoading } =
+    useMaintenanceData();
+
+  // Fetch other data using React Query with optimized settings
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, make, model, registration, status, created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: drivers = [], isLoading: driversLoading } = useQuery({
+    queryKey: ["drivers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, name, status, created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: fuelLogs = [], isLoading: fuelLogsLoading } = useQuery({
+    queryKey: ["fuel_logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fuel_logs")
+        .select("id, date, volume, cost, fuel_type, vehicle_id, created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const loading =
+    vehiclesLoading || driversLoading || fuelLogsLoading || maintenanceLoading;
 
   const chartData = useDashboardChartsData(
     vehicles,
@@ -82,48 +145,10 @@ export default function Dashboard() {
     fuelLogs
   );
 
-  // Optimized data fetching with lazy loading
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      // Fetch data in parallel for better performance
-      const [vehiclesResult, driversResult, maintenanceResult, fuelLogsResult] =
-        await Promise.all([
-          supabase.from("vehicles").select("*"),
-          supabase.from("drivers").select("*"),
-          supabase.from("maintenance").select("*"),
-          supabase.from("fuel_logs").select("*"),
-        ]);
-
-      // Check for errors
-      if (vehiclesResult.error) throw vehiclesResult.error;
-      if (driversResult.error) throw driversResult.error;
-      if (maintenanceResult.error) throw maintenanceResult.error;
-      if (fuelLogsResult.error) throw fuelLogsResult.error;
-
-      // Set data
-      setVehicles(vehiclesResult.data || []);
-      setDrivers(driversResult.data || []);
-      setMaintenance(maintenanceResult.data || []);
-      setFuelLogs(fuelLogsResult.data || []);
-      setDataInitialized(true);
-    } catch (error) {
-      console.error("Error fetching analytics data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Lazy load data after component mounts
+  // Ensure component is mounted on client side to prevent hydration mismatch
   useEffect(() => {
-    // Delay data fetching to improve initial render performance
-    const timer = setTimeout(() => {
-      fetchData();
-    }, 100); // Small delay to let the UI render first
-
-    return () => clearTimeout(timer);
-  }, [fetchData]);
+    setMounted(true);
+  }, []);
 
   // Optimized activities loading
   useEffect(() => {
@@ -136,41 +161,44 @@ export default function Dashboard() {
       }
     };
 
-    // Load activities immediately but don't block the UI
     loadActivities();
-
-    // Refresh activities less frequently to reduce load
-    const intervalId = setInterval(loadActivities, 60000); // Every minute instead of 30 seconds
+    const intervalId = setInterval(loadActivities, 60000);
 
     return () => clearInterval(intervalId);
   }, []);
 
   // Optimized realtime subscriptions with debouncing
   useEffect(() => {
-    // Only set up realtime subscriptions after data is initialized
-    if (!dataInitialized) return;
+    // Always call useEffect, but conditionally execute logic inside
+    if (loading) {
+      return;
+    }
 
     const unsubscribes: (() => void)[] = [];
     let setupTimeout: NodeJS.Timeout;
 
-    // Debounce realtime setup to prevent overwhelming the system
     setupTimeout = setTimeout(() => {
       unsubscribes.push(
         realtimeManager.subscribeToTable("vehicles", async () => {
-          queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
-          // Don't reload activities on every vehicle change
+          queryClient.invalidateQueries({ queryKey: ["vehicles"] });
         })
       );
 
       unsubscribes.push(
         realtimeManager.subscribeToTable("drivers", async () => {
-          queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["drivers"] });
         })
       );
 
       unsubscribes.push(
         realtimeManager.subscribeToTable("maintenance", async () => {
-          queryClient.invalidateQueries({ queryKey: ["fleet-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["maintenance"] });
+        })
+      );
+
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("fuel_logs", async () => {
+          queryClient.invalidateQueries({ queryKey: ["fuel_logs"] });
         })
       );
 
@@ -210,314 +238,251 @@ export default function Dashboard() {
             }
           }
 
-          // Only reload activities for trip changes
           const activities = await getActivities(5);
           setRecentActivities(activities);
         })
       );
-    }, 500); // 500ms delay to let the UI settle
+    }, 500);
 
     return () => {
       clearTimeout(setupTimeout);
       unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
-  }, [queryClient, dataInitialized]);
+  }, [queryClient, loading]);
+
+  // Performance monitoring - consolidated into single useEffect
+  useEffect(() => {
+    markRenderStart();
+    return () => {
+      markRenderEnd();
+    };
+  }, [markRenderStart, markRenderEnd]);
+
+  // Calculate key metrics
+  const totalVehicles = vehicles?.length || 0;
+  const activeDrivers =
+    drivers?.filter((d) => d.status === "active")?.length || 0;
+  const totalDrivers = drivers?.length || 0;
+  const pendingMaintenance =
+    maintenance?.filter((m) => m.status === "scheduled")?.length || 0;
+  const totalFuelLogs = fuelLogs?.length || 0;
+
+  // Calculate meaningful performance metrics
+  const totalMaintenanceCost = (maintenance || []).reduce(
+    (sum, m) => sum + (m.cost || 0),
+    0
+  );
+  const completedMaintenance = (maintenance || []).filter(
+    (m) => m.status === "completed"
+  ).length;
+  const scheduledMaintenance = (maintenance || []).filter(
+    (m) => m.status === "scheduled"
+  ).length;
+  const inProgressMaintenance = (maintenance || []).filter(
+    (m) => m.status === "in_progress"
+  ).length;
+
+  // Calculate fleet utilization - vehicles with active drivers vs total vehicles
+  const fleetUtilization =
+    totalVehicles > 0 ? Math.round((activeDrivers / totalVehicles) * 100) : 0;
+
+  const performanceMetrics = [
+    {
+      name: "Fleet Utilization",
+      value: fleetUtilization,
+      color:
+        fleetUtilization >= 80
+          ? "#10b981"
+          : fleetUtilization >= 60
+          ? "#f59e0b"
+          : "#ef4444",
+    },
+  ];
+
+  // ALL HOOKS HAVE BEEN CALLED - NOW HANDLE CONDITIONAL RENDERING
+  // Use single return with conditional rendering to prevent unmounting
+  // Handle conditional rendering - but always render the same structure
+  if (!mounted || loading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (!isAllowed) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-destructive mb-4">
+            Access Denied
+          </h1>
+          <p className="text-muted-foreground">
+            You don't have permission to access this tenant.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-6 py-8 space-y-8">
+      <div className="p-4 px-6 space-y-6">
         {/* Header Section */}
-        <div className="space-y-6">
+        <div className="border-b border-border pb-4 pt-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-3">
-              <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground text-lg">
-                Welcome to your fleet management overview
-              </p>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Dashboard
+              </h1>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="px-3 py-1">
-                <Calendar className="w-4 h-4 mr-2" />
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </Badge>
+            <div className="text-sm text-muted-foreground">
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
             </div>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <div className="p-6 border border-border/50 bg-background">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <h3 className="text-sm font-medium text-blue-600">
-                Total Vehicles
-              </h3>
-              <Car className="h-4 w-4 text-blue-600" />
-            </div>
-            <div className="pt-2">
-              <div className="text-2xl font-bold text-blue-600">
-                {vehicles?.length || 0}
+        {/* Key Metrics Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-card border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Vehicles</p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {totalVehicles}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Active fleet vehicles
-              </p>
+              <Car className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
 
-          <div className="p-6 border border-border/50 bg-background">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <h3 className="text-sm font-medium text-green-600">
-                Active Drivers
-              </h3>
-              <Users className="h-4 w-4 text-green-600" />
-            </div>
-            <div className="pt-2">
-              <div className="text-2xl font-bold text-green-600">
-                {drivers?.length || 0}
+          <div className="bg-card border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Drivers</p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {activeDrivers}/{totalDrivers}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">Available drivers</p>
+              <Users className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
 
-          <div className="p-6 border border-border/50 bg-background">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <h3 className="text-sm font-medium text-orange-600">
-                Maintenance
-              </h3>
-              <Wrench className="h-4 w-4 text-orange-600" />
-            </div>
-            <div className="pt-2">
-              <div className="text-2xl font-bold text-orange-600">
-                {maintenance?.length || 0}
+          <div className="bg-card border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Maintenance</p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {pendingMaintenance}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">Service records</p>
+              <Wrench className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
 
-          <div className="p-6 border border-border/50 bg-background">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <h3 className="text-sm font-medium text-purple-600">Fuel Logs</h3>
-              <Fuel className="h-4 w-4 text-purple-600" />
-            </div>
-            <div className="pt-2">
-              <div className="text-2xl font-bold text-purple-600">
-                {fuelLogs?.length || 0}
+          <div className="bg-card border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Fuel Logs</p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {totalFuelLogs}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">Fuel transactions</p>
+              <Fuel className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
         </div>
 
-        {/* Main Content with Tabs */}
-        <div className="grid gap-8 lg:grid-cols-12">
-          <section className="lg:col-span-8 space-y-8">
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="space-y-6"
-            >
-              <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1">
-                <TabsTrigger
-                  value="overview"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger
-                  value="analytics"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  <PieChart className="w-4 h-4 mr-2" />
-                  Analytics
-                </TabsTrigger>
-                <TabsTrigger
-                  value="trips"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  <Activity className="w-4 h-4 mr-2" />
-                  Trips
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="border border-border/50 bg-background">
-                    <div className="p-6">
-                      <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                        <Target className="w-5 h-5 text-blue-600" />
-                        Fleet Distribution
-                      </h3>
-                      <p className="text-muted-foreground text-sm mb-4">
-                        Vehicle types breakdown
-                      </p>
-                    </div>
-                    <div className="h-[350px] w-full">
-                      <FleetDistributionChart
-                        data={chartData?.fleetDistributionData || []}
-                        compact
-                      />
-                    </div>
-                  </div>
-
-                  <div className="border border-border/50 bg-background">
-                    <div className="p-6">
-                      <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                        <Users className="w-5 h-5 text-green-600" />
-                        Driver Status
-                      </h3>
-                      <p className="text-muted-foreground text-sm mb-4">
-                        Driver availability overview
-                      </p>
-                    </div>
-                    <div className="h-[350px] w-full">
-                      <DriverStatusChart
-                        data={chartData?.driverStatusData || []}
-                        compact
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border border-border/50 bg-background">
-                  <div className="p-6">
-                    <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                      <LineChart className="w-5 h-5 text-purple-600" />
-                      Fuel Consumption Trends
-                    </h3>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      Monthly fuel consumption patterns
-                    </p>
-                  </div>
-                  <div className="h-[350px] w-full">
+        {/* Main Content */}
+        <div className="grid gap-6 lg:grid-cols-12">
+          <section className="lg:col-span-8 space-y-6">
+            <div className="space-y-6">
+              <div className="bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground mb-4">
+                  Fuel Consumption
+                </h3>
+                <div className="h-[300px] w-full">
+                  <LazyWrapper fallback={<ChartSkeleton height="h-[300px]" />}>
                     <FuelConsumptionChart
                       data={chartData?.fuelConsumptionData || []}
                       compact
                     />
-                  </div>
+                  </LazyWrapper>
                 </div>
-              </TabsContent>
+              </div>
 
-              <TabsContent value="analytics" className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="border border-border/50 bg-background">
-                    <div className="p-6">
-                      <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                        <Wrench className="w-5 h-5 text-orange-600" />
-                        Maintenance Costs
-                      </h3>
-                      <p className="text-muted-foreground text-sm mb-4">
-                        Monthly maintenance expenditure
-                      </p>
-                    </div>
-                    <div className="h-[350px] w-full">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="bg-card border border-border p-4">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Maintenance Costs
+                  </h3>
+                  <div className="h-[250px] w-full">
+                    <LazyWrapper
+                      fallback={<ChartSkeleton height="h-[250px]" />}
+                    >
                       <MaintenanceCostsChart
                         data={chartData?.maintenanceCostsData || []}
                         compact
                       />
-                    </div>
-                  </div>
-
-                  <div className="border border-border/50 bg-background">
-                    <div className="p-6">
-                      <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                        <TrendingUp className="w-5 h-5 text-emerald-600" />
-                        Performance Metrics
-                      </h3>
-                      <p className="text-muted-foreground text-sm mb-4">
-                        Fleet efficiency indicators
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center h-[350px]">
-                      <div className="text-center space-y-3">
-                        <div className="w-16 h-16 mx-auto bg-emerald-100 dark:bg-emerald-900/20 rounded-full flex items-center justify-center">
-                          <TrendingUp className="w-8 h-8 text-emerald-600" />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Performance analytics coming soon
-                        </p>
-                      </div>
-                    </div>
+                    </LazyWrapper>
                   </div>
                 </div>
-              </TabsContent>
 
-              <TabsContent value="trips" className="space-y-6">
-                <div className="border border-border/50 bg-background">
-                  <div className="p-6">
-                    <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                      <Activity className="w-5 h-5 text-indigo-600" />
-                      Recent Trips
-                    </h3>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      Latest trip activities and status
-                    </p>
-                  </div>
-                  <div className="px-6 pb-6">
-                    <RecentTrips />
+                <div className="bg-card border border-border p-4">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Fleet Utilization
+                  </h3>
+                  <div className="h-[250px] w-full">
+                    <PerformanceMetricsChart
+                      data={performanceMetrics}
+                      compact
+                    />
                   </div>
                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           </section>
 
           {/* Right Sidebar */}
-          <aside className="lg:col-span-4 space-y-8">
-            <div className="border border-border/50 bg-background">
-              <div className="p-6">
-                <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                  <Activity className="w-5 h-5 text-indigo-600" />
-                  Recent Activity
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  Latest system updates
-                </p>
-              </div>
-              <div className="px-6 pb-6">
-                <RecentActivity
-                  activities={recentActivities}
-                  isLoading={false}
-                />
+          <aside className="lg:col-span-4 space-y-6">
+            <div className="bg-card border border-border p-4">
+              <h3 className="text-sm font-medium text-foreground mb-4">
+                Recent Activity
+              </h3>
+              <div>
+                <LazyWrapper>
+                  <LazyRecentActivity
+                    activities={recentActivities}
+                    isLoading={false}
+                  />
+                </LazyWrapper>
               </div>
             </div>
 
-            <div className="border border-border/50 bg-background">
-              <div className="p-6">
-                <h3 className="flex items-center gap-2 text-foreground text-lg font-semibold mb-2">
-                  <Target className="w-5 h-5 text-blue-600" />
-                  Quick Actions
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  Common tasks and shortcuts
-                </p>
-              </div>
-              <div className="px-6 pb-6 space-y-3">
+            <div className="bg-card border border-border p-4">
+              <h3 className="text-sm font-medium text-foreground mb-4">
+                Quick Actions
+              </h3>
+              <div className="space-y-2">
                 <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                   size="sm"
                 >
-                  <Car className="w-4 h-4 mr-2" />
                   Add Vehicle
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                   size="sm"
                 >
-                  <Users className="w-4 h-4 mr-2" />
                   Add Driver
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                   size="sm"
                 >
-                  <Wrench className="w-4 h-4 mr-2" />
                   Schedule Maintenance
                 </Button>
               </div>

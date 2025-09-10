@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Navigation,
   Mail,
+  MessageCircle,
   Shield,
   CreditCard,
 } from "lucide-react";
@@ -54,6 +55,7 @@ const navigationGroups = [
     category: "Operations",
     items: [
       { name: "Dispatch", href: "/dispatch", icon: Navigation },
+      { name: "Chat", href: "/chat", icon: MessageCircle },
       { name: "Security Escorts", href: "/security-escorts", icon: Shield },
       { name: "Trips", href: "/trips", icon: Calendar },
       { name: "Clients", href: "/clients", icon: Users2 },
@@ -64,7 +66,7 @@ const navigationGroups = [
     category: "Finance",
     items: [
       {
-        name: "Revenue & Cost Analytics",
+        name: "Analytics",
         href: "/cost-analytics",
         icon: DollarSign,
       },
@@ -79,6 +81,7 @@ const navigationGroups = [
 ];
 
 const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
+  "*": "*",
   management: "*",
   fleet: [
     "/dashboard-management",
@@ -93,6 +96,7 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
   operations: [
     "/dashboard-management",
     "/dispatch",
+    "/chat",
     "/security-escorts",
     "/trips",
     "/clients",
@@ -173,7 +177,11 @@ const Sidebar = memo(function Sidebar() {
           (item) => pathname === item.href
         );
         if (hasActiveItem) {
-          setExpandedCategories((prev) => new Set([...prev, group.category]));
+          setExpandedCategories((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(group.category);
+            return newSet;
+          });
         }
       });
     }

@@ -42,7 +42,7 @@ export function AssignDriverDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
-  const [drivers, setDrivers] = useState<
+  const [availableDrivers, setAvailableDrivers] = useState<
     (Driver & {
       isAvailable: boolean;
       conflicts?: DisplayTrip[];
@@ -61,37 +61,58 @@ export function AssignDriverDialog({
     const fetchDrivers = async () => {
       if (!open) return;
 
-      const { data, error } = await supabase.from("drivers").select("*");
+      const { data: drivers, error } = await supabase
+        .from("drivers")
+        .select("id, name, status")
+        .eq("status", "active" as any);
+
+      if (drivers) {
+        setAvailableDrivers(
+          drivers.map((driver: any) => ({
+            id: driver && "id" in driver ? driver.id : "",
+            name: driver && "name" in driver ? driver.name : "",
+            status: driver && "status" in driver ? driver.status : "",
+            contact: "",
+            license_number: "",
+            license_type: "",
+            license_expiry: "",
+            avatar_url: undefined,
+            created_at: "",
+            updated_at: "",
+            isAvailable: true,
+          }))
+        );
+      }
 
       console.log("AssignDriverDialog - Drivers loaded:", {
-        driversCount: data?.length || 0,
+        driversCount: drivers?.length || 0,
         error,
         tripToAssign: tripToAssign?.id,
         tripDate: tripToAssign?.date,
         tripTime: tripToAssign?.time,
         tripReturnTime: tripToAssign?.return_time,
-        drivers: data?.map((d) => ({
-          id: d.id,
-          name: d.name,
-          status: d.status,
+        drivers: drivers?.map((d) => ({
+          id: d && "id" in d ? d.id : "",
+          name: d && "name" in d ? d.name : "",
+          status: d && "status" in d ? d.status : "",
         })),
       });
 
       if (error) {
         console.error("Error loading drivers:", error);
-        setDrivers([]);
+        setAvailableDrivers([]);
         return;
       }
 
-      if (!data) {
+      if (!drivers) {
         console.warn("No drivers data received");
-        setDrivers([]);
+        setAvailableDrivers([]);
         return;
       }
 
       if (!tripToAssign) {
         console.warn("No trip to assign");
-        setDrivers([]);
+        setAvailableDrivers([]);
         return;
       }
 
@@ -99,7 +120,7 @@ export function AssignDriverDialog({
       const otherTrips = allTrips.filter((trip) => trip.id !== tripToAssign.id);
 
       // Check each driver's availability using time-based logic
-      const driversWithAvailability = data.map((driver) => {
+      const driversWithAvailability = drivers.map((driver: any) => {
         const availability = isDriverAvailableForTimeSlot(
           driver.id,
           tripToAssign.date,
@@ -120,16 +141,17 @@ export function AssignDriverDialog({
 
       console.log("AssignDriverDialog - Drivers with availability:", {
         totalDrivers: driversWithAvailability.length,
-        availableDrivers: driversWithAvailability.filter((d) => d.isAvailable)
-          .length,
-        drivers: driversWithAvailability.map((d) => ({
+        availableDrivers: driversWithAvailability.filter(
+          (d: any) => d.isAvailable
+        ).length,
+        drivers: driversWithAvailability.map((d: any) => ({
           name: d.name,
           isAvailable: d.isAvailable,
           reason: d.reason,
         })),
       });
 
-      setDrivers(driversWithAvailability);
+      setAvailableDrivers(driversWithAvailability);
     };
 
     fetchDrivers();
@@ -179,12 +201,14 @@ export function AssignDriverDialog({
       // Create assignment record with valid status value
       const { error: assignmentError } = await supabase
         .from("trip_assignments")
-        .insert({
-          trip_id: tripToAssign.id,
-          driver_id: selectedDriver,
-          notes: assignmentNote,
-          status: "pending", // Using "pending" instead of "assigned"
-        });
+        .insert([
+          {
+            trip_id: tripToAssign.id,
+            driver_id: selectedDriver,
+            notes: assignmentNote,
+            status: "pending", // Using "pending" instead of "assigned"
+          },
+        ] as any);
 
       if (assignmentError) throw assignmentError;
 
@@ -194,8 +218,8 @@ export function AssignDriverDialog({
         .update({
           driver_id: selectedDriver,
           status: tripToAssign.status, // Keep the current status
-        })
-        .eq("id", tripToAssign.id);
+        } as any)
+        .eq("id", tripToAssign.id as any);
 
       if (updateError) throw updateError;
 
@@ -269,14 +293,14 @@ export function AssignDriverDialog({
         <div className="grid gap-5 py-4">
           <div className="space-y-2">
             <Label htmlFor="driver" className="text-slate-300">
-              Select Driver ({drivers.length} available)
+              Select Driver ({availableDrivers.length} available)
             </Label>
             <Select value={selectedDriver} onValueChange={setSelectedDriver}>
               <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-300 focus:ring-purple-500 rounded-md">
                 <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
-                {drivers.map((driver) => (
+                {availableDrivers.map((driver) => (
                   <SelectItem
                     key={driver.id}
                     value={driver.id}

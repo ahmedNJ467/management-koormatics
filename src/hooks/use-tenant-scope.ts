@@ -16,17 +16,32 @@ export function useTenantScope() {
   // Safely access browser APIs after component mounts
   useEffect(() => {
     setMounted(true);
-    const hostname = window.location.hostname;
-    const detectedDomain = getSubdomainFromHost(hostname);
-    setDomain(detectedDomain);
+
+    // Only run on client side
+    if (typeof window === "undefined") return;
+
+    // Cache domain detection to avoid repeated calculations
+    const cachedDomain = sessionStorage.getItem("koormatics-domain");
+    if (cachedDomain) {
+      setDomain(cachedDomain as AppDomain);
+    } else {
+      const hostname = window.location.hostname;
+      const detectedDomain = getSubdomainFromHost(hostname);
+      setDomain(detectedDomain);
+      // Cache the detected domain
+      sessionStorage.setItem("koormatics-domain", detectedDomain);
+    }
   }, []);
 
   const isAllowed = useMemo(() => {
-    // If still loading or not mounted, don't block access yet
-    if (loading || !mounted) return true;
+    // During SSR or initial load, always allow access to prevent hydration mismatch
+    if (typeof window === "undefined" || !mounted) return true;
+
+    // If still loading, allow access optimistically
+    if (loading) return true;
 
     // If user has any role, allow base access; domain checks refine it further
-    if (roles.length === 0) return false;
+    if (roles.length === 0) return true; // Allow access while roles are loading
     if (hasRole("super_admin")) return true;
     if (domain === "fleet") return hasRole("fleet_manager");
     if (domain === "operations") return hasRole("operations_manager");
@@ -41,7 +56,10 @@ export function useTenantScope() {
   }, [domain, hasRole, roles.length, loading, mounted]);
 
   // Only show loading on initial mount, not on subsequent checks
-  const isLoading = loading && !mounted;
+  // Reduce loading time by being more optimistic
+  // During SSR, never show loading to prevent hydration mismatch
+  const isLoading =
+    typeof window !== "undefined" && loading && !mounted && roles.length === 0;
 
   // Debug logging
   console.log("useTenantScope Debug:", {

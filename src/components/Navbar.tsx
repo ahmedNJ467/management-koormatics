@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { Menu, User, Settings, LogOut, PanelLeftClose } from "lucide-react";
+import { Menu, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
-import { GlobalSearchTrigger } from "./global-search/GlobalSearchTrigger";
 import { AlertsDropdown } from "./alerts/AlertsDropdown";
 import { useProfile } from "@/hooks/use-profile";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,19 +17,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
 import { usePageAccess } from "@/hooks/use-page-access";
 import { useTheme } from "next-themes";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRole } from "@/hooks/useRole";
-import { ConnectionStatus } from "./ConnectionStatus";
 import KoormaticsLogo from "@/components/ui/koormatics-logo";
 
 interface NavbarProps {
@@ -49,6 +40,7 @@ const Navbar = memo(function Navbar({
   const { domain } = useTenantScope();
   const { hasRole } = useRole();
   const { data: pages = [] } = usePageAccess();
+  const { signOut } = useAuth();
 
   const isPageAllowed = useCallback(
     (href: string) => {
@@ -104,80 +96,50 @@ const Navbar = memo(function Navbar({
 
   const handleLogoutClick = useCallback(async () => {
     try {
-      // First, try to get current session to verify auth state
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      // Use the centralized logout from useAuth to prevent conflicts
+      await signOut();
 
-      if (!session) {
-        // No active session, just redirect to auth
-        toast({
-          title: "No active session",
-          description: "Redirecting to login page",
-        });
-        router.push("/auth");
-        return;
-      }
-
-      // Clear any local auth state first
-      localStorage.removeItem("supabase.auth.token");
-      sessionStorage.clear();
-
-      // Only attempt signOut if we have a valid session
-      if (session.access_token) {
-        try {
-          const { error } = await supabase.auth.signOut({
-            scope: "local", // Only clear local session, don't call server
-          });
-
-          if (error) {
-            console.error("Logout error:", error);
-          }
-        } catch (signOutError) {
-          console.error("SignOut error:", signOutError);
-          // Continue with logout process even if signOut fails
-        }
-      }
-
-      // Always show success message and redirect
+      // Show immediate success message
       toast({
         title: "Logged out successfully",
         description: "You have been signed out of the system",
       });
 
-      // Redirect to auth page
+      // Immediately redirect to auth page
       router.push("/auth");
     } catch (error) {
-      console.error("Logout exception:", error);
+      console.error("Logout error:", error);
 
-      // Even if there's an error, clear local state and redirect
-      localStorage.removeItem("supabase.auth.token");
-      sessionStorage.clear();
+      // Fallback: clear only our custom key and redirect
+      try {
+        localStorage.removeItem("supabase.auth.token");
+      } catch {}
+      try {
+        sessionStorage.removeItem("supabase.auth.token");
+      } catch {}
 
       toast({
         title: "Logout completed",
         description: "Redirecting to login page",
       });
 
-      // Force redirect even if logout fails
       router.push("/auth");
     }
-  }, [router, toast]);
+  }, [router, toast, signOut]);
 
   // Render a placeholder on initial mount to avoid theme flash
   if (!mounted) {
     return (
       <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 items-center px-4 gap-4">
-          <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
-          <div className="h-8 w-32 bg-muted rounded-md animate-pulse" />
-          <div className="flex-1 flex justify-center max-w-sm mx-auto">
-            <div className="h-10 w-full bg-muted rounded-lg animate-pulse" />
+        <div className="flex h-16 items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
+            <div className="h-8 w-32 bg-muted rounded-md animate-pulse" />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
-            <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
-            <div className="h-12 w-12 bg-muted rounded-full animate-pulse" />
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 bg-muted rounded-lg animate-pulse" />
+            <div className="h-9 w-9 bg-muted rounded-lg animate-pulse" />
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
           </div>
         </div>
       </header>
@@ -185,78 +147,88 @@ const Navbar = memo(function Navbar({
   }
 
   return (
-    <header className="h-16 flex items-center px-4 gap-4">
-      <Button variant="ghost" size="icon" onClick={onToggleSidebar}>
-        <Menu className="h-5 w-5" />
-      </Button>
+    <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-16 items-center justify-between px-6">
+        {/* Left section - Menu and Logo */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSidebar}
+            className="h-9 w-9 hover:bg-muted/50"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
 
-      <Link href={homePath()} className="flex items-center">
-        <KoormaticsLogo size="sm" />
-        <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
-          /{domain}
-        </span>
-      </Link>
+          <Link
+            href={homePath()}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <KoormaticsLogo size="sm" />
+            <span className="text-sm font-medium text-muted-foreground">
+              {domain}
+            </span>
+          </Link>
+        </div>
 
-      <div className="hidden sm:flex flex-1 justify-center max-w-sm mx-auto">
-        <GlobalSearchTrigger />
-      </div>
+        {/* Right section - Actions and Profile */}
+        <div className="flex items-center gap-3">
+          <AlertsDropdown />
+          <ThemeToggle />
 
-      <div className="flex items-center gap-2">
-        <ConnectionStatus />
-        <AlertsDropdown />
-        <ThemeToggle />
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-              <Avatar className="h-12 w-12">
-                <AvatarImage
-                  src={profile?.profile_image_url || "/placeholder.svg"}
-                  alt="Admin"
-                />
-                <AvatarFallback>
-                  {profile?.name
-                    ?.split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase() || "AD"}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {profile?.name || "Admin User"}
-                </p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {profile?.email || "admin@fleetmanagement.com"}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleProfileClick}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="relative h-9 w-9 rounded-full hover:bg-muted/50 p-0"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={profile?.profile_image_url || "/placeholder.svg"}
+                    alt="Profile"
+                  />
+                  <AvatarFallback className="text-xs">
+                    {profile?.name
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase() || "AD"}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    {profile?.name || "Admin User"}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {profile?.email || "admin@fleetmanagement.com"}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
               {canSeeProfile() && (
-                <>
+                <DropdownMenuItem onClick={handleProfileClick}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
-                </>
+                </DropdownMenuItem>
               )}
-            </DropdownMenuItem>
-            {hasRole("super_admin") && canSeeSettings() && (
-              <DropdownMenuItem onClick={handleSettingsClick}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+              {hasRole("super_admin") && canSeeSettings() && (
+                <DropdownMenuItem onClick={handleSettingsClick}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogoutClick}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
               </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogoutClick}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

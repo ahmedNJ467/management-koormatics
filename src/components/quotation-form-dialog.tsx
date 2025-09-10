@@ -282,8 +282,18 @@ export function QuotationFormDialog({
         // Update existing quotation
         const { error } = await supabase
           .from("quotations")
-          .update(formattedValues)
-          .eq("id", quotation.id);
+          .update({
+            client_id: formattedValues.client_id,
+            date: formattedValues.date,
+            valid_until: formattedValues.valid_until,
+            status: formattedValues.status,
+            notes: formattedValues.notes,
+            total_amount: formattedValues.total_amount,
+            items: formattedValues.items,
+            vat_percentage: formattedValues.vat_percentage,
+            discount_percentage: formattedValues.discount_percentage,
+          } as any)
+          .eq("id", quotation.id as any);
 
         if (error) {
           console.error("Update error:", error);
@@ -296,9 +306,7 @@ export function QuotationFormDialog({
         });
       } else {
         // Insert new quotation
-        const { error } = await supabase
-          .from("quotations")
-          .insert(formattedValues);
+        const { error } = await supabase.from("quotations").insert([formattedValues] as any);
 
         if (error) {
           console.error("Insert error:", error);

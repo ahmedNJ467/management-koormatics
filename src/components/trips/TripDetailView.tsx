@@ -95,12 +95,12 @@ export function TripDetailView({
   return (
     <div className="w-full">
       <div className="bg-gradient-to-r from-muted/50 to-muted/30 dark:from-muted/70 dark:to-muted/50 p-6 rounded-lg mb-6 border border-border">
-        <DialogTitle className="text-xl font-semibold mb-3 text-card-foreground flex items-center">
+        <DialogTitle className="text-xl font-semibold mb-3 text-foreground flex items-center">
           <Calendar className="h-5 w-5 mr-2 text-primary" />
           {formatDate(viewTrip.date)}
           <span className="mx-2 text-muted-foreground">•</span>
           <MapPin className="h-5 w-5 mr-2 text-primary" />
-          {viewTrip.pickup_location.split(",")[0]}
+          {(viewTrip.pickup_location || "Unknown").split(",")[0]}
         </DialogTitle>
 
         <div className="flex flex-wrap items-center gap-2 mb-3">

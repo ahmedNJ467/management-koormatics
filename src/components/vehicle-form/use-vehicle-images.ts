@@ -1,8 +1,7 @@
-
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Vehicle } from '@/lib/types';
-import { ApiError } from '@/lib/api-error-handler';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Vehicle } from "@/lib/types";
+import { ApiError } from "@/lib/api-error-handler";
 
 export function useVehicleImages() {
   const [images, setImages] = useState<File[]>([]);
@@ -23,50 +22,50 @@ export function useVehicleImages() {
       */
 
       const imageUploadPromises = images.map(async (file) => {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split(".").pop();
         const fileName = `${vehicleId}/${crypto.randomUUID()}.${fileExt}`;
 
         // First, check if the file already exists
         const { data: existingFile } = await supabase.storage
-          .from('vehicle-images')
+          .from("vehicle-images")
           .list(vehicleId);
 
-        if (existingFile?.some(f => f.name === fileName)) {
-          throw new ApiError('File already exists', 409);
+        if (existingFile?.some((f) => f.name === fileName)) {
+          throw new ApiError("File already exists", 409);
         }
 
         const { error: uploadError, data } = await supabase.storage
-          .from('vehicle-images')
+          .from("vehicle-images")
           .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
+            cacheControl: "3600",
+            upsert: false,
           });
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('vehicle-images')
-          .getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("vehicle-images").getPublicUrl(fileName);
 
         return publicUrl;
       });
 
       const uploadedUrls = await Promise.all(imageUploadPromises);
 
-      const imageRecords = uploadedUrls.map(url => ({
+      const imageRecords = uploadedUrls.map((url) => ({
         vehicle_id: vehicleId,
-        image_url: url
+        image_url: url,
       }));
 
       const { error: insertError } = await supabase
-        .from('vehicle_images')
-        .insert(imageRecords);
+        .from("vehicle_images")
+        .insert(imageRecords as any);
 
       if (insertError) throw insertError;
 
       // Clean up object URLs to prevent memory leaks
-      imagePreviewUrls.forEach(url => {
-        if (url.startsWith('blob:')) {
+      imagePreviewUrls.forEach((url) => {
+        if (url.startsWith("blob:")) {
           URL.revokeObjectURL(url);
         }
       });
@@ -75,7 +74,7 @@ export function useVehicleImages() {
       setImages([]);
       setImagePreviewUrls([]);
     } catch (error) {
-      console.error('Error uploading images:', error);
+      console.error("Error uploading images:", error);
       throw error;
     }
   };

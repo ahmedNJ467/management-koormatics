@@ -143,7 +143,7 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
       const { data, error } = await supabase
         .from("contracts")
         .select("id, name, client_name, status")
-        .eq("status", "active")
+        .eq("status", "active" as any)
         .order("name");
       if (error) throw error;
       return data;
@@ -159,7 +159,7 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
         const { data, error } = await supabase
           .from("drivers")
           .select("id, name, phone")
-          .eq("status", "active")
+          .eq("status", "active" as any)
           .order("name");
 
         if (error) {
@@ -222,8 +222,8 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
           .update({
             ...data,
             updated_at: new Date().toISOString(),
-          })
-          .eq("id", lease.id);
+          } as any)
+          .eq("id", lease.id as any);
         if (error) throw error;
       } else {
         // Create new lease
@@ -283,7 +283,7 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
 
       lease_status: data.lease_status,
       payment_status: data.payment_status,
-      notes: data.notes || null,
+      notes: data.notes || undefined,
       insurance_required: data.insurance_required,
       maintenance_included: data.maintenance_included,
       driver_included: data.driver_included,
@@ -321,10 +321,10 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {vehicles?.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.make} {vehicle.model} ({vehicle.year}) -{" "}
-                          {vehicle.registration}
+                      {vehicles?.filter(vehicle => vehicle && 'id' in vehicle).map((vehicle) => (
+                        <SelectItem key={(vehicle as any).id} value={(vehicle as any).id}>
+                          {(vehicle as any).make} {(vehicle as any).model} ({(vehicle as any).year}) -{" "}
+                          {(vehicle as any).registration}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -347,9 +347,9 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {contracts?.map((contract) => (
-                        <SelectItem key={contract.id} value={contract.id}>
-                          {contract.name} - {contract.client_name}
+                      {contracts?.filter(contract => contract && 'id' in contract).map((contract) => (
+                        <SelectItem key={(contract as any).id} value={(contract as any).id}>
+                          {(contract as any).name} - {(contract as any).client_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -677,7 +677,7 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Assign Driver</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a driver for this lease" />
@@ -685,9 +685,9 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">No driver assigned</SelectItem>
-                        {drivers?.map((driver) => (
-                          <SelectItem key={driver.id} value={driver.id}>
-                            {driver.name} - {driver.phone}
+                        {drivers?.filter(driver => driver && 'id' in driver).map((driver) => (
+                          <SelectItem key={(driver as any).id} value={(driver as any).id}>
+                            {(driver as any).name} - {(driver as any).phone}
                           </SelectItem>
                         ))}
                       </SelectContent>

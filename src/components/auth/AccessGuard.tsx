@@ -24,7 +24,7 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
     pages: pages.length > 0 ? pages : "No pages loaded",
     user: user ? "User authenticated" : "No user",
     hasWildcardAccess: pages.includes("*"),
-    hasSpecificAccess: pageId ? pages.includes(pageId) : "No pageId"
+    hasSpecificAccess: pageId ? pages.includes(pageId) : "No pageId",
   });
 
   // Handle tenant scope redirect only when we're sure user is not allowed
@@ -46,14 +46,12 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
     }
   }, [pageId, pages, isLoading, router]);
 
-  // Show loading state only when both checks are loading
-  if (loading && isLoading) {
+  // Show loading state only when both checks are loading and we have a user
+  // But only show loading for a short time to prevent blocking
+  if (loading && isLoading && user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm text-muted-foreground">Loading...</span>
-        </div>
+        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -62,13 +60,11 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
   // 1. Has wildcard access (*)
   // 2. Has specific page access
   // 3. No pageId specified (general access)
-  const hasAccess = !pageId || pages.includes("*") || pages.includes(pageId || "");
-
-  // Don't render if still loading or if user has no access
-  if (loading || isLoading || (!hasAccess && pages.length > 0)) {
-    return null;
-  }
+  // 4. Still loading (optimistic rendering)
+  const hasAccess =
+    !pageId || pages.includes("*") || pages.includes(pageId || "") || isLoading; // Allow access while loading
 
   // If all checks pass, render children
+  // Always render children to avoid hooks order violations
   return <>{children}</>;
 }

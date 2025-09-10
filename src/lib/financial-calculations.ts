@@ -213,8 +213,11 @@ function calculateMonthlyFinancialData(
         }
 
         const cost = Number(record.cost || 0);
-        months[monthKey].maintenance += cost;
-        months[monthKey].expenses += cost;
+        const monthData = months[monthKey];
+        if (monthData) {
+          monthData.maintenance = (monthData.maintenance || 0) + cost;
+          monthData.expenses = (monthData.expenses || 0) + cost;
+        }
       } catch (error) {
         console.warn("Error processing maintenance date:", record.date, error);
       }
@@ -251,8 +254,11 @@ function calculateMonthlyFinancialData(
         }
 
         const cost = Number(record.cost || 0);
-        months[monthKey].fuel += cost;
-        months[monthKey].expenses += cost;
+        const monthData = months[monthKey];
+        if (monthData) {
+          monthData.fuel = (monthData.fuel || 0) + cost;
+          monthData.expenses = (monthData.expenses || 0) + cost;
+        }
       } catch (error) {
         console.warn("Error processing fuel date:", record.date, error);
       }
@@ -298,8 +304,11 @@ function calculateMonthlyFinancialData(
 
           // Include all spare parts usage costs (maintenance cost already includes external services/parts)
           // Spare parts usage from inventory is a separate cost category
-          months[monthKey].spareParts += cost;
-          months[monthKey].expenses += cost;
+          const monthData = months[monthKey];
+          if (monthData) {
+            monthData.spareParts = (monthData.spareParts || 0) + cost;
+            monthData.expenses = (monthData.expenses || 0) + cost;
+          }
         } catch (error) {
           console.warn("Error processing spare part date:", dateString, error);
         }

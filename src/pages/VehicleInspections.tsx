@@ -127,7 +127,7 @@ export default function VehicleInspections() {
         .order("inspection_date", { ascending: false });
 
       if (error) throw error;
-      return data as VehicleInspection[];
+      return data as any;
     },
   });
 
@@ -147,7 +147,9 @@ export default function VehicleInspections() {
   // Get unique inspectors for filter
   const inspectors = useMemo(() => {
     if (!inspections) return [];
-    const uniqueInspectors = new Set(inspections.map((i) => i.inspector_name));
+    const uniqueInspectors = new Set(
+      inspections.map((i: any) => i.inspector_name)
+    );
     return Array.from(uniqueInspectors);
   }, [inspections]);
 
@@ -155,7 +157,7 @@ export default function VehicleInspections() {
   const filteredInspections = useMemo(() => {
     if (!inspections) return [];
 
-    return inspections.filter((inspection) => {
+    return inspections.filter((inspection: any) => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -236,7 +238,7 @@ export default function VehicleInspections() {
       const { error } = await supabase
         .from("vehicle_inspections")
         .delete()
-        .eq("id", id);
+        .eq("id", id as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -274,9 +276,7 @@ export default function VehicleInspections() {
   const handleDownloadPdf = async (inspection: VehicleInspection) => {
     try {
       await generateVehicleInspectionPdf(inspection as any, {
-        logoUrl:
-          window.location.origin +
-          "/lovable-uploads/3b576d68-bff3-4323-bab0-d4afcf9b85c2.png",
+        logoUrl: window.location.origin + "/images/Koormatics-logo.png",
       });
     } catch (e) {
       console.error(e);
@@ -335,428 +335,470 @@ export default function VehicleInspections() {
     dateRange?.to;
 
   return (
-            <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Vehicle Inspections
-          </h2>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => {
-              setSelectedInspection(null);
-              setFormOpen(true);
-            }}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            New Inspection
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="space-y-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by vehicle, registration, or inspector..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header */}
+        <div className="border-b border-border pb-4 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Vehicle Inspections
+              </h1>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setSelectedInspection(null);
+                  setFormOpen(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Inspection
+              </Button>
             </div>
           </div>
-
-          <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Vehicles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Vehicles</SelectItem>
-              {vehicles?.map((vehicle) => (
-                <SelectItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.make} {vehicle.model} ({vehicle.registration})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pass">Pass</SelectItem>
-              <SelectItem value="fail">Fail</SelectItem>
-              <SelectItem value="conditional">Conditional</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={inspectorFilter} onValueChange={setInspectorFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All Inspectors" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Inspectors</SelectItem>
-              {inspectors.map((inspector) => (
-                <SelectItem key={inspector} value={inspector}>
-                  {inspector}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <DateRangePicker
-            value={dateRange}
-            onChange={setDateRange}
-            className="w-[240px]"
-          />
-
-          {hasActiveFilters && (
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              <Filter className="h-4 w-4 mr-2" />
-              Clear
-            </Button>
-          )}
         </div>
-      </div>
 
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2">
-          {searchTerm && (
-            <Badge variant="secondary" className="gap-1">
-              Search: {searchTerm}
-              <button
-                onClick={() => setSearchTerm("")}
-                className="ml-1 hover:text-destructive"
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          {vehicleFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1">
-              Vehicle: {vehicles?.find((v) => v.id === vehicleFilter)?.make}{" "}
-              {vehicles?.find((v) => v.id === vehicleFilter)?.model}
-              <button
-                onClick={() => setVehicleFilter("all")}
-                className="ml-1 hover:text-destructive"
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          {statusFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1">
-              Status: {statusFilter}
-              <button
-                onClick={() => setStatusFilter("all")}
-                className="ml-1 hover:text-destructive"
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          {inspectorFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1">
-              Inspector: {inspectorFilter}
-              <button
-                onClick={() => setInspectorFilter("all")}
-                className="ml-1 hover:text-destructive"
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          {(dateRange?.from || dateRange?.to) && (
-            <Badge variant="secondary" className="gap-1">
-              Date Range:{" "}
-              {dateRange?.from ? format(dateRange.from, "MMM dd") : ""} -{" "}
-              {dateRange?.to ? format(dateRange.to, "MMM dd") : ""}
-              <button
-                onClick={() => setDateRange(undefined)}
-                className="ml-1 hover:text-destructive"
-              >
-                ×
-              </button>
-            </Badge>
-          )}
+        {/* Filters */}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by vehicle, registration, or inspector..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+
+            <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Vehicles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Vehicles</SelectItem>
+                {vehicles?.map((vehicle) => (
+                  <SelectItem
+                    key={(vehicle as any).id}
+                    value={(vehicle as any).id}
+                  >
+                    {(vehicle as any).make} {(vehicle as any).model} (
+                    {(vehicle as any).registration})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pass">Pass</SelectItem>
+                <SelectItem value="fail">Fail</SelectItem>
+                <SelectItem value="conditional">Conditional</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={inspectorFilter} onValueChange={setInspectorFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Inspectors" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Inspectors</SelectItem>
+                {inspectors.map((inspector) => (
+                  <SelectItem
+                    key={inspector as string}
+                    value={inspector as string}
+                  >
+                    {inspector as string}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              className="w-[240px]"
+            />
+
+            {hasActiveFilters && (
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                <Filter className="h-4 w-4 mr-2" />
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
-      )}
 
-      {/* Inspections Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Inspection ID</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Inspector</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Mileage</TableHead>
-                  <TableHead>Fuel Level</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+        {/* Active Filters Display */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap gap-2">
+            {searchTerm && (
+              <Badge variant="secondary" className="gap-1">
+                Search: {searchTerm}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1 p-0"
+                  onClick={() => setSearchTerm("")}
+                >
+                  ×
+                </Button>
+              </Badge>
+            )}
+            {vehicleFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                Vehicle:{" "}
+                {(() => {
+                  const vehicle = vehicles?.find(
+                    (v) =>
+                      v &&
+                      typeof v === "object" &&
+                      "id" in v &&
+                      v.id === vehicleFilter
+                  );
+                  return vehicle &&
+                    typeof vehicle === "object" &&
+                    "make" in vehicle &&
+                    "model" in vehicle
+                    ? `${vehicle.make} ${vehicle.model}`
+                    : "Unknown Vehicle";
+                })()}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1 p-0"
+                  onClick={() => setVehicleFilter("all")}
+                >
+                  ×
+                </Button>
+              </Badge>
+            )}
+            {statusFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                Status: {statusFilter}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1 p-0"
+                  onClick={() => setStatusFilter("all")}
+                >
+                  ×
+                </Button>
+              </Badge>
+            )}
+            {inspectorFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                Inspector: {inspectorFilter}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1 p-0"
+                  onClick={() => setInspectorFilter("all")}
+                >
+                  ×
+                </Button>
+              </Badge>
+            )}
+            {(dateRange?.from || dateRange?.to) && (
+              <Badge variant="secondary" className="gap-1">
+                Date Range:{" "}
+                {dateRange?.from ? format(dateRange.from, "MMM dd") : ""} -{" "}
+                {dateRange?.to ? format(dateRange.to, "MMM dd") : ""}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1 p-0"
+                  onClick={() => setDateRange(undefined)}
+                >
+                  ×
+                </Button>
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Inspections Table */}
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      Loading inspections...
-                    </TableCell>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Inspection ID</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Inspector</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Mileage</TableHead>
+                    <TableHead>Fuel Level</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : filteredInspections?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      No inspections found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedInspections?.map((inspection) => (
-                    <TableRow key={inspection.id}>
-                      <TableCell>
-                        {formatDate(inspection.inspection_date)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {toShortId(inspection.id, 8)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {inspection.vehicle
-                              ? `${inspection.vehicle.make} ${inspection.vehicle.model}`
-                              : "Unknown Vehicle"}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {inspection.vehicle?.registration}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          {inspection.inspector_name}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(inspection.overall_status)}
-                      </TableCell>
-                      <TableCell>
-                        {inspection.mileage?.toLocaleString()} km
-                      </TableCell>
-                      <TableCell>{inspection.fuel_level}%</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {inspection.pre_trip && (
-                            <Badge variant="outline" className="text-xs">
-                              Pre
-                            </Badge>
-                          )}
-                          {inspection.post_trip && (
-                            <Badge variant="outline" className="text-xs">
-                              Post
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleViewDetails(inspection)}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleEditInspection(inspection)}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDownloadPdf(inspection)}
-                            >
-                              <FileDown className="mr-2 h-4 w-4" />
-                              Download PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(inspection.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8">
+                        Loading inspections...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Results Count and Pagination Info */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>
-            Showing {startIndex + 1}-
-            {Math.min(endIndex, filteredInspections?.length || 0)} of{" "}
-            {filteredInspections?.length || 0} inspections
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-        </div>
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="h-8 px-3"
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                if (totalPages <= 5) {
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                }
-
-                // Show first page, last page, current page, and pages around current
-                if (
-                  pageNum === 1 ||
-                  pageNum === totalPages ||
-                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                ) {
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                }
-
-                if (
-                  pageNum === currentPage - 2 ||
-                  pageNum === currentPage + 2
-                ) {
-                  return (
-                    <span key={pageNum} className="px-2 text-muted-foreground">
-                      ...
-                    </span>
-                  );
-                }
-
-                return null;
-              })}
+                  ) : filteredInspections?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8">
+                        No inspections found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedInspections?.map((inspection: any) => (
+                      <TableRow key={inspection.id}>
+                        <TableCell>
+                          {formatDate(inspection.inspection_date)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {toShortId(inspection.id, 8)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {inspection.vehicle
+                                ? `${inspection.vehicle.make} ${inspection.vehicle.model}`
+                                : "Unknown Vehicle"}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {inspection.vehicle?.registration}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            {inspection.inspector_name}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(inspection.overall_status)}
+                        </TableCell>
+                        <TableCell>
+                          {inspection.mileage?.toLocaleString()} km
+                        </TableCell>
+                        <TableCell>{inspection.fuel_level}%</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            {inspection.pre_trip && (
+                              <Badge variant="outline" className="text-xs">
+                                Pre
+                              </Badge>
+                            )}
+                            {inspection.post_trip && (
+                              <Badge variant="outline" className="text-xs">
+                                Post
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleViewDetails(inspection)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditInspection(inspection)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDownloadPdf(inspection)}
+                              >
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Download PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(inspection.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="h-8 px-3"
-            >
-              Next
-            </Button>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Timestamp at bottom */}
+        {/* Results Count and Pagination Info */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>•</span>
-            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            <span>
+              Showing {startIndex + 1}-
+              {Math.min(endIndex, filteredInspections?.length || 0)} of{" "}
+              {filteredInspections?.length || 0} inspections
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
           </div>
         </div>
-      )}
 
-      {/* Form Dialog */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedInspection
-                ? "Edit Vehicle Inspection"
-                : "New Vehicle Inspection"}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedInspection
-                ? "Update the vehicle inspection details and safety checklist."
-                : "Complete the daily vehicle inspection checklist for safety compliance."}
-            </DialogDescription>
-          </DialogHeader>
-          <VehicleInspectionForm
-            inspection={selectedInspection}
-            onSuccess={() => {
-              setFormOpen(false);
-              setSelectedInspection(null);
-              queryClient.invalidateQueries({
-                queryKey: ["vehicle-inspections"],
-              });
-            }}
-            onCancel={() => {
-              setFormOpen(false);
-              setSelectedInspection(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  if (totalPages <= 5) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
 
-      {/* Details Dialog */}
-      <InspectionDetailsDialog
-        inspection={selectedInspection}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-      />
+                  // Show first page, last page, current page, and pages around current
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+
+                  if (
+                    pageNum === currentPage - 2 ||
+                    pageNum === currentPage + 2
+                  ) {
+                    return (
+                      <span
+                        key={pageNum}
+                        className="px-2 text-muted-foreground"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-8 px-3"
+              >
+                Next
+              </Button>
+            </div>
+
+            {/* Timestamp at bottom */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>•</span>
+              <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Form Dialog */}
+        <Dialog open={formOpen} onOpenChange={setFormOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedInspection
+                  ? "Edit Vehicle Inspection"
+                  : "New Vehicle Inspection"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedInspection
+                  ? "Update the vehicle inspection details and safety checklist."
+                  : "Complete the daily vehicle inspection checklist for safety compliance."}
+              </DialogDescription>
+            </DialogHeader>
+            <VehicleInspectionForm
+              inspection={selectedInspection}
+              onSuccess={() => {
+                setFormOpen(false);
+                setSelectedInspection(null);
+                queryClient.invalidateQueries({
+                  queryKey: ["vehicle-inspections"],
+                });
+              }}
+              onCancel={() => {
+                setFormOpen(false);
+                setSelectedInspection(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Details Dialog */}
+        <InspectionDetailsDialog
+          inspection={selectedInspection}
+          open={detailsOpen}
+          onOpenChange={setDetailsOpen}
+        />
+      </div>
     </div>
   );
 }

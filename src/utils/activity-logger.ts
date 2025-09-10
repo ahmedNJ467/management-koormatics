@@ -70,27 +70,17 @@ export const logActivity = async ({
 
   // Create more detailed titles for trip activities with formatted IDs
   let enhancedTitle = title;
-  if (type === "trip" && tripDetails && relatedId) {
-    const { clientName, pickupLocation, dropoffLocation } = tripDetails;
+  if (type === "trip" && relatedId) {
     const formattedTripId = formatTripId(relatedId);
-
-    if (pickupLocation && dropoffLocation) {
-      enhancedTitle = `Trip ${formattedTripId}: ${pickupLocation} to ${dropoffLocation}`;
-      if (clientName) {
-        enhancedTitle += ` (${clientName})`;
-      }
-    } else {
-      enhancedTitle = `Trip ${formattedTripId} updated`;
-      if (clientName) {
-        enhancedTitle += ` - ${clientName}`;
-      }
-    }
+    enhancedTitle = `Trip ${formattedTripId} ${
+      title.toLowerCase().includes("created") ? "created" : "updated"
+    }`;
   }
 
   const newActivity: ActivityItemProps = {
     id,
     title: enhancedTitle,
-    timestamp: formatTimestamp(timestamp),
+    timestamp: timestamp.toISOString(),
     type,
     icon: iconMap[type] || "activity",
     related_id: relatedId,
@@ -114,7 +104,7 @@ export const logActivity = async ({
         type,
         related_id: relatedId,
         timestamp: timestamp.toISOString(),
-      },
+      } as any,
     ]);
 
     if (error) {
@@ -162,17 +152,36 @@ export const getActivities = async (
     const normalizeTitle = (raw: string): string => {
       if (!raw) return "Unknown activity";
       let t = raw;
+
       // Fix concatenated "created" after ID (e.g., "Trip ABCD1234reated")
       t = t.replace(/(\b[Tt]rip\s+[A-Z0-9]{6,12})reated\b:?/g, "$1 created");
+
+      // Remove location names from trip activities
+      // Pattern: "Trip ID: Location1 to Location2" -> "Trip ID"
+      t = t.replace(
+        /(\b[Tt]rip\s+[A-Z0-9]{6,12})\s*:?\s*[^:]+(?:\s+to\s+[^:]+)?/g,
+        "$1"
+      );
+
+      // Remove client names in parentheses
+      t = t.replace(/\s*\([^)]+\)/g, "");
+
+      // Remove " - ClientName" patterns
+      t = t.replace(/\s*-\s*[^-]+$/g, "");
+
       // Ensure space between Trip <ID> and following verb when missing
       t = t.replace(
         /(\b[Tt]rip\s+[A-Z0-9]{6,12})(?=(created|updated|assigned|completed)\b)/g,
         "$1 "
       );
+
+      // Clean up any extra spaces
+      t = t.replace(/\s+/g, " ").trim();
+
       return t;
     };
 
-    return data.map((item) => {
+    return data.map((item: any) => {
       let formattedTitle = item.title;
 
       // Format trip IDs in existing activity titles
@@ -191,7 +200,7 @@ export const getActivities = async (
       return {
         id: item.id.toString(),
         title: formattedTitle,
-        timestamp: formatTimestamp(new Date(item.timestamp)),
+        timestamp: item.timestamp,
         type: item.type as ActivityType,
         icon: item.type as ActivityType,
         related_id: item.related_id,
@@ -221,7 +230,7 @@ export const logTripActivity = async (
         drivers:driver_id(name)
       `
       )
-      .eq("id", tripId)
+      .eq("id", tripId as any)
       .single();
 
     if (error || !trip) {
@@ -229,38 +238,32 @@ export const logTripActivity = async (
       return;
     }
 
-    const clientName = trip.clients?.name || "Unknown Client";
-    const vehicleDetails = trip.vehicles
-      ? `${trip.vehicles.make} ${trip.vehicles.model}`
+    const clientName = (trip as any).clients?.name || "Unknown Client";
+    const vehicleDetails = (trip as any).vehicles
+      ? `${(trip as any).vehicles.make} ${(trip as any).vehicles.model}`
       : "Unknown Vehicle";
-    const driverName = trip.drivers?.name || "Unassigned Driver";
+    const driverName = (trip as any).drivers?.name || "Unassigned Driver";
     const formattedTripId = formatTripId(tripId);
 
     let title = "";
     switch (action) {
       case "created":
-        title = `New Trip ${formattedTripId} created: ${
-          trip.pickup_location || "Unknown"
-        } to ${trip.dropoff_location || "Unknown"}`;
+        title = `New Trip ${formattedTripId} created`;
         break;
       case "updated":
-        title = `Trip ${formattedTripId} updated: ${clientName} - ${
-          trip.pickup_location || "Unknown"
-        } to ${trip.dropoff_location || "Unknown"}`;
+        title = `Trip ${formattedTripId} updated`;
         break;
       case "assigned":
-        title = `Vehicle assigned to trip ${formattedTripId}: ${vehicleDetails} for ${clientName}`;
+        title = `Vehicle assigned to trip ${formattedTripId}`;
         break;
       case "driver_assigned":
-        title = `Driver assigned to trip ${formattedTripId}: ${driverName} for ${clientName}`;
+        title = `Driver assigned to trip ${formattedTripId}`;
         break;
       case "completed":
-        title = `Trip ${formattedTripId} completed: ${clientName} - ${
-          trip.pickup_location || "Unknown"
-        } to ${trip.dropoff_location || "Unknown"}`;
+        title = `Trip ${formattedTripId} completed`;
         break;
       default:
-        title = `Trip ${formattedTripId} ${action}: ${clientName}`;
+        title = `Trip ${formattedTripId} ${action}`;
     }
 
     await logActivity({
@@ -269,8 +272,8 @@ export const logTripActivity = async (
       relatedId: tripId,
       tripDetails: {
         clientName,
-        pickupLocation: trip.pickup_location,
-        dropoffLocation: trip.dropoff_location,
+        pickupLocation: (trip as any).pickup_location,
+        dropoffLocation: (trip as any).dropoff_location,
       },
     });
   } catch (err) {
@@ -296,7 +299,7 @@ export const generateSampleActivities = async (): Promise<void> => {
       .single();
 
     // Only seed if there are no activities and no error occurred
-    if (!error && data && data.count === 0) {
+    if (!error && data && (data as any).count === 0) {
       const sampleActivities: ActivityLogParams[] = [
         {
           title: "Trip completed: Airport pickup",

@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedSession, sessionCache } from "@/lib/session-cache";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { User, Eye, EyeOff } from "lucide-react";
-import { debugDomainDetection } from "@/utils/subdomain";
 import KoormaticsLogo from "@/components/ui/koormatics-logo";
 
 export default function Auth() {
@@ -26,34 +26,41 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const { domain } = useTenantScope();
   const currentYear = new Date().getFullYear();
 
-  // Debug domain detection
-  useEffect(() => {
-    console.log("🔐 Auth Component - Domain detected:", domain);
-    debugDomainDetection();
-  }, [domain]);
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Add timeout and better error handling
+      const authPromise = supabase.auth.signInWithPassword({
         email,
         password,
       });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 10000)
+      );
+
+      const { error } = (await Promise.race([
+        authPromise,
+        timeoutPromise,
+      ])) as any;
       if (error) throw error;
 
+      // Show success toast immediately
       toast({
         title: "Welcome back!",
         description: "Successfully signed in to Koormatics",
       });
 
+      // Determine dashboard path immediately based on domain
       const dashboardPath =
         domain === "fleet"
           ? "/dashboard-fleet"
@@ -63,58 +70,98 @@ export default function Auth() {
           ? "/dashboard-finance"
           : "/dashboard-management";
 
-      console.log("🔐 Redirecting to:", dashboardPath, "for domain:", domain);
-      router.push(dashboardPath);
+      // Set redirecting state and redirect immediately
+      setIsLoading(false);
+      setIsRedirecting(true);
+
+      // Store session in sessionStorage for instant access
+      if (typeof window !== "undefined") {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session) {
+            sessionStorage.setItem(
+              "supabase.auth.token",
+              JSON.stringify(session)
+            );
+          }
+        } catch (error) {
+          console.warn("Failed to store session:", error);
+        }
+      }
+
+      // Use replace instead of push for instant redirect
+      router.replace(dashboardPath);
     } catch (error) {
+      console.error("Auth error:", error);
       toast({
-        title: "Authentication failed",
+        title: "Unable to sign in",
         description:
           error instanceof Error
-            ? error.message
-            : "Invalid credentials. Please try again.",
+            ? error.message.includes("timeout")
+              ? "Connection timeout. Please check your internet connection and try again."
+              : error.message.includes("Invalid login credentials") ||
+                error.message.includes("invalid_credentials")
+              ? "The email or password you entered is incorrect. Please check your credentials and try again."
+              : error.message.includes("Email not confirmed")
+              ? "Please check your email and click the confirmation link before signing in."
+              : error.message.includes("Too many requests")
+              ? "Too many sign-in attempts. Please wait a few minutes before trying again."
+              : "Something went wrong. Please try again in a moment."
+            : "The email or password you entered is incorrect. Please check your credentials and try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
+      setIsRedirecting(false);
     }
   };
 
   // Check if user is already logged in on component mount
   useEffect(() => {
     const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        const dashboardPath =
-          domain === "fleet"
-            ? "/dashboard-fleet"
-            : domain === "operations"
-            ? "/dashboard-ops"
-            : domain === "finance"
-            ? "/dashboard-finance"
-            : "/dashboard-management";
-
-        console.log(
-          "🔐 Auto-redirect to:",
-          dashboardPath,
-          "for domain:",
-          domain
+      try {
+        // Add timeout for session check
+        const sessionPromise = getCachedSession(supabase);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Session check timeout")), 5000)
         );
-        router.push(dashboardPath);
+
+        const {
+          data: { session },
+        } = (await Promise.race([sessionPromise, timeoutPromise])) as any;
+
+        // Only redirect if we have a valid session and we're not in logout process
+        if (session?.user) {
+          const dashboardPath =
+            domain === "fleet"
+              ? "/dashboard-fleet"
+              : domain === "operations"
+              ? "/dashboard-ops"
+              : domain === "finance"
+              ? "/dashboard-finance"
+              : "/dashboard-management";
+
+          // Redirect immediately if user is already authenticated
+          router.replace(dashboardPath);
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+        // Don't redirect on error, let user try to login
       }
     };
 
+    // Check auth immediately for instant login
     checkAuth();
   }, [router, domain]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Land Cruiser Background Image */}
+      {/* Authentication Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/lovable-uploads/14ff090f-1304-4931-b1f4-f858de64682f.png')`,
+          backgroundImage: `url('/images/auth-bg.jpg')`,
         }}
       >
         {/* Dark overlay for better readability */}
@@ -159,28 +206,35 @@ export default function Auth() {
                 required
                 className="pl-3 pr-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-offset-0 focus:border-purple-400 transition-colors"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white h-8 w-8"
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
                 ) : (
                   <Eye className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
             </div>
 
             <Button
               type="submit"
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium h-12 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   Logging in...
+                </div>
+              ) : isRedirecting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Redirecting...
                 </div>
               ) : (
                 "Log in"
