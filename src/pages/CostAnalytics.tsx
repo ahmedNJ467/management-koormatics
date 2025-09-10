@@ -840,41 +840,7 @@ const CostAnalytics = () => {
                               </Pie>
                               <Tooltip />
                             </PieChart>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          {validSparePartsData.length}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Total Parts
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          {
-                            validSparePartsData.filter(
-                              (p) => Number(p.quantity || 0) > 0
-                            ).length
-                          }
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          In Stock
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                          {
-                            validSparePartsData.filter(
-                              (p) =>
-                                Number(p.quantity || 0) <=
-                                Number(p.min_stock_level || 5)
-                            ).length
-                          }
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Low Stock
-                        </div>
-                      </div>
-                    </div>
+                          </ResponsiveContainer>
 
                     {/* Inventory Overview */}
                     <div className="space-y-4 mb-6">
