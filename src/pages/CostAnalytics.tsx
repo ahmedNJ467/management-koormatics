@@ -1227,12 +1227,11 @@ const CostAnalytics = () => {
                                 strokeWidth={2}
                               />
                             </LineChart>
->>>>>>> origin/main
                           </ResponsiveContainer>
                         </CardContent>
                       </Card>
 
-<<<<<<< HEAD
+ 
                       {/* Status Distribution */}
                       <Card>
                         <CardHeader>
