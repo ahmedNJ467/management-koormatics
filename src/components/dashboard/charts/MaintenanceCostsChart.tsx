@@ -13,9 +13,7 @@ import {
 
 interface MaintenanceCostData {
   month: string;
-  preventive: number;
-  corrective: number;
-  emergency: number;
+  cost: number;
 }
 
 interface MaintenanceCostsChartProps {
@@ -23,73 +21,53 @@ interface MaintenanceCostsChartProps {
   compact?: boolean;
 }
 
-// Mock data for fallback
-const mockData: MaintenanceCostData[] = [
-  { month: "Jan", preventive: 2400, corrective: 1200, emergency: 800 },
-  { month: "Feb", preventive: 2200, corrective: 1500, emergency: 600 },
-  { month: "Mar", preventive: 2800, corrective: 1000, emergency: 1200 },
-  { month: "Apr", preventive: 2600, corrective: 1300, emergency: 900 },
-  { month: "May", preventive: 2900, corrective: 1100, emergency: 700 },
-  { month: "Jun", preventive: 2500, corrective: 1400, emergency: 1000 },
-];
-
 export function MaintenanceCostsChart({
-  data = mockData,
+  data = [],
   compact = false,
 }: MaintenanceCostsChartProps) {
   const height = compact ? 250 : 300;
 
+  // Show no data state if no data available
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm">No maintenance data available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ResponsiveContainer width="100%" height="100%">
       <BarChart
         data={data}
-        margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+        margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
       >
         <XAxis
           dataKey="month"
-          tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-          axisLine={{ stroke: "hsl(var(--border))" }}
+          tick={{ fontSize: 12, fill: "#64748b" }}
+          axisLine={{ stroke: "#e2e8f0" }}
+        />
+        <YAxis
+          tick={{ fontSize: 12, fill: "#64748b" }}
+          axisLine={{ stroke: "#e2e8f0" }}
+          domain={["dataMin", "dataMax"]}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
+            backgroundColor: "white",
+            border: "1px solid #e2e8f0",
             borderRadius: "8px",
             boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-            color: "hsl(var(--foreground))",
           }}
-          formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
-          labelStyle={{
-            color: "hsl(var(--foreground))",
-            fontWeight: "600",
-          }}
+          formatter={(value: number) => [`$${value.toLocaleString()}`, "Cost"]}
         />
         <Bar
-          dataKey="preventive"
-          stackId="a"
-          fill="hsl(var(--blue-500))"
-          name="Preventive"
+          dataKey="cost"
+          fill="#3b82f6"
+          name="Maintenance Cost"
           radius={[4, 4, 0, 0]}
-          stroke="hsl(var(--blue-600))"
-          strokeWidth={1}
-        />
-        <Bar
-          dataKey="corrective"
-          stackId="a"
-          fill="hsl(var(--green-500))"
-          name="Corrective"
-          radius={[4, 4, 0, 0]}
-          stroke="hsl(var(--green-600))"
-          strokeWidth={1}
-        />
-        <Bar
-          dataKey="emergency"
-          stackId="a"
-          fill="hsl(var(--orange-500))"
-          name="Emergency"
-          radius={[4, 4, 0, 0]}
-          stroke="hsl(var(--orange-600))"
-          strokeWidth={1}
         />
       </BarChart>
     </ResponsiveContainer>

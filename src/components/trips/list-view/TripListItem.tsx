@@ -230,6 +230,27 @@ export function TripListItem({
           </div>
         )}
       </TableCell>
+      <TableCell className="max-w-[150px]">
+        {trip.stops && trip.stops.length > 0 ? (
+          <div className="space-y-1">
+            {trip.stops.slice(0, 2).map((stop, index) => (
+              <div
+                key={index}
+                className="text-xs text-muted-foreground truncate"
+              >
+                • {stop}
+              </div>
+            ))}
+            {trip.stops.length > 2 && (
+              <div className="text-xs text-muted-foreground italic">
+                +{trip.stops.length - 2} more
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">

@@ -221,28 +221,31 @@ export default function Invoices() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Invoices</h2>
-            <p className="text-muted-foreground">Loading invoices...</p>
+      <div className="min-h-screen bg-background">
+        <div className="p-4 px-6 space-y-6">
+          <div className="border-b border-border pb-4 pt-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Invoices
+              </h1>
+            </div>
           </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                </CardTitle>
-                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  </CardTitle>
+                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -272,252 +275,258 @@ export default function Invoices() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Invoices</h2>
-          <p className="text-muted-foreground">
-            Manage client invoices and track payments
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
-          <Button onClick={handleCreateOpen}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Invoice
-          </Button>
-        </div>
-      </div>
-
-      {/* Analytics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Invoices
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analytics.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {analytics.draft} draft, {analytics.sent} sent
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(analytics.totalValue)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Avg: {formatCurrency(analytics.avgInvoiceValue)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(analytics.outstandingValue)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {analytics.sent + analytics.overdue} unpaid
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Paid Value</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(analytics.paidValue)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {analytics.paid} paid invoices
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Additional Analytics Row */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(analytics.overdueValue)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {analytics.overdue} overdue invoices
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {analytics.total > 0
-                ? Math.round((analytics.paid / analytics.total) * 100)
-                : 0}
-              %
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Invoice completion rate
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Collection Rate
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {analytics.totalValue > 0
-                ? Math.round((analytics.paidValue / analytics.totalValue) * 100)
-                : 0}
-              %
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Value collection rate
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search invoices by client, ID, or notes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="sent">Sent</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={clientFilter} onValueChange={setClientFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by client" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Clients</SelectItem>
-            {clients?.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Invoices Table */}
-      <Card>
-        <CardHeader>
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header */}
+        <div className="border-b border-border pb-4 pt-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Invoices</CardTitle>
-              <CardDescription>
-                {enhancedFilteredInvoices.length} of {analytics.total} invoices
-              </CardDescription>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Invoices
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${
+                    isRefreshing ? "animate-spin" : ""
+                  }`}
+                />
+                Refresh
+              </Button>
+              <Button onClick={handleCreateOpen}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Invoice
+              </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <InvoicesTable
-            invoices={enhancedFilteredInvoices.filter(
-              (invoice): invoice is DisplayInvoice => invoice !== null
-            )}
-            onView={setViewInvoice}
-            onEdit={handleEdit}
-            onRecordPayment={setPaymentInvoice}
-            onDelete={handleDelete}
-          />
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Dialogs */}
-      <InvoiceFormDialog
-        isOpen={createInvoiceOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateInvoiceOpen(false);
-            setEditInvoice(null);
-          } else {
-            setCreateInvoiceOpen(true);
-          }
-        }}
-        editInvoice={editInvoice}
-        clients={clients}
-      />
+        {/* Analytics Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Invoices
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.draft} draft, {analytics.sent} sent
+              </p>
+            </CardContent>
+          </Card>
 
-      <ViewInvoiceDialog
-        isOpen={!!viewInvoice}
-        onOpenChange={() => setViewInvoice(null)}
-        invoice={viewInvoice}
-        onRecordPayment={setPaymentInvoice}
-      />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(analytics.totalValue)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Avg: {formatCurrency(analytics.avgInvoiceValue)}
+              </p>
+            </CardContent>
+          </Card>
 
-      <RecordPaymentDialog
-        isOpen={!!paymentInvoice}
-        onOpenChange={() => setPaymentInvoice(null)}
-        invoice={paymentInvoice}
-      />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                {formatCurrency(analytics.outstandingValue)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.sent + analytics.overdue} unpaid
+              </p>
+            </CardContent>
+          </Card>
 
-      <DeleteInvoiceDialog
-        isOpen={!!invoiceToDelete}
-        onOpenChange={() => setInvoiceToDelete(null)}
-        onConfirm={confirmDelete}
-      />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Paid Value</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(analytics.paidValue)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.paid} paid invoices
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Additional Analytics Row */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {formatCurrency(analytics.overdueValue)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.overdue} overdue invoices
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Payment Rate
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {analytics.total > 0
+                  ? Math.round((analytics.paid / analytics.total) * 100)
+                  : 0}
+                %
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Invoice completion rate
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Collection Rate
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {analytics.totalValue > 0
+                  ? Math.round(
+                      (analytics.paidValue / analytics.totalValue) * 100
+                    )
+                  : 0}
+                %
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Value collection rate
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters and Search */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search invoices by client, ID, or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={clientFilter} onValueChange={setClientFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Clients</SelectItem>
+              {clients?.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Invoices Table */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Invoices</CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <InvoicesTable
+              invoices={enhancedFilteredInvoices.filter(
+                (invoice): invoice is DisplayInvoice => invoice !== null
+              )}
+              onView={setViewInvoice}
+              onEdit={handleEdit}
+              onRecordPayment={setPaymentInvoice}
+              onDelete={handleDelete}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Dialogs */}
+        <InvoiceFormDialog
+          isOpen={createInvoiceOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreateInvoiceOpen(false);
+              setEditInvoice(null);
+            } else {
+              setCreateInvoiceOpen(true);
+            }
+          }}
+          editInvoice={editInvoice}
+          clients={clients}
+        />
+
+        <ViewInvoiceDialog
+          isOpen={!!viewInvoice}
+          onOpenChange={() => setViewInvoice(null)}
+          invoice={viewInvoice}
+          onRecordPayment={setPaymentInvoice}
+        />
+
+        <RecordPaymentDialog
+          isOpen={!!paymentInvoice}
+          onOpenChange={() => setPaymentInvoice(null)}
+          invoice={paymentInvoice}
+        />
+
+        <DeleteInvoiceDialog
+          isOpen={!!invoiceToDelete}
+          onOpenChange={() => setInvoiceToDelete(null)}
+          onConfirm={confirmDelete}
+        />
+      </div>
     </div>
   );
 }

@@ -4,16 +4,16 @@ import { useContactCounts, useMemberCounts } from "./use-client-counts";
 import { useClientFiltering } from "./use-client-filtering";
 
 export function useClientData() {
-  // Fetch clients data
+  // Fetch all data in parallel for better performance
   const { data: clients, isLoading: clientsLoading } = useClientsQuery();
-  
-  // Get contact and member counts
-  const { data: contactCounts } = useContactCounts();
-  const { data: memberCounts } = useMemberCounts();
-  
+  const { data: contactCounts, isLoading: contactCountsLoading } =
+    useContactCounts();
+  const { data: memberCounts, isLoading: memberCountsLoading } =
+    useMemberCounts();
+
   // Set up realtime subscriptions
   useClientRealtime();
-  
+
   // Handle filtering
   const {
     searchTerm,
@@ -27,12 +27,16 @@ export function useClientData() {
     activeClients,
     archivedClients,
     filteredActiveClients,
-    filteredArchivedClients
+    filteredArchivedClients,
   } = useClientFiltering(clients);
+
+  // Combined loading state
+  const isLoading =
+    clientsLoading || contactCountsLoading || memberCountsLoading;
 
   return {
     clients,
-    clientsLoading,
+    clientsLoading: isLoading,
     contactCounts,
     memberCounts,
     searchTerm,
@@ -46,7 +50,7 @@ export function useClientData() {
     activeClients,
     archivedClients,
     filteredActiveClients,
-    filteredArchivedClients
+    filteredArchivedClients,
   };
 }
 

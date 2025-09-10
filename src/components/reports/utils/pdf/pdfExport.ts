@@ -1,11 +1,120 @@
-
 import jsPDF from "jspdf";
 import { autoTable } from "jspdf-autotable";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-// Professional PDF export with modern design and excellent visual appeal
-export const exportToPDF = (data: any[], title: string, filename: string) => {
+// Cache logo between pages/exports to avoid re-loading
+let CACHED_LOGO_DATA_URL: string | null = null;
+
+async function loadLogoDataUrl(): Promise<string | null> {
+  if (CACHED_LOGO_DATA_URL) return CACHED_LOGO_DATA_URL;
+  const logoUrl = "/images/Koormatics-logo.png";
+  const logoWidth = 48; // render width (mm)
+  const logoHeight = 14; // render height (mm)
+  try {
+    const pngDataUrl: string = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const targetScale = 4; // high clarity
+        canvas.width = Math.max(1, Math.floor(logoWidth * targetScale));
+        canvas.height = Math.max(1, Math.floor(logoHeight * targetScale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas 2D context unavailable"));
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/png", 1.0));
+      };
+      img.onerror = (err) => reject(err);
+      img.src = logoUrl;
+    });
+    CACHED_LOGO_DATA_URL = pngDataUrl;
+    return pngDataUrl;
+  } catch (e) {
+    console.error("Logo image failed to load:", e);
+    return null;
+  }
+}
+
+function drawHeaderFooter(
+  doc: jsPDF,
+  title: string,
+  logoDataUrl: string | null
+) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Header (white with thin top blue line and subtle bottom divider)
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, 22, "F");
+  doc.setFillColor(59, 130, 246);
+  doc.rect(0, 0, pageWidth, 2, "F");
+
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", 10, 5, 48, 14);
+    } catch {}
+  } else {
+    doc.setTextColor(59, 130, 246);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("KOORMATICS", 10, 14);
+  }
+
+  doc.setTextColor(17, 24, 39);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  const titleWidth = doc.getTextWidth(title);
+  doc.text(title, (pageWidth - titleWidth) / 2, 14);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(107, 114, 128);
+  const dateText = format(new Date(), "MMM dd, yyyy 'at' HH:mm");
+  doc.text(dateText, pageWidth - 10, 14, { align: "right" });
+
+  // subtle divider
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.line(10, 22, pageWidth - 10, 22);
+
+  // Footer (blue bar with green accent)
+  const barHeight = 16;
+  const barTop = pageHeight - barHeight;
+  doc.setFillColor(34, 197, 94); // Green accent
+  doc.rect(0, barTop - 2, pageWidth, 2, "F");
+  doc.setFillColor(59, 130, 246); // Blue bar
+  doc.rect(0, barTop, pageWidth, barHeight, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Koormatics - Transportation & Logistics", 10, barTop + 11);
+  const currentPage = (doc as any).internal.getCurrentPageInfo
+    ? (doc as any).internal.getCurrentPageInfo().pageNumber
+    : 1;
+  const totalPages = (doc as any).internal.getNumberOfPages();
+  doc.text(`Page ${currentPage} of ${totalPages}`, pageWidth / 2, barTop + 11, {
+    align: "center",
+  });
+  doc.text(
+    format(new Date(), "dd/MM/yyyy HH:mm"),
+    pageWidth - 10,
+    barTop + 11,
+    {
+      align: "right",
+    }
+  );
+}
+
+// Simple and clean PDF export with minimalist design
+export const exportToPDF = async (
+  data: any[],
+  title: string,
+  filename: string
+) => {
   if (!data || data.length === 0) {
     toast.error("No data available to export to PDF");
     return;
@@ -21,666 +130,541 @@ export const exportToPDF = (data: any[], title: string, filename: string) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Draw professional header with modern design
-    drawProfessionalHeader(doc, pageWidth, title, filename);
+    // High-quality logo (cached) and unified header/footer drawing
+    const logoDataUrl = await loadLogoDataUrl();
+    drawHeaderFooter(doc, title, logoDataUrl);
 
-    // Generate table based on report type with enhanced styling
+    // Generate table based on report type
     if (filename === "trips-report") {
-      generateProfessionalTripsTable(doc, data, pageWidth);
+      generateTripsTable(doc, data, pageWidth);
     } else if (filename === "vehicles-report") {
-      generateProfessionalVehiclesTable(doc, data, pageWidth);
+      generateVehiclesTable(doc, data, pageWidth);
+    } else if (filename === "maintenance-report") {
+      generateMaintenanceTable(doc, data, pageWidth);
+    } else if (filename === "fuel-report") {
+      generateFuelTable(doc, data, pageWidth);
+    } else if (filename === "drivers-report") {
+      generateDriversTable(doc, data, pageWidth);
+    } else if (filename === "financial-report") {
+      generateFinancialTable(doc, data, pageWidth);
     } else {
-      generateProfessionalGenericTable(doc, data, filename, pageWidth);
+      generateGenericTable(doc, data, filename, pageWidth);
     }
 
-    // Draw professional footer
-    drawProfessionalFooter(doc, pageWidth, pageHeight);
+    // Add header/footer on every page (multi-page tables)
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      (doc as any).setPage(i);
+      drawHeaderFooter(doc, title, logoDataUrl);
+    }
 
     doc.save(`${filename}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
-    toast.success("Professional PDF exported successfully");
+    toast.success("PDF exported successfully");
   } catch (error) {
     console.error("Error exporting PDF:", error);
     toast.error("Failed to export PDF. Please try again later.");
   }
 };
 
-// Professional header with modern corporate design
-function drawProfessionalHeader(
-  doc: jsPDF,
-  pageWidth: number,
-  title: string,
-  filename: string
-) {
-  // Gradient-like header background with professional blue
-  doc.setFillColor(25, 54, 126); // Deep professional blue
-  doc.rect(0, 0, pageWidth, 25, "F");
+// Simple header with logo (fully white header)
+async function drawSimpleHeader(doc: jsPDF, pageWidth: number, title: string) {
+  // White header background to match brand colors
+  doc.setFillColor(255, 255, 255); // White background
+  doc.rect(0, 0, pageWidth, 20, "F");
 
-  // Accent stripe at top
-  doc.setFillColor(52, 144, 220); // Bright blue accent
-  doc.rect(0, 0, pageWidth, 3, "F");
+  // Load and add Koormatics logo
+  const logoUrl = "/images/Koormatics-logo.png";
+  const logoWidth = 40;
+  const logoHeight = 12;
 
-  // Company logo area with background
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(15, 5, 50, 15, 2, 2, "F");
+  try {
+    const pngDataUrl: string = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const targetScale = 3;
+        canvas.width = Math.max(1, Math.floor(logoWidth * targetScale));
+        canvas.height = Math.max(1, Math.floor(logoHeight * targetScale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas 2D context unavailable"));
 
-  // Company name in logo area
-  doc.setTextColor(25, 54, 126);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/png", 1.0));
+      };
+      img.onerror = (err) => {
+        console.error("Logo image failed to load:", err);
+        reject(err);
+      };
+      img.src = logoUrl;
+    });
+
+    // Add the logo image
+    doc.addImage(pngDataUrl, "PNG", 10, 4, logoWidth, logoHeight);
+  } catch (e) {
+    console.error("Error adding logo:", e);
+    // Fallback to text logo
+    doc.setTextColor(59, 130, 246); // Blue text on white background
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("KOORMATICS", 10, 12);
+  }
+
+  // Report title (neutral/dark for professionalism on white)
+  doc.setTextColor(17, 24, 39); // Slate-900
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("KOORMATICS", 18, 11);
+  doc.setFontSize(16);
+  const titleWidth = doc.getTextWidth(title);
+  doc.text(title, (pageWidth - titleWidth) / 2, 12);
 
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.text("Transportation & Logistics", 18, 15);
-
-  // Main title - center aligned
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  const mainTitle = title.toUpperCase();
-  const titleWidth = doc.getTextWidth(mainTitle);
-  doc.text(mainTitle, (pageWidth - titleWidth) / 2, 15);
-
-  // Professional subtitle
+  // Generation date (muted gray on white header)
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const subtitle = "MOVEMENT CONTROL DEPARTMENT";
-  const subtitleWidth = doc.getTextWidth(subtitle);
-  doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 20);
-
-  // Date and time stamp
-  doc.setFontSize(9);
-  doc.setTextColor(220, 220, 220);
-  const timestamp = `Generated: ${format(
-    new Date(),
-    "EEEE, MMMM do, yyyy 'at' HH:mm"
-  )}`;
-  doc.text(timestamp, pageWidth - 15, 12, { align: "right" });
-
-  // Document reference
-  const docRef = `DOC-${filename.toUpperCase()}-${format(
-    new Date(),
-    "yyyyMMdd"
-  )}`;
-  doc.text(docRef, pageWidth - 15, 17, { align: "right" });
+  doc.setTextColor(107, 114, 128); // Gray-500
+  const dateText = format(new Date(), "MMM dd, yyyy 'at' HH:mm");
+  doc.text(dateText, pageWidth - 10, 12, { align: "right" });
 }
 
-// Professional trips table with enhanced visual design
-function generateProfessionalTripsTable(
-  doc: jsPDF,
-  data: any[],
-  pageWidth: number
-) {
-  // Sort trips by date (descending), then by time
-  const sortedData = [...data].sort((a, b) => {
-    const dateA = a.date ? new Date(a.date).getTime() : 0;
-    const dateB = b.date ? new Date(b.date).getTime() : 0;
-    if (dateA !== dateB) return dateB - dateA;
-    // If same date, sort by time
-    const timeA = a.time ? a.time : "00:00";
-    const timeB = b.time ? b.time : "00:00";
-    return timeB.localeCompare(timeA);
-  });
+// Simple footer with solid blue bar and white text
+function drawSimpleFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
+  const barHeight = 16;
+  const barTop = pageHeight - barHeight;
 
-  const tableData = sortedData.map((trip) => {
-    const tripDate = trip.date
-      ? format(new Date(trip.date), "dd MMM yyyy")
-      : "";
-    const clientName = trip.clients?.name || trip.client || "";
-    const passengers =
-      trip.passengers && trip.passengers.length > 0
-        ? trip.passengers.slice(0, 4).join(", ") +
-          (trip.passengers.length > 4
-            ? ` +${trip.passengers.length - 4} more`
-            : "")
-        : "";
-    // Service type: try all possible fields
-    let serviceType = trip.service_type || trip.display_type || trip.type || "";
-    serviceType = serviceType.replace(/_/g, " ").toUpperCase();
-    const pickupAddress = trip.pickup_location || trip.pickup || "";
-    const dropoffAddress = trip.dropoff_location || trip.dropoff || "";
-    const timeStr = trip.time
-      ? format(new Date(`2000-01-01T${trip.time}`), "HH:mm")
-      : "";
-    const carrierFlight = trip.flight_number
-      ? `${trip.airline || "AIRLINE"} ${trip.flight_number}`
-      : "";
-    const vehicleInfo = trip.vehicles
-      ? `${trip.vehicles.make || ""} ${trip.vehicles.model || ""}`.trim() ||
-        "UNASSIGNED"
-      : trip.vehicle || "UNASSIGNED";
-    const driverInfo = trip.drivers?.name || trip.driver || "UNASSIGNED";
+  // Blue footer bar
+  doc.setFillColor(59, 130, 246); // Blue-500
+  doc.rect(0, barTop, pageWidth, barHeight, "F");
+
+  // Footer text (white)
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Koormatics - Transportation & Logistics", 10, barTop + 11);
+
+  const pageNum = doc.internal.getNumberOfPages();
+  doc.text(`Page ${pageNum}`, pageWidth / 2, barTop + 11, { align: "center" });
+
+  doc.text(
+    format(new Date(), "dd/MM/yyyy HH:mm"),
+    pageWidth - 10,
+    barTop + 11,
+    {
+      align: "right",
+    }
+  );
+}
+
+// Trips table
+function generateTripsTable(doc: jsPDF, data: any[], pageWidth: number) {
+  const tableData = data.map((trip) => {
+    // Format passengers in single line with commas
+    let passengersDisplay = "N/A";
+    if (trip.passengers && trip.passengers.length > 0) {
+      passengersDisplay = trip.passengers.join(", ");
+    }
+
+    // Format stops for display
+    let stopsDisplay = "N/A";
+    if (trip.stops && trip.stops.length > 0) {
+      if (trip.stops.length === 1) {
+        stopsDisplay = trip.stops[0];
+      } else {
+        // Create vertical list with bullet points
+        stopsDisplay = trip.stops.map((stop: string) => `• ${stop}`).join("\n");
+      }
+    }
+
+    // Format time to AM/PM format
+    let timeDisplay = "N/A";
+    if (trip.time) {
+      try {
+        const time = new Date(`2000-01-01T${trip.time}`);
+        timeDisplay = time.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      } catch (e) {
+        timeDisplay = trip.time;
+      }
+    }
+
+    // Format service type to display "Airport Pickup" instead of "airport_pickup"
+    let serviceTypeDisplay = "N/A";
+    if (trip.display_type || trip.service_type) {
+      const serviceType = trip.display_type || trip.service_type;
+      if (serviceType === "airport_pickup") {
+        serviceTypeDisplay = "Airport Pickup";
+      } else if (serviceType === "airport_dropoff") {
+        serviceTypeDisplay = "Airport Dropoff";
+      } else if (serviceType === "round_trip") {
+        serviceTypeDisplay = "Round Trip";
+      } else if (serviceType === "one_way") {
+        serviceTypeDisplay = "One Way Transfer";
+      } else if (serviceType === "full_day_hire") {
+        serviceTypeDisplay = "Full Day Hire";
+      } else if (serviceType === "half_day") {
+        serviceTypeDisplay = "Half Day";
+      } else {
+        serviceTypeDisplay = serviceType
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase());
+      }
+    }
+
+    // Format flight info from airline and flight_number
+    let flightInfoDisplay = "N/A";
+    if (trip.airline || trip.flight_number) {
+      const parts = [];
+      if (trip.airline) parts.push(trip.airline);
+      if (trip.flight_number) parts.push(trip.flight_number);
+      if (trip.terminal) parts.push(`Terminal ${trip.terminal}`);
+      flightInfoDisplay = parts.join(" ");
+    }
+
     return [
-      tripDate,
-      clientName,
-      passengers,
-      serviceType,
-      pickupAddress,
-      dropoffAddress,
-      timeStr,
-      carrierFlight,
-      vehicleInfo,
-      driverInfo,
+      format(new Date(trip.date), "MMM dd, yyyy"),
+      trip.clients?.name || "N/A",
+      passengersDisplay,
+      serviceTypeDisplay,
+      trip.pickup_location || "N/A",
+      trip.dropoff_location || "N/A",
+      stopsDisplay,
+      timeDisplay,
+      flightInfoDisplay,
+      trip.vehicles ? `${trip.vehicles.make} ${trip.vehicles.model}` : "N/A",
+      trip.drivers?.name || "N/A",
+      trip.status || "N/A",
     ];
   });
 
-  const headers = [
-    "DATE",
-    "CLIENT",
-    "PASSENGERS",
-    "SERVICE TYPE",
-    "PICKUP LOCATION",
-    "DROPOFF LOCATION",
-    "TIME",
-    "FLIGHT INFO",
-    "VEHICLE",
-    "DRIVER",
-  ];
-
-  // Margins and table width
-  const tableMargin = 15; // 15mm margin for full-width professional look
-  const tableWidth = pageWidth - tableMargin * 2;
-  const startX = tableMargin;
-  // Optimized column widths (sum = 247mm)
-  const colWidths = [
-    20, // DATE
-    28, // CLIENT
-    40, // PASSENGERS
-    28, // SERVICE TYPE
-    28, // PICKUP LOCATION
-    28, // DROPOFF LOCATION
-    15, // TIME
-    22, // FLIGHT INFO
-    20, // VEHICLE
-    18, // DRIVER
-  ];
-
   autoTable(doc, {
-    head: [headers],
+    startY: 30,
+    head: [
+      [
+        "Date",
+        "Client",
+        "Passengers",
+        "Service Type",
+        "Pickup Location",
+        "Dropoff Location",
+        "Stops",
+        "Scheduled Time",
+        "Flight Info",
+        "Vehicle",
+        "Driver",
+        "Status",
+      ],
+    ],
     body: tableData,
-    startY: 35,
-    margin: { left: startX, right: startX },
-    styles: {
+    theme: "grid",
+    headStyles: {
+      fillColor: [59, 130, 246], // Blue header
+      textColor: [255, 255, 255], // White text
+      fontStyle: "bold",
       fontSize: 8,
-      cellPadding: { top: 4, right: 3, bottom: 4, left: 3 },
-      lineColor: [180, 190, 210],
-      lineWidth: 0.25,
-      textColor: [40, 40, 40],
-      font: "helvetica",
-      valign: "middle",
-      minCellHeight: 10,
     },
-    headStyles: {
-      fillColor: [25, 54, 126],
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      halign: "center",
-      fontSize: 9,
-      cellPadding: { top: 6, right: 3, bottom: 6, left: 3 },
-      lineColor: [25, 54, 126],
-      lineWidth: 0,
+    styles: {
+      overflow: "linebreak",
+      cellWidth: "wrap",
+    },
+    bodyStyles: {
+      fontSize: 7,
+      cellPadding: 1.5,
     },
     columnStyles: {
-      0: {
-        cellWidth: colWidths[0],
-        halign: "center",
-        fontStyle: "bold",
-        overflow: "ellipsize",
-      }, // DATE
-      1: { cellWidth: colWidths[1], halign: "left", overflow: "ellipsize" }, // CLIENT
-      2: { cellWidth: colWidths[2], halign: "left", overflow: "linebreak" }, // PASSENGERS
-      3: {
-        cellWidth: colWidths[3],
-        halign: "center",
-        fontStyle: "bold",
-        overflow: "ellipsize",
-      }, // SERVICE TYPE
-      4: { cellWidth: colWidths[4], halign: "left", overflow: "linebreak" }, // PICKUP
-      5: { cellWidth: colWidths[5], halign: "left", overflow: "linebreak" }, // DROPOFF
+      2: {
+        // Passengers column - now single line
+        cellWidth: 30,
+        halign: "left",
+        valign: "middle",
+        fontSize: 7,
+        lineColor: [200, 200, 200],
+      },
       6: {
-        cellWidth: colWidths[6],
-        halign: "center",
-        fontStyle: "bold",
-        overflow: "ellipsize",
-      }, // TIME
-      7: { cellWidth: colWidths[7], halign: "center", overflow: "ellipsize" }, // FLIGHT INFO
-      8: { cellWidth: colWidths[8], halign: "center", overflow: "ellipsize" }, // VEHICLE
-      9: { cellWidth: colWidths[9], halign: "center", overflow: "ellipsize" }, // DRIVER
+        // Stops column
+        cellWidth: 25,
+        halign: "left",
+        valign: "top",
+        fontSize: 6.5,
+        lineColor: [200, 200, 200],
+      },
     },
     alternateRowStyles: {
-      fillColor: [245, 247, 252], // Subtle blue-gray
+      fillColor: [248, 250, 252],
     },
-    tableLineColor: [180, 190, 210],
-    tableLineWidth: 0.25,
-    didDrawCell: (data) => {
-      // Service type color coding
-      if (data.section === "body" && data.column.index === 3) {
-        const cellText = data.cell.text.join("").toLowerCase();
-        let bgColor = null;
-        let textColor = null;
-        if (cellText.includes("airport") || cellText.includes("dropoff")) {
-          bgColor = [255, 235, 238];
-          textColor = [183, 28, 28];
-        } else if (cellText.includes("round") || cellText.includes("trip")) {
-          bgColor = [255, 248, 225];
-          textColor = [146, 64, 14];
-        } else if (cellText.includes("pickup")) {
-          bgColor = [236, 253, 245];
-          textColor = [5, 150, 105];
-        }
-        if (bgColor) {
-          doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
-          doc.rect(
-            data.cell.x,
-            data.cell.y,
-            data.cell.width,
-            data.cell.height,
-            "F"
-          );
-          if (textColor) {
-            doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-            doc.setFont("helvetica", "bold");
-          }
-        }
-      }
-    },
-    didDrawPage: (data) => {
-      // Add subtle border around table
-      const tableY = 35;
-      const tableHeight = (data as any).cursor.y - tableY;
-      doc.setDrawColor(180, 190, 210);
-      doc.setLineWidth(0.5);
-      doc.rect(startX, tableY, tableWidth, tableHeight, "S");
-    },
+    margin: { left: 10, right: 10 },
+    tableWidth: pageWidth - 20,
   });
 }
 
-// Professional vehicles table
-function generateProfessionalVehiclesTable(
-  doc: jsPDF,
-  data: any[],
-  pageWidth: number
-) {
-  // Calculate summary statistics
-  const totalVehicles = data.length;
-  const activeVehicles = data.filter(
-    (v) =>
-      v.status?.toLowerCase().includes("active") ||
-      v.status?.toLowerCase().includes("available")
-  ).length;
-  const maintenanceVehicles = data.filter(
-    (v) =>
-      v.status?.toLowerCase().includes("maintenance") ||
-      v.status?.toLowerCase().includes("repair")
-  ).length;
-  const inactiveVehicles = data.filter(
-    (v) =>
-      v.status?.toLowerCase().includes("inactive") ||
-      v.status?.toLowerCase().includes("unavailable")
-  ).length;
-
-  // Calculate total maintenance costs
-  const totalMaintenanceCost = data.reduce((sum, vehicle) => {
-    if (vehicle.maintenance && Array.isArray(vehicle.maintenance)) {
-      return (
-        sum +
-        vehicle.maintenance.reduce(
-          (itemSum: number, item: any) => itemSum + Number(item.cost || 0),
-          0
-        )
-      );
-    }
-    return sum;
-  }, 0);
-
-  // Calculate average maintenance cost per vehicle
-  const avgMaintenanceCost =
-    totalVehicles > 0 ? totalMaintenanceCost / totalVehicles : 0;
-
-  // Add summary section
-  const summaryY = 30;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126);
-  doc.text("VEHICLE FLEET SUMMARY", pageWidth / 2, summaryY, {
-    align: "center",
-  });
-
-  // Draw summary box
-  const summaryBoxY = summaryY + 5;
-  const summaryBoxHeight = 25;
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(15, summaryBoxY, pageWidth - 30, summaryBoxHeight, 2, 2, "S");
-
-  // Add summary content
-  doc.setFontSize(9);
-  doc.setTextColor(40, 40, 40);
-
-  // Left column
-  doc.setFont("helvetica", "bold");
-  doc.text("Total Vehicles:", 25, summaryBoxY + 8);
-  doc.text("Active Vehicles:", 25, summaryBoxY + 15);
-  doc.text("In Maintenance:", 25, summaryBoxY + 22);
-
-  doc.setFont("helvetica", "normal");
-  doc.text(totalVehicles.toString(), 80, summaryBoxY + 8);
-  doc.text(activeVehicles.toString(), 80, summaryBoxY + 15);
-  doc.text(maintenanceVehicles.toString(), 80, summaryBoxY + 22);
-
-  // Right column
-  doc.setFont("helvetica", "bold");
-  doc.text("Inactive Vehicles:", pageWidth - 100, summaryBoxY + 8);
-  doc.text("Total Maintenance Cost:", pageWidth - 100, summaryBoxY + 15);
-  doc.text("Avg. Cost per Vehicle:", pageWidth - 100, summaryBoxY + 22);
-
-  doc.setFont("helvetica", "normal");
-  doc.text(inactiveVehicles.toString(), pageWidth - 25, summaryBoxY + 8, {
-    align: "right",
-  });
-  doc.text(
-    `$${totalMaintenanceCost.toFixed(2)}`,
-    pageWidth - 25,
-    summaryBoxY + 15,
-    { align: "right" }
-  );
-  doc.text(
-    `$${avgMaintenanceCost.toFixed(2)}`,
-    pageWidth - 25,
-    summaryBoxY + 22,
-    { align: "right" }
-  );
-
-  // Add a subtle divider
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.line(
-    15,
-    summaryBoxY + summaryBoxHeight + 5,
-    pageWidth - 15,
-    summaryBoxY + summaryBoxHeight + 5
-  );
-
-  // Prepare table data
-  const tableData = data.map((vehicle) => {
-    // Calculate maintenance costs
-    const maintenanceCost =
-      vehicle.maintenance && Array.isArray(vehicle.maintenance)
-        ? vehicle.maintenance.reduce(
-            (sum: number, item: any) => sum + Number(item.cost || 0),
-            0
-          )
-        : 0;
-
-    // Get last maintenance date
-    let lastMaintenanceDate = "N/A";
-    if (
-      vehicle.maintenance &&
-      Array.isArray(vehicle.maintenance) &&
-      vehicle.maintenance.length > 0
-    ) {
-      const sortedMaintenance = [...vehicle.maintenance].sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA;
-      });
-
-      if (sortedMaintenance[0].date) {
-        lastMaintenanceDate = format(
-          new Date(sortedMaintenance[0].date),
-          "dd MMM yyyy"
-        );
-      }
-    }
-
-    return [
-      `${vehicle.make || ""} ${vehicle.model || ""} (${
-        vehicle.year || ""
-      })`.trim(),
-      vehicle.status || "UNKNOWN",
-      vehicle.type || "N/A",
-      vehicle.registration || "N/A",
-      lastMaintenanceDate,
-      `$${maintenanceCost.toFixed(2)}`,
-    ];
-  });
-
-  const headers = [
-    "VEHICLE",
-    "STATUS",
-    "TYPE",
-    "REGISTRATION",
-    "LAST MAINTENANCE",
-    "MAINTENANCE COST",
-  ];
-
-  // Calculate table width and center it
-  const tableWidth = pageWidth - 30; // 15mm margin on each side
-  const startX = (pageWidth - tableWidth) / 2;
-
-  // Add table title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(25, 54, 126);
-  doc.text(
-    "VEHICLE DETAILS",
-    pageWidth / 2,
-    summaryBoxY + summaryBoxHeight + 15,
-    { align: "center" }
-  );
+// Vehicles table
+function generateVehiclesTable(doc: jsPDF, data: any[], pageWidth: number) {
+  const tableData = data.map((vehicle) => [
+    vehicle.make && vehicle.model ? `${vehicle.make} ${vehicle.model}` : "N/A",
+    vehicle.status || "N/A",
+    vehicle.type || "N/A",
+    vehicle.registration || "N/A",
+    vehicle.year || "N/A",
+    vehicle.fuel_type || "N/A",
+    vehicle.mileage ? `${vehicle.mileage} km` : "N/A",
+  ]);
 
   autoTable(doc, {
-    head: [headers],
+    startY: 30,
+    head: [
+      [
+        "Vehicle",
+        "Status",
+        "Type",
+        "Registration",
+        "Year",
+        "Fuel Type",
+        "Mileage",
+      ],
+    ],
     body: tableData,
-    startY: summaryBoxY + summaryBoxHeight + 20,
-    margin: { left: startX, right: startX },
-    styles: {
-      fontSize: 9,
-      cellPadding: { top: 5, right: 4, bottom: 5, left: 4 },
-      lineColor: [200, 200, 200],
-      lineWidth: 0.1,
-      textColor: [40, 40, 40],
-      font: "helvetica",
-      valign: "middle",
-      overflow: "linebreak",
-    },
+    theme: "grid",
     headStyles: {
-      fillColor: [25, 54, 126],
-      textColor: [255, 255, 255],
+      fillColor: [59, 130, 246], // Blue header
+      textColor: [255, 255, 255], // White text
       fontStyle: "bold",
-      halign: "center",
-      fontSize: 10,
-      minCellHeight: 12,
+      fontSize: 9,
     },
-    columnStyles: {
-      0: { cellWidth: 50, halign: "left", fontStyle: "bold" }, // VEHICLE
-      1: { cellWidth: 25, halign: "center" }, // STATUS
-      2: { cellWidth: 25, halign: "center" }, // TYPE
-      3: { cellWidth: 30, halign: "center" }, // REGISTRATION
-      4: { cellWidth: 30, halign: "center" }, // LAST MAINTENANCE
-      5: { cellWidth: 30, halign: "right", fontStyle: "bold" }, // MAINTENANCE COST
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 2,
     },
     alternateRowStyles: {
-      fillColor: [248, 250, 252], // Very light blue-gray
+      fillColor: [248, 250, 252],
     },
-    didDrawCell: (data) => {
-      // Professional color coding for status
-      if (data.section === "body" && data.column.index === 1) {
-        const cellText = data.cell.text.join("").toLowerCase();
-        let bgColor = null;
-        let textColor = null;
-
-        if (cellText.includes("active") || cellText.includes("available")) {
-          bgColor = [236, 253, 245]; // Light green
-          textColor = [5, 150, 105];
-        } else if (
-          cellText.includes("maintenance") ||
-          cellText.includes("repair")
-        ) {
-          bgColor = [255, 235, 238]; // Light red
-          textColor = [183, 28, 28];
-        } else if (
-          cellText.includes("inactive") ||
-          cellText.includes("unavailable")
-        ) {
-          bgColor = [255, 248, 225]; // Light amber
-          textColor = [146, 64, 14];
-        }
-
-        if (bgColor) {
-          doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
-          doc.rect(
-            data.cell.x,
-            data.cell.y,
-            data.cell.width,
-            data.cell.height,
-            "F"
-          );
-
-          if (textColor) {
-            doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-            doc.setFont("helvetica", "bold");
-          }
-        }
-      }
-
-      // Highlight maintenance costs
-      if (data.section === "body" && data.column.index === 5) {
-        const cost = parseFloat(data.cell.text.join("").replace("$", ""));
-        if (cost > avgMaintenanceCost * 1.5) {
-          doc.setTextColor(183, 28, 28); // Red for high costs
-          doc.setFont("helvetica", "bold");
-        } else if (cost > avgMaintenanceCost) {
-          doc.setTextColor(146, 64, 14); // Amber for above average costs
-          doc.setFont("helvetica", "bold");
-        }
-      }
-    },
-    didDrawPage: (data) => {
-      // Add subtle border around table
-      const tableY = summaryBoxY + summaryBoxHeight + 20;
-      const tableHeight = (data as any).cursor.y - tableY;
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.5);
-      doc.rect(startX, tableY, tableWidth, tableHeight, "S");
-
-      // Add page number
-      const pageNumber = `Page ${doc.internal.getNumberOfPages()}`;
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text(pageNumber, pageWidth / 2, (data as any).cursor.y + 10, {
-        align: "center",
-      });
-    },
+    margin: { left: 10, right: 10 },
+    tableWidth: pageWidth - 20,
   });
 }
 
-// Professional generic table
-function generateProfessionalGenericTable(
+// Maintenance table
+function generateMaintenanceTable(doc: jsPDF, data: any[], pageWidth: number) {
+  const tableData = data.map((maintenance) => [
+    format(new Date(maintenance.date), "MMM dd, yyyy"),
+    maintenance.vehicles
+      ? `${maintenance.vehicles.make} ${maintenance.vehicles.model}`
+      : "N/A",
+    maintenance.type || "N/A",
+    maintenance.description || "N/A",
+    maintenance.cost ? `$${Number(maintenance.cost).toFixed(2)}` : "$0.00",
+    maintenance.status || "N/A",
+  ]);
+
+  autoTable(doc, {
+    startY: 30,
+    head: [["Date", "Vehicle", "Type", "Description", "Cost", "Status"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: {
+      fillColor: [59, 130, 246], // Blue header
+      textColor: [255, 255, 255], // White text
+      fontStyle: "bold",
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { left: 10, right: 10 },
+    tableWidth: pageWidth - 20,
+  });
+}
+
+// Fuel table
+function generateFuelTable(doc: jsPDF, data: any[], pageWidth: number) {
+  const tableData = data.map((fuel) => [
+    format(new Date(fuel.date), "MMM dd, yyyy"),
+    fuel.vehicles ? `${fuel.vehicles.make} ${fuel.vehicles.model}` : "N/A",
+    fuel.fuel_type || "N/A",
+    fuel.volume ? `${fuel.volume} L` : "N/A",
+    fuel.mileage ? `${fuel.mileage} km` : "N/A",
+    fuel.cost ? `$${Number(fuel.cost).toFixed(2)}` : "$0.00",
+    fuel.filled_by || "N/A",
+  ]);
+
+  autoTable(doc, {
+    startY: 30,
+    head: [
+      [
+        "Date",
+        "Vehicle",
+        "Fuel Type",
+        "Volume",
+        "Mileage",
+        "Cost",
+        "Filled By",
+      ],
+    ],
+    body: tableData,
+    theme: "grid",
+    headStyles: {
+      fillColor: [59, 130, 246], // Blue header
+      textColor: [255, 255, 255], // White text
+      fontStyle: "bold",
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { left: 10, right: 10 },
+    tableWidth: pageWidth - 20,
+  });
+}
+
+// Drivers table
+function generateDriversTable(doc: jsPDF, data: any[], pageWidth: number) {
+  const tableData = data.map((driver) => [
+    driver.name || "N/A",
+    driver.contact || "N/A",
+    driver.license_type || "N/A",
+    driver.license_number || "N/A",
+    driver.license_expiry
+      ? format(new Date(driver.license_expiry), "MMM dd, yyyy")
+      : "N/A",
+    driver.status || "N/A",
+  ]);
+
+  autoTable(doc, {
+    startY: 30,
+    head: [
+      [
+        "Name",
+        "Contact",
+        "License Type",
+        "License Number",
+        "Expiry Date",
+        "Status",
+      ],
+    ],
+    body: tableData,
+    theme: "grid",
+    headStyles: {
+      fillColor: [59, 130, 246], // Blue header
+      textColor: [255, 255, 255], // White text
+      fontStyle: "bold",
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { left: 10, right: 10 },
+    tableWidth: pageWidth - 20,
+  });
+}
+
+// Financial table
+function generateFinancialTable(doc: jsPDF, data: any[], pageWidth: number) {
+  const tableData = data.map((item) => [
+    item.month || "N/A",
+    item.revenue ? `$${Number(item.revenue).toFixed(2)}` : "$0.00",
+    item.expenses ? `$${Number(item.expenses).toFixed(2)}` : "$0.00",
+    item.profit ? `$${Number(item.profit).toFixed(2)}` : "$0.00",
+    item.maintenance ? `$${Number(item.maintenance).toFixed(2)}` : "$0.00",
+    item.fuel ? `$${Number(item.fuel).toFixed(2)}` : "$0.00",
+    item.spareparts ? `$${Number(item.spareparts).toFixed(2)}` : "$0.00",
+  ]);
+
+  autoTable(doc, {
+    startY: 30,
+    head: [
+      [
+        "Month",
+        "Revenue",
+        "Expenses",
+        "Profit",
+        "Maintenance",
+        "Fuel",
+        "Spare Parts",
+      ],
+    ],
+    body: tableData,
+    theme: "grid",
+    headStyles: {
+      fillColor: [59, 130, 246], // Blue header
+      textColor: [255, 255, 255], // White text
+      fontStyle: "bold",
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { left: 10, right: 10 },
+    tableWidth: pageWidth - 20,
+  });
+}
+
+// Generic table for other report types
+function generateGenericTable(
   doc: jsPDF,
   data: any[],
   filename: string,
   pageWidth: number
 ) {
-  const tableData = data.map((item) =>
-    Object.values(item).map((val) => String(val || ""))
-  );
-  const headers =
-    data.length > 0
-      ? Object.keys(data[0]).map((key) => key.replace(/_/g, " ").toUpperCase())
-      : [];
+  if (data.length === 0) {
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text("No data available", 10, 50);
+    return;
+  }
 
-  // Calculate table width and center it
-  const tableWidth = pageWidth - 30; // 15mm margin on each side
-  const startX = (pageWidth - tableWidth) / 2;
+  // Get all unique keys from the data
+  const allKeys = new Set();
+  data.forEach((item) => {
+    Object.keys(item).forEach((key) => allKeys.add(key));
+  });
+
+  const columns = Array.from(allKeys).slice(0, 8); // Limit to 8 columns for readability
+  const tableData = data.map((item) =>
+    columns.map((key) => {
+      const value = item[key];
+      if (value === null || value === undefined) return "N/A";
+      if (typeof value === "object") return JSON.stringify(value);
+      if (typeof value === "boolean") return value ? "Yes" : "No";
+      return String(value);
+    })
+  );
 
   autoTable(doc, {
-    head: [headers],
-    body: tableData,
     startY: 30,
-    margin: { left: startX, right: startX },
-    styles: {
-      fontSize: 8,
-      cellPadding: { top: 4, right: 3, bottom: 4, left: 3 },
-      lineColor: [200, 200, 200],
-      lineWidth: 0.1,
-      textColor: [40, 40, 40],
-      font: "helvetica",
-      valign: "middle",
-      overflow: "linebreak",
-    },
+    head: [columns.map((col) => String(col).toUpperCase())],
+    body: tableData,
+    theme: "grid",
     headStyles: {
-      fillColor: [25, 54, 126],
-      textColor: [255, 255, 255],
+      fillColor: [59, 130, 246], // Blue header
+      textColor: [255, 255, 255], // White text
       fontStyle: "bold",
-      halign: "center",
-      fontSize: 10,
-      minCellHeight: 12,
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 2,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
-    didDrawPage: (data) => {
-      // Add subtle border around table
-      const tableY = 30;
-      const tableHeight = (data as any).cursor.y - tableY;
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.5);
-      doc.rect(startX, tableY, tableWidth, tableHeight, "S");
-    },
+    margin: { left: 10, right: 10 },
+    tableWidth: pageWidth - 20,
   });
-}
-
-// Professional footer with enhanced design
-function drawProfessionalFooter(
-  doc: jsPDF,
-  pageWidth: number,
-  pageHeight: number
-) {
-  const footerY = pageHeight - 20;
-
-  // Footer background with gradient effect
-  doc.setFillColor(248, 250, 252);
-  doc.rect(0, footerY - 5, pageWidth, 25, "F");
-
-  // Top border line
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.5);
-  doc.line(15, footerY - 5, pageWidth - 15, footerY - 5);
-
-  // Company information - left side
-  doc.setTextColor(25, 54, 126);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("KOORMATICS", 20, footerY);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.text("Transportation & Logistics Management", 20, footerY + 4);
-  doc.text("www.koormatics.com | info@koormatics.com", 20, footerY + 8);
-
-  // Page information - center
-  doc.setTextColor(60, 60, 60);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  const pageInfo = `Page ${doc.internal.getNumberOfPages()}`;
-  const pageInfoWidth = doc.getTextWidth(pageInfo);
-  doc.text(pageInfo, (pageWidth - pageInfoWidth) / 2, footerY + 2);
-
-  // Generation info - right side
-  doc.setTextColor(100, 100, 100);
-  doc.setFontSize(8);
-  const genTime = format(new Date(), "dd/MM/yyyy HH:mm");
-  doc.text(`Generated: ${genTime}`, pageWidth - 20, footerY, {
-    align: "right",
-  });
-  doc.text("Confidential Document", pageWidth - 20, footerY + 4, {
-    align: "right",
-  });
-
-  // Professional accent line at bottom
-  doc.setDrawColor(52, 144, 220);
-  doc.setLineWidth(2);
-  doc.line(0, pageHeight - 2, pageWidth, pageHeight - 2);
 }

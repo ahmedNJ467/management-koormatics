@@ -232,301 +232,306 @@ export default function SecurityEscorts() {
   }, [teamsQuery.data, teamQuery]);
 
   return (
-    <div className="p-4 space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Security Escorts
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          Manage guards and escort teams. One vehicle per team.
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header */}
+        <div className="border-b border-border pb-4 pt-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Security Escorts
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Manage guards and escort teams. One vehicle per team.
+            </p>
+          </div>
+        </div>
 
-      <Tabs defaultValue="guards">
-        <TabsList className="w-full grid grid-cols-2">
-          <TabsTrigger value="guards">Guards</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="guards">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="guards">Guards</TabsTrigger>
+            <TabsTrigger value="teams">Teams</TabsTrigger>
+          </TabsList>
 
-        {/* Guards Tab */}
-        <TabsContent value="guards" className="mt-3 space-y-3">
-          {/* Controls */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1">
+          {/* Guards Tab */}
+          <TabsContent value="guards" className="mt-3 space-y-3">
+            {/* Controls */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  placeholder="Search guards..."
+                  value={guardQuery}
+                  onChange={(e) => setGuardQuery(e.target.value)}
+                  className="flex-1"
+                />
+                <Select value={guardStatus} onValueChange={setGuardStatus}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="leave">On Leave</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={() => setAddOpen(true)} size="sm">
+                Add Guard
+              </Button>
+            </div>
+
+            {/* Table */}
+            <div className="border rounded-md overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Rank</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(filteredGuards || []).map((g) => (
+                    <TableRow key={g.id}>
+                      <TableCell className="font-medium">{g.name}</TableCell>
+                      <TableCell>{g.rank || "-"}</TableCell>
+                      <TableCell>{g.phone || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {g.status || "-"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {g.created_at
+                          ? new Date(g.created_at).toLocaleString()
+                          : ""}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredGuards.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-muted-foreground">
+                        {guardsQuery.isError
+                          ? "Failed to load guards. Ensure table `security_guards` exists."
+                          : "No guards found."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          {/* Teams Tab */}
+          <TabsContent value="teams" className="mt-3 space-y-3">
+            {/* Controls */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  placeholder="Search teams..."
+                  value={teamQuery}
+                  onChange={(e) => setTeamQuery(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              <Button onClick={() => setTeamOpen(true)} size="sm">
+                Create Team
+              </Button>
+            </div>
+
+            {/* Table */}
+            <div className="border rounded-md overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Team</TableHead>
+                    <TableHead>Members</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(filteredTeams || []).map((t) => {
+                    const members = t.guard_ids
+                      .map(
+                        (id) =>
+                          (guardsQuery.data || []).find((g) => g.id === id)
+                            ?.name || id
+                      )
+                      .join(", ");
+                    const vehicle = (vehiclesQuery.data || []).find(
+                      (v) => v.id === t.vehicle_id
+                    );
+                    const vehicleLabel = vehicle
+                      ? vehicle.registration ||
+                        `${vehicle.make || ""} ${vehicle.model || ""}`
+                      : "-";
+                    return (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-medium">
+                          {t.team_name}
+                        </TableCell>
+                        <TableCell className="text-xs">{members}</TableCell>
+                        <TableCell>{vehicleLabel}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {t.created_at
+                            ? new Date(t.created_at).toLocaleString()
+                            : ""}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {filteredTeams.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-muted-foreground">
+                        {teamsQuery.isError
+                          ? "Failed to load teams. Ensure table `escort_teams` exists."
+                          : "No teams found."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Add Guard Dialog */}
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle>Onboard Guard</DialogTitle>
+              <DialogDescription>Enter basic details.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
               <Input
-                placeholder="Search guards..."
-                value={guardQuery}
-                onChange={(e) => setGuardQuery(e.target.value)}
-                className="flex-1"
+                placeholder="Full name"
+                value={gName}
+                onChange={(e) => setGName(e.target.value)}
+                className="md:col-span-2"
               />
-              <Select value={guardStatus} onValueChange={setGuardStatus}>
-                <SelectTrigger className="w-[160px]">
+              <Input
+                placeholder="Phone"
+                value={gPhone}
+                onChange={(e) => setGPhone(e.target.value)}
+                className="md:col-span-1"
+              />
+              <Input
+                placeholder="ID/Badge No."
+                value={gIdNo}
+                onChange={(e) => setGIdNo(e.target.value)}
+                className="md:col-span-1"
+              />
+              <Input
+                placeholder="Rank/Role"
+                value={gRank}
+                onChange={(e) => setGRank(e.target.value)}
+                className="md:col-span-1"
+              />
+              <Select value={gStatus} onValueChange={setGStatus}>
+                <SelectTrigger className="md:col-span-1">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="leave">On Leave</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <Button onClick={() => setAddOpen(true)} size="sm">
-              Add Guard
-            </Button>
-          </div>
-
-          {/* Table */}
-          <div className="border rounded-md overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Rank</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(filteredGuards || []).map((g) => (
-                  <TableRow key={g.id}>
-                    <TableCell className="font-medium">{g.name}</TableCell>
-                    <TableCell>{g.rank || "-"}</TableCell>
-                    <TableCell>{g.phone || "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {g.status || "-"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {g.created_at
-                        ? new Date(g.created_at).toLocaleString()
-                        : ""}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredGuards.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">
-                      {guardsQuery.isError
-                        ? "Failed to load guards. Ensure table `security_guards` exists."
-                        : "No guards found."}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-
-        {/* Teams Tab */}
-        <TabsContent value="teams" className="mt-3 space-y-3">
-          {/* Controls */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1">
               <Input
-                placeholder="Search teams..."
-                value={teamQuery}
-                onChange={(e) => setTeamQuery(e.target.value)}
-                className="flex-1"
+                placeholder="Notes"
+                value={gNotes}
+                onChange={(e) => setGNotes(e.target.value)}
+                className="md:col-span-6"
               />
             </div>
-            <Button onClick={() => setTeamOpen(true)} size="sm">
-              Create Team
-            </Button>
-          </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => addGuard.mutate()}
+                disabled={!gName.trim() || addGuard.isPending}
+              >
+                {addGuard.isPending ? "Saving..." : "Add Guard"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-          {/* Table */}
-          <div className="border rounded-md overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Team</TableHead>
-                  <TableHead>Members</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(filteredTeams || []).map((t) => {
-                  const members = t.guard_ids
-                    .map(
-                      (id) =>
-                        (guardsQuery.data || []).find((g) => g.id === id)
-                          ?.name || id
-                    )
-                    .join(", ");
-                  const vehicle = (vehiclesQuery.data || []).find(
-                    (v) => v.id === t.vehicle_id
-                  );
-                  const vehicleLabel = vehicle
-                    ? vehicle.registration ||
-                      `${vehicle.make || ""} ${vehicle.model || ""}`
-                    : "-";
-                  return (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-medium">
-                        {t.team_name}
-                      </TableCell>
-                      <TableCell className="text-xs">{members}</TableCell>
-                      <TableCell>{vehicleLabel}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {t.created_at
-                          ? new Date(t.created_at).toLocaleString()
-                          : ""}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {filteredTeams.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-muted-foreground">
-                      {teamsQuery.isError
-                        ? "Failed to load teams. Ensure table `escort_teams` exists."
-                        : "No teams found."}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {/* Add Guard Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>Onboard Guard</DialogTitle>
-            <DialogDescription>Enter basic details.</DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-            <Input
-              placeholder="Full name"
-              value={gName}
-              onChange={(e) => setGName(e.target.value)}
-              className="md:col-span-2"
-            />
-            <Input
-              placeholder="Phone"
-              value={gPhone}
-              onChange={(e) => setGPhone(e.target.value)}
-              className="md:col-span-1"
-            />
-            <Input
-              placeholder="ID/Badge No."
-              value={gIdNo}
-              onChange={(e) => setGIdNo(e.target.value)}
-              className="md:col-span-1"
-            />
-            <Input
-              placeholder="Rank/Role"
-              value={gRank}
-              onChange={(e) => setGRank(e.target.value)}
-              className="md:col-span-1"
-            />
-            <Select value={gStatus} onValueChange={setGStatus}>
-              <SelectTrigger className="md:col-span-1">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="leave">On Leave</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Notes"
-              value={gNotes}
-              onChange={(e) => setGNotes(e.target.value)}
-              className="md:col-span-6"
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setAddOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => addGuard.mutate()}
-              disabled={!gName.trim() || addGuard.isPending}
-            >
-              {addGuard.isPending ? "Saving..." : "Add Guard"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Team Dialog */}
-      <Dialog open={teamOpen} onOpenChange={setTeamOpen}>
-        <DialogContent className="sm:max-w-[800px]">
-          <DialogHeader>
-            <DialogTitle>Create Team</DialogTitle>
-            <DialogDescription>
-              Assign a vehicle and select guards.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-            <Input
-              placeholder="Team name"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              className="md:col-span-3"
-            />
-            <Select value={teamVehicleId} onValueChange={setTeamVehicleId}>
-              <SelectTrigger className="md:col-span-3">
-                <SelectValue placeholder="Select vehicle" />
-              </SelectTrigger>
-              <SelectContent>
-                {(availableVehicles || []).map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.registration || `${v.make || ""} ${v.model || ""}`}
-                  </SelectItem>
+        {/* Create Team Dialog */}
+        <Dialog open={teamOpen} onOpenChange={setTeamOpen}>
+          <DialogContent className="sm:max-w-[800px]">
+            <DialogHeader>
+              <DialogTitle>Create Team</DialogTitle>
+              <DialogDescription>
+                Assign a vehicle and select guards.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+              <Input
+                placeholder="Team name"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                className="md:col-span-3"
+              />
+              <Select value={teamVehicleId} onValueChange={setTeamVehicleId}>
+                <SelectTrigger className="md:col-span-3">
+                  <SelectValue placeholder="Select vehicle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(availableVehicles || []).map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.registration || `${v.make || ""} ${v.model || ""}`}
+                    </SelectItem>
+                  ))}
+                  {availableVehicles.length === 0 && (
+                    <div className="px-2 py-1 text-xs text-muted-foreground">
+                      No available vehicles
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground mb-2">
+                Select guards
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(guardsQuery.data || []).map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => toggleGuard(g.id)}
+                    className={`text-xs border rounded px-2 py-1 ${
+                      selectedIds.includes(g.id)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background"
+                    }`}
+                  >
+                    {g.name} {g.rank ? `(${g.rank})` : ""}
+                  </button>
                 ))}
-                {availableVehicles.length === 0 && (
-                  <div className="px-2 py-1 text-xs text-muted-foreground">
-                    No available vehicles
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground mb-2">
-              Select guards
+              </div>
+              <div className="mt-2 text-xs">Selected: {selectedIds.length}</div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {(guardsQuery.data || []).map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => toggleGuard(g.id)}
-                  className={`text-xs border rounded px-2 py-1 ${
-                    selectedIds.includes(g.id)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background"
-                  }`}
-                >
-                  {g.name} {g.rank ? `(${g.rank})` : ""}
-                </button>
-              ))}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setTeamOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => createTeam.mutate()}
+                disabled={
+                  !teamName.trim() || !teamVehicleId || createTeam.isPending
+                }
+              >
+                {createTeam.isPending ? "Creating..." : "Create Team"}
+              </Button>
             </div>
-            <div className="mt-2 text-xs">Selected: {selectedIds.length}</div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setTeamOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => createTeam.mutate()}
-              disabled={
-                !teamName.trim() || !teamVehicleId || createTeam.isPending
-              }
-            >
-              {createTeam.isPending ? "Creating..." : "Create Team"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

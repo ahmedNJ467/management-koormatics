@@ -152,11 +152,12 @@ export default function Trips() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Trips</h2>
-            <p className="text-muted-foreground">Loading trips...</p>
+      <div className="min-h-screen bg-background">
+        <div className="p-4 px-6 space-y-6">
+          <div className="border-b border-border pb-4 pt-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Trips</h1>
+            </div>
           </div>
         </div>
       </div>
@@ -164,88 +165,90 @@ export default function Trips() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <TripHeader
-        calendarView={calendarView}
-        setCalendarView={setCalendarView}
-        setBookingOpen={setBookingOpen}
-      />
-
-      {/* Search and Filter */}
-      <TripSearch
-        searchTerm={searchTerm}
-        statusFilter={statusFilter}
-        setSearchTerm={setSearchTerm}
-        setStatusFilter={setStatusFilter}
-      />
-
-      {/* Calendar or List View */}
-      {calendarView ? (
-        <TripCalendarView
-          filteredTrips={filteredTrips}
-          setViewTrip={setViewTrip}
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header */}
+        <TripHeader
+          calendarView={calendarView}
+          setCalendarView={setCalendarView}
+          setBookingOpen={setBookingOpen}
         />
-      ) : (
-        <TripListView
-          filteredTrips={filteredTrips}
+
+        {/* Search and Filter */}
+        <TripSearch
+          searchTerm={searchTerm}
+          statusFilter={statusFilter}
+          setSearchTerm={setSearchTerm}
+          setStatusFilter={setStatusFilter}
+        />
+
+        {/* Calendar or List View */}
+        {calendarView ? (
+          <TripCalendarView
+            filteredTrips={filteredTrips}
+            setViewTrip={setViewTrip}
+          />
+        ) : (
+          <TripListView
+            filteredTrips={filteredTrips}
+            setViewTrip={setViewTrip}
+            setEditTrip={setEditTrip}
+            setTripToMessage={setTripToMessage}
+            setMessageOpen={setMessageOpen}
+            setTripToAssign={setTripToAssign}
+            setAssignOpen={setAssignOpen}
+            setTripToAssignVehicle={setTripToAssignVehicle}
+            setAssignVehicleOpen={setAssignVehicleOpen}
+            setTripToDelete={setTripToDelete}
+            setDeleteDialogOpen={setDeleteDialogOpen}
+            updateTripStatus={handleTripStatusUpdate}
+          />
+        )}
+
+        {/* Dialogs */}
+        <TripDialogs
+          viewTrip={viewTrip}
+          editTrip={editTrip}
+          bookingOpen={bookingOpen}
+          assignOpen={assignOpen}
+          messageOpen={messageOpen}
+          deleteDialogOpen={deleteDialogOpen}
+          tripToAssign={tripToAssign}
+          tripToMessage={tripToMessage}
+          tripToDelete={tripToDelete}
+          assignDriver={assignDriver}
+          assignNote={assignNote}
+          newMessage={newMessage}
+          activeTab={activeTab}
+          clients={clients}
+          vehicles={vehicles}
+          drivers={drivers}
+          trips={trips}
+          messages={safeMessages}
+          assignments={safeAssignments as any}
+          assignVehicleOpen={assignVehicleOpen}
+          tripToAssignVehicle={tripToAssignVehicle}
           setViewTrip={setViewTrip}
           setEditTrip={setEditTrip}
-          setTripToMessage={setTripToMessage}
-          setMessageOpen={setMessageOpen}
-          setTripToAssign={setTripToAssign}
+          setBookingOpen={setBookingOpen}
           setAssignOpen={setAssignOpen}
-          setTripToAssignVehicle={setTripToAssignVehicle}
-          setAssignVehicleOpen={setAssignVehicleOpen}
-          setTripToDelete={setTripToDelete}
+          setMessageOpen={setMessageOpen}
           setDeleteDialogOpen={setDeleteDialogOpen}
-          updateTripStatus={handleTripStatusUpdate}
+          setTripToAssign={setTripToAssign}
+          setTripToMessage={setTripToMessage}
+          setTripToDelete={setTripToDelete}
+          setAssignDriver={setAssignDriver}
+          setAssignNote={setAssignNote}
+          setNewMessage={setNewMessage}
+          setActiveTab={setActiveTab}
+          setAssignVehicleOpen={setAssignVehicleOpen}
+          setTripToAssignVehicle={setTripToAssignVehicle}
+          handleTripFormSubmit={handleTripFormSubmit}
+          handleDriverAssignment={handleDriverAssignment}
+          handleMessageSend={handleMessageSend}
+          queryClient={queryClient}
         />
-      )}
-
-      {/* Dialogs */}
-      <TripDialogs
-        viewTrip={viewTrip}
-        editTrip={editTrip}
-        bookingOpen={bookingOpen}
-        assignOpen={assignOpen}
-        messageOpen={messageOpen}
-        deleteDialogOpen={deleteDialogOpen}
-        tripToAssign={tripToAssign}
-        tripToMessage={tripToMessage}
-        tripToDelete={tripToDelete}
-        assignDriver={assignDriver}
-        assignNote={assignNote}
-        newMessage={newMessage}
-        activeTab={activeTab}
-        clients={clients}
-        vehicles={vehicles}
-        drivers={drivers}
-        trips={trips}
-        messages={safeMessages}
-        assignments={safeAssignments as any}
-        assignVehicleOpen={assignVehicleOpen}
-        tripToAssignVehicle={tripToAssignVehicle}
-        setViewTrip={setViewTrip}
-        setEditTrip={setEditTrip}
-        setBookingOpen={setBookingOpen}
-        setAssignOpen={setAssignOpen}
-        setMessageOpen={setMessageOpen}
-        setDeleteDialogOpen={setDeleteDialogOpen}
-        setTripToAssign={setTripToAssign}
-        setTripToMessage={setTripToMessage}
-        setTripToDelete={setTripToDelete}
-        setAssignDriver={setAssignDriver}
-        setAssignNote={setAssignNote}
-        setNewMessage={setNewMessage}
-        setActiveTab={setActiveTab}
-        setAssignVehicleOpen={setAssignVehicleOpen}
-        setTripToAssignVehicle={setTripToAssignVehicle}
-        handleTripFormSubmit={handleTripFormSubmit}
-        handleDriverAssignment={handleDriverAssignment}
-        handleMessageSend={handleMessageSend}
-        queryClient={queryClient}
-      />
+      </div>
     </div>
   );
 }

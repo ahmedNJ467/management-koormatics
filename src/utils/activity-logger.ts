@@ -70,27 +70,17 @@ export const logActivity = async ({
 
   // Create more detailed titles for trip activities with formatted IDs
   let enhancedTitle = title;
-  if (type === "trip" && tripDetails && relatedId) {
-    const { clientName, pickupLocation, dropoffLocation } = tripDetails;
+  if (type === "trip" && relatedId) {
     const formattedTripId = formatTripId(relatedId);
-
-    if (pickupLocation && dropoffLocation) {
-      enhancedTitle = `Trip ${formattedTripId}: ${pickupLocation} to ${dropoffLocation}`;
-      if (clientName) {
-        enhancedTitle += ` (${clientName})`;
-      }
-    } else {
-      enhancedTitle = `Trip ${formattedTripId} updated`;
-      if (clientName) {
-        enhancedTitle += ` - ${clientName}`;
-      }
-    }
+    enhancedTitle = `Trip ${formattedTripId} ${
+      title.toLowerCase().includes("created") ? "created" : "updated"
+    }`;
   }
 
   const newActivity: ActivityItemProps = {
     id,
     title: enhancedTitle,
-    timestamp: formatTimestamp(timestamp),
+    timestamp: timestamp.toISOString(),
     type,
     icon: iconMap[type] || "activity",
     related_id: relatedId,
@@ -162,13 +152,32 @@ export const getActivities = async (
     const normalizeTitle = (raw: string): string => {
       if (!raw) return "Unknown activity";
       let t = raw;
+
       // Fix concatenated "created" after ID (e.g., "Trip ABCD1234reated")
       t = t.replace(/(\b[Tt]rip\s+[A-Z0-9]{6,12})reated\b:?/g, "$1 created");
+
+      // Remove location names from trip activities
+      // Pattern: "Trip ID: Location1 to Location2" -> "Trip ID"
+      t = t.replace(
+        /(\b[Tt]rip\s+[A-Z0-9]{6,12})\s*:?\s*[^:]+(?:\s+to\s+[^:]+)?/g,
+        "$1"
+      );
+
+      // Remove client names in parentheses
+      t = t.replace(/\s*\([^)]+\)/g, "");
+
+      // Remove " - ClientName" patterns
+      t = t.replace(/\s*-\s*[^-]+$/g, "");
+
       // Ensure space between Trip <ID> and following verb when missing
       t = t.replace(
         /(\b[Tt]rip\s+[A-Z0-9]{6,12})(?=(created|updated|assigned|completed)\b)/g,
         "$1 "
       );
+
+      // Clean up any extra spaces
+      t = t.replace(/\s+/g, " ").trim();
+
       return t;
     };
 
@@ -191,7 +200,7 @@ export const getActivities = async (
       return {
         id: item.id.toString(),
         title: formattedTitle,
-        timestamp: formatTimestamp(new Date(item.timestamp)),
+        timestamp: item.timestamp,
         type: item.type as ActivityType,
         icon: item.type as ActivityType,
         related_id: item.related_id,
@@ -239,28 +248,22 @@ export const logTripActivity = async (
     let title = "";
     switch (action) {
       case "created":
-        title = `New Trip ${formattedTripId} created: ${
-          (trip as any).pickup_location || "Unknown"
-        } to ${(trip as any).dropoff_location || "Unknown"}`;
+        title = `New Trip ${formattedTripId} created`;
         break;
       case "updated":
-        title = `Trip ${formattedTripId} updated: ${clientName} - ${
-          (trip as any).pickup_location || "Unknown"
-        } to ${(trip as any).dropoff_location || "Unknown"}`;
+        title = `Trip ${formattedTripId} updated`;
         break;
       case "assigned":
-        title = `Vehicle assigned to trip ${formattedTripId}: ${vehicleDetails} for ${clientName}`;
+        title = `Vehicle assigned to trip ${formattedTripId}`;
         break;
       case "driver_assigned":
-        title = `Driver assigned to trip ${formattedTripId}: ${driverName} for ${clientName}`;
+        title = `Driver assigned to trip ${formattedTripId}`;
         break;
       case "completed":
-        title = `Trip ${formattedTripId} completed: ${clientName} - ${
-          (trip as any).pickup_location || "Unknown"
-        } to ${(trip as any).dropoff_location || "Unknown"}`;
+        title = `Trip ${formattedTripId} completed`;
         break;
       default:
-        title = `Trip ${formattedTripId} ${action}: ${clientName}`;
+        title = `Trip ${formattedTripId} ${action}`;
     }
 
     await logActivity({

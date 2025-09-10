@@ -45,7 +45,14 @@ export const useInterestPoints = () => {
       });
     },
     onError: (error) => {
-      console.error("Error creating interest point:", error);
+      console.error("Error creating interest point:", {
+        error,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+        stringified: JSON.stringify(error, null, 2),
+      });
       const errorMessage =
         error instanceof Error
           ? error.message

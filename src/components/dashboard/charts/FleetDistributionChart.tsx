@@ -21,20 +21,23 @@ interface FleetDistributionChartProps {
   compact?: boolean;
 }
 
-// Mock data for fallback
-const mockData: FleetData[] = [
-  { name: "Sedans", value: 12, color: "#3b82f6" },
-  { name: "SUVs", value: 8, color: "#10b981" },
-  { name: "Vans", value: 4, color: "#f59e0b" },
-  { name: "Trucks", value: 2, color: "#ef4444" },
-];
-
 export function FleetDistributionChart({
-  data = mockData,
+  data = [],
   compact = false,
 }: FleetDistributionChartProps) {
   const height = compact ? 250 : 300;
-  
+
+  // Show no data state if no data available
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm">No fleet data available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
@@ -56,20 +59,20 @@ export function FleetDistributionChart({
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>
-        <Tooltip 
+        <Tooltip
           contentStyle={{
-            backgroundColor: 'white',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            backgroundColor: "white",
+            border: "1px solid #e2e8f0",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
           }}
         />
-        <Legend 
-          verticalAlign="bottom" 
+        <Legend
+          verticalAlign="bottom"
           height={36}
           wrapperStyle={{
-            fontSize: '12px',
-            color: '#64748b',
+            fontSize: "12px",
+            color: "#64748b",
           }}
         />
       </PieChart>

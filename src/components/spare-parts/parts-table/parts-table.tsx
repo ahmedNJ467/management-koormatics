@@ -62,12 +62,24 @@ export const PartsTable = ({
 
   const getStockStatus = (part: SparePart) => {
     if (part.quantity <= 0) {
-      return { label: "Out of Stock", variant: "destructive" as const, color: "text-red-600" };
+      return {
+        label: "Out of Stock",
+        variant: "destructive" as const,
+        color: "text-red-600 dark:text-red-400",
+      };
     }
     if (part.quantity <= part.min_stock_level) {
-      return { label: "Low Stock", variant: "secondary" as const, color: "text-yellow-600" };
+      return {
+        label: "Low Stock",
+        variant: "secondary" as const,
+        color: "text-yellow-600 dark:text-yellow-400",
+      };
     }
-    return { label: "In Stock", variant: "default" as const, color: "text-green-600" };
+    return {
+      label: "In Stock",
+      variant: "default" as const,
+      color: "text-green-600 dark:text-green-400",
+    };
   };
 
   return (
@@ -131,13 +143,19 @@ export const PartsTable = ({
           {parts.map((part) => {
             const stockStatus = getStockStatus(part);
             return (
-              <TableRow key={part.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <TableRow
+                key={part.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              >
                 <TableCell className="font-medium py-3">{part.name}</TableCell>
                 <TableCell className="font-mono text-sm py-3">
                   {part.part_number}
                 </TableCell>
                 <TableCell className="py-3">
-                  <Badge variant="outline" className="bg-gray-50 dark:bg-gray-800">
+                  <Badge
+                    variant="outline"
+                    className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600"
+                  >
                     {part.category}
                   </Badge>
                 </TableCell>
@@ -150,7 +168,10 @@ export const PartsTable = ({
                 </TableCell>
                 <TableCell className="py-3">
                   <div className="flex flex-col gap-1">
-                    <Badge variant={stockStatus.variant} className={stockStatus.color}>
+                    <Badge
+                      variant={stockStatus.variant}
+                      className={stockStatus.color}
+                    >
                       {stockStatus.label}
                     </Badge>
                     <span className="text-xs text-muted-foreground">

@@ -1,7 +1,10 @@
-
-import { 
-  Table, TableHeader, TableHead, TableRow, 
-  TableBody, TableCell 
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableRow,
+  TableBody,
+  TableCell,
 } from "@/components/ui/table";
 import { DisplayTrip, TripStatus } from "@/lib/types/trip";
 import { TripListItem } from "./TripListItem";
@@ -22,9 +25,9 @@ interface TripListViewProps {
   updateTripStatus: (tripId: string, status: TripStatus) => Promise<void>;
 }
 
-export function TripListView({ 
-  filteredTrips, 
-  setViewTrip, 
+export function TripListView({
+  filteredTrips,
+  setViewTrip,
   setEditTrip,
   setTripToMessage,
   setMessageOpen,
@@ -34,10 +37,10 @@ export function TripListView({
   setAssignVehicleOpen,
   setTripToDelete,
   setDeleteDialogOpen,
-  updateTripStatus
+  updateTripStatus,
 }: TripListViewProps) {
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-card rounded-lg shadow border border-border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -46,6 +49,7 @@ export function TripListView({
             <TableHead>Client</TableHead>
             <TableHead>Service</TableHead>
             <TableHead>Route</TableHead>
+            <TableHead>Stops</TableHead>
             <TableHead>Driver</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>

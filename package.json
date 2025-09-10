@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --port 8080",
     "build": "next build",
+    "build:dev": "NODE_ENV=development next build",
     "build:windows": "node scripts/build-windows.js",
     "build:ps": "powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
     "build:bat": "scripts\\build-windows.bat",

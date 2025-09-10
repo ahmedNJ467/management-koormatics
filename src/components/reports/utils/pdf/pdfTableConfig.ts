@@ -81,16 +81,17 @@ function getEnhancedColumnStyles(filename: string): any {
     case "trips-report":
       return {
         0: { ...commonStyles, cellWidth: 0.8, halign: "center" }, // DATE
-        1: { ...commonStyles, cellWidth: 1.8, halign: "left" }, // CLIENT / PASSENGER(S)
-        2: { ...commonStyles, cellWidth: 1.2, halign: "left" }, // ORGANIZATION
-        3: { ...commonStyles, cellWidth: 1.0, halign: "left" }, // CONTACT
-        4: { ...commonStyles, cellWidth: 1.2, halign: "center" }, // SERVICE TYPE
-        5: { ...commonStyles, cellWidth: 1.5, halign: "left" }, // PICK-UP ADDRESS
-        6: { ...commonStyles, cellWidth: 1.5, halign: "left" }, // DROP-OFF ADDRESS
+        1: { ...commonStyles, cellWidth: 1.5, halign: "left" }, // CLIENT
+        2: { ...commonStyles, cellWidth: 2.0, halign: "left", valign: "top" }, // PASSENGERS (wider for vertical text)
+        3: { ...commonStyles, cellWidth: 1.0, halign: "center" }, // SERVICE TYPE
+        4: { ...commonStyles, cellWidth: 1.2, halign: "left" }, // PICK-UP ADDRESS
+        5: { ...commonStyles, cellWidth: 1.2, halign: "left" }, // DROP-OFF ADDRESS
+        6: { ...commonStyles, cellWidth: 2.0, halign: "left", valign: "top" }, // STOPS (wider for vertical text)
         7: { ...commonStyles, cellWidth: 0.6, halign: "center" }, // TIME
-        8: { ...commonStyles, cellWidth: 1.2, halign: "center" }, // CARRIER / FLIGHT #
+        8: { ...commonStyles, cellWidth: 1.0, halign: "center" }, // CARRIER / FLIGHT #
         9: { ...commonStyles, cellWidth: 1.2, halign: "center" }, // ASSIGNED VEHICLE
-        10: { ...commonStyles, cellWidth: 1.2, halign: "center" }, // ASSIGNED DRIVER
+        10: { ...commonStyles, cellWidth: 1.0, halign: "center" }, // ASSIGNED DRIVER
+        11: { ...commonStyles, cellWidth: 0.8, halign: "center" }, // STATUS
       };
 
     case "vehicles-report":
@@ -116,12 +117,13 @@ function getEnhancedColumnStyles(filename: string): any {
     case "fuel-report":
       return {
         0: { ...commonStyles, cellWidth: 1.0, halign: "center" }, // Date
-        1: { ...commonStyles, cellWidth: 2.2, halign: "left" }, // Vehicle
-        2: { ...commonStyles, cellWidth: 1.0, halign: "center" }, // Fuel Type
-        3: { ...commonStyles, cellWidth: 1.0, halign: "right" }, // Volume
-        4: { ...commonStyles, cellWidth: 1.2, halign: "right" }, // Cost
-        5: { ...commonStyles, cellWidth: 1.2, halign: "right" }, // Mileage
-        6: { ...commonStyles, cellWidth: 1.2, halign: "right" }, // Efficiency
+        1: { ...commonStyles, cellWidth: 2.0, halign: "left" }, // Vehicle
+        2: { ...commonStyles, cellWidth: 0.8, halign: "center" }, // Fuel Type
+        3: { ...commonStyles, cellWidth: 0.8, halign: "right" }, // Volume
+        4: { ...commonStyles, cellWidth: 1.0, halign: "right" }, // Cost
+        5: { ...commonStyles, cellWidth: 1.0, halign: "right" }, // Mileage
+        6: { ...commonStyles, cellWidth: 1.0, halign: "right" }, // Efficiency
+        7: { ...commonStyles, cellWidth: 1.5, halign: "left" }, // Filled By
       };
 
     case "maintenance-report":

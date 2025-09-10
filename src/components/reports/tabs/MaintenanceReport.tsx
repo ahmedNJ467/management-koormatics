@@ -49,8 +49,8 @@ export function MaintenanceReport({
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              exportToPDF(
+            onClick={async () =>
+              await exportToPDF(
                 filteredData || [],
                 "Maintenance Report",
                 "maintenance-report"

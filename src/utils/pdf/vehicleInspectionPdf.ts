@@ -42,13 +42,33 @@ export interface VehicleInspectionForPdf {
 
 async function loadImageAsDataURL(url: string): Promise<string | null> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
     const blob = await response.blob();
     return await new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(blob);
     });
+  } catch {
+    return null;
+  }
+}
+
+async function loadImageAsPngDataURL(url: string): Promise<string | null> {
+  try {
+    await new Promise((r) => setTimeout(r, 0));
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/png");
   } catch {
     return null;
   }
@@ -122,16 +142,27 @@ export async function generateVehicleInspectionPdf(
 
   let logoDataUrl: string | null = null;
   if (options?.logoUrl) {
-    logoDataUrl = await loadImageAsDataURL(options.logoUrl);
+    logoDataUrl =
+      (await loadImageAsPngDataURL(options.logoUrl)) ||
+      (await loadImageAsDataURL(options.logoUrl));
   }
 
   // Header band and logo
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageWidth, headerHeight, "F");
   if (logoDataUrl) {
-    const logoWidth = 160;
-    const logoHeight = 42;
-    doc.addImage(logoDataUrl, "PNG", marginX, 22, logoWidth, logoHeight);
+    try {
+      const logoWidth = 160;
+      const logoHeight = 42;
+      doc.addImage(logoDataUrl, "PNG", marginX, 22, logoWidth, logoHeight);
+    } catch {
+      try {
+        // try JPEG fallback
+        doc.addImage(logoDataUrl, "JPEG", marginX, 22, 160, 42);
+      } catch {
+        // skip drawing logo if corrupted
+      }
+    }
   }
 
   // Company/title block on right

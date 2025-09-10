@@ -71,16 +71,17 @@ export function generateTableData(data: any[], reportType: string) {
     case "trips-report":
       tableHeaders = [
         "DATE",
-        "CLIENT / PASSENGER(S)",
-        "ORGANIZATION",
-        "CONTACT",
+        "CLIENT",
+        "PASSENGERS",
         "SERVICE TYPE",
         "PICK-UP ADDRESS",
         "DROP-OFF ADDRESS",
+        "STOPS",
         "TIME",
         "CARRIER / FLIGHT #",
         "ASSIGNED VEHICLE",
         "ASSIGNED DRIVER",
+        "STATUS",
       ];
 
       tableData = data.map((trip) => {
@@ -88,15 +89,17 @@ export function generateTableData(data: any[], reportType: string) {
         const clientName = trip.clients?.name || "";
         const isOrganization = trip.clients?.type === "organization";
 
-        let passengerDisplay = "";
-        if (isOrganization && trip.passengers && trip.passengers.length > 0) {
-          const mainPassengers = trip.passengers.slice(0, 2).join(", ");
-          passengerDisplay =
-            trip.passengers.length > 2
-              ? `${mainPassengers} +${trip.passengers.length - 2}`
-              : mainPassengers;
-        } else if (clientName) {
-          passengerDisplay = clientName;
+        // Format passengers for display with vertical bullet points
+        let passengerDisplay = "—";
+        if (trip.passengers && trip.passengers.length > 0) {
+          if (trip.passengers.length === 1) {
+            passengerDisplay = trip.passengers[0];
+          } else {
+            // Create vertical list with bullet points
+            passengerDisplay = trip.passengers
+              .map((passenger: string) => `• ${passenger}`)
+              .join("\n");
+          }
         }
 
         // Enhanced vehicle display with better formatting
@@ -104,26 +107,80 @@ export function generateTableData(data: any[], reportType: string) {
           ? `${trip.vehicles.make || ""} ${trip.vehicles.model || ""}`.trim()
           : "Not Assigned";
 
-        // Enhanced flight details with better structure
-        const carrierFlight = trip.flight_number
-          ? `${trip.airline || "AIRLINE"} ${trip.flight_number}`.trim()
-          : "";
+        // Format stops for display with vertical bullet points
+        let stopsDisplay = "—";
+        if (trip.stops && trip.stops.length > 0) {
+          if (trip.stops.length === 1) {
+            stopsDisplay = trip.stops[0];
+          } else {
+            // Create vertical list with bullet points
+            stopsDisplay = trip.stops
+              .map((stop: string) => `• ${stop}`)
+              .join("\n");
+          }
+        }
 
-        // Enhanced contact formatting
-        const contactInfo = trip.clients?.phone || trip.clients?.email || "";
+        // Enhanced flight details with better structure
+        let flightInfoDisplay = "N/A";
+        if (trip.airline || trip.flight_number) {
+          const parts = [];
+          if (trip.airline) parts.push(trip.airline);
+          if (trip.flight_number) parts.push(trip.flight_number);
+          if (trip.terminal) parts.push(`Terminal ${trip.terminal}`);
+          flightInfoDisplay = parts.join(" ");
+        }
+
+        // Format service type to display "Airport Pickup" instead of "airport_pickup"
+        let serviceTypeDisplay = "N/A";
+        if (trip.display_type || trip.service_type) {
+          const serviceType = trip.display_type || trip.service_type;
+          if (serviceType === "airport_pickup") {
+            serviceTypeDisplay = "Airport Pickup";
+          } else if (serviceType === "airport_dropoff") {
+            serviceTypeDisplay = "Airport Dropoff";
+          } else if (serviceType === "round_trip") {
+            serviceTypeDisplay = "Round Trip";
+          } else if (serviceType === "one_way") {
+            serviceTypeDisplay = "One Way Transfer";
+          } else if (serviceType === "full_day_hire") {
+            serviceTypeDisplay = "Full Day Hire";
+          } else if (serviceType === "half_day") {
+            serviceTypeDisplay = "Half Day";
+          } else {
+            serviceTypeDisplay = serviceType
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase());
+          }
+        }
+
+        // Format time to AM/PM format
+        let timeDisplay = "N/A";
+        if (trip.time) {
+          try {
+            const time = new Date(`2000-01-01T${trip.time}`);
+            timeDisplay = time.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            });
+          } catch (e) {
+            timeDisplay = trip.time;
+          }
+        }
 
         return [
           formatDateString(trip.date),
-          formatText(passengerDisplay.toUpperCase(), 25),
-          isOrganization ? formatText(clientName.toUpperCase(), 18) : "",
-          formatText(contactInfo, 15),
-          formatText((trip.service_type || "Standard").toUpperCase(), 12),
+          formatText(clientName, 20),
+          formatText(passengerDisplay, 25),
+          formatText(serviceTypeDisplay.toUpperCase(), 12),
           formatText((trip.pickup_location || "").toUpperCase(), 22),
           formatText((trip.dropoff_location || "").toUpperCase(), 22),
-          formatTimeString(trip.time || ""),
-          formatText(carrierFlight.toUpperCase(), 15),
+          formatText(stopsDisplay, 25),
+          formatText(timeDisplay, 10),
+          formatText(flightInfoDisplay.toUpperCase(), 15),
           formatText(vehicleInfo.toUpperCase(), 18),
           formatText((trip.drivers?.name || "Not Assigned").toUpperCase(), 15),
+          formatStatus(trip.status || "Unknown"),
         ];
       });
       break;
@@ -179,6 +236,7 @@ export function generateTableData(data: any[], reportType: string) {
         "Cost",
         "Mileage",
         "Efficiency",
+        "Filled By",
       ];
       tableData = data.map((fuelLog) => {
         const volume = Number(fuelLog.volume || 0);
@@ -204,6 +262,7 @@ export function generateTableData(data: any[], reportType: string) {
           formatCurrency(cost),
           mileage > 0 ? formatNumber(mileage, 0) : "N/A",
           efficiency,
+          formatText(fuelLog.filled_by || "N/A", 15),
         ];
       });
       break;

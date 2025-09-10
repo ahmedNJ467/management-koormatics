@@ -183,7 +183,11 @@ export function useTripsData() {
 
   // Subscribe to real-time changes (optional)
   useEffect(() => {
-    if (!enableRealtime) return;
+    // Always call useEffect, but conditionally execute logic inside
+    if (!enableRealtime) {
+      return;
+    }
+    
     // Only create subscription if one doesn't already exist
     if (!channelRef.current) {
       const channelName = `trips-data-${Date.now()}-${Math.random()}`;

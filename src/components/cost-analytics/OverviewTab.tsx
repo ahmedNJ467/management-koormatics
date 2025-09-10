@@ -1,6 +1,23 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { MonthlyData } from "@/lib/types/cost-analytics";
 
 interface OverviewTabProps {
@@ -19,16 +36,21 @@ export const OverviewTab = ({ monthlyData }: OverviewTabProps) => {
         </CardHeader>
         <CardContent className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <BarChart
+              data={monthlyData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  borderColor: 'hsl(var(--border))', 
-                  borderRadius: '6px' 
+              <Tooltip
+                formatter={(value: number) => [
+                  `$${value.toFixed(2)}`,
+                  undefined,
+                ]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  borderColor: "hsl(var(--border))",
+                  borderRadius: "6px",
                 }}
               />
               <Legend />
@@ -46,20 +68,31 @@ export const OverviewTab = ({ monthlyData }: OverviewTabProps) => {
         </CardHeader>
         <CardContent className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <LineChart
+              data={monthlyData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  borderColor: 'hsl(var(--border))', 
-                  borderRadius: '6px' 
+              <Tooltip
+                formatter={(value: number) => [
+                  `$${value.toFixed(2)}`,
+                  undefined,
+                ]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  borderColor: "hsl(var(--border))",
+                  borderRadius: "6px",
                 }}
               />
               <Legend />
-              <Line type="monotone" name="Total Cost" dataKey="total" stroke="#8884d8" activeDot={{ r: 8 }} />
+              <Line
+                type="monotone"
+                name="Total Cost"
+                dataKey="total"
+                stroke="#8884d8"
+                activeDot={{ r: 8 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

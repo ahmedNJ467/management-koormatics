@@ -202,379 +202,393 @@ export default function Maintenance() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Maintenance</h2>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 text-foreground border-border/50"
-            onClick={exportToCSV}
-          >
-            <Download className="mr-2 h-4 w-4" /> Export
-          </Button>
-          <Button
-            onClick={() => setIsAddingRecord(true)}
-            variant="outline"
-            size="sm"
-            className="text-foreground border-border/50"
-          >
-            Add Record
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="space-y-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search Section */}
-          <div className="flex-1 relative group">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input
-              placeholder="Search records..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
-            />
-            {searchTerm && (
+    <div className="min-h-screen bg-background">
+      <div className="p-4 px-6 space-y-6">
+        {/* Header */}
+        <div className="border-b border-border pb-4 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Maintenance
+              </h1>
+            </div>
+            <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="absolute right-1 top-1 h-7 w-7 p-0 hover:bg-muted/50"
-                onClick={() => setSearchTerm("")}
+                className="gap-2 text-foreground border-border/50"
+                onClick={exportToCSV}
               >
-                <X className="h-3 w-3" />
+                <Download className="mr-2 h-4 w-4" /> Export
               </Button>
-            )}
-          </div>
-
-          {/* Filters Section */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Date Range Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[200px] h-11 justify-start text-left font-normal border-border/50 focus:border-primary/50",
-                      !dateFrom && !dateTo && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateFrom ? (
-                      dateTo ? (
-                        <>
-                          {format(dateFrom, "LLL dd, y")} -{" "}
-                          {format(dateTo, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(dateFrom, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pick a date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateFrom}
-                    selected={{ from: dateFrom, to: dateTo }}
-                    onSelect={(range) => {
-                      setDateFrom(range?.from);
-                      setDateTo(range?.to);
-                    }}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
+              <Button
+                onClick={() => setIsAddingRecord(true)}
+                variant="outline"
+                size="sm"
+                className="text-foreground border-border/50"
+              >
+                Add Record
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Active Filters Display */}
-        {(searchTerm || statusFilter !== "all" || dateFrom || dateTo) && (
-          <div className="flex items-center justify-between pt-3 border-t border-border/20">
-            <div className="flex flex-wrap gap-2">
+        {/* Filters and Search */}
+        <div className="space-y-4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search Section */}
+            <div className="flex-1 relative group">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Input
+                placeholder="Search records..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+              />
               {searchTerm && (
-                <Badge variant="secondary" className="gap-1">
-                  Search: "{searchTerm}"
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setSearchTerm("")}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              )}
-              {statusFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1">
-                  Status: {statusFilter.replace("_", " ")}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setStatusFilter("all")}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              )}
-              {dateFrom && (
-                <Badge variant="secondary" className="gap-1">
-                  From: {format(dateFrom, "LLL dd, y")}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setDateFrom(undefined)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              )}
-              {dateTo && (
-                <Badge variant="secondary" className="gap-1">
-                  To: {format(dateTo, "LLL dd, y")}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setDateTo(undefined)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1 h-7 w-7 p-0 hover:bg-muted/50"
+                  onClick={() => setSearchTerm("")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAllFilters}
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Clear All
-            </Button>
-          </div>
-        )}
-      </div>
 
-      <div className="rounded-lg border overflow-x-auto">
-        <Table className="min-w-[800px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Service Provider</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Expense (USD)</TableHead>
-              <TableHead>Next Scheduled</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  Loading records...
-                </TableCell>
-              </TableRow>
-            ) : paginatedRecords?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-2">
-                    <FileWarning className="w-10 h-10 text-muted-foreground mb-2" />
-                    <span className="text-lg font-medium">
-                      No maintenance records found.
-                    </span>
+            {/* Filters Section */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Date Range Filter */}
+                <Popover>
+                  <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      size="lg"
-                      className="gap-2 mt-2 text-white border-white/20"
-                      onClick={() => setIsAddingRecord(true)}
+                      className={cn(
+                        "w-[200px] h-11 justify-start text-left font-normal border-border/50 focus:border-primary/50",
+                        !dateFrom && !dateTo && "text-muted-foreground"
+                      )}
                     >
-                      Add your first record
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? (
+                        dateTo ? (
+                          <>
+                            {format(dateFrom, "LLL dd, y")} -{" "}
+                            {format(dateTo, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(dateFrom, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Pick a date range</span>
+                      )}
                     </Button>
-                  </div>
-                </TableCell>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateFrom}
+                      selected={{ from: dateFrom, to: dateTo }}
+                      onSelect={(range) => {
+                        setDateFrom(range?.from);
+                        setDateTo(range?.to);
+                      }}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {(searchTerm || statusFilter !== "all" || dateFrom || dateTo) && (
+            <div className="flex items-center justify-between pt-3 border-t border-border/20">
+              <div className="flex flex-wrap gap-2">
+                {searchTerm && (
+                  <Badge variant="secondary" className="gap-1">
+                    Search: "{searchTerm}"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setSearchTerm("")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {statusFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1">
+                    Status: {statusFilter.replace("_", " ")}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setStatusFilter("all")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {dateFrom && (
+                  <Badge variant="secondary" className="gap-1">
+                    From: {format(dateFrom, "LLL dd, y")}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setDateFrom(undefined)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {dateTo && (
+                  <Badge variant="secondary" className="gap-1">
+                    To: {format(dateTo, "LLL dd, y")}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setDateTo(undefined)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear All
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border overflow-x-auto">
+          <Table className="min-w-[800px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Vehicle</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Service Provider</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Expense (USD)</TableHead>
+                <TableHead>Next Scheduled</TableHead>
               </TableRow>
-            ) : (
-              paginatedRecords?.map((record) => (
-                <TableRow
-                  key={record.id}
-                  className={`${"cursor-pointer hover:bg-muted/50"} ${
-                    record.status === "completed" ? "opacity-75" : ""
-                  }`}
-                  onClick={() => handleRowClick(record)}
-                  title={
-                    record.status === "completed"
-                      ? "Click to view completed record (read-only)"
-                      : "Click to edit record"
-                  }
-                >
-                  <TableCell>
-                    {new Date(record.date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {record.vehicle
-                      ? `${record.vehicle.make} ${record.vehicle.model} - ${record.vehicle.registration}`
-                      : "Unknown Vehicle"}
-                  </TableCell>
-                  <TableCell>{record.description}</TableCell>
-                  <TableCell>{record.service_provider || "-"}</TableCell>
-                  <TableCell>
-                    <MaintenanceStatusBadge status={record.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    $
-                    {record.cost.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {record.next_scheduled
-                      ? new Date(record.next_scheduled).toLocaleDateString()
-                      : "-"}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">
+                    Loading records...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Results Count and Pagination Info */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>
-            Showing {startIndex + 1}-
-            {Math.min(endIndex, filteredRecords?.length || 0)} of{" "}
-            {filteredRecords?.length || 0} maintenance records
-          </span>
+              ) : paginatedRecords?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <FileWarning className="w-10 h-10 text-muted-foreground mb-2" />
+                      <span className="text-lg font-medium">
+                        No maintenance records found.
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="gap-2 mt-2 text-white border-white/20"
+                        onClick={() => setIsAddingRecord(true)}
+                      >
+                        Add your first record
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedRecords?.map((record) => (
+                  <TableRow
+                    key={record.id}
+                    className={`${"cursor-pointer hover:bg-muted/50"} ${
+                      record.status === "completed" ? "opacity-75" : ""
+                    }`}
+                    onClick={() => handleRowClick(record)}
+                    title={
+                      record.status === "completed"
+                        ? "Click to view completed record (read-only)"
+                        : "Click to edit record"
+                    }
+                  >
+                    <TableCell>
+                      {new Date(record.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {record.vehicle
+                        ? `${record.vehicle.make} ${record.vehicle.model} - ${record.vehicle.registration}`
+                        : "Unknown Vehicle"}
+                    </TableCell>
+                    <TableCell>{record.description}</TableCell>
+                    <TableCell>{record.service_provider || "-"}</TableCell>
+                    <TableCell>
+                      <MaintenanceStatusBadge status={record.status} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      $
+                      {record.cost.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {record.next_scheduled
+                        ? new Date(record.next_scheduled).toLocaleDateString()
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-        </div>
-      </div>
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="h-8 px-3"
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                if (totalPages <= 5) {
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                }
-
-                // Show first page, last page, current page, and pages around current
-                if (
-                  pageNum === 1 ||
-                  pageNum === totalPages ||
-                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                ) {
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                }
-
-                if (
-                  pageNum === currentPage - 2 ||
-                  pageNum === currentPage + 2
-                ) {
-                  return (
-                    <span key={pageNum} className="px-2 text-muted-foreground">
-                      ...
-                    </span>
-                  );
-                }
-
-                return null;
-              })}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="h-8 px-3"
-            >
-              Next
-            </Button>
-          </div>
-
-          {/* Timestamp at bottom */}
+        {/* Results Count and Pagination Info */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>•</span>
-            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            <span>
+              Showing {startIndex + 1}-
+              {Math.min(endIndex, filteredRecords?.length || 0)} of{" "}
+              {filteredRecords?.length || 0} maintenance records
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
           </div>
         </div>
-      )}
 
-      <MaintenanceFormDialog
-        open={isAddingRecord || !!selectedRecord}
-        onOpenChange={(open) => {
-          setIsAddingRecord(open);
-          if (!open) setSelectedRecord(undefined);
-        }}
-        maintenance={selectedRecord}
-        onMaintenanceDeleted={handleMaintenanceDeleted}
-      />
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  if (totalPages <= 5) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+
+                  // Show first page, last page, current page, and pages around current
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+
+                  if (
+                    pageNum === currentPage - 2 ||
+                    pageNum === currentPage + 2
+                  ) {
+                    return (
+                      <span
+                        key={pageNum}
+                        className="px-2 text-muted-foreground"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-8 px-3"
+              >
+                Next
+              </Button>
+            </div>
+
+            {/* Timestamp at bottom */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>•</span>
+              <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+        )}
+
+        <MaintenanceFormDialog
+          open={isAddingRecord || !!selectedRecord}
+          onOpenChange={(open) => {
+            setIsAddingRecord(open);
+            if (!open) setSelectedRecord(undefined);
+          }}
+          maintenance={selectedRecord}
+          onMaintenanceDeleted={handleMaintenanceDeleted}
+        />
+      </div>
     </div>
   );
 }

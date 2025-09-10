@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useInterestPoints } from '@/hooks/use-interest-points';
-import { CreateInterestPointData, INTEREST_POINT_CATEGORIES } from '@/lib/types/interest-point';
-import { MapPin, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useInterestPoints } from "@/hooks/use-interest-points";
+import {
+  CreateInterestPointData,
+  INTEREST_POINT_CATEGORIES,
+} from "@/lib/types/interest-point";
+import { MapPin, X } from "lucide-react";
+import { IconUpload } from "@/components/ui/icon-upload";
 
 interface AddInterestPointDialogProps {
   open: boolean;
@@ -20,72 +36,87 @@ export function AddInterestPointDialog({
   open,
   onClose,
   initialCoordinates,
-  onInterestPointAdded
+  onInterestPointAdded,
 }: AddInterestPointDialogProps) {
   const { createInterestPoint, isCreating } = useInterestPoints();
   const [formData, setFormData] = useState<CreateInterestPointData>({
-    name: '',
-    description: '',
-    category: 'general',
+    name: "",
+    description: "",
+    category: "general",
     latitude: 0,
     longitude: 0,
-    icon: '📍',
-    color: '#FF6B6B'
+    icon_url: undefined,
   });
 
   useEffect(() => {
     if (initialCoordinates) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         latitude: initialCoordinates.lat,
-        longitude: initialCoordinates.lng
+        longitude: initialCoordinates.lng,
       }));
     }
   }, [initialCoordinates]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Validate form data
     if (!formData.name.trim()) {
+      console.error("Interest point name is required");
       return;
     }
+
+    if (formData.latitude === 0 && formData.longitude === 0) {
+      console.error("Valid coordinates are required");
+      return;
+    }
+
+    if (!formData.category) {
+      console.error("Category is required");
+      return;
+    }
+
+    if (!formData.icon_url) {
+      console.error("Icon upload is required");
+      return;
+    }
+
+    console.log("Submitting interest point form with data:", formData);
 
     try {
       await createInterestPoint(formData);
       setFormData({
-        name: '',
-        description: '',
-        category: 'general',
+        name: "",
+        description: "",
+        category: "general",
         latitude: 0,
         longitude: 0,
-        icon: '📍',
-        color: '#FF6B6B'
+        icon_url: undefined,
       });
       onInterestPointAdded?.();
       onClose();
     } catch (error) {
-      console.error('Error creating interest point:', error);
+      console.error("Error creating interest point:", error);
     }
   };
 
   const handleCategoryChange = (category: string) => {
-    const selectedCategory = INTEREST_POINT_CATEGORIES.find(cat => cat.value === category);
-    if (selectedCategory) {
-      setFormData(prev => ({
-        ...prev,
-        category: category as any,
-        icon: selectedCategory.icon,
-        color: selectedCategory.color
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      category: category as any,
+    }));
   };
 
-  const handleCoordinateChange = (field: 'latitude' | 'longitude', value: string) => {
+  const handleCoordinateChange = (
+    field: "latitude" | "longitude",
+    value: string
+  ) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [field]: numValue
+        [field]: numValue,
       }));
     }
   };
@@ -107,9 +138,10 @@ export function AddInterestPointDialog({
               <Input
                 id="latitude"
                 type="number"
-                step="any"
                 value={formData.latitude}
-                onChange={(e) => handleCoordinateChange('latitude', e.target.value)}
+                onChange={(e) =>
+                  handleCoordinateChange("latitude", e.target.value)
+                }
                 placeholder="e.g., 2.0469"
                 required
               />
@@ -119,9 +151,10 @@ export function AddInterestPointDialog({
               <Input
                 id="longitude"
                 type="number"
-                step="any"
                 value={formData.longitude}
-                onChange={(e) => handleCoordinateChange('longitude', e.target.value)}
+                onChange={(e) =>
+                  handleCoordinateChange("longitude", e.target.value)
+                }
                 placeholder="e.g., 45.3182"
                 required
               />
@@ -133,7 +166,9 @@ export function AddInterestPointDialog({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               placeholder="Enter interest point name"
               required
             />
@@ -144,7 +179,12 @@ export function AddInterestPointDialog({
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               placeholder="Enter description (optional)"
               rows={3}
             />
@@ -152,59 +192,42 @@ export function AddInterestPointDialog({
 
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select value={formData.category} onValueChange={handleCategoryChange}>
+            <Select
+              value={formData.category}
+              onValueChange={handleCategoryChange}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
                 {INTEREST_POINT_CATEGORIES.map((category) => (
                   <SelectItem key={category.value} value={category.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{category.icon}</span>
-                      <span>{category.label}</span>
-                    </div>
+                    {category.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="icon">Icon</Label>
-              <Input
-                id="icon"
-                value={formData.icon}
-                onChange={(e) => setFormData(prev => ({ ...prev, icon: e.target.value }))}
-                placeholder="e.g., 🏥"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="color"
-                  type="color"
-                  value={formData.color}
-                  onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-16 h-10 p-1"
-                />
-                <Input
-                  value={formData.color}
-                  onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  placeholder="#FF6B6B"
-                  className="flex-1"
-                />
-              </div>
-            </div>
-          </div>
+          <IconUpload
+            value={formData.icon_url}
+            onChange={(url) =>
+              setFormData((prev) => ({ ...prev, icon_url: url || undefined }))
+            }
+            disabled={isCreating}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating || !formData.name.trim()}>
-              {isCreating ? 'Adding...' : 'Add Interest Point'}
+            <Button
+              type="submit"
+              disabled={
+                isCreating || !formData.name.trim() || !formData.icon_url
+              }
+            >
+              {isCreating ? "Adding..." : "Add Interest Point"}
             </Button>
           </DialogFooter>
         </form>

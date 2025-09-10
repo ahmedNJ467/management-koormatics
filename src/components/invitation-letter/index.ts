@@ -1,6 +1,3 @@
-export { default as ProfessionalInvitationLetter } from './ProfessionalInvitationLetter';
-export { default as PDFDownloader } from './PDFDownloader';
-export { default as PDFPreview } from './PDFPreview';
-export { default as PDFViewer } from './PDFViewer';
+export { default as PDFDownloader } from "./PDFDownloader";
 
-export type { InvitationLetterData } from './types';
+export type { InvitationLetterData } from "./types";

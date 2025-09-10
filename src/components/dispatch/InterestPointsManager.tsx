@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,8 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useInterestPoints } from "@/hooks/use-interest-points";
 import {
   InterestPoint,
@@ -24,6 +23,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Plus,
 } from "lucide-react";
 import { AddInterestPointDialog } from "./AddInterestPointDialog";
 import { EditInterestPointDialog } from "./EditInterestPointDialog";
@@ -48,6 +48,7 @@ export function InterestPointsManager({
   const [selectedPoint, setSelectedPoint] = useState<InterestPoint | null>(
     null
   );
+  const [activeTab, setActiveTab] = useState("all");
 
   const filteredPoints = (interestPoints as InterestPoint[]).filter((point) => {
     const matchesSearch =
@@ -60,6 +61,43 @@ export function InterestPointsManager({
 
     return matchesSearch && matchesCategory && matchesActive;
   });
+
+  // Separate points by category for tabs
+  const activePoints = filteredPoints.filter((point) => point.is_active);
+  const inactivePoints = filteredPoints.filter((point) => !point.is_active);
+  const airportPoints = filteredPoints.filter(
+    (point) => point.category === "airport"
+  );
+  const portPoints = filteredPoints.filter(
+    (point) => point.category === "port"
+  );
+  const marketPoints = filteredPoints.filter(
+    (point) => point.category === "market"
+  );
+  const cityPoints = filteredPoints.filter(
+    (point) => point.category === "city"
+  );
+  const securityPoints = filteredPoints.filter(
+    (point) => point.category === "security"
+  );
+  const fuelPoints = filteredPoints.filter(
+    (point) => point.category === "fuel"
+  );
+  const healthPoints = filteredPoints.filter(
+    (point) => point.category === "health"
+  );
+  const otherPoints = filteredPoints.filter(
+    (point) =>
+      ![
+        "airport",
+        "port",
+        "market",
+        "city",
+        "security",
+        "fuel",
+        "health",
+      ].includes(point.category)
+  );
 
   const handleEdit = (point: InterestPoint) => {
     setSelectedPoint(point);
@@ -83,118 +121,167 @@ export function InterestPointsManager({
     );
   };
 
+  const renderPointsList = (points: InterestPoint[]) => {
+    if (points.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No interest points found</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {points.map((point) => {
+          const categoryInfo = getCategoryInfo(point.category);
+          return (
+            <div
+              key={point.id}
+              className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+              onClick={() => onInterestPointSelected?.(point)}
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="text-2xl" style={{ color: point.color }}>
+                  {point.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{point.name}</div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Badge variant="secondary" className="text-xs">
+                      {categoryInfo.label}
+                    </Badge>
+                    <span className="text-xs">
+                      {point.latitude.toFixed(4)}, {point.longitude.toFixed(4)}
+                    </span>
+                  </div>
+                  {point.description && (
+                    <p className="text-xs text-muted-foreground truncate mt-1">
+                      {point.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(point);
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(point);
+                  }}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Interest Points</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Loading interest points...
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Loading interest points...
+          </p>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Interest Points</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <div className="text-red-500 mb-4">
-              <svg
-                className="h-12 w-12 mx-auto mb-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Failed to Load Interest Points
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {error instanceof Error
-                ? error.message
-                : "An unexpected error occurred"}
-            </p>
-            <div className="space-y-2 text-xs text-gray-500">
-              <p>Please check:</p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Your Supabase environment variables are configured</li>
-                <li>The database migration has been run</li>
-                <li>Your internet connection is stable</li>
-              </ul>
-            </div>
-            <Button
-              onClick={() => refetch()}
-              className="mt-4"
-              variant="outline"
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg
+              className="h-12 w-12 mx-auto mb-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              Try Again
-            </Button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-sm text-muted-foreground mb-4">
+            Failed to load interest points
+          </p>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            Try Again
+          </Button>
+        </div>
+      </div>
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+      <div className="h-full flex flex-col">
+        {/* Header with search and controls */}
+        <div className="p-3 border-b">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Interest Points ({filteredPoints.length})
-            </CardTitle>
-            <Button onClick={() => setAddDialogOpen(true)} size="sm">
+              <h2 className="font-semibold">
+                Interest Points ({filteredPoints.length})
+              </h2>
+            </div>
+            <Button
+              onClick={() => setAddDialogOpen(true)}
+              size="sm"
+              className="h-8"
+            >
+              <Plus className="h-4 w-4 mr-1" />
               Add Point
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search and Filters */}
+
+          {/* Search and Filter Controls */}
           <div className="flex gap-2">
-            <div className="flex-1 relative">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search interest points..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-8"
               />
             </div>
             <Select
               value={selectedCategory}
               onValueChange={setSelectedCategory}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-[140px] h-8">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Category" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {INTEREST_POINT_CATEGORIES.map((category) => (
                   <SelectItem key={category.value} value={category.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{category.icon}</span>
-                      <span>{category.label}</span>
-                    </div>
+                    {category.icon} {category.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -203,6 +290,7 @@ export function InterestPointsManager({
               variant="outline"
               size="sm"
               onClick={() => setShowInactive(!showInactive)}
+              className="h-8 px-3"
             >
               {showInactive ? (
                 <EyeOff className="h-4 w-4" />
@@ -211,106 +299,75 @@ export function InterestPointsManager({
               )}
             </Button>
           </div>
+        </div>
 
-          {/* Interest Points List */}
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {filteredPoints.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No interest points found</p>
-                {searchQuery || selectedCategory !== "all" ? (
-                  <p className="text-sm">
-                    Try adjusting your search or filters
-                  </p>
-                ) : (
-                  <p className="text-sm">
-                    Create your first interest point to get started
-                  </p>
-                )}
-              </div>
-            ) : (
-              filteredPoints.map((point) => {
-                const categoryInfo = getCategoryInfo(point.category);
-                return (
-                  <div
-                    key={point.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
-                    onClick={() => onInterestPointSelected?.(point)}
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="text-2xl" style={{ color: point.color }}>
-                        {point.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{point.name}</div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Badge variant="secondary" className="text-xs">
-                            {categoryInfo.label}
-                          </Badge>
-                          <span className="text-xs">
-                            {point.latitude.toFixed(4)},{" "}
-                            {point.longitude.toFixed(4)}
-                          </span>
-                        </div>
-                        {point.description && (
-                          <p className="text-xs text-muted-foreground truncate mt-1">
-                            {point.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(point);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(point);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        {/* Tabs */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="h-full flex flex-col"
+          >
+            <div className="px-3 pt-2">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="all" className="text-xs">
+                  All ({activePoints.length})
+                </TabsTrigger>
+                <TabsTrigger value="airport" className="text-xs">
+                  Airport ({airportPoints.length})
+                </TabsTrigger>
+                <TabsTrigger value="port" className="text-xs">
+                  Port ({portPoints.length})
+                </TabsTrigger>
+                <TabsTrigger value="city" className="text-xs">
+                  City ({cityPoints.length})
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3">
+              <TabsContent value="all" className="mt-0">
+                {renderPointsList(activePoints)}
+              </TabsContent>
+              <TabsContent value="airport" className="mt-0">
+                {renderPointsList(airportPoints)}
+              </TabsContent>
+              <TabsContent value="port" className="mt-0">
+                {renderPointsList(portPoints)}
+              </TabsContent>
+              <TabsContent value="city" className="mt-0">
+                {renderPointsList(cityPoints)}
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+      </div>
 
       {/* Dialogs */}
-      <AddInterestPointDialog
-        open={addDialogOpen}
-        onClose={() => setAddDialogOpen(false)}
-        onInterestPointAdded={handleInterestPointUpdated}
-      />
+      {addDialogOpen && (
+        <AddInterestPointDialog
+          open={addDialogOpen}
+          onClose={() => setAddDialogOpen(false)}
+          onInterestPointAdded={handleInterestPointUpdated}
+        />
+      )}
 
-      {selectedPoint && (
-        <>
-          <EditInterestPointDialog
-            open={editDialogOpen}
-            onClose={() => setEditDialogOpen(false)}
-            interestPoint={selectedPoint}
-            onInterestPointUpdated={handleInterestPointUpdated}
-          />
-          <DeleteInterestPointDialog
-            open={deleteDialogOpen}
-            onClose={() => setDeleteDialogOpen(false)}
-            interestPoint={selectedPoint}
-            onInterestPointDeleted={handleInterestPointUpdated}
-          />
-        </>
+      {editDialogOpen && selectedPoint && (
+        <EditInterestPointDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          interestPoint={selectedPoint}
+          onInterestPointUpdated={handleInterestPointUpdated}
+        />
+      )}
+
+      {deleteDialogOpen && selectedPoint && (
+        <DeleteInterestPointDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          interestPoint={selectedPoint}
+          onInterestPointDeleted={handleInterestPointUpdated}
+        />
       )}
     </>
   );

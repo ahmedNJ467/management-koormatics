@@ -1,82 +1,71 @@
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { useInterestPoints } from '@/hooks/use-interest-points';
-import { InterestPoint } from '@/lib/types/interest-point';
-import { AlertTriangle, MapPin } from 'lucide-react';
+import React from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useInterestPoints } from "@/hooks/use-interest-points";
+import { InterestPoint } from "@/lib/types/interest-point";
 
 interface DeleteInterestPointDialogProps {
   open: boolean;
-  onClose: () => void;
-  interestPoint: InterestPoint;
+  onOpenChange: (open: boolean) => void;
+  interestPoint: InterestPoint | null;
   onInterestPointDeleted?: () => void;
 }
 
 export function DeleteInterestPointDialog({
   open,
-  onClose,
+  onOpenChange,
   interestPoint,
-  onInterestPointDeleted
+  onInterestPointDeleted,
 }: DeleteInterestPointDialogProps) {
   const { deleteInterestPoint, isDeleting } = useInterestPoints();
 
   const handleDelete = async () => {
+    if (!interestPoint) return;
+
     try {
-      await deleteInterestPoint(interestPoint.id);
+      console.log(
+        "Deleting interest point:",
+        interestPoint.id,
+        interestPoint.name
+      );
+      deleteInterestPoint(interestPoint.id);
       onInterestPointDeleted?.();
-      onClose();
+      onOpenChange(false);
     } catch (error) {
-      console.error('Error deleting interest point:', error);
+      console.error("Failed to delete interest point:", error);
+      // The error will be handled by the mutation's onError callback
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            Delete Interest Point
-          </DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this interest point? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/50">
-          <div
-            className="text-3xl"
-            style={{ color: interestPoint.color }}
-          >
-            {interestPoint.icon}
-          </div>
-          <div className="flex-1">
-            <div className="font-medium">{interestPoint.name}</div>
-            <div className="text-sm text-muted-foreground">
-              {interestPoint.latitude.toFixed(4)}, {interestPoint.longitude.toFixed(4)}
-            </div>
-            {interestPoint.description && (
-              <div className="text-sm text-muted-foreground mt-1">
-                {interestPoint.description}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button 
-            type="button" 
-            variant="destructive" 
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Interest Point</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{interestPoint?.name}"? This action
+            cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700"
           >
-            {isDeleting ? 'Deleting...' : 'Delete Interest Point'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            {isDeleting ? "Deleting..." : "Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

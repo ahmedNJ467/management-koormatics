@@ -5,37 +5,26 @@ export function useContactCounts() {
   return useQuery({
     queryKey: ["client_contacts_count"],
     queryFn: async () => {
-      // First get all client IDs
-      const { data: clientData, error: clientError } = await supabase
-        .from("clients")
-        .select("id");
+      // Use a single query with groupBy to get counts for all clients
+      const { data, error } = await supabase
+        .from("client_contacts")
+        .select("client_id")
+        .not("client_id", "is", null);
 
-      if (clientError) throw clientError;
+      if (error) throw error;
 
-      const clientIds = (clientData as any[]).map((client) => client.id);
-
-      // For each client, count contacts
-      const countsPromises = clientIds.map(async (clientId) => {
-        const { count, error } = await supabase
-          .from("client_contacts")
-          .select("*", { count: "exact", head: true })
-          .eq("client_id", clientId);
-
-        if (error) throw error;
-
-        return { clientId, count: count || 0 };
-      });
-
-      const countsResults = await Promise.all(countsPromises);
-
-      // Convert to record
+      // Count occurrences of each client_id
       const counts: Record<string, number> = {};
-      countsResults.forEach((result) => {
-        counts[result.clientId] = result.count;
+      (data || []).forEach((contact: any) => {
+        const clientId = contact.client_id;
+        counts[clientId] = (counts[clientId] || 0) + 1;
       });
 
       return counts;
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -52,36 +41,22 @@ export function useMemberCounts() {
           return {};
         }
 
-        // First get all client IDs
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("id");
+        // Use a single query to get all member data
+        const { data, error } = await supabase
+          .from("client_members")
+          .select("client_id")
+          .not("client_id", "is", null);
 
-        if (clientError) throw clientError;
+        if (error) {
+          console.error("Error fetching member counts:", error);
+          return {};
+        }
 
-        const clientIds = (clientData as any[]).map((client) => client.id);
-
-        // For each client, count members
-        const countsPromises = clientIds.map(async (clientId) => {
-          const { count, error } = await supabase
-            .from("client_members")
-            .select("*", { count: "exact", head: true })
-            .eq("client_id", clientId);
-
-          if (error) {
-            console.error("Error counting members for client", clientId, error);
-            return { clientId, count: 0 };
-          }
-
-          return { clientId, count: count || 0 };
-        });
-
-        const countsResults = await Promise.all(countsPromises);
-
-        // Convert to record
+        // Count occurrences of each client_id
         const counts: Record<string, number> = {};
-        countsResults.forEach((result) => {
-          counts[result.clientId] = result.count;
+        (data || []).forEach((member: any) => {
+          const clientId = member.client_id;
+          counts[clientId] = (counts[clientId] || 0) + 1;
         });
 
         return counts;
@@ -90,5 +65,8 @@ export function useMemberCounts() {
         return {};
       }
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnWindowFocus: false,
   });
 }

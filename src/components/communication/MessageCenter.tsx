@@ -1,225 +1,205 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, MessageCircle, Users, Search } from "lucide-react";
+import { Send, Search, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
-interface Message {
+interface DriverItem {
   id: string;
-  sender_type: string;
+  name: string;
+  license_number?: string | null;
+}
+
+interface TripRow {
+  id: string;
+  driver_id: string;
+  date?: string | null;
+  status?: string | null;
+}
+
+interface MessageRow {
+  id: string;
+  sender_type: "admin" | "driver" | "client";
   sender_name: string;
   message: string;
   timestamp: string;
-  trip_id?: string;
+  trip_id: string;
   is_read: boolean;
 }
 
-interface Trip {
-  id: string;
-  pickup_location: string;
-  dropoff_location: string;
-  date: string;
-  driver_name?: string;
-  client_name?: string;
-}
-
 export function MessageCenter() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
+  const [drivers, setDrivers] = useState<DriverItem[]>([]);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [driverSearch, setDriverSearch] = useState("");
+  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [driverTrips, setDriverTrips] = useState<TripRow[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    fetchMessages();
-    fetchTrips();
+    const loadDrivers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("drivers")
+          .select("id, name, license_number")
+          .order("name", { ascending: true });
+        if (error) throw error;
+        setDrivers(data as any[] as DriverItem[]);
+      } catch (e) {
+        console.error("Error loading drivers", e);
+        setDrivers([]);
+      }
+    };
+    loadDrivers();
   }, []);
 
-  const fetchMessages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("trip_messages")
-        .select("*")
-        .order("timestamp", { ascending: false });
+  useEffect(() => {
+    const loadDriverContext = async (driverId: string) => {
+      try {
+        // Get this driver's trips (recent first)
+        const { data: trips, error: tripsError } = await supabase
+          .from("trips")
+          .select("id, driver_id, date, status")
+          .eq("driver_id", driverId as any)
+          .order("date", { ascending: false });
+        if (tripsError) throw tripsError;
 
-      if (error) {
-        console.error("Error fetching messages:", error);
-        return;
+        const tripRows = trips as any[] as TripRow[];
+        setDriverTrips(tripRows);
+
+        const tripIds = tripRows.map((t) => t.id).filter(Boolean);
+        if (tripIds.length === 0) {
+          setMessages([]);
+          return;
+        }
+
+        const { data: msgs, error: msgsError } = await supabase
+          .from("trip_messages")
+          .select("*")
+          .in("trip_id", tripIds as any)
+          .order("timestamp", { ascending: true });
+        if (msgsError) throw msgsError;
+        setMessages(msgs as any[] as MessageRow[]);
+      } catch (e) {
+        console.error("Error loading driver chat context", e);
+        setMessages([]);
+        setDriverTrips([]);
       }
-      setMessages((data as any[]) || []);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-      setMessages([]);
+    };
+
+    if (selectedDriverId) {
+      loadDriverContext(selectedDriverId);
     }
-  };
+  }, [selectedDriverId]);
 
-  const fetchTrips = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("trips")
-        .select(
-          `
-          id,
-          pickup_location,
-          dropoff_location,
-          date,
-          drivers!inner(name),
-          clients(name)
-        `
-        )
-        .in("status", ["scheduled", "in_progress"] as any)
-        .order("date", { ascending: true });
+  const latestActiveTripId = useMemo(() => {
+    if (!driverTrips || driverTrips.length === 0) return null;
+    const inProgress = driverTrips.find((t) => t.status === "in_progress");
+    if (inProgress) return inProgress.id;
+    const scheduled = driverTrips.find((t) => t.status === "scheduled");
+    if (scheduled) return scheduled.id;
+    return driverTrips[0]?.id || null;
+  }, [driverTrips]);
 
-      if (error) {
-        console.error("Error fetching trips:", error);
-        setTrips([]);
-        return;
-      }
-
-      const formattedTrips =
-        (data as any[])?.map((trip) => ({
-          id: trip.id,
-          pickup_location: trip.pickup_location || "Unknown Location",
-          dropoff_location: trip.dropoff_location || "Unknown Destination",
-          date: trip.date,
-          driver_name: (trip.drivers as any)?.name || "Unassigned",
-          client_name: (trip.clients as any)?.name || "Unknown Client",
-        })) || [];
-
-      setTrips(formattedTrips);
-    } catch (error) {
-      console.error("Error fetching trips:", error);
-      setTrips([]);
+  const groupedMessages = useMemo(() => {
+    const groups: Record<string, MessageRow[]> = {};
+    for (const m of messages) {
+      const key = format(new Date(m.timestamp), "dd.MM.yyyy");
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(m);
     }
-  };
+    return groups;
+  }, [messages]);
+
+  const filteredDrivers = useMemo(() => {
+    const term = driverSearch.trim().toLowerCase();
+    if (!term) return drivers;
+    return drivers.filter((d) =>
+      [d.name, d.license_number || ""].some((v) =>
+        (v || "").toLowerCase().includes(term)
+      )
+    );
+  }, [drivers, driverSearch]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedTrip) return;
-
-    setIsLoading(true);
+    if (!newMessage.trim() || !selectedDriverId || !latestActiveTripId) return;
+    setSending(true);
     try {
-      const { error } = await supabase.from("trip_messages").insert({
-        trip_id: selectedTrip,
-        sender_type: "admin",
+      const payload = {
+        trip_id: latestActiveTripId,
+        sender_type: "admin" as const,
         sender_name: "Fleet Manager",
         message: newMessage.trim(),
         timestamp: new Date().toISOString(),
         is_read: false,
-      } as any);
-
+      };
+      const { error } = await supabase
+        .from("trip_messages")
+        .insert(payload as any);
       if (error) throw error;
-
       setNewMessage("");
-      fetchMessages();
-    } catch (error) {
-      console.error("Error sending message:", error);
+      // Refresh thread
+      const { data: msgs } = await supabase
+        .from("trip_messages")
+        .select("*")
+        .in("trip_id", (driverTrips || []).map((t) => t.id) as any)
+        .order("timestamp", { ascending: true });
+      setMessages(((msgs as any[]) || []) as MessageRow[]);
+    } catch (e) {
+      console.error("Error sending message", e);
     } finally {
-      setIsLoading(false);
+      setSending(false);
     }
   };
 
-  const filteredTrips = trips.filter(
-    (trip) =>
-      trip.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.dropoff_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const selectedTripMessages = messages.filter(
-    (msg) => msg.trip_id === selectedTrip
-  );
-  const unreadCount = messages.filter(
-    (msg) => !msg.is_read && msg.sender_type === "driver"
-  ).length;
-
-  if (trips.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Communication Center
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground py-8">
-            No active trips available for communication
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[400px]">
-      {/* Trip List */}
-      <Card className="lg:col-span-1">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Active Trips ({filteredTrips.length})
-            </CardTitle>
-            {unreadCount > 0 && (
-              <Badge variant="destructive" className="h-5 text-xs">
-                {unreadCount}
-              </Badge>
-            )}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full p-0">
+      {/* Left - Drivers list */}
+      <Card className="lg:col-span-4 flex flex-col rounded-none">
+        <CardContent className="p-0 flex-1 flex flex-col">
+          <div className="p-3 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search drivers..."
+                value={driverSearch}
+                onChange={(e) => setDriverSearch(e.target.value)}
+                className="pl-9 h-8 text-xs"
+              />
+            </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search trips..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-8 text-xs"
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[280px]">
-            {filteredTrips.map((trip) => {
-              const tripMessages = messages.filter(
-                (msg) => msg.trip_id === trip.id
-              );
-              const hasUnread = tripMessages.some(
-                (msg) => !msg.is_read && msg.sender_type === "driver"
-              );
-
+          <ScrollArea className="flex-1">
+            {filteredDrivers.map((d) => {
+              const isActive = selectedDriverId === d.id;
               return (
                 <div
-                  key={trip.id}
-                  className={`p-3 border-b cursor-pointer hover:bg-muted/50 text-xs ${
-                    selectedTrip === trip.id ? "bg-muted" : ""
+                  key={d.id}
+                  className={`px-3 py-2 border-b cursor-pointer text-sm hover:bg-muted/50 ${
+                    isActive ? "bg-muted" : ""
                   }`}
-                  onClick={() => setSelectedTrip(trip.id)}
+                  onClick={() => setSelectedDriverId(d.id)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">
-                        {trip.pickup_location} → {trip.dropoff_location}
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px]">
+                        {d.name?.[0]?.toUpperCase() || "D"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-xs">
+                        {d.name}
                       </div>
-                      <div className="text-muted-foreground mt-1">
-                        {format(new Date(trip.date), "MMM d, yyyy")}
-                      </div>
-                      <div className="text-muted-foreground">
-                        Driver: {trip.driver_name}
-                      </div>
-                      <div className="text-muted-foreground">
-                        Client: {trip.client_name}
-                      </div>
+                      {d.license_number && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {d.license_number}
+                        </div>
+                      )}
                     </div>
-                    {hasUnread && (
-                      <div className="h-2 w-2 bg-red-500 rounded-full ml-2 mt-1"></div>
-                    )}
                   </div>
                 </div>
               );
@@ -228,94 +208,91 @@ export function MessageCenter() {
         </CardContent>
       </Card>
 
-      {/* Message Area */}
-      <Card className="lg:col-span-2">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            {selectedTrip ? "Trip Communication" : "Select a Trip"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {selectedTrip ? (
-            <div className="flex flex-col h-[320px]">
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
-                {selectedTripMessages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8 text-sm">
-                    No messages yet. Start a conversation!
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedTripMessages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${
-                          message.sender_type === "admin"
-                            ? "justify-end"
-                            : "justify-start"
-                        }`}
-                      >
+      {/* Right - Thread */}
+      <Card className="lg:col-span-8 flex flex-col rounded-none">
+        <CardContent className="p-0 flex-1 flex flex-col">
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full p-4">
+              {!selectedDriverId ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                  Select a driver to start chatting
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                  No messages yet. Start a conversation!
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {Object.entries(groupedMessages).map(([dateKey, items]) => (
+                    <div key={dateKey} className="space-y-2">
+                      <div className="flex items-center justify-center">
+                        <span className="text-[11px] text-muted-foreground px-2 py-0.5 border rounded-none">
+                          {dateKey}
+                        </span>
+                      </div>
+                      {items.map((m) => (
                         <div
-                          className={`max-w-[80%] rounded-lg p-2 text-xs ${
-                            message.sender_type === "admin"
-                              ? "bg-primary text-primary-foreground ml-auto"
-                              : "bg-muted"
+                          key={m.id}
+                          className={`flex ${
+                            m.sender_type === "admin"
+                              ? "justify-end"
+                              : "justify-start"
                           }`}
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            <Avatar className="h-4 w-4">
-                              <AvatarFallback className="text-xs">
-                                {message.sender_name.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <p className="font-medium">{message.sender_name}</p>
+                          <div
+                            className={`max-w-[80%] rounded-none px-3 py-2 text-xs ${
+                              m.sender_type === "admin"
+                                ? "bg-primary text-primary-foreground ml-auto"
+                                : "bg-muted"
+                            }`}
+                          >
+                            <div className="whitespace-pre-wrap break-words">
+                              {m.message}
+                            </div>
+                            <div className="mt-1 opacity-70 text-[10px] text-right">
+                              {format(new Date(m.timestamp), "HH:mm")}
+                            </div>
                           </div>
-                          <p>{message.message}</p>
-                          <p className="mt-1 opacity-70">
-                            {format(
-                              new Date(message.timestamp),
-                              "MMM d, h:mm a"
-                            )}
-                          </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-
-              {/* Message Input */}
-              <div className="p-3 border-t">
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Type your message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="min-h-[40px] resize-none text-xs"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                  />
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || isLoading}
-                    size="sm"
-                    className="self-end"
-                  >
-                    <Send className="h-3 w-3" />
-                  </Button>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
+            </ScrollArea>
+          </div>
+          <div className="border-t p-2">
+            <div className="flex gap-2 items-end">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              <Textarea
+                placeholder="Message"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="min-h-[36px] max-h-[120px] resize-y text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={
+                  !newMessage.trim() ||
+                  !selectedDriverId ||
+                  !latestActiveTripId ||
+                  sending
+                }
+                size="sm"
+                className="h-8"
+              >
+                <Send className="h-3 w-3" />
+              </Button>
             </div>
-          ) : (
-            <div className="flex items-center justify-center h-[320px] text-muted-foreground text-sm">
-              Select a trip from the list to view and send messages
-            </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

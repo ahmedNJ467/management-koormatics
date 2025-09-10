@@ -11,7 +11,7 @@ import {
 } from "@/lib/invoice-helpers";
 import { supabase } from "@/integrations/supabase/client";
 
-export const generateQuotationPDF = (quotation: DisplayQuotation) => {
+export const generateQuotationPDF = async (quotation: DisplayQuotation) => {
   const doc = new jsPDF({
     orientation: "p",
     unit: "mm",
@@ -23,16 +23,46 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
 
   doc.setFont("helvetica");
 
-  const logoPath = "/lovable-uploads/6996f29f-4f5b-4a22-ba41-51dc5c98afb7.png";
-  const logoAspectRatio = 123 / 622;
-  const logoWidth = 50;
-  const logoHeight = logoWidth * logoAspectRatio;
+  // Load Koormatics logo with high-quality rendering
+  const logoUrl = "/images/Koormatics-logo.png";
+  const logoWidth = 60; // Increased width for better visibility
+  const logoHeight = 18; // Increased height proportionally
+
   try {
-    doc.addImage(logoPath, "PNG", margin, 15, logoWidth, logoHeight);
+    const pngDataUrl: string = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        // Higher scale factor for maximum clarity
+        const targetScale = 4; // Increased from 3 to 4 for better quality
+        canvas.width = Math.max(1, Math.floor(logoWidth * targetScale));
+        canvas.height = Math.max(1, Math.floor(logoHeight * targetScale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas 2D context unavailable"));
+
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        // Draw image with high quality settings
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/png", 1.0)); // Maximum quality
+      };
+      img.onerror = (err) => reject(err);
+      img.src = logoUrl;
+    });
+    doc.addImage(pngDataUrl, "PNG", margin, 15, logoWidth, logoHeight);
   } catch (e) {
     console.error("Error adding logo:", e);
+    // Fallback to text logo
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
+    doc.setTextColor(
+      pdfColors.primary[0],
+      pdfColors.primary[1],
+      pdfColors.primary[2]
+    );
     doc.text("Koormatics", margin, 25);
   }
 
@@ -78,35 +108,61 @@ export const generateQuotationPDF = (quotation: DisplayQuotation) => {
     { align: "right" }
   );
 
-  let yPos = 15 + logoHeight + 5 + companyInfoText.length * 5 + 10;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(
-    pdfColors.primary[0],
-    pdfColors.primary[1],
-    pdfColors.primary[2]
-  );
-  doc.text("BILL TO", margin, yPos);
+  let yPos = 15 + logoHeight + 5 + companyInfoText.length * 5 + 5; // Reduced spacing
 
+  // Create compact bordered box for client information
+  const clientBoxWidth = 80;
+  const clientBoxHeight = 35; // Increased height for better text spacing
+  const clientBoxX = margin;
+  const clientBoxY = yPos;
+
+  // Draw border around client info box
+  doc.setDrawColor(
+    pdfColors.border[0],
+    pdfColors.border[1],
+    pdfColors.border[2]
+  );
+  doc.setLineWidth(0.5);
+  doc.rect(clientBoxX, clientBoxY, clientBoxWidth, clientBoxHeight);
+
+  // Add client information inside the box (no "BILL TO" header)
   doc.setFont("helvetica", "normal");
   doc.setTextColor(pdfColors.text[0], pdfColors.text[1], pdfColors.text[2]);
-  yPos += 5;
-  doc.text(quotation.client_name, margin, yPos);
-  yPos += 5;
+  let clientY = clientBoxY + 6; // Increased top padding for better spacing
+
+  // Client name
+  doc.setFont("helvetica", "bold");
+  doc.text(quotation.client_name, clientBoxX + 4, clientY);
+  clientY += 5; // Consistent spacing
+
+  // Client address
   if (quotation.client_address) {
-    const addressLines = doc.splitTextToSize(quotation.client_address, 80);
-    doc.text(addressLines, margin, yPos);
-    yPos += doc.getTextDimensions(addressLines).h;
-  }
-  if (quotation.client_email) {
-    doc.text(quotation.client_email, margin, yPos);
-    yPos += 5;
-  }
-  if (quotation.client_phone) {
-    doc.text(quotation.client_phone, margin, yPos);
+    doc.setFont("helvetica", "normal");
+    const addressLines = doc.splitTextToSize(
+      quotation.client_address,
+      clientBoxWidth - 8
+    );
+    doc.text(addressLines, clientBoxX + 4, clientY);
+    clientY += doc.getTextDimensions(addressLines).h + 3; // Better spacing
   }
 
-  const tableStartY = Math.max(yPos, 70) + 15;
+  // Client email
+  if (quotation.client_email) {
+    doc.setFont("helvetica", "normal");
+    doc.text(quotation.client_email, clientBoxX + 4, clientY);
+    clientY += 4; // Consistent spacing
+  }
+
+  // Client phone
+  if (quotation.client_phone) {
+    doc.setFont("helvetica", "normal");
+    doc.text(quotation.client_phone, clientBoxX + 4, clientY);
+  }
+
+  // Update yPos for table positioning with reduced spacing
+  yPos = clientBoxY + clientBoxHeight + 6; // Reduced spacing after box
+
+  const tableStartY = Math.max(yPos, 70) + 8; // Reduced spacing before table
 
   autoTable(doc, {
     startY: tableStartY,

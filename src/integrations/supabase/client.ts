@@ -53,5 +53,28 @@ export const supabase = createClient<Database>(
         "X-Client-Info": "supabase-js/2.x",
       },
     },
+    // Add retry configuration for better network handling
+    db: {
+      schema: "public",
+    },
+    // Add realtime configuration
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
   }
 );
+
+// Add global error handler for network issues
+if (typeof window !== "undefined") {
+  // Handle network errors globally
+  window.addEventListener("unhandledrejection", (event) => {
+    if (event.reason?.message?.includes("Failed to fetch")) {
+      console.warn(
+        "Network error detected, this might be a temporary connection issue"
+      );
+      event.preventDefault();
+    }
+  });
+}

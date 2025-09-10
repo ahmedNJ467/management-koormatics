@@ -94,16 +94,111 @@ export class InterestPointService {
     pointData: CreateInterestPointData
   ): Promise<InterestPoint> {
     try {
+      console.log("Creating interest point with data:", pointData);
+
+      // Validate required fields
+      if (!pointData.name || !pointData.name.trim()) {
+        throw new Error("Interest point name is required");
+      }
+
+      // Convert coordinates to numbers if they're strings
+      const latitude =
+        typeof pointData.latitude === "string"
+          ? parseFloat(pointData.latitude)
+          : pointData.latitude;
+      const longitude =
+        typeof pointData.longitude === "string"
+          ? parseFloat(pointData.longitude)
+          : pointData.longitude;
+
+      if (
+        typeof latitude !== "number" ||
+        typeof longitude !== "number" ||
+        isNaN(latitude) ||
+        isNaN(longitude)
+      ) {
+        throw new Error("Valid latitude and longitude are required");
+      }
+
+      if (!pointData.category) {
+        throw new Error("Category is required");
+      }
+
+      // Get current user ID for created_by field
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // Prepare data for insertion
+      const insertData = {
+        name: pointData.name.trim(),
+        description: pointData.description?.trim() || null,
+        category: pointData.category,
+        latitude: latitude,
+        longitude: longitude,
+        icon_url: pointData.icon_url || null,
+        is_active: true,
+        created_by: user?.id || null, // Set to current user ID or null
+      };
+
+      console.log("Inserting data:", insertData);
+
       const { data, error } = await supabase
         .from("interest_points" as any)
-        .insert([pointData] as any)
+        .insert([insertData] as any)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: error,
+        });
+        throw error;
+      }
+
+      console.log("Successfully created interest point:", data);
       return (data as unknown as InterestPoint) || null;
     } catch (error) {
-      console.error("Error creating interest point:", error);
+      console.error("Error creating interest point:", {
+        error,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorMessage: (error as Error)?.message,
+        errorStack: (error as Error)?.stack,
+        stringified: JSON.stringify(error, null, 2),
+      });
+
+      // Provide more specific error information
+      if (error instanceof Error) {
+        if (error.message.includes("JWT")) {
+          throw new Error(
+            "Authentication error: Please check your Supabase credentials"
+          );
+        } else if (error.message.includes("permission")) {
+          throw new Error(
+            "Permission denied: You don't have permission to create interest points"
+          );
+        } else if (
+          error.message.includes("relation") ||
+          error.message.includes("table")
+        ) {
+          throw new Error(
+            "Database table not found: Please run the interest points migration first"
+          );
+        } else if (
+          error.message.includes("duplicate") ||
+          error.message.includes("unique")
+        ) {
+          throw new Error(
+            "Duplicate entry: An interest point with this name already exists"
+          );
+        }
+      }
+
       throw error;
     }
   }
@@ -130,14 +225,43 @@ export class InterestPointService {
 
   static async deleteInterestPoint(id: string): Promise<void> {
     try {
-      const { error } = await supabase
+      console.log("Attempting to delete interest point with ID:", id);
+
+      const { data, error } = await supabase
         .from("interest_points" as any)
         .delete()
-        .eq("id", id as any);
+        .eq("id", id as any)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
+
+      console.log("Delete operation result:", data);
     } catch (error) {
       console.error("Error deleting interest point:", error);
+
+      // Provide more specific error information
+      if (error instanceof Error) {
+        if (error.message.includes("JWT")) {
+          throw new Error(
+            "Authentication error: Please check your Supabase credentials"
+          );
+        } else if (error.message.includes("permission")) {
+          throw new Error(
+            "Permission denied: You don't have permission to delete this interest point"
+          );
+        } else if (
+          error.message.includes("relation") ||
+          error.message.includes("table")
+        ) {
+          throw new Error(
+            "Database table not found: Please run the interest points migration first"
+          );
+        }
+      }
+
       throw error;
     }
   }

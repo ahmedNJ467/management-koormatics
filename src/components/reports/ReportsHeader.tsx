@@ -1,7 +1,12 @@
-
 import { Calendar, X } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 
@@ -18,17 +23,13 @@ export function ReportsHeader({
   setTimeRange,
   dateRange,
   handleDateRangeChange,
-  clearDateRange
+  clearDateRange,
 }: ReportsHeaderProps) {
   return (
-    <div className="flex justify-between items-center">
-      <div>
-        <h1 className="text-3xl font-bold">Management Reports</h1>
-        <p className="text-muted-foreground mt-1">Koormatics Fleet Management System</p>
-      </div>
+    <div className="flex justify-end items-center">
       <div className="flex items-center gap-4">
-        <Select 
-          value={timeRange} 
+        <Select
+          value={timeRange}
           onValueChange={(value) => {
             setTimeRange(value);
             if (value !== "custom") {
@@ -48,7 +49,7 @@ export function ReportsHeader({
             <SelectItem value="custom">Custom Range</SelectItem>
           </SelectContent>
         </Select>
-        
+
         {timeRange === "custom" && (
           <div className="flex items-center gap-2">
             <DateRangePicker

@@ -13,6 +13,7 @@ import { NotesField } from "./form/NotesField";
 import { FormFooter } from "./form/FormFooter";
 import { SecurityEscortToggle } from "./form/SecurityEscortToggle";
 import { formatUIServiceType } from "./form/utils";
+import { parsePassengers } from "./utils";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -230,6 +231,9 @@ export function TripForm({
           setEscortCount={setEscortCount}
         />
 
+        {/* Hidden input for client_type */}
+        <input type="hidden" name="client_type" value={selectedClientType} />
+
         <PassengerManagement
           passengers={passengers}
           setPassengers={setPassengers}
@@ -276,21 +280,4 @@ export function TripForm({
       </form>
     </ScrollArea>
   );
-}
-
-// Helper function to parse passengers from notes (to be moved to utils)
-function parsePassengers(notes: string): string[] {
-  if (!notes) return [];
-
-  // This regex looks for patterns like "Passengers: John Doe, Jane Smith"
-  const passengersMatch = notes.match(/Passengers?:?\s*([^.]+)/i);
-
-  if (passengersMatch && passengersMatch[1]) {
-    return passengersMatch[1]
-      .split(",")
-      .map((name) => name.trim())
-      .filter((name) => name.length > 0);
-  }
-
-  return [];
 }

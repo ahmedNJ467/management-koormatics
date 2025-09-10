@@ -1,33 +1,49 @@
-
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
-  onAddItem?: () => void;  // For adding new items in list inputs
-  onRemoveItem?: () => void;  // For removing items in list inputs
-  showAddButton?: boolean;  // To display add button for list inputs
-  showRemoveButton?: boolean;  // To display remove button for list inputs
-  addButtonLabel?: string;  // Custom label for add button 
-  removeButtonLabel?: string;  // Custom label for remove button
+  onAddItem?: () => void; // For adding new items in list inputs
+  onRemoveItem?: () => void; // For removing items in list inputs
+  showAddButton?: boolean; // To display add button for list inputs
+  showRemoveButton?: boolean; // To display remove button for list inputs
+  addButtonLabel?: string; // Custom label for add button
+  removeButtonLabel?: string; // Custom label for remove button
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, onAddItem, onRemoveItem, showAddButton, showRemoveButton, addButtonLabel, removeButtonLabel, ...props }, ref) => {
+  (
+    {
+      className,
+      type,
+      onAddItem,
+      onRemoveItem,
+      showAddButton,
+      showRemoveButton,
+      addButtonLabel,
+      removeButtonLabel,
+      ...props
+    },
+    ref
+  ) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       // If Enter is pressed and onAddItem is provided, trigger the add action
-      if (e.key === 'Enter' && onAddItem) {
-        e.preventDefault();  // Prevent form submission
+      if (e.key === "Enter" && onAddItem) {
+        e.preventDefault(); // Prevent form submission
         onAddItem();
       }
     };
 
     return (
-      <div className={showAddButton || showRemoveButton ? "flex items-center gap-2" : ""}>
+      <div
+        className={
+          showAddButton || showRemoveButton ? "flex items-center gap-2" : ""
+        }
+      >
         <input
           type={type}
           className={cn(
-            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-ring focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
             className
           )}
           ref={ref}
@@ -55,9 +71,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </button>
         )}
       </div>
-    )
+    );
   }
-)
-Input.displayName = "Input"
+);
+Input.displayName = "Input";
 
-export { Input }
+export { Input };

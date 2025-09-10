@@ -47,9 +47,9 @@ export interface IncidentReportForPdf {
 // Helper function to load image as data URL
 async function loadImageAsDataURL(url: string): Promise<string> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: "no-store" });
     const blob = await response.blob();
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
@@ -57,6 +57,25 @@ async function loadImageAsDataURL(url: string): Promise<string> {
     });
   } catch (error) {
     console.error("Error loading image:", error);
+    return "";
+  }
+}
+
+async function loadImageAsPngDataURL(url: string): Promise<string> {
+  try {
+    await new Promise((r) => setTimeout(r, 0));
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/png");
+  } catch {
     return "";
   }
 }
@@ -173,7 +192,9 @@ export async function generateIncidentReportPdf(
 
   let logoDataUrl: string | null = null;
   if (options?.logoUrl) {
-    logoDataUrl = await loadImageAsDataURL(options.logoUrl);
+    logoDataUrl =
+      (await loadImageAsPngDataURL(options.logoUrl)) ||
+      (await loadImageAsDataURL(options.logoUrl));
   }
 
   // Top band
@@ -182,7 +203,15 @@ export async function generateIncidentReportPdf(
   if (logoDataUrl) {
     const logoWidth = 160;
     const logoHeight = 42;
-    doc.addImage(logoDataUrl, "PNG", marginX, 22, logoWidth, logoHeight);
+    try {
+      doc.addImage(logoDataUrl, "PNG", marginX, 22, logoWidth, logoHeight);
+    } catch {
+      try {
+        doc.addImage(logoDataUrl, "JPEG", marginX, 22, logoWidth, logoHeight);
+      } catch {
+        // skip if still invalid
+      }
+    }
   }
 
   // Company/title block on right
@@ -359,7 +388,11 @@ export async function generateIncidentReportPdf(
       head: [["Incident Description"]],
       body: [[incident.description]],
       styles: { fontSize: 10, cellPadding: 8, valign: "top" },
-      headStyles: { fillColor: brandPrimary, textColor: [255, 255, 255], halign: "left" },
+      headStyles: {
+        fillColor: brandPrimary,
+        textColor: [255, 255, 255],
+        halign: "left",
+      },
       columnStyles: { 0: { cellWidth: pageWidth - marginX * 2 } },
       theme: "grid",
       margin: { left: marginX, right: marginX },

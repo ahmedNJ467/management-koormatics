@@ -63,8 +63,8 @@ export function VehiclesReport({
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              exportToPDF(
+            onClick={async () =>
+              await exportToPDF(
                 vehiclesData || [],
                 "Vehicles Report",
                 "vehicles-report"

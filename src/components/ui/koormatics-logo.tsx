@@ -24,7 +24,7 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
         alt="Koormatics Logo"
         width={300}
         height={80}
-        className="w-full h-full object-contain"
+        className="h-full w-auto object-contain"
         priority
       />
     </div>

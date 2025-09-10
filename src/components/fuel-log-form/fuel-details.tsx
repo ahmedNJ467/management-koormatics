@@ -145,7 +145,6 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
         )}
       />
 
-      {/* Temporarily commented out - filled_by column doesn't exist in database yet
       <FormField
         control={form.control}
         name="filled_by"
@@ -163,7 +162,6 @@ export function FuelDetails({ form, vehicles }: FuelDetailsProps) {
           </FormItem>
         )}
       />
-      */}
 
       {/* Storage selection removed from fuel log form */}
     </>

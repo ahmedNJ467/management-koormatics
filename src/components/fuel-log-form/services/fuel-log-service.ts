@@ -45,7 +45,7 @@ export async function getLatestMileage(
   const { data, error } = await supabase
     .from("fuel_logs")
     .select("current_mileage, date, created_at")
-            .eq("vehicle_id", vehicleId as any)
+    .eq("vehicle_id", vehicleId as any)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1);
@@ -109,7 +109,10 @@ export async function saveFuelLog(
       current_mileage: Number(values.current_mileage),
       mileage: Number(values.mileage),
       notes: values.notes || null,
-      fuel_management_id: values.fuel_management_id ? values.fuel_management_id : null, // Normalize empty string to null
+      filled_by: values.filled_by || null,
+      fuel_management_id: values.fuel_management_id
+        ? values.fuel_management_id
+        : null, // Normalize empty string to null
     };
 
     // Add price_per_liter if available (for future database compatibility)
@@ -137,7 +140,9 @@ export async function saveFuelLog(
           (storage as any).fuel_type !== baseValues.fuel_type
         ) {
           throw new Error(
-            `Selected storage fuel type (${(storage as any).fuel_type}) does not match log fuel type (${baseValues.fuel_type}).`
+            `Selected storage fuel type (${
+              (storage as any).fuel_type
+            }) does not match log fuel type (${baseValues.fuel_type}).`
           );
         }
       } catch (tankCheckError) {
@@ -314,7 +319,10 @@ export async function refreshStorageStats() {
     for (const tank of tanks) {
       const fills = await getFuelFills((tank as any).id);
       const dispensed = await getStorageDispensed((tank as any).id);
-      const totalFilled = fills.reduce((sum, f) => sum + ((f as any).amount || 0), 0);
+      const totalFilled = fills.reduce(
+        (sum, f) => sum + ((f as any).amount || 0),
+        0
+      );
       const lastFill = fills[0];
 
       stats[(tank as any).id] = {

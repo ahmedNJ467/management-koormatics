@@ -1,8 +1,29 @@
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { CombinedFinancialData } from "@/lib/financial-analytics";
 
 interface VehicleProfitTabProps {
@@ -11,42 +32,49 @@ interface VehicleProfitTabProps {
 
 export function VehicleProfitTab({ data }: VehicleProfitTabProps) {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
     }).format(value);
   };
-  
+
   // Prepare chart data for top 5 vehicles
   const chartData = data.profitAnalytics.vehicleProfits
     .slice(0, 5)
-    .map(vehicle => ({
-      name: vehicle.vehicle_name.split(' ')[0] + ' ' + vehicle.vehicle_name.split(' ')[1],
+    .map((vehicle) => ({
+      name:
+        vehicle.vehicle_name.split(" ")[0] +
+        " " +
+        vehicle.vehicle_name.split(" ")[1],
       revenue: vehicle.revenue,
       costs: vehicle.costs,
-      profit: vehicle.profit
+      profit: vehicle.profit,
     }));
-  
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Vehicle Profit Analysis</CardTitle>
-          <CardDescription>Revenue, costs, and profit by vehicle (top 5)</CardDescription>
+          <CardDescription>
+            Revenue, costs, and profit by vehicle (top 5)
+          </CardDescription>
         </CardHeader>
         <CardContent className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <BarChart
+              data={chartData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip 
-                formatter={(value: number) => [formatCurrency(value), '']}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  borderColor: 'hsl(var(--border))', 
-                  borderRadius: '6px' 
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), ""]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  borderColor: "hsl(var(--border))",
+                  borderRadius: "6px",
                 }}
               />
               <Legend />
@@ -57,7 +85,7 @@ export function VehicleProfitTab({ data }: VehicleProfitTabProps) {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Vehicle Financial Details</CardTitle>
@@ -81,11 +109,19 @@ export function VehicleProfitTab({ data }: VehicleProfitTabProps) {
                     <TableCell>{vehicle.vehicle_name}</TableCell>
                     <TableCell>{formatCurrency(vehicle.revenue)}</TableCell>
                     <TableCell>{formatCurrency(vehicle.costs)}</TableCell>
-                    <TableCell className={vehicle.profit >= 0 ? "text-green-600" : "text-red-600"}>
+                    <TableCell
+                      className={
+                        vehicle.profit >= 0 ? "text-green-600" : "text-red-600"
+                      }
+                    >
                       {formatCurrency(vehicle.profit)}
                     </TableCell>
                     <TableCell>
-                      {vehicle.revenue > 0 ? ((vehicle.profit / vehicle.revenue) * 100).toFixed(1) + '%' : 'N/A'}
+                      {vehicle.revenue > 0
+                        ? ((vehicle.profit / vehicle.revenue) * 100).toFixed(
+                            1
+                          ) + "%"
+                        : "N/A"}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -28,37 +28,40 @@ export function useClientsQuery() {
   return useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .order("name");
+      // Fetch clients and active contracts in parallel
+      const [clientsResult, contractsResult] = await Promise.all([
+        supabase.from("clients").select("*").order("name"),
+        supabase
+          .from("contracts")
+          .select("client_name")
+          .eq("status", "active" as any),
+      ]);
 
-      if (error) throw error;
-
-      // Get clients that have active contracts (status = 'active')
-      const { data: activeContractData, error: contractError } = await supabase
-        .from("contracts")
-        .select("client_name")
-        .eq("status", "active" as any);
-
-      if (contractError) {
-        console.error("Error fetching active contracts:", contractError);
+      if (clientsResult.error) throw clientsResult.error;
+      if (contractsResult.error) {
+        console.error(
+          "Error fetching active contracts:",
+          contractsResult.error
+        );
       }
 
       // Use a Set for efficient look-ups of client names that have active contracts
       const clientsWithActiveContracts = new Set(
-        (activeContractData as any[])?.map(
+        (contractsResult.data as any[])?.map(
           (contract) => contract.client_name
         ) || []
       );
 
       // Add has_active_contract flag to clients
-      const clientsWithFlag = (data || []).map((client: any) => ({
+      const clientsWithFlag = (clientsResult.data || []).map((client: any) => ({
         ...client,
         has_active_contract: clientsWithActiveContracts.has(client.name),
       }));
 
       return clientsWithFlag as Client[];
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnWindowFocus: false,
   });
 }

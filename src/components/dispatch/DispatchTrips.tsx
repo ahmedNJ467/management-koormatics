@@ -73,7 +73,7 @@ export function DispatchTrips({
         return "bg-rose-500/12 text-rose-700 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30";
       case "scheduled":
       default:
-        return "bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
   const { toast } = useToast();
@@ -340,30 +340,30 @@ export function DispatchTrips({
             className={`rounded-lg border shadow-sm transition ${
               trip.id && conflictedTrips.has(String(trip.id))
                 ? "border-amber-400 bg-amber-50 dark:bg-amber-900/20"
-                : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                : "border-border bg-card"
             }`}
           >
             <AccordionItem value="item">
               <AccordionTrigger className="px-6 py-4">
                 <div className="flex w-full items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="text-base font-medium text-slate-900 dark:text-slate-100">
+                    <div className="text-base font-medium text-foreground">
                       {safeFormatDate(trip.date)}
                     </div>
                     {trip.time && (
-                      <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-1 text-muted-foreground">
                         <Clock className="h-5 w-5" />
                         <span className="text-sm font-medium">
                           {safeFormatTime(trip.time)}
                         </span>
                       </div>
                     )}
-                    <div className="text-[11px] font-mono text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                    <div className="text-[11px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                       #{safeFormatId(trip.id)}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                    <span className="text-sm text-muted-foreground">
                       {trip.type
                         ?.replace(/_/g, " ")
                         .replace(/\b\w/g, (l) => l.toUpperCase()) ||
@@ -389,7 +389,7 @@ export function DispatchTrips({
                   <div className="lg:col-span-2">
                     <div className="flex items-center gap-2 mb-3">
                       <Navigation className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <span className="text-sm font-medium text-muted-foreground">
                         Route
                       </span>
                     </div>
@@ -402,7 +402,7 @@ export function DispatchTrips({
                           <div className="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wide">
                             Pickup
                           </div>
-                          <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                          <div className="text-sm text-foreground font-medium">
                             {safeFormatText(trip.pickup_location)}
                           </div>
                         </div>
@@ -421,7 +421,7 @@ export function DispatchTrips({
                               <div className="text-xs font-medium text-yellow-700 dark:text-yellow-400 uppercase tracking-wide">
                                 Stop {idx + 1}
                               </div>
-                              <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                              <div className="text-sm text-foreground font-medium">
                                 {safeFormatText(stop)}
                               </div>
                             </div>
@@ -435,7 +435,7 @@ export function DispatchTrips({
                           <div className="text-xs font-medium text-red-700 dark:text-red-400 uppercase tracking-wide">
                             Dropoff
                           </div>
-                          <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                          <div className="text-sm text-foreground font-medium">
                             {safeFormatText(trip.dropoff_location)}
                           </div>
                         </div>
@@ -448,17 +448,17 @@ export function DispatchTrips({
                     {/* Client */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Client
                         </span>
                       </div>
-                      <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                      <div className="text-sm text-foreground font-medium">
                         {safeFormatText(trip.client_name)}
                       </div>
                       {trip.client_type && (
                         <Badge
                           variant="outline"
-                          className="text-[11px] mt-1 bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30"
+                          className="text-[11px] mt-1 bg-muted text-muted-foreground border-border"
                         >
                           {trip.client_type === "organization"
                             ? "Organization"
@@ -469,10 +469,10 @@ export function DispatchTrips({
 
                     {/* Service Type */}
                     <div>
-                      <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                         Service
                       </div>
-                      <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                      <div className="text-sm text-foreground font-medium">
                         {trip.type
                           ?.replace(/_/g, " ")
                           .replace(/\b\w/g, (l) => l.toUpperCase()) ||
@@ -483,7 +483,7 @@ export function DispatchTrips({
                     {/* Vehicles */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Vehicles
                         </span>
                       </div>
@@ -506,7 +506,7 @@ export function DispatchTrips({
                           >
                             {totalAssigned} of {totalNeeded} assigned
                           </Badge>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-muted-foreground">
                             {totalNeeded - totalAssigned} vehicle(s) needed
                           </div>
                         </div>
@@ -522,7 +522,7 @@ export function DispatchTrips({
                               <Badge
                                 key={vehicleId}
                                 variant="outline"
-                                className="text-[11px] bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30"
+                                className="text-[11px] bg-muted text-muted-foreground border-border"
                               >
                                 {assignedVehicle.registration}
                               </Badge>
@@ -534,11 +534,11 @@ export function DispatchTrips({
 
                     {/* Driver */}
                     <div>
-                      <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                         Driver
                       </div>
                       {trip.driver_id ? (
-                        <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">
+                        <div className="text-sm text-foreground font-medium">
                           {safeFormatText(trip.driver_name, "Unknown Driver")}
                         </div>
                       ) : (
@@ -585,7 +585,7 @@ export function DispatchTrips({
                     </Badge>
 
                     {flightDetails && (
-                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Plane className="h-3 w-3" />
                         <span>{flightDetails}</span>
                       </div>

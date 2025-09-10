@@ -12,9 +12,19 @@ export function PassengerManagement({
   removePassenger,
   handleKeyDown,
 }: PassengerManagementProps) {
+  // Filter out empty passengers for form submission
+  const validPassengers = passengers.filter((p) => p && p.trim() !== "");
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium">Passengers</h3>
+
+      {/* Hidden input to pass passengers data to form */}
+      <input
+        type="hidden"
+        name="passengers"
+        value={JSON.stringify(validPassengers)}
+      />
 
       {/* New passenger input with add button */}
       <div className="flex items-center gap-2">
@@ -43,16 +53,19 @@ export function PassengerManagement({
           .filter((p) => p.trim())
           .map((passenger, index) => (
             <div key={index} className="flex items-center gap-2">
-              <div className="flex-1 rounded-md px-3 py-2 text-sm flex justify-between items-center bg-muted/50">
-                <span>{passenger}</span>
-                <button
-                  type="button"
-                  onClick={() => removePassenger(index)}
-                  className="text-destructive hover:text-destructive/80"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <Input
+                value={passenger}
+                onChange={(e) => updatePassenger(index, e.target.value)}
+                className="flex-1"
+                placeholder="Passenger name"
+              />
+              <button
+                type="button"
+                onClick={() => removePassenger(index)}
+                className="text-destructive hover:text-destructive/80 p-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           ))}
 

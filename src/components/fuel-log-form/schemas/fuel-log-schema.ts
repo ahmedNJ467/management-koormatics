@@ -18,7 +18,7 @@ export const fuelLogSchema = z
       .min(0, "Current mileage must be a positive number"),
     mileage: z.number().min(0, "Mileage must be a positive number"),
     notes: z.string().optional(),
-    // filled_by: z.string().optional(), // Column doesn't exist in database yet
+    filled_by: z.string().optional(),
     // Accept a valid UUID or an empty string from the form UI
     fuel_management_id: z.union([z.string().uuid(), z.literal("")]).optional(),
   })
