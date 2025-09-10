@@ -238,214 +238,7 @@ const CostAnalytics = () => {
           </div>
         )}
 
-        {!isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center text-lg">
-                  <DollarSign className="h-5 w-5 mr-2 text-green-500" />
-                  Revenue
-                </CardTitle>
-                <CardDescription>Total trip revenue</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  ${financialData.totalRevenue.toFixed(2)}
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <div className="text-xs text-muted-foreground">
-                    From {financialData.tripCount} trips
-                  </div>
-                  <div className="text-xs">
-                    Avg: ${financialData.averageTripRevenue.toFixed(2)}/trip
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-lg">
-                <Wrench className="h-5 w-5 mr-2 text-red-500" />
-                <span>Expenses</span>
-              </CardTitle>
-              <CardDescription>Breakdown of all expenses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                ${financialData.totalExpenses.toFixed(2)}
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div className="flex items-center">
-                  <Wrench className="h-4 w-4 mr-1 text-blue-500" />
-                  <span className="text-xs">
-                    Maintenance: ${summaryCosts.maintenance.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <Fuel className="h-4 w-4 mr-1 text-amber-500" />
-                  <span className="text-xs">
-                    Fuel: ${summaryCosts.fuel.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground mt-2">
-                *Maintenance costs include parts used from inventory
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card
-            className={
-              financialData.profit >= 0 ? "border-green-500" : "border-red-500"
-            }
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-lg">
-                {financialData.profit >= 0 ? (
-                  <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
-                ) : (
-                  <TrendingDown className="h-5 w-5 mr-2 text-red-500" />
-                )}
-                <span>Profit</span>
-              </CardTitle>
-              <CardDescription>Revenue minus expenses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-2xl font-bold ${
-                  financialData.profit >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                ${financialData.profit.toFixed(2)}
-              </div>
-              <div className="flex justify-between items-center mt-2">
-                <div className="text-xs text-muted-foreground">
-                  {financialData.totalRevenue > 0
-                    ? `Margin: ${financialData.profitMargin.toFixed(1)}%`
-                    : "No revenue recorded"}
-                </div>
-                {profitTrend.trend !== 0 && (
-                  <div
-                    className={`flex items-center text-xs ${
-                      profitTrend.isPositive ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {profitTrend.isPositive ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {Math.abs(profitTrend.trend).toFixed(1)}% from previous
-                    month
-                  </div>
-                )}
-                <div className="text-xs">
-                  Avg: ${financialData.averageTripRevenue.toFixed(2)}/trip
-                </div>
-              </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center text-lg">
-                  <Wrench className="h-5 w-5 mr-2 text-red-500" />
-                  <span>Expenses</span>
-                </CardTitle>
-                <CardDescription>Breakdown of all expenses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  ${financialData.totalExpenses.toFixed(2)}
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div className="flex items-center">
-                    <Wrench className="h-4 w-4 mr-1 text-blue-500" />
-                    <span className="text-xs">
-                      Maintenance: ${summaryCosts.maintenance.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <Fuel className="h-4 w-4 mr-1 text-amber-500" />
-                    <span className="text-xs">
-                      Fuel: ${summaryCosts.fuel.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">
-                  *Maintenance costs include parts used from inventory
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={
-                financialData.profit >= 0
-                  ? "border-green-500"
-                  : "border-red-500"
-              }
-            >
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center text-lg">
-                  {financialData.profit >= 0 ? (
-                    <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
-                  ) : (
-                    <TrendingDown className="h-5 w-5 mr-2 text-red-500" />
-                  )}
-                  <span>Profit</span>
-                </CardTitle>
-                <CardDescription>Revenue minus expenses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className={`text-2xl font-bold ${
-                    financialData.profit >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  ${financialData.profit.toFixed(2)}
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <div className="text-xs text-muted-foreground">
-                    {financialData.totalRevenue > 0
-                      ? `Margin: ${financialData.profitMargin.toFixed(1)}%`
-                      : "No revenue recorded"}
-                  </div>
-                  {profitTrend.trend !== 0 && (
-                    <div
-                      className={`flex items-center text-xs ${
-                        profitTrend.isPositive
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {profitTrend.isPositive ? (
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                      ) : (
-                        <TrendingDown className="h-3 w-3 mr-1" />
-                      )}
-                      {Math.abs(profitTrend.trend).toFixed(1)}% from previous
-                      month
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {!isLoading && (!vehicleCosts || vehicleCosts.length === 0) && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>No data available</AlertTitle>
-            <AlertDescription>
-              There is no expense or revenue data available for the selected
-              year. Please try selecting a different year or add some data.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {!isLoading && vehicleCosts && vehicleCosts.length > 0 && (
           <>
@@ -465,6 +258,16 @@ const CostAnalytics = () => {
                 )}
               </TabsList>
             
+            <OverviewTab 
+              financialData={financialData}
+              profitTrend={profitTrend}
+              monthlyData={monthlyData}
+              summaryCosts={summaryCosts}
+            />
+            
+            <VehiclesTab vehicleCosts={vehicleCosts} />
+            
+            <TabsContent value="spare-parts">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
