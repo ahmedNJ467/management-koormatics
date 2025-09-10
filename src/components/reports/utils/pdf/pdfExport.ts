@@ -309,7 +309,7 @@ function generateTripsTable(doc: jsPDF, data: any[], pageWidth: number) {
       } else {
         serviceTypeDisplay = serviceType
           .replace(/_/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase());
+          .replace(/\b\w/g, (l: string) => l.toUpperCase());
       }
     }
 
@@ -630,15 +630,15 @@ function generateGenericTable(
   }
 
   // Get all unique keys from the data
-  const allKeys = new Set();
+  const allKeys = new Set<string>();
   data.forEach((item) => {
     Object.keys(item).forEach((key) => allKeys.add(key));
   });
 
   const columns = Array.from(allKeys).slice(0, 8); // Limit to 8 columns for readability
   const tableData = data.map((item) =>
-    columns.map((key) => {
-      const value = item[key];
+    columns.map((key: string) => {
+      const value = (item as any)[key];
       if (value === null || value === undefined) return "N/A";
       if (typeof value === "object") return JSON.stringify(value);
       if (typeof value === "boolean") return value ? "Yes" : "No";

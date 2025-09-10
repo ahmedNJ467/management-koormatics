@@ -16,6 +16,7 @@ import {
   Clock,
   Navigation,
   Shield,
+  FileText,
 } from "lucide-react";
 import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
 import { mapDatabaseFieldsToTrip } from "@/lib/types/trip";
