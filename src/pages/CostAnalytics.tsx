@@ -1280,7 +1280,6 @@ const CostAnalytics = () => {
                         </CardContent>
                       </Card>
                     </div>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
