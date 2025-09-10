@@ -257,67 +257,62 @@ const CostAnalytics = () => {
                   <TabsTrigger value="comparison">Comparison</TabsTrigger>
                 )}
               </TabsList>
-            
-            <OverviewTab 
-              financialData={financialData}
-              profitTrend={profitTrend}
-              monthlyData={monthlyData}
-              summaryCosts={summaryCosts}
-            />
+
+            <OverviewTab monthlyData={monthlyData} />
             
             <VehiclesTab vehicleCosts={vehicleCosts} />
             
             <TabsContent value="spare-parts">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="text-center">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
-                        $
-                        {validSparePartsData
-                          .reduce((sum, part) => {
-                            const quantity = Number(part.quantity || 0);
-                            const costPerUnit = Number(part.unit_price || 0);
-                            return sum + quantity * costPerUnit;
-                          }, 0)
-                          .toFixed(2)}
+                          $
+                          {validSparePartsData
+                            .reduce((sum, part) => {
+                              const quantity = Number(part.quantity || 0);
+                              const costPerUnit = Number(part.unit_price || 0);
+                              return sum + quantity * costPerUnit;
+                            }, 0)
+                            .toFixed(2)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Inventory Value
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Total Inventory Value
-                      </div>
-                    </div>
-                    <div className="text-center">
+                      <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
-                        {validSparePartsData.length}
+                          {validSparePartsData.length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Parts
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Total Parts
-                      </div>
-                    </div>
-                    <div className="text-center">
+                      <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
-                        {
-                          validSparePartsData.filter(
-                            (p) => Number(p.quantity || 0) > 0
-                          ).length
-                        }
+                          {
+                            validSparePartsData.filter(
+                              (p) => Number(p.quantity || 0) > 0
+                            ).length
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          In Stock
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        In Stock
-                      </div>
-                    </div>
-                    <div className="text-center">
+                      <div className="text-center">
                       <div className="text-2xl font-bold text-orange-600">
-                        {
-                          validSparePartsData.filter(
-                            (p) =>
-                              Number(p.quantity || 0) <=
-                              Number(p.min_stock_level || 5)
-                          ).length
-                        }
+                          {
+                            validSparePartsData.filter(
+                              (p) =>
+                                Number(p.quantity || 0) <=
+                                Number(p.min_stock_level || 5)
+                            ).length
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Low Stock
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Low Stock
-                      </div>
-                    </div>
                   </div>
 
                   {/* Inventory Overview */}
@@ -1037,18 +1032,18 @@ const CostAnalytics = () => {
                         </CardContent>
                       </Card>
 
- 
-                      {/* Status Distribution */}
-                      <Card>
-                        <CardHeader>
+
+                        {/* Status Distribution */}
+                        <Card>
+                          <CardHeader>
                           <CardTitle className="text-sm">Inventory Status</CardTitle>
                           <CardDescription>Current status of all parts</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                              <Pie
-                                data={(() => {
+                          </CardHeader>
+                          <CardContent>
+                            <ResponsiveContainer width="100%" height={300}>
+                              <PieChart>
+                                <Pie
+                                  data={(() => {
                                   const statusCounts: Record<string, number> = {};
                                   validSparePartsData.forEach(part => {
                                     const status = part.status || 'unknown';
@@ -1059,16 +1054,16 @@ const CostAnalytics = () => {
                                     name: status.replace('_', ' '),
                                     value: count
                                   }));
-                                })()}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
+                                  })()}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
                                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                              >
-                                {(() => {
+                                  outerRadius={80}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                >
+                                  {(() => {
                                   const colors = ['#10b981', '#f59e0b', '#ef4444'];
                                   const statusCounts: Record<string, number> = {};
                                   validSparePartsData.forEach(part => {
@@ -1078,23 +1073,22 @@ const CostAnalytics = () => {
                                   return Object.entries(statusCounts).map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                                   ));
-                                })()}
-                              </Pie>
+                                  })()}
+                                </Pie>
                               <Tooltip />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </CardContent>
-                      </Card>
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
                     </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            {comparisonYear && yearComparison && (
-              <ComparisonTab comparisonData={yearComparison} />
-            )}
-          </Tabs>
-        </>
-      )}
+                  </div>
+              </TabsContent>
+              {comparisonYear && yearComparison && (
+                <ComparisonTab comparisonData={yearComparison} />
+              )}
+            </Tabs>
+          </>
+        )}
       </div>
     </div>
   );
