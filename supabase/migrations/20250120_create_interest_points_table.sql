@@ -59,11 +59,9 @@ CREATE TRIGGER trigger_update_interest_points_updated_at
 
 -- Insert some sample interest points for Mogadishu area
 INSERT INTO interest_points (name, description, category, latitude, longitude, icon, color) VALUES
-  ('Mogadishu International Airport', 'Main international airport serving Mogadishu', 'airport', 2.0142, 45.3047, '✈️', '#4ECDC4'),
-  ('Port of Mogadishu', 'Main seaport of Somalia', 'port', 2.0469, 45.3182, '🚢', '#45B7D1'),
   ('Central Market', 'Main market area in Mogadishu', 'market', 2.0371, 45.3438, '🛒', '#FFA07A'),
-  ('City Center', 'Downtown Mogadishu area', 'city', 2.0371, 45.3438, '🏙️', '#98D8C8'),
-  ('Security Checkpoint Alpha', 'Primary security checkpoint', 'security', 2.0400, 45.3200, '🚨', '#FF6B6B'),
+  ('Security Checkpoint Alpha', 'Primary security checkpoint', 'checkpoints', 2.0400, 45.3200, '🚧', '#FF6B6B'),
+  ('Central Plaza', 'Main public square in Mogadishu', 'places', 2.0371, 45.3438, '📍', '#4ECDC4'),
   ('Fuel Station Central', 'Main fuel station', 'fuel', 2.0350, 45.3250, '⛽', '#FFD93D'),
   ('Hospital Main', 'Central hospital facility', 'health', 2.0380, 45.3300, '🏥', '#6C5CE7'),
   ('Police Station', 'Main police station', 'security', 2.0420, 45.3150, '👮', '#A29BFE');

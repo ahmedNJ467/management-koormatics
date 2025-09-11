@@ -23,7 +23,7 @@ import {
   INTEREST_POINT_CATEGORIES,
 } from "@/lib/types/interest-point";
 import { MapPin, X } from "lucide-react";
-import { IconUpload } from "@/components/ui/icon-upload";
+import { SafeGoogleIconsSelector } from "@/components/SafeGoogleIconsSelector";
 
 interface AddInterestPointDialogProps {
   open: boolean;
@@ -45,7 +45,7 @@ export function AddInterestPointDialog({
     category: "general",
     latitude: 0,
     longitude: 0,
-    icon_url: undefined,
+    icon: "place",
   });
 
   useEffect(() => {
@@ -77,8 +77,8 @@ export function AddInterestPointDialog({
       return;
     }
 
-    if (!formData.icon_url) {
-      console.error("Icon upload is required");
+    if (!formData.icon) {
+      console.error("Icon selection is required");
       return;
     }
 
@@ -92,7 +92,7 @@ export function AddInterestPointDialog({
         category: "general",
         latitude: 0,
         longitude: 0,
-        icon_url: undefined,
+        icon: "place",
       });
       onInterestPointAdded?.();
       onClose();
@@ -209,10 +209,10 @@ export function AddInterestPointDialog({
             </Select>
           </div>
 
-          <IconUpload
-            value={formData.icon_url}
-            onChange={(url) =>
-              setFormData((prev) => ({ ...prev, icon_url: url || undefined }))
+          <SafeGoogleIconsSelector
+            value={formData.icon}
+            onChange={(iconName) =>
+              setFormData((prev) => ({ ...prev, icon: iconName }))
             }
             disabled={isCreating}
           />
@@ -223,9 +223,7 @@ export function AddInterestPointDialog({
             </Button>
             <Button
               type="submit"
-              disabled={
-                isCreating || !formData.name.trim() || !formData.icon_url
-              }
+              disabled={isCreating || !formData.name.trim() || !formData.icon}
             >
               {isCreating ? "Adding..." : "Add Interest Point"}
             </Button>

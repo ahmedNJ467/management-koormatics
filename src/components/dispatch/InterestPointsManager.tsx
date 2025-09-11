@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +28,11 @@ import {
 import { AddInterestPointDialog } from "./AddInterestPointDialog";
 import { EditInterestPointDialog } from "./EditInterestPointDialog";
 import { DeleteInterestPointDialog } from "./DeleteInterestPointDialog";
+import {
+  getGoogleIconUrl,
+  handleImageError,
+  getThemeAwareIconStyle,
+} from "@/lib/utils/google-icons";
 
 interface InterestPointsManagerProps {
   onInterestPointSelected?: (point: InterestPoint) => void;
@@ -49,6 +54,68 @@ export function InterestPointsManager({
     null
   );
   const [activeTab, setActiveTab] = useState("all");
+  const [isDark, setIsDark] = useState(false);
+
+  // Detect theme
+  useEffect(() => {
+    const checkTheme = () => {
+      try {
+        // Check if we're in a browser environment
+        if (typeof window === "undefined" || typeof document === "undefined") {
+          setIsDark(false);
+          return;
+        }
+
+        // Check for dark class on html element
+        const hasDarkClass =
+          document.documentElement.classList.contains("dark");
+
+        // Check for system preference
+        const prefersDark =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+        // Check for data-theme attribute
+        const dataTheme = document.documentElement.getAttribute("data-theme");
+        const isDataThemeDark = dataTheme === "dark";
+
+        const isDarkMode = hasDarkClass || prefersDark || isDataThemeDark;
+
+        setIsDark(isDarkMode);
+      } catch (error) {
+        console.warn("Error checking theme:", error);
+        setIsDark(false); // Default to light mode on error
+      }
+    };
+
+    checkTheme();
+
+    // Listen for theme changes
+    try {
+      const observer = new MutationObserver(checkTheme);
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class", "data-theme"],
+      });
+
+      if (typeof window !== "undefined" && window.matchMedia) {
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        mediaQuery.addEventListener("change", checkTheme);
+
+        return () => {
+          observer.disconnect();
+          mediaQuery.removeEventListener("change", checkTheme);
+        };
+      }
+
+      return () => {
+        observer.disconnect();
+      };
+    } catch (error) {
+      console.warn("Error setting up theme listeners:", error);
+      return () => {}; // No cleanup needed if setup failed
+    }
+  }, []);
 
   const filteredPoints = (interestPoints as InterestPoint[]).filter((point) => {
     const matchesSearch =
@@ -65,17 +132,14 @@ export function InterestPointsManager({
   // Separate points by category for tabs
   const activePoints = filteredPoints.filter((point) => point.is_active);
   const inactivePoints = filteredPoints.filter((point) => !point.is_active);
-  const airportPoints = filteredPoints.filter(
-    (point) => point.category === "airport"
+  const placesPoints = filteredPoints.filter(
+    (point) => point.category === "places"
   );
-  const portPoints = filteredPoints.filter(
-    (point) => point.category === "port"
+  const checkpointsPoints = filteredPoints.filter(
+    (point) => point.category === "checkpoints"
   );
   const marketPoints = filteredPoints.filter(
     (point) => point.category === "market"
-  );
-  const cityPoints = filteredPoints.filter(
-    (point) => point.category === "city"
   );
   const securityPoints = filteredPoints.filter(
     (point) => point.category === "security"
@@ -89,10 +153,9 @@ export function InterestPointsManager({
   const otherPoints = filteredPoints.filter(
     (point) =>
       ![
-        "airport",
-        "port",
+        "places",
+        "checkpoints",
         "market",
-        "city",
         "security",
         "fuel",
         "health",
@@ -121,6 +184,10 @@ export function InterestPointsManager({
     );
   };
 
+  const getIconStyle = (color?: string) => {
+    return getThemeAwareIconStyle(isDark, color);
+  };
+
   const renderPointsList = (points: InterestPoint[]) => {
     if (points.length === 0) {
       return (
@@ -142,8 +209,27 @@ export function InterestPointsManager({
               onClick={() => onInterestPointSelected?.(point)}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="text-2xl" style={{ color: point.color }}>
-                  {point.icon}
+                <div
+                  className="h-6 w-6 flex items-center justify-center"
+                  style={{ color: point.color }}
+                >
+                  <img
+                    src={getGoogleIconUrl(point.icon)}
+                    alt={point.icon}
+                    className="h-6 w-6"
+                    style={getIconStyle(point.color)}
+                    onError={(e) => {
+                      const fallback = e.currentTarget
+                        .nextElementSibling as HTMLElement;
+                      handleImageError(e, fallback);
+                    }}
+                  />
+                  <span
+                    className="text-2xl hidden"
+                    style={{ color: point.color }}
+                  >
+                    {point.icon}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{point.name}</div>
@@ -309,18 +395,15 @@ export function InterestPointsManager({
             className="h-full flex flex-col"
           >
             <div className="px-3 pt-2">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="all" className="text-xs">
                   All ({activePoints.length})
                 </TabsTrigger>
-                <TabsTrigger value="airport" className="text-xs">
-                  Airport ({airportPoints.length})
+                <TabsTrigger value="places" className="text-xs">
+                  Places ({placesPoints.length})
                 </TabsTrigger>
-                <TabsTrigger value="port" className="text-xs">
-                  Port ({portPoints.length})
-                </TabsTrigger>
-                <TabsTrigger value="city" className="text-xs">
-                  City ({cityPoints.length})
+                <TabsTrigger value="checkpoints" className="text-xs">
+                  Checkpoints ({checkpointsPoints.length})
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -329,14 +412,11 @@ export function InterestPointsManager({
               <TabsContent value="all" className="mt-0">
                 {renderPointsList(activePoints)}
               </TabsContent>
-              <TabsContent value="airport" className="mt-0">
-                {renderPointsList(airportPoints)}
+              <TabsContent value="places" className="mt-0">
+                {renderPointsList(placesPoints)}
               </TabsContent>
-              <TabsContent value="port" className="mt-0">
-                {renderPointsList(portPoints)}
-              </TabsContent>
-              <TabsContent value="city" className="mt-0">
-                {renderPointsList(cityPoints)}
+              <TabsContent value="checkpoints" className="mt-0">
+                {renderPointsList(checkpointsPoints)}
               </TabsContent>
             </div>
           </Tabs>

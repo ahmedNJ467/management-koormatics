@@ -2,36 +2,35 @@ import { DisplayTrip } from "@/lib/types/trip";
 import { InterestPoint } from "@/lib/types/interest-point";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps-loader";
+import { getGoogleIconUrl } from "@/lib/utils/google-icons";
 
-// Helper function to get emoji icon for info windows
+// Helper function to get Google Material Icon for info windows
 const getCategoryIcon = (category: string): string => {
   switch (category) {
-    case "airport":
-      return "✈️";
-    case "port":
-      return "🚢";
+    case "places":
+      return "place";
+    case "checkpoints":
+      return "security";
     case "market":
-      return "🛒";
-    case "city":
-      return "🏙️";
+      return "shopping_cart";
     case "security":
-      return "🚨";
+      return "local_police";
     case "fuel":
-      return "⛽";
+      return "local_gas_station";
     case "health":
-      return "🏥";
+      return "local_hospital";
     case "restaurant":
-      return "🍽️";
+      return "restaurant";
     case "hotel":
-      return "🏨";
+      return "hotel";
     case "bank":
-      return "🏦";
+      return "account_balance";
     case "school":
-      return "🏫";
+      return "school";
     case "mosque":
-      return "🕌";
+      return "mosque";
     default:
-      return "📍";
+      return "place";
   }
 };
 
@@ -62,9 +61,9 @@ export function LiveMap({
   const interestPointMarkersRef = useRef<any[]>([]);
   const labelOverlaysRef = useRef<any[]>([]);
 
-  // Memoize interest points to prevent unnecessary re-renders - only show points with uploaded icons
+  // Memoize interest points to prevent unnecessary re-renders - show all active points
   const memoizedInterestPoints = useMemo(() => {
-    return interestPoints.filter((point) => point.is_active && point.icon_url);
+    return interestPoints.filter((point) => point.is_active);
   }, [interestPoints]);
 
   // Debug logging
@@ -247,87 +246,119 @@ export function LiveMap({
       markersRef.current.push(poly as any);
     });
 
-    // Add interest point markers (only for points with uploaded icons)
+    // Add interest point markers with Google Material Icons
     if (showInterestPoints && memoizedInterestPoints.length > 0) {
       memoizedInterestPoints.forEach((point) => {
-        // Use uploaded custom icon
-        const iconConfig = {
-          url: point.icon_url,
-          scaledSize: new g.maps.Size(32, 32),
-          anchor: new g.maps.Point(16, 32), // Bottom center for proper positioning
-        };
+        try {
+          // Create a custom marker with Google Material Icon
+          const iconUrl = getGoogleIconUrl(point.icon || "place");
 
-        const marker = new g.maps.Marker({
-          position: { lat: point.latitude, lng: point.longitude },
-          map: mapInstanceRef.current,
-          title: point.name,
-          icon: iconConfig,
-        });
+          const iconConfig = {
+            url: iconUrl,
+            scaledSize: new g.maps.Size(28, 28),
+            anchor: new g.maps.Point(14, 14), // Center for proper positioning
+          };
 
-        // Add name label to the map using a custom overlay
-        const labelDiv = document.createElement("div");
-        labelDiv.className = "interest-point-label";
-        labelDiv.textContent = point.name;
-        labelDiv.style.position = "absolute";
-        labelDiv.style.transform = "translate(-50%, -100%)";
-        labelDiv.style.marginTop = "-8px";
-        labelDiv.style.pointerEvents = "none";
-        labelDiv.style.zIndex = "1000";
+          const marker = new g.maps.Marker({
+            position: { lat: point.latitude, lng: point.longitude },
+            map: mapInstanceRef.current,
+            title: point.name,
+            icon: iconConfig,
+          });
 
-        const labelOverlay = new g.maps.OverlayView();
-        labelOverlay.onAdd = function () {
-          const panes = this.getPanes();
-          panes.overlayLayer.appendChild(labelDiv);
-        };
-        labelOverlay.draw = function () {
-          const projection = this.getProjection();
-          const position = projection.fromLatLngToDivPixel(
-            new g.maps.LatLng(point.latitude, point.longitude)
-          );
-          if (position) {
-            labelDiv.style.left = position.x + "px";
-            labelDiv.style.top = position.y + "px";
-          }
-        };
-        labelOverlay.onRemove = function () {
-          if (labelDiv.parentNode) {
-            labelDiv.parentNode.removeChild(labelDiv);
-          }
-        };
-        labelOverlay.setMap(mapInstanceRef.current);
-        labelOverlaysRef.current.push(labelOverlay);
+          // Add name label to the map using a custom overlay (Google Maps style)
+          const labelDiv = document.createElement("div");
+          labelDiv.className = "interest-point-label";
+          labelDiv.textContent = point.name;
+          labelDiv.style.position = "absolute";
+          labelDiv.style.transform = "translate(-50%, -100%)";
+          labelDiv.style.marginTop = "-12px";
+          labelDiv.style.pointerEvents = "none";
+          labelDiv.style.zIndex = "1000";
+          labelDiv.style.backgroundColor = "white";
+          labelDiv.style.color = "#1f2937";
+          labelDiv.style.padding = "4px 8px";
+          labelDiv.style.borderRadius = "4px";
+          labelDiv.style.fontSize = "12px";
+          labelDiv.style.fontWeight = "500";
+          labelDiv.style.fontFamily =
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          labelDiv.style.boxShadow =
+            "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)";
+          labelDiv.style.border = "1px solid rgba(0, 0, 0, 0.1)";
+          labelDiv.style.whiteSpace = "nowrap";
+          labelDiv.style.maxWidth = "200px";
+          labelDiv.style.overflow = "hidden";
+          labelDiv.style.textOverflow = "ellipsis";
 
-        // Add info window for interest points
-        const infoWindow = new g.maps.InfoWindow({
-          content: `
-                <div style="padding: 12px; min-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                  <div style="width: 24px; height: 24px; border-radius: 50%; background: ${
-                    point.color
-                  }; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">
-                      ${getCategoryIcon(point.category)}
+          const labelOverlay = new g.maps.OverlayView();
+          labelOverlay.onAdd = function () {
+            const panes = this.getPanes();
+            panes.overlayLayer.appendChild(labelDiv);
+          };
+          labelOverlay.draw = function () {
+            const projection = this.getProjection();
+            const position = projection.fromLatLngToDivPixel(
+              new g.maps.LatLng(point.latitude, point.longitude)
+            );
+            if (position) {
+              labelDiv.style.left = position.x + "px";
+              labelDiv.style.top = position.y + "px";
+            }
+          };
+          labelOverlay.onRemove = function () {
+            if (labelDiv.parentNode) {
+              labelDiv.parentNode.removeChild(labelDiv);
+            }
+          };
+          labelOverlay.setMap(mapInstanceRef.current);
+          labelOverlaysRef.current.push(labelOverlay);
+
+          // Add info window for interest points with Google Material Icons
+          const infoWindow = new g.maps.InfoWindow({
+            content: `
+                <div style="padding: 16px; min-width: 280px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: ${
+                      point.color
+                    }; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
+                      <img src="https://fonts.gstatic.com/s/i/materialicons/${
+                        point.icon
+                      }/v1/24px.svg" 
+                           style="width: 20px; height: 20px; filter: invert(1);" 
+                           alt="${point.icon}" />
+                    </div>
+                    <div style="font-weight: 600; font-size: 16px; color: #1f2937;">${
+                      point.name
+                    }</div>
                   </div>
-                  <div style="font-weight: 600; font-size: 14px; color: #1f2937;">${
-                    point.name
-                  }</div>
-                </div>
-                ${
-                  point.description
-                    ? `<div style="margin-bottom: 8px; color: #6b7280; font-size: 13px; line-height: 1.4;">${point.description}</div>`
-                    : ""
-                }
-                  <div style="font-size: 11px; color: #9ca3af; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;">
-                    ${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}
+                  ${
+                    point.description
+                      ? `<div style="margin-bottom: 12px; color: #6b7280; font-size: 14px; line-height: 1.4;">${point.description}</div>`
+                      : ""
+                  }
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+                    <div style="font-size: 12px; color: #9ca3af; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;">
+                      ${point.latitude.toFixed(4)}, ${point.longitude.toFixed(
+              4
+            )}
+                    </div>
+                    <div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 500;">
+                      ${point.category}
+                    </div>
                   </div>
                 </div>
             `,
-        });
+          });
 
-        marker.addListener("click", () => {
-          infoWindow.open(mapInstanceRef.current, marker);
-        });
+          marker.addListener("click", () => {
+            infoWindow.open(mapInstanceRef.current, marker);
+          });
 
-        interestPointMarkersRef.current.push(marker);
+          interestPointMarkersRef.current.push(marker);
+        } catch (error) {
+          console.warn("Error creating interest point marker:", error, point);
+        }
       });
     }
   }, [points, routes, memoizedInterestPoints, showInterestPoints]);

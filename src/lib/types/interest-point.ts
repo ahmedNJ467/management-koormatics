@@ -15,10 +15,9 @@ export interface InterestPoint {
 }
 
 export type InterestPointCategory =
-  | "airport"
-  | "port"
+  | "places"
+  | "checkpoints"
   | "market"
-  | "city"
   | "security"
   | "fuel"
   | "health"
@@ -58,10 +57,9 @@ export const INTEREST_POINT_CATEGORIES: {
   icon: string;
   color: string;
 }[] = [
-  { value: "airport", label: "Airport", icon: "✈️", color: "#2563EB" },
-  { value: "port", label: "Port", icon: "🚢", color: "#0891B2" },
+  { value: "places", label: "Places", icon: "📍", color: "#2563EB" },
+  { value: "checkpoints", label: "Checkpoints", icon: "🚧", color: "#0891B2" },
   { value: "market", label: "Market", icon: "🛒", color: "#EA580C" },
-  { value: "city", label: "City", icon: "🏙️", color: "#059669" },
   { value: "security", label: "Security", icon: "🚨", color: "#DC2626" },
   { value: "fuel", label: "Fuel Station", icon: "⛽", color: "#CA8A04" },
   { value: "health", label: "Health", icon: "🏥", color: "#7C3AED" },
