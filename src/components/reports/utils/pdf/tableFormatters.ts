@@ -149,7 +149,7 @@ export function generateTableData(data: any[], reportType: string) {
           } else {
             serviceTypeDisplay = serviceType
               .replace(/_/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase());
+              .replace(/\b\w/g, (l: string) => l.toUpperCase());
           }
         }
 

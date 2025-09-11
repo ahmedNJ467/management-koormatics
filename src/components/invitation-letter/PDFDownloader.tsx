@@ -185,7 +185,6 @@ const generateMinimalistPDF = async (data: InvitationLetterData) => {
   });
 
   // Move y to after table
-  // @ts-expect-error plugin augments
   y = (doc as any).lastAutoTable?.finalY
     ? (doc as any).lastAutoTable.finalY + 10
     : y + 30;
