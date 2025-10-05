@@ -16,10 +16,18 @@ interface ErrorBoundaryProps {
   children: React.ReactNode;
 }
 
+interface ExtendedErrorInfo extends React.ErrorInfo {
+  errorBoundary?: string;
+  filename?: string;
+  message?: string;
+  lineno?: number;
+  colno?: number;
+}
+
 interface ErrorState {
   hasError: boolean;
   error?: Error;
-  errorInfo?: React.ErrorInfo;
+  errorInfo?: ExtendedErrorInfo;
 }
 
 class ReactErrorBoundary extends Component<ErrorBoundaryProps, ErrorState> {
@@ -122,9 +130,6 @@ export default function ErrorBoundary({ children }: ErrorBoundaryProps) {
         // Create a more meaningful error message
         const errorDetails = {
           componentStack: errorInfo.componentStack,
-          errorBoundary: errorInfo.errorBoundary,
-          filename: errorInfo.filename,
-          message: errorInfo.message,
         };
 
         safeError = new Error(
@@ -135,7 +140,7 @@ export default function ErrorBoundary({ children }: ErrorBoundaryProps) {
       setErrorState({
         hasError: true,
         error: safeError,
-        errorInfo,
+        errorInfo: errorInfo as ExtendedErrorInfo,
       });
     };
 
@@ -175,12 +180,7 @@ export default function ErrorBoundary({ children }: ErrorBoundaryProps) {
 
       handleError(error, {
         componentStack: event.filename || "Unknown",
-        errorBoundary: "GlobalErrorHandler",
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        message: event.message,
-      });
+      } as ExtendedErrorInfo);
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -188,8 +188,7 @@ export default function ErrorBoundary({ children }: ErrorBoundaryProps) {
       const errorMessage = event.reason?.toString() || "Promise rejection";
       handleError(new Error(errorMessage), {
         componentStack: "Promise rejection",
-        errorBoundary: "PromiseRejectionHandler",
-      });
+      } as ExtendedErrorInfo);
     };
 
     try {

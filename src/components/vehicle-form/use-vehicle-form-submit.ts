@@ -9,7 +9,7 @@ import { useVehicleImages } from "./use-vehicle-images";
 export function useVehicleFormSubmit(
   vehicle: Vehicle | undefined,
   onOpenChange: (open: boolean) => void,
-  uploadVehicleImages: (vehicleId: string) => Promise<void>
+  uploadVehicleImages: (vehicleId: string, vehicle?: Vehicle) => Promise<void>
 ) {
   const { toast } = useToast();
   const { handleError } = useApiErrorHandler();
@@ -133,7 +133,7 @@ export function useVehicleFormSubmit(
           operationSuccess = true;
         }
 
-        await uploadVehicleImages(vehicle.id);
+        await uploadVehicleImages(vehicle.id, vehicle);
       } else {
         // Check for existing vehicle with same registration (for new vehicles)
         try {
@@ -198,7 +198,7 @@ export function useVehicleFormSubmit(
             }
 
             if (retryVehicle) {
-              await uploadVehicleImages(retryVehicle.id);
+              await uploadVehicleImages(retryVehicle.id, retryVehicle);
             }
 
             partialSuccess = true;
@@ -206,7 +206,7 @@ export function useVehicleFormSubmit(
             throw error;
           }
         } else if (newVehicle) {
-          await uploadVehicleImages(newVehicle.id);
+          await uploadVehicleImages(newVehicle.id, newVehicle);
           operationSuccess = true;
         }
       }

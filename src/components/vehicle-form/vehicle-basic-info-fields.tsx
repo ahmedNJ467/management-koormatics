@@ -1,10 +1,15 @@
-
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { Vehicle } from "@/lib/types";
 
-type VehicleFormData = Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>;
+type VehicleFormData = Omit<Vehicle, "id" | "created_at" | "updated_at">;
 
 interface VehicleBasicInfoFieldsProps {
   form: UseFormReturn<VehicleFormData>;
@@ -62,20 +67,11 @@ export function VehicleBasicInfoFields({ form }: VehicleBasicInfoFieldsProps) {
           <FormItem>
             <FormLabel>Year</FormLabel>
             <FormControl>
-              <Input 
-                type="number" 
+              <Input
+                type="text"
                 placeholder="2024"
-                min="1900"
-                max={new Date().getFullYear() + 1}
                 {...field}
-                value={field.value || ''}
-                onChange={(e) => {
-                  const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
-                  // Validate it's a reasonable year
-                  if (!value || (value >= 1900 && value <= new Date().getFullYear() + 1)) {
-                    field.onChange(value);
-                  }
-                }}
+                value={field.value || ""}
               />
             </FormControl>
             <FormMessage />

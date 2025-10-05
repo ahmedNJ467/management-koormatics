@@ -64,11 +64,13 @@ export function LiveMap({
 
   // Load Google Maps API key from database
   useEffect(() => {
-    getGoogleMapsApiKey().then((key) => {
-      setGmapsKey(key);
-    }).catch((error) => {
-      console.error("Failed to load Google Maps API key:", error);
-    });
+    getGoogleMapsApiKey()
+      .then((key: string) => {
+        setGmapsKey(key);
+      })
+      .catch((error: Error) => {
+        console.error("Failed to load Google Maps API key:", error);
+      });
   }, [getGoogleMapsApiKey]);
 
   // Memoize interest points to prevent unnecessary re-renders - show all active points

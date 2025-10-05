@@ -7,7 +7,7 @@ export function useVehicleImages() {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
-  const uploadVehicleImages = async (vehicleId: string) => {
+  const uploadVehicleImages = async (vehicleId: string, vehicle?: Vehicle) => {
     if (images.length === 0) return;
 
     try {
@@ -58,18 +58,18 @@ export function useVehicleImages() {
       }));
 
       // Update the vehicle's images array with new images
-      const existingImages = vehicle.images || [];
-      const newImages = imageRecords.map(record => ({
+      const existingImages = vehicle?.images || [];
+      const newImages = imageRecords.map((record) => ({
         id: record.id,
         url: record.image_url,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }));
       const updatedImages = [...existingImages, ...newImages];
-      
+
       const { error: insertError } = await supabase
         .from("vehicles")
         .update({ images: updatedImages })
-        .eq("id", vehicle.id);
+        .eq("id", vehicleId);
 
       if (insertError) throw insertError;
 
