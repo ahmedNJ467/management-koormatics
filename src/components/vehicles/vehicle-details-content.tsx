@@ -41,10 +41,8 @@ export const VehicleDetailsContent = memo(
     setShowDeleteConfirm,
   }: VehicleDetailsContentProps) => {
     const hasMultipleImages =
-      selectedVehicle.vehicle_images &&
-      selectedVehicle.vehicle_images.length > 1;
-    const currentImage =
-      selectedVehicle.vehicle_images?.[currentImageIndex]?.image_url;
+      selectedVehicle.images && selectedVehicle.images.length > 1;
+    const currentImage = selectedVehicle.images?.[currentImageIndex]?.url;
 
     const getStatusIcon = (status: string) => {
       switch (status) {
@@ -154,7 +152,7 @@ export const VehicleDetailsContent = memo(
             <div className="flex items-center gap-2">
               {getTypeIcon(selectedVehicle.type)}
               <Badge variant="outline" className="capitalize">
-                {selectedVehicle.type.replace("_", " ")}
+                {selectedVehicle.type?.replace("_", " ") || "Unknown"}
               </Badge>
             </div>
             <div className="flex items-center gap-2">
@@ -172,8 +170,7 @@ export const VehicleDetailsContent = memo(
         </div>
 
         {/* Image Gallery */}
-        {selectedVehicle.vehicle_images &&
-        selectedVehicle.vehicle_images.length > 0 ? (
+        {selectedVehicle.images && selectedVehicle.images.length > 0 ? (
           <Card>
             <CardContent className="p-0">
               <div className="relative">
@@ -207,10 +204,10 @@ export const VehicleDetailsContent = memo(
                   )}
                 </div>
 
-                {selectedVehicle.vehicle_images.length > 1 && (
+                {selectedVehicle.images.length > 1 && (
                   <ScrollArea className="w-full h-24 border-t">
                     <div className="flex gap-2 p-2">
-                      {selectedVehicle.vehicle_images.map((image, index) => (
+                      {selectedVehicle.images.map((image, index) => (
                         <div
                           key={`thumb-${index}`}
                           className={`w-20 h-16 flex-shrink-0 cursor-pointer rounded-md overflow-hidden border-2 ${
@@ -221,7 +218,7 @@ export const VehicleDetailsContent = memo(
                           onClick={() => selectThumbnail(index)}
                         >
                           <img
-                            src={image.image_url}
+                            src={image.url}
                             alt={`Vehicle thumbnail ${index + 1}`}
                             className="w-full h-full object-cover"
                           />
@@ -349,7 +346,9 @@ export const VehicleDetailsContent = memo(
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-sm font-medium ${
-                          isInsuranceExpired(selectedVehicle.insurance_expiry || null)
+                          isInsuranceExpired(
+                            selectedVehicle.insurance_expiry || null
+                          )
                             ? "text-red-600"
                             : isInsuranceExpiringSoon(
                                 selectedVehicle.insurance_expiry || null
@@ -369,7 +368,9 @@ export const VehicleDetailsContent = memo(
                           selectedVehicle.insurance_expiry || null
                         )) && (
                         <Badge variant="destructive" className="text-xs">
-                          {isInsuranceExpired(selectedVehicle.insurance_expiry || null)
+                          {isInsuranceExpired(
+                            selectedVehicle.insurance_expiry || null
+                          )
                             ? "Expired"
                             : "Expiring Soon"}
                         </Badge>

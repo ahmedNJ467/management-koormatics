@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Next.js 15 optimizations - simplified to prevent chunk issues
-  experimental: {
-    optimizePackageImports: ["lucide-react"],
-  },
+  // Disable optimizePackageImports for lucide-react on Webpack to avoid import-time errors in Pages Router
+  // experimental: {
+  //   optimizePackageImports: ["lucide-react"],
+  // },
 
   // Use custom build directory to avoid OneDrive file locking issues
   distDir: ".next-build",
@@ -69,7 +70,7 @@ const nextConfig = {
   },
 
   // Windows-specific optimizations
-  reactStrictMode: false, // Disable strict mode to reduce memory usage
+  reactStrictMode: true, // Enable strict mode for better Fast Refresh support
 
   // Security + Cache headers (avoid aggressive page caching)
   async headers() {

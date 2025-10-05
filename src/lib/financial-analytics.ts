@@ -46,7 +46,8 @@ export function calculateCombinedFinancialData(
   comparisonFuelData: any[] = [],
   comparisonSparePartsData: any[] = [],
   selectedYear: string,
-  comparisonYear: string | null
+  comparisonYear: string | null,
+  leaseInvoicesData: any[] = []
 ): CombinedFinancialData {
   // Calculate cost analytics
   const summaryCosts = calculateSummaryCosts(
@@ -83,7 +84,9 @@ export function calculateCombinedFinancialData(
     tripsData,
     maintenanceData,
     fuelData,
-    sparePartsData
+    sparePartsData,
+    [], // vehicleLeasesData - not needed since we use leaseInvoicesData
+    leaseInvoicesData
   );
 
   // Calculate profit analytics

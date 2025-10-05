@@ -145,10 +145,9 @@ function FuelLogs() {
   }, [fuelLogs]);
 
   const fuelTypes = useMemo(() => {
-    if (!fuelLogs) return [];
-    const types = new Set(fuelLogs.map((log) => log.fuel_type));
-    return Array.from(types);
-  }, [fuelLogs]);
+    // Return only the two valid fuel types
+    return ["petrol", "diesel"];
+  }, []);
 
   // Debounce search term
   useEffect(() => {
@@ -1250,7 +1249,7 @@ function FuelLogs() {
             {/* Storage cards removed per requirements */}
             <div className="mb-4 flex items-center gap-4">
               <Select
-                value={selectedTankId || ""}
+                value={selectedTankId || "none"}
                 onValueChange={setSelectedTankId}
                 disabled={isLoadingTanks}
               >
@@ -1267,15 +1266,15 @@ function FuelLogs() {
                 </SelectTrigger>
                 <SelectContent>
                   {isLoadingTanks ? (
-                    <SelectItem value="" disabled>
+                    <SelectItem value="loading" disabled>
                       Loading tanks...
                     </SelectItem>
                   ) : tankError ? (
-                    <SelectItem value="" disabled>
+                    <SelectItem value="error" disabled>
                       Error loading tanks
                     </SelectItem>
                   ) : tanks.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <SelectItem value="empty" disabled>
                       No tanks found
                     </SelectItem>
                   ) : (

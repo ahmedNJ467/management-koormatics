@@ -52,15 +52,7 @@ export const useRole = () => {
     },
   });
 
-  // Debug logging
-  console.log("useRole Debug:", {
-    roles: roles.length > 0 ? roles : "No roles",
-    queryLoading,
-    hasSuperAdmin: roles.includes("super_admin"),
-    hasFleetManager: roles.includes("fleet_manager"),
-    hasOperationsManager: roles.includes("operations_manager"),
-    hasFinanceManager: roles.includes("finance_manager"),
-  });
+  // Debug logging removed for Fast Refresh compatibility
 
   // React Query will automatically handle auth state changes
   // No need for manual subscription management

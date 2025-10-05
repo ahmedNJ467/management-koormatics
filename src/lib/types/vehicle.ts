@@ -17,7 +17,7 @@ export interface Vehicle {
   notes?: string;
   created_at?: string;
   updated_at?: string;
-  vehicle_images?: { image_url: string }[];
+  images?: { id: string; url: string; created_at: string }[];
   // Escort assignment fields
   is_escort_assigned?: boolean;
   escort_trip_id?: string;

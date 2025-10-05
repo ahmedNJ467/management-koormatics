@@ -1,7 +1,7 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "./useAuth";
 
 export interface ProfileData {
   id?: string;
@@ -10,42 +10,110 @@ export interface ProfileData {
   phone: string;
   address: string;
   company: string;
-  bio: string;
   profile_image_url: string | null;
+  notification_preferences?: {
+    email_notifications: boolean;
+    push_notifications: boolean;
+    sms_notifications: boolean;
+    marketing_emails: boolean;
+  };
+  two_factor_enabled?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export function useProfile() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Load profile data
   useEffect(() => {
-    loadProfile();
-  }, []);
+    if (user) {
+      loadProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadProfile = async () => {
+    if (!user) return;
+
     try {
-      // For now, we'll use localStorage since there's no authentication
-      // In a real app, you'd load from Supabase with user authentication
-      const savedProfile = localStorage.getItem('fleet_management_profile');
-      if (savedProfile) {
-        const profileData = JSON.parse(savedProfile);
-        setProfile(profileData);
+      setLoading(true);
+
+      // Try to load from Supabase profiles table first
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        // PGRST116 = no rows returned
+        throw error;
+      }
+
+      if (profileData) {
+        // Map Supabase profile to our ProfileData interface
+        const mappedProfile: ProfileData = {
+          id: profileData.id,
+          name:
+            profileData.full_name ||
+            user.user_metadata?.full_name ||
+            user.email?.split("@")[0] ||
+            "User",
+          email: profileData.email || user.email || "",
+          phone: profileData.phone || "",
+          address: profileData.address || "",
+          company: profileData.company || "",
+          profile_image_url: profileData.profile_image_url,
+          notification_preferences: profileData.notification_preferences || {
+            email_notifications: true,
+            push_notifications: true,
+            sms_notifications: false,
+            marketing_emails: false,
+          },
+          two_factor_enabled: profileData.two_factor_enabled || false,
+          created_at: profileData.created_at,
+          updated_at: profileData.updated_at,
+        };
+        setProfile(mappedProfile);
       } else {
-        // Set default profile data
-        setProfile({
-          name: "Admin User",
-          email: "admin@fleetmanagement.com",
+        // Create default profile if none exists
+        const defaultProfile: ProfileData = {
+          id: user.id,
+          name:
+            user.user_metadata?.full_name ||
+            user.email?.split("@")[0] ||
+            "User",
+          email: user.email || "",
           phone: "",
           address: "",
           company: "",
-          bio: "",
           profile_image_url: null,
-        });
+          notification_preferences: {
+            email_notifications: true,
+            push_notifications: true,
+            sms_notifications: false,
+            marketing_emails: false,
+          },
+          two_factor_enabled: false,
+        };
+        setProfile(defaultProfile);
+
+        // Save default profile to database
+        await saveProfileToDatabase(defaultProfile);
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error("Error loading profile:", error);
       toast({
         title: "Error",
         description: "Failed to load profile data",
@@ -56,22 +124,49 @@ export function useProfile() {
     }
   };
 
+  const saveProfileToDatabase = async (
+    profileData: ProfileData
+  ): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        email: profileData.email,
+        full_name: profileData.name,
+        phone: profileData.phone,
+        address: profileData.address,
+        company: profileData.company,
+        profile_image_url: profileData.profile_image_url,
+        notification_preferences: profileData.notification_preferences,
+        two_factor_enabled: profileData.two_factor_enabled,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Error saving profile to database:", error);
+      throw error;
+    }
+  };
+
   const saveProfile = async (profileData: ProfileData): Promise<boolean> => {
     try {
       setLoading(true);
-      
-      // Save to localStorage (in a real app, you'd save to Supabase)
-      localStorage.setItem('fleet_management_profile', JSON.stringify(profileData));
+
+      // Save to Supabase
+      await saveProfileToDatabase(profileData);
       setProfile(profileData);
-      
+
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
       });
-      
+
       return true;
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error("Error saving profile:", error);
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",
@@ -84,9 +179,28 @@ export function useProfile() {
   };
 
   const uploadProfileImage = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+
     try {
-      // Convert file to base64 for localStorage storage
-      // In a real app, you'd upload to Supabase Storage
+      // Upload to Supabase Storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/profile.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("profile-images")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from("profile-images")
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      // Fallback to base64 for demo purposes
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -95,9 +209,69 @@ export function useProfile() {
         };
         reader.readAsDataURL(file);
       });
+    }
+  };
+
+  const changePassword = async (
+    passwordData: PasswordChangeData
+  ): Promise<boolean> => {
+    try {
+      setLoading(true);
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password Updated",
+        description: "Your password has been successfully changed.",
+      });
+
+      return true;
     } catch (error) {
-      console.error('Error uploading image:', error);
-      throw error;
+      console.error("Error changing password:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to change password. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateNotificationPreferences = async (
+    preferences: ProfileData["notification_preferences"]
+  ): Promise<boolean> => {
+    if (!profile) return false;
+
+    try {
+      const updatedProfile = {
+        ...profile,
+        notification_preferences: preferences,
+      };
+      return await saveProfile(updatedProfile);
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      return false;
+    }
+  };
+
+  const toggleTwoFactor = async (enabled: boolean): Promise<boolean> => {
+    if (!profile) return false;
+
+    try {
+      const updatedProfile = { ...profile, two_factor_enabled: enabled };
+      return await saveProfile(updatedProfile);
+    } catch (error) {
+      console.error("Error toggling two-factor authentication:", error);
+      return false;
     }
   };
 
@@ -106,6 +280,9 @@ export function useProfile() {
     loading,
     saveProfile,
     uploadProfileImage,
-    loadProfile
+    changePassword,
+    updateNotificationPreferences,
+    toggleTwoFactor,
+    loadProfile,
   };
 }

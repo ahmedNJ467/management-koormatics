@@ -74,6 +74,16 @@
 }
 
 @layer utilities {
+
+  /* Normalize links inside settings page to match app typography */
+  .settings-page a {
+    @apply text-foreground no-underline;
+  }
+
+  .settings-page a:hover {
+    @apply text-primary underline decoration-primary/60 underline-offset-2;
+  }
+
   .text-balance {
     text-wrap: balance;
   }

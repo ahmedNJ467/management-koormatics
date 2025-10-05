@@ -324,7 +324,7 @@ export function AssignResourcesDialog({
                       {avail.length} available)
                     </Label>
                     <Select
-                      value={selectedVehicles[idx] || ""}
+                      value={selectedVehicles[idx] || "none"}
                       onValueChange={(v) => {
                         const next = [...selectedVehicles];
                         next[idx] = v;
@@ -354,7 +354,7 @@ export function AssignResourcesDialog({
                   <div className="space-y-1">
                     <Label className="text-xs">Driver {idx + 1}</Label>
                     <Select
-                      value={carrierDriverIds[idx] || ""}
+                      value={carrierDriverIds[idx] || "none"}
                       onValueChange={(v) => {
                         const next = [...carrierDriverIds];
                         next[idx] = v;
@@ -408,7 +408,7 @@ export function AssignResourcesDialog({
                     <div className="md:col-span-2">
                       <Label className="text-xs">Escort team {idx + 1}</Label>
                       <Select
-                        value={selectedTeamIds[idx] || ""}
+                        value={selectedTeamIds[idx] || "none"}
                         onValueChange={(teamId) => {
                           const nextTeams = [...selectedTeamIds];
                           nextTeams[idx] = teamId;

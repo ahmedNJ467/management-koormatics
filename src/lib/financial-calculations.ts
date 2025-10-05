@@ -13,6 +13,10 @@ export type FinancialData = {
     fuel: number;
     spareParts: number;
   };
+  revenueBreakdown: {
+    trips: number;
+    vehicleLeases: number;
+  };
 };
 
 export type MonthlyFinancialData = {
@@ -23,6 +27,8 @@ export type MonthlyFinancialData = {
   maintenance?: number;
   fuel?: number;
   spareParts?: number;
+  tripRevenue?: number;
+  leaseRevenue?: number;
 };
 
 /**
@@ -32,7 +38,9 @@ export function calculateFinancialData(
   tripsData: any[] = [],
   maintenanceData: any[] = [],
   fuelData: any[] = [],
-  sparePartsData: any[] = []
+  sparePartsData: any[] = [],
+  vehicleLeasesData: any[] = [],
+  leaseInvoicesData: any[] = []
 ): FinancialData {
   // Ensure we have valid arrays
   const safeTripsData = Array.isArray(tripsData) ? tripsData : [];
@@ -43,12 +51,28 @@ export function calculateFinancialData(
   const safeSparePartsData = Array.isArray(sparePartsData)
     ? sparePartsData
     : [];
+  const safeVehicleLeasesData = Array.isArray(vehicleLeasesData)
+    ? vehicleLeasesData
+    : [];
+  const safeLeaseInvoicesData = Array.isArray(leaseInvoicesData)
+    ? leaseInvoicesData
+    : [];
 
-  // Calculate total revenue from trips
-  const totalRevenue = safeTripsData.reduce(
+  // Calculate revenue from trips
+  const tripRevenue = safeTripsData.reduce(
     (sum, trip) => sum + Number(trip.amount || 0),
     0
   );
+
+  // Calculate revenue from vehicle leases (only from paid invoices)
+  const leaseRevenue = safeLeaseInvoicesData
+    .filter(
+      (invoice) =>
+        invoice.status === "paid" || invoice.invoice_status === "paid"
+    )
+    .reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
+
+  const totalRevenue = tripRevenue + leaseRevenue;
 
   // Filter out maintenance records that are not completed
   const completedMaintenance = safeMaintenanceData.filter(
@@ -117,7 +141,9 @@ export function calculateFinancialData(
     safeTripsData,
     completedMaintenance,
     safeFuelData,
-    safeSparePartsData
+    safeSparePartsData,
+    safeVehicleLeasesData,
+    safeLeaseInvoicesData
   );
 
   return {
@@ -133,6 +159,10 @@ export function calculateFinancialData(
       fuel: fuelCosts,
       spareParts: 0, // Set to 0 since included in maintenance
     },
+    revenueBreakdown: {
+      trips: tripRevenue,
+      vehicleLeases: leaseRevenue,
+    },
   };
 }
 
@@ -143,7 +173,9 @@ function calculateMonthlyFinancialData(
   tripsData: any[] = [],
   maintenanceData: any[] = [],
   fuelData: any[] = [],
-  sparePartsData: any[] = []
+  sparePartsData: any[] = [],
+  vehicleLeasesData: any[] = [],
+  leaseInvoicesData: any[] = []
 ): MonthlyFinancialData[] {
   const months: Record<string, MonthlyFinancialData> = {};
 
@@ -173,14 +205,69 @@ function calculateMonthlyFinancialData(
             maintenance: 0,
             fuel: 0,
             spareParts: 0,
+            tripRevenue: 0,
+            leaseRevenue: 0,
           };
         }
 
-        months[monthKey].revenue += Number(trip.amount || 0);
+        const tripAmount = Number(trip.amount || 0);
+        months[monthKey].revenue += tripAmount;
+        months[monthKey].tripRevenue =
+          (months[monthKey].tripRevenue || 0) + tripAmount;
       } catch (error) {
         console.warn("Error processing trip date:", trip.date, error);
       }
     });
+  }
+
+  // Process vehicle lease revenue by month (only from paid invoices)
+  if (Array.isArray(leaseInvoicesData)) {
+    leaseInvoicesData
+      .filter(
+        (invoice) =>
+          invoice.status === "paid" || invoice.invoice_status === "paid"
+      )
+      .forEach((invoice) => {
+        if (!invoice.billing_period_start) return;
+
+        try {
+          const startDate = new Date(invoice.billing_period_start);
+          if (isNaN(startDate.getTime())) return;
+
+          const monthKey = `${startDate.getFullYear()}-${String(
+            startDate.getMonth() + 1
+          ).padStart(2, "0")}`;
+          const monthName = startDate.toLocaleString("default", {
+            month: "short",
+            year: "numeric",
+          });
+
+          if (!months[monthKey]) {
+            months[monthKey] = {
+              month: monthName,
+              revenue: 0,
+              expenses: 0,
+              profit: 0,
+              maintenance: 0,
+              fuel: 0,
+              spareParts: 0,
+              tripRevenue: 0,
+              leaseRevenue: 0,
+            };
+          }
+
+          const amount = Number(invoice.amount || 0);
+          months[monthKey].revenue += amount;
+          months[monthKey].leaseRevenue =
+            (months[monthKey].leaseRevenue || 0) + amount;
+        } catch (error) {
+          console.warn(
+            "Error processing lease invoice dates:",
+            invoice.billing_period_start,
+            error
+          );
+        }
+      });
   }
 
   // Process maintenance expenses by month
@@ -209,6 +296,8 @@ function calculateMonthlyFinancialData(
             maintenance: 0,
             fuel: 0,
             spareParts: 0,
+            tripRevenue: 0,
+            leaseRevenue: 0,
           };
         }
 
@@ -250,6 +339,8 @@ function calculateMonthlyFinancialData(
             maintenance: 0,
             fuel: 0,
             spareParts: 0,
+            tripRevenue: 0,
+            leaseRevenue: 0,
           };
         }
 
@@ -354,19 +445,38 @@ export function testFinancialCalculations() {
     { quantity_used: 0, unit_price: 15, last_used_date: "2024-01-20" },
   ];
 
+  const testVehicleLeases = [
+    {
+      daily_rate: 50,
+      monthly_rate: 1500,
+      lease_status: "active",
+      lease_start_date: "2024-01-01",
+      lease_end_date: "2024-12-31",
+    },
+    {
+      daily_rate: 75,
+      monthly_rate: 2250,
+      lease_status: "active",
+      lease_start_date: "2024-02-01",
+      lease_end_date: "2024-11-30",
+    },
+  ];
+
   const result = calculateFinancialData(
     testTrips,
     testMaintenance,
     testFuel,
-    testSpareParts
+    testSpareParts,
+    testVehicleLeases,
+    [] // testLeaseInvoices - empty for now
   );
 
   console.log("Test Results:", {
-    expectedRevenue: 450,
+    expectedRevenue: 4200, // 450 (trips) + 3750 (leases: 1500 + 2250)
     actualRevenue: result.totalRevenue,
     expectedExpenses: 200, // 125 (maintenance including parts) + 75 (fuel)
     actualExpenses: result.totalExpenses,
-    expectedProfit: 250,
+    expectedProfit: 4000, // 4200 - 200
     actualProfit: result.profit,
     expectedMaintenance: 125, // 50 + 75 (maintenance) + 0 (parts already included)
     actualMaintenance: result.expenseBreakdown.maintenance,
@@ -374,6 +484,10 @@ export function testFinancialCalculations() {
     actualFuel: result.expenseBreakdown.fuel,
     expectedSpareParts: 0, // Set to 0 since included in maintenance
     actualSpareParts: result.expenseBreakdown.spareParts,
+    expectedTripRevenue: 450,
+    actualTripRevenue: result.revenueBreakdown.trips,
+    expectedLeaseRevenue: 3750,
+    actualLeaseRevenue: result.revenueBreakdown.vehicleLeases,
   });
 
   return result;

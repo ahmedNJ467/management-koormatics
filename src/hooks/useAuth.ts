@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { getCachedSession, sessionCache } from "@/lib/session-cache";
+import { handleAuthError } from "@/lib/auth-error-handler";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -23,6 +24,10 @@ export function useAuth() {
         }
       } catch (error) {
         console.error("Error getting initial session:", error);
+
+        // Handle refresh token errors
+        await handleAuthError(error);
+
         if (mounted) {
           setLoading(false);
         }
@@ -63,6 +68,8 @@ export function useAuth() {
       // Remove only our custom storage key(s); avoid clearing entire storage
       try {
         localStorage.removeItem("supabase.auth.token");
+        // Note: We don't clear saved credentials here as user might want to stay logged in
+        // Credentials are only cleared when user unchecks "Remember Me"
       } catch {}
       try {
         sessionStorage.removeItem("supabase.auth.token");

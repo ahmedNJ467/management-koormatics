@@ -21,7 +21,7 @@ import { Vehicle } from "@/lib/types";
 import { formatVehicleId } from "@/lib/utils";
 
 interface VehicleTableProps {
-  vehicles: (Vehicle & { vehicle_images: { image_url: string }[] })[];
+  vehicles: Vehicle[];
   onVehicleClick: (vehicle: Vehicle) => void;
 }
 
@@ -177,11 +177,11 @@ export const VehicleTable = memo(
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        {vehicle.vehicle_images &&
-                        Array.isArray(vehicle.vehicle_images) &&
-                        vehicle.vehicle_images.length > 0 ? (
+                        {vehicle.images &&
+                        Array.isArray(vehicle.images) &&
+                        vehicle.images.length > 0 ? (
                           <img
-                            src={vehicle.vehicle_images[0]?.image_url || ""}
+                            src={vehicle.images[0]?.url || ""}
                             alt={`${safeString(
                               vehicle.make,
                               "Vehicle"

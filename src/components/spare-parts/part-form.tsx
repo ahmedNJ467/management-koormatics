@@ -42,6 +42,7 @@ export const PartForm = ({
       unit_price: defaultValues?.unit_price || 0,
       location: defaultValues?.location || "",
       min_stock_level: defaultValues?.min_stock_level || 5,
+      purchase_date: defaultValues?.purchase_date || "",
       compatibility: defaultValues?.compatibility || [],
       notes: defaultValues?.notes || "",
     },

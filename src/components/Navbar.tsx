@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { Menu, User, Settings, LogOut } from "lucide-react";
+import { Menu, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { AlertsDropdown } from "./alerts/AlertsDropdown";
@@ -68,10 +68,6 @@ const Navbar = memo(function Navbar({
     () => isPageAllowed("/profile"),
     [isPageAllowed]
   );
-  const canSeeSettings = useCallback(
-    () => isPageAllowed("/settings"),
-    [isPageAllowed]
-  );
 
   const firstAllowedPath = useCallback(() => {
     const firstPage = pages.find(Boolean);
@@ -88,10 +84,6 @@ const Navbar = memo(function Navbar({
 
   const handleProfileClick = useCallback(() => {
     router.push("/profile");
-  }, [router]);
-
-  const handleSettingsClick = useCallback(() => {
-    router.push("/settings");
   }, [router]);
 
   const handleLogoutClick = useCallback(async () => {
@@ -213,12 +205,6 @@ const Navbar = memo(function Navbar({
                 <DropdownMenuItem onClick={handleProfileClick}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
-                </DropdownMenuItem>
-              )}
-              {hasRole("super_admin") && canSeeSettings() && (
-                <DropdownMenuItem onClick={handleSettingsClick}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />

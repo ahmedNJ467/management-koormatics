@@ -3,6 +3,8 @@
  * and improve login performance
  */
 
+import { handleAuthError } from "./auth-error-handler";
+
 interface CachedSession {
   session: any;
   timestamp: number;
@@ -123,6 +125,10 @@ export async function getCachedSession(supabase: any) {
     return result;
   } catch (error) {
     console.error("Error fetching session:", error);
+
+    // Handle refresh token errors
+    await handleAuthError(error);
+
     return { data: { session: null } };
   }
 }

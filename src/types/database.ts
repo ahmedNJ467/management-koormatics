@@ -110,6 +110,19 @@ export interface Quotation {
   updated_at: string;
 }
 
+export interface LeaseInvoice {
+  id: string;
+  lease_id: string;
+  invoice_id: string;
+  billing_period_start: string;
+  billing_period_end: string;
+  amount: number;
+  status: string;
+  auto_generated: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserRole {
   user_id: string;
   role_slug: string;

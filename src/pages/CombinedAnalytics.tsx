@@ -1,7 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCombinedFinancialData } from "@/hooks/use-combined-financial-data";
 import { CombinedSummaryCards } from "@/components/combined-analytics/CombinedSummaryCards";
 import { CombinedOverviewTab } from "@/components/combined-analytics/CombinedOverviewTab";
@@ -13,7 +18,7 @@ import { AlertCircle, Loader } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const CombinedAnalytics = () => {
-  const { 
+  const {
     combinedData,
     isLoading,
     selectedYear,
@@ -22,7 +27,7 @@ const CombinedAnalytics = () => {
     setActiveTab,
     yearOptions,
     comparisonYear,
-    setComparisonYear
+    setComparisonYear,
   } = useCombinedFinancialData();
 
   // Handle tab change
@@ -44,12 +49,14 @@ const CombinedAnalytics = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Financial Analytics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Financial Analytics
+        </h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Compare with:</span>
-            <Select 
-              value={comparisonYear || "none"} 
+            <Select
+              value={comparisonYear || "none"}
               onValueChange={handleComparisonYearChange}
             >
               <SelectTrigger className="w-[120px]">
@@ -58,15 +65,16 @@ const CombinedAnalytics = () => {
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
                 {yearOptions
-                  .filter(year => year !== selectedYear)
+                  .filter((year) => year !== selectedYear)
                   .map((year) => (
-                    <SelectItem key={year} value={year}>{year}</SelectItem>
-                  ))
-                }
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Year:</span>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
@@ -75,7 +83,9 @@ const CombinedAnalytics = () => {
               </SelectTrigger>
               <SelectContent>
                 {yearOptions.map((year) => (
-                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -92,58 +102,78 @@ const CombinedAnalytics = () => {
       )}
 
       {/* Error state if no data available */}
-      {!isLoading && (!combinedData.profitAnalytics.vehicleProfits || combinedData.profitAnalytics.vehicleProfits.length === 0) && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No data available</AlertTitle>
-          <AlertDescription>
-            There is no financial data available for the selected year. Please try selecting a different year or add some data.
-          </AlertDescription>
-        </Alert>
-      )}
+      {!isLoading &&
+        (!combinedData.profitAnalytics.vehicleProfits ||
+          combinedData.profitAnalytics.vehicleProfits.length === 0) && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No data available</AlertTitle>
+            <AlertDescription>
+              There is no financial data available for the selected year. Please
+              try selecting a different year or add some data.
+            </AlertDescription>
+          </Alert>
+        )}
 
       {/* Summary Cards */}
-      {!isLoading && combinedData.profitAnalytics.vehicleProfits && combinedData.profitAnalytics.vehicleProfits.length > 0 && (
-        <>
-          <CombinedSummaryCards data={combinedData} selectedYear={selectedYear} />
+      {!isLoading &&
+        combinedData.profitAnalytics.vehicleProfits &&
+        combinedData.profitAnalytics.vehicleProfits.length > 0 && (
+          <>
+            <CombinedSummaryCards
+              data={combinedData}
+              selectedYear={selectedYear}
+            />
 
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="vehicles">Vehicle Profit</TabsTrigger>
-              <TabsTrigger value="categories">Cost Categories</TabsTrigger>
-              <TabsTrigger value="details">Detailed Records</TabsTrigger>
-              {comparisonYear && <TabsTrigger value="comparison">Year Comparison</TabsTrigger>}
-            </TabsList>
+            <Tabs
+              value={activeTab}
+              onValueChange={handleTabChange}
+              className="space-y-4"
+            >
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="vehicles">Vehicle Profit</TabsTrigger>
+                <TabsTrigger value="categories">Cost Categories</TabsTrigger>
+                <TabsTrigger value="details">Detailed Records</TabsTrigger>
+                {comparisonYear && (
+                  <TabsTrigger value="comparison">Year Comparison</TabsTrigger>
+                )}
+              </TabsList>
 
-            {/* Tab Contents */}
-            <TabsContent value="overview">
-              <CombinedOverviewTab data={combinedData} />
-            </TabsContent>
-            
-            <TabsContent value="vehicles">
-              <VehicleProfitTab data={combinedData} />
-            </TabsContent>
-            
-            <TabsContent value="categories">
-              <CategoriesTab 
-                maintenanceCategories={combinedData.costAnalytics.maintenanceCategories} 
-                fuelTypes={combinedData.costAnalytics.fuelTypes} 
-              />
-            </TabsContent>
-            
-            <TabsContent value="details">
-              <DetailsTab vehicleCosts={combinedData.costAnalytics.vehicleCosts} />
-            </TabsContent>
-            
-            {comparisonYear && (
-              <TabsContent value="comparison">
-                <ComparisonTab comparisonData={combinedData.costAnalytics.yearComparison} />
+              {/* Tab Contents */}
+              <TabsContent value="overview">
+                <CombinedOverviewTab data={combinedData} />
               </TabsContent>
-            )}
-          </Tabs>
-        </>
-      )}
+
+              <TabsContent value="vehicles">
+                <VehicleProfitTab data={combinedData} />
+              </TabsContent>
+
+              <TabsContent value="categories">
+                <CategoriesTab
+                  maintenanceCategories={
+                    combinedData.costAnalytics.maintenanceCategories
+                  }
+                  fuelTypes={combinedData.costAnalytics.fuelTypes}
+                />
+              </TabsContent>
+
+              <TabsContent value="details">
+                <DetailsTab
+                  vehicleCosts={combinedData.costAnalytics.vehicleCosts}
+                />
+              </TabsContent>
+
+              {comparisonYear && (
+                <TabsContent value="comparison">
+                  <ComparisonTab
+                    comparisonData={combinedData.costAnalytics.yearComparison}
+                  />
+                </TabsContent>
+              )}
+            </Tabs>
+          </>
+        )}
     </div>
   );
 };

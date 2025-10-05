@@ -50,11 +50,10 @@ export function useCostAnalyticsData(selectedYear: string) {
     queryKey: ["maintenanceCosts", selectedYear],
     queryFn: async () => {
       try {
+        // Try fetching maintenance data without the join first
         const { data, error } = await supabase
           .from("maintenance")
-          .select(
-            "cost, description, date, vehicle_id, status, vehicles(make, model, registration)"
-          )
+          .select("cost, description, date, vehicle_id, status")
           .gte("date", `${selectedYear}-01-01`)
           .lte("date", `${selectedYear}-12-31`);
 
@@ -90,7 +89,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         const { data, error } = await supabase
           .from("fuel_logs")
           .select(
-            "cost, fuel_type, date, vehicle_id, vehicles(make, model, registration)"
+            "cost, fuel_type, date, vehicle_id, vehicles!fuel_logs_vehicle_id_fkey(make, model, registration)"
           )
           .gte("date", `${selectedYear}-01-01`)
           .lte("date", `${selectedYear}-12-31`);
@@ -126,11 +125,11 @@ export function useCostAnalyticsData(selectedYear: string) {
         const { data, error } = await supabase
           .from("trips")
           .select(
-            "id, amount, date, status, vehicle_id, vehicles!fk_trips_vehicle_id(make, model, registration)"
+            "id, amount, date, status, vehicle_id, vehicles!trips_vehicle_id_fkey(make, model, registration)"
           )
           .gte("date", `${selectedYear}-01-01`)
           .lte("date", `${selectedYear}-12-31`)
-          .in("status", ["completed"] as any);
+          .in("status", ["completed"]);
 
         if (error) {
           console.error("Trips data fetch error:", error);
@@ -160,13 +159,13 @@ export function useCostAnalyticsData(selectedYear: string) {
     queryKey: ["sparePartsCosts", selectedYear],
     queryFn: async () => {
       try {
-        // Fetch spare parts with proper year filtering
+        // Fetch spare parts purchased in the selected year
         const { data: parts, error: partsError } = await supabase
           .from("spare_parts")
           .select("*")
-          .or(
-            `and(purchase_date.gte.${selectedYear}-01-01,purchase_date.lte.${selectedYear}-12-31),and(last_used_date.gte.${selectedYear}-01-01,last_used_date.lte.${selectedYear}-12-31)`
-          );
+          .not("purchase_date", "is", null)
+          .gte("purchase_date", `${selectedYear}-01-01`)
+          .lte("purchase_date", `${selectedYear}-12-31`);
 
         if (partsError) {
           console.error("Spare parts data fetch error:", partsError);
@@ -178,31 +177,8 @@ export function useCostAnalyticsData(selectedYear: string) {
           return [];
         }
 
-        // Filter parts that have been used in the selected year
-        const relevantParts = (parts || []).filter((part: any) => {
-          const quantityUsed = Number(part.quantity_used || 0);
-          if (quantityUsed <= 0) return false;
-
-          // Check if part was used in the selected year
-          const lastUsedDate = part.last_used_date;
-          const purchaseDate = part.purchase_date;
-
-          if (lastUsedDate) {
-            const lastUsed = new Date(lastUsedDate);
-            const yearStart = new Date(`${selectedYear}-01-01`);
-            const yearEnd = new Date(`${selectedYear}-12-31`);
-            return lastUsed >= yearStart && lastUsed <= yearEnd;
-          }
-
-          if (purchaseDate) {
-            const purchase = new Date(purchaseDate);
-            const yearStart = new Date(`${selectedYear}-01-01`);
-            const yearEnd = new Date(`${selectedYear}-12-31`);
-            return purchase >= yearStart && purchase <= yearEnd;
-          }
-
-          return false;
-        });
+        // Use all parts purchased in the selected year (no additional filtering needed)
+        const relevantParts = parts || [];
 
         console.log(
           `Filtered ${relevantParts.length} relevant spare parts for year ${selectedYear}`
@@ -213,7 +189,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           await supabase
             .from("maintenance")
             .select(
-              "id, description, vehicle_id, vehicles(make, model, registration)"
+              "id, description, vehicle_id, vehicles!maintenance_vehicle_id_fkey(make, model, registration)"
             );
 
         if (maintenanceError) {
@@ -305,9 +281,7 @@ export function useCostAnalyticsData(selectedYear: string) {
       try {
         const { data, error } = await supabase
           .from("maintenance")
-          .select(
-            "cost, description, date, vehicle_id, status, vehicles(make, model, registration)"
-          )
+          .select("cost, description, date, vehicle_id, status")
           .gte("date", `${comparisonYear}-01-01`)
           .lte("date", `${comparisonYear}-12-31`);
 
@@ -345,7 +319,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         const { data, error } = await supabase
           .from("fuel_logs")
           .select(
-            "cost, fuel_type, date, vehicle_id, vehicles(make, model, registration)"
+            "cost, fuel_type, date, vehicle_id, vehicles!fuel_logs_vehicle_id_fkey(make, model, registration)"
           )
           .gte("date", `${comparisonYear}-01-01`)
           .lte("date", `${comparisonYear}-12-31`);
@@ -384,11 +358,11 @@ export function useCostAnalyticsData(selectedYear: string) {
         const { data, error } = await supabase
           .from("trips")
           .select(
-            "id, amount, date, status, vehicle_id, vehicles!fk_trips_vehicle_id(make, model, registration)"
+            "id, amount, date, status, vehicle_id, vehicles!trips_vehicle_id_fkey(make, model, registration)"
           )
           .gte("date", `${comparisonYear}-01-01`)
           .lte("date", `${comparisonYear}-12-31`)
-          .in("status", ["completed"] as any);
+          .in("status", ["completed"]);
 
         if (error) {
           console.error("Comparison trips data fetch error:", error);
@@ -421,13 +395,13 @@ export function useCostAnalyticsData(selectedYear: string) {
       if (!comparisonYear) return [];
 
       try {
-        // Fetch spare parts with proper year filtering
+        // Fetch spare parts purchased in the comparison year
         const { data: parts, error: partsError } = await supabase
           .from("spare_parts")
           .select("*")
-          .or(
-            `and(purchase_date.gte.${comparisonYear}-01-01,purchase_date.lte.${comparisonYear}-12-31),and(last_used_date.gte.${comparisonYear}-01-01,last_used_date.lte.${comparisonYear}-12-31)`
-          );
+          .not("purchase_date", "is", null)
+          .gte("purchase_date", `${comparisonYear}-01-01`)
+          .lte("purchase_date", `${comparisonYear}-12-31`);
 
         if (partsError) {
           console.error("Comparison spare parts data fetch error:", partsError);
@@ -439,31 +413,8 @@ export function useCostAnalyticsData(selectedYear: string) {
           return [];
         }
 
-        // Filter parts that have been used in the comparison year
-        const relevantParts = (parts || []).filter((part: any) => {
-          const quantityUsed = Number(part.quantity_used || 0);
-          if (quantityUsed <= 0) return false;
-
-          // Check if part was used in the comparison year
-          const lastUsedDate = part.last_used_date;
-          const purchaseDate = part.purchase_date;
-
-          if (lastUsedDate) {
-            const lastUsed = new Date(lastUsedDate);
-            const yearStart = new Date(`${comparisonYear}-01-01`);
-            const yearEnd = new Date(`${comparisonYear}-12-31`);
-            return lastUsed >= yearStart && lastUsed <= yearEnd;
-          }
-
-          if (purchaseDate) {
-            const purchase = new Date(purchaseDate);
-            const yearStart = new Date(`${comparisonYear}-01-01`);
-            const yearEnd = new Date(`${comparisonYear}-12-31`);
-            return purchase >= yearStart && purchase <= yearEnd;
-          }
-
-          return false;
-        });
+        // Use all parts purchased in the comparison year (no additional filtering needed)
+        const relevantParts = parts || [];
 
         console.log(
           `Filtered ${relevantParts.length} relevant comparison spare parts for year ${comparisonYear}`
@@ -474,7 +425,7 @@ export function useCostAnalyticsData(selectedYear: string) {
           await supabase
             .from("maintenance")
             .select(
-              "id, description, vehicle_id, vehicles(make, model, registration)"
+              "id, description, vehicle_id, vehicles!maintenance_vehicle_id_fkey(make, model, registration)"
             );
 
         if (maintenanceError) {

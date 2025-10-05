@@ -17,5 +17,10 @@ export const useUsers = () => {
       if (error) throw error;
       return data as SystemUser[];
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    retry: 1,
   });
-}; 
+};

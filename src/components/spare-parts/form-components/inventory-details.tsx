@@ -1,5 +1,10 @@
-
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
@@ -13,7 +18,7 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold border-b pb-2">Inventory Details</h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -28,7 +33,7 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="location"
@@ -43,7 +48,7 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
           )}
         />
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormField
           control={form.control}
@@ -52,11 +57,11 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
             <FormItem>
               <FormLabel>Quantity *</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  min="0" 
-                  placeholder="Enter quantity" 
-                  {...field} 
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="Enter quantity"
+                  {...field}
                   onChange={(e) => field.onChange(Number(e.target.value))}
                 />
               </FormControl>
@@ -64,7 +69,7 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="min_stock_level"
@@ -72,11 +77,11 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
             <FormItem>
               <FormLabel>Min Stock Level *</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  min="0" 
-                  placeholder="Enter minimum stock level" 
-                  {...field} 
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="Enter minimum stock level"
+                  {...field}
                   onChange={(e) => field.onChange(Number(e.target.value))}
                 />
               </FormControl>
@@ -84,7 +89,7 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="unit_price"
@@ -92,13 +97,33 @@ export const InventoryDetails = ({ form }: InventoryDetailsProps) => {
             <FormItem>
               <FormLabel>Unit Price ($) *</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  min="0" 
-                  step="0.01" 
-                  placeholder="Enter unit price" 
-                  {...field} 
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Enter unit price"
+                  {...field}
                   onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="purchase_date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Purchase Date</FormLabel>
+              <FormControl>
+                <Input
+                  type="date"
+                  placeholder="Select purchase date"
+                  {...field}
                 />
               </FormControl>
               <FormMessage />

@@ -111,6 +111,11 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         setIsAuthenticated(true);
       } catch (error) {
         console.error("Auth check error:", error);
+
+        // Handle refresh token errors
+        const { handleAuthError } = await import("@/lib/auth-error-handler");
+        await handleAuthError(error);
+
         if (mounted) {
           router.push("/auth");
         }

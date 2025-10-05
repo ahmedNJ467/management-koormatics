@@ -17,21 +17,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { MANAGER_ROLE_OPTIONS } from "@/constants/roles";
 
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-import { MANAGER_ROLE_OPTIONS } from "@/constants/roles";
-
-// Manager roles aligned with domain access
-const roles = MANAGER_ROLE_OPTIONS.map((r) => ({
-  slug: r.value,
-  name: r.label,
-}));
 
 const AddUserDialog: React.FC<AddUserDialogProps> = ({
   open,
@@ -40,10 +33,11 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role_slug: roles[0].slug,
+    role_slug: MANAGER_ROLE_OPTIONS[0]?.value || "fleet_manager",
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const queryClient = useQueryClient();
 
   const generatePassword = () => {
     setIsGenerating(true);
@@ -57,11 +51,8 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
     setIsGenerating(false);
   };
 
-  const queryClient = useQueryClient();
-
   const addUserMutation = useMutation({
     mutationFn: async () => {
-      // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("create-user", {
         body: formData,
       });
@@ -74,18 +65,18 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
       return data;
     },
     onSuccess: () => {
-      toast({ title: "User created" });
+      toast({ title: "User created successfully" });
       queryClient.invalidateQueries({ queryKey: ["system_users"] });
       onOpenChange(false);
       setFormData({
         email: "",
         password: "",
-        role_slug: roles[0].slug,
+        role_slug: MANAGER_ROLE_OPTIONS[0]?.value || "fleet_manager",
       });
     },
     onError: (err: any) =>
       toast({
-        title: "Error",
+        title: "Error creating user",
         description: err.message,
         variant: "destructive",
       }),
@@ -99,61 +90,76 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add user</DialogTitle>
+          <DialogTitle>Add New User</DialogTitle>
+          <DialogDescription>
+            Create a new user account with appropriate role permissions.
+          </DialogDescription>
         </DialogHeader>
-        <DialogDescription>
-          Provide essential details and assign a manager role.
-        </DialogDescription>
-        <div className="space-y-3">
-          <Input
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            type="email"
-          />
-          <div className="flex gap-2">
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Email Address</label>
             <Input
-              name="password"
-              placeholder="Temporary password"
-              value={formData.password}
+              name="email"
+              placeholder="user@example.com"
+              value={formData.email}
               onChange={handleChange}
-              type="password"
+              type="email"
+              required
             />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={generatePassword}
-              disabled={isGenerating}
-            >
-              {isGenerating ? "…" : "Generate"}
-            </Button>
           </div>
-          <Select
-            value={formData.role_slug}
-            onValueChange={(v) =>
-              setFormData({
-                ...formData,
-                role_slug: v as
-                  | "fleet_manager"
-                  | "operations_manager"
-                  | "finance_manager",
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              {roles.map((r) => (
-                <SelectItem key={r.slug} value={r.slug}>
-                  {r.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Temporary Password</label>
+            <div className="flex gap-2">
+              <Input
+                name="password"
+                placeholder="Enter temporary password"
+                value={formData.password}
+                onChange={handleChange}
+                type="password"
+                required
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generatePassword}
+                disabled={isGenerating}
+              >
+                {isGenerating ? "..." : "Generate"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Role</label>
+            <Select
+              value={formData.role_slug}
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  role_slug: value as
+                    | "fleet_manager"
+                    | "operations_manager"
+                    | "finance_manager",
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {MANAGER_ROLE_OPTIONS.map((role) => (
+                  <SelectItem key={role.value} value={role.value}>
+                    {role.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
         <DialogFooter>
           <Button
             variant="outline"
@@ -170,7 +176,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
               formData.password.length < 8
             }
           >
-            {addUserMutation.isPending ? "Creating…" : "Create"}
+            {addUserMutation.isPending ? "Creating..." : "Create User"}
           </Button>
         </DialogFooter>
       </DialogContent>

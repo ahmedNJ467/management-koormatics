@@ -32,7 +32,9 @@ export function ReportsSummaryCards({
     tripsData || [],
     maintenanceData || [],
     fuelData || [],
-    sparePartsData || []
+    sparePartsData || [],
+    [], // vehicleLeasesData - not needed since we use leaseInvoicesData
+    [] // leaseInvoicesData - will be added when needed
   );
 
   const isLoading =

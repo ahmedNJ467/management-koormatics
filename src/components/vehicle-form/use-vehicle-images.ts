@@ -53,13 +53,23 @@ export function useVehicleImages() {
       const uploadedUrls = await Promise.all(imageUploadPromises);
 
       const imageRecords = uploadedUrls.map((url) => ({
-        vehicle_id: vehicleId,
+        id: crypto.randomUUID(),
         image_url: url,
       }));
 
+      // Update the vehicle's images array with new images
+      const existingImages = vehicle.images || [];
+      const newImages = imageRecords.map(record => ({
+        id: record.id,
+        url: record.image_url,
+        created_at: new Date().toISOString()
+      }));
+      const updatedImages = [...existingImages, ...newImages];
+      
       const { error: insertError } = await supabase
-        .from("vehicle_images")
-        .insert(imageRecords as any);
+        .from("vehicles")
+        .update({ images: updatedImages })
+        .eq("id", vehicle.id);
 
       if (insertError) throw insertError;
 

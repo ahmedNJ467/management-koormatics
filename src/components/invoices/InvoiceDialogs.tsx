@@ -1230,11 +1230,36 @@ export function ViewInvoiceDialog({
                   {invoice.client_address}
                 </p>
                 <p className="text-muted-foreground">{invoice.client_email}</p>
+                {invoice.isLeaseInvoice && invoice.leaseDetails && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">
+                      Lease Information
+                    </h4>
+                    <p className="text-sm text-blue-800">
+                      <strong>Contract:</strong>{" "}
+                      {invoice.leaseDetails.contractNumber}
+                    </p>
+                    <p className="text-sm text-blue-800">
+                      <strong>Vehicle:</strong>{" "}
+                      {invoice.leaseDetails.vehicleInfo}
+                    </p>
+                    <p className="text-sm text-blue-800">
+                      <strong>Billing Period:</strong>{" "}
+                      {formatDate(invoice.leaseDetails.billingPeriod.start)} -{" "}
+                      {formatDate(invoice.leaseDetails.billingPeriod.end)}
+                    </p>
+                  </div>
+                )}
               </div>
               <div>
                 <h3 className="text-sm font-medium mb-1">Details</h3>
                 <p>Date: {formatDate(invoice.date)}</p>
                 <p>Due: {formatDate(invoice.due_date)}</p>
+                {invoice.isLeaseInvoice && (
+                  <p className="text-sm text-blue-600 mt-2">
+                    <strong>Auto-generated lease invoice</strong>
+                  </p>
+                )}
               </div>
             </div>
             <div>

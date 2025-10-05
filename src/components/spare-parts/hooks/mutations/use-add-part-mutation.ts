@@ -34,6 +34,7 @@ export const useAddPartMutation = () => {
           newPart.min_stock_level
         ),
         min_stock_level: newPart.min_stock_level,
+        purchase_date: newPart.purchase_date || null,
         compatibility: newPart.compatibility || [],
       };
 

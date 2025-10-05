@@ -24,9 +24,9 @@ export function useTripsData() {
         .select(
           `
           *,
-          clients:client_id(name, email, type),
-          vehicles:vehicle_id(make, model, registration),
-          drivers:driver_id(name, contact, avatar_url)
+          clients!trips_client_id_fkey(name, email, type),
+          vehicles!trips_vehicle_id_fkey(make, model, registration),
+          drivers!trips_driver_id_fkey(name, contact, avatar_url)
         `
         )
         .order("date", { ascending: false });
@@ -187,7 +187,7 @@ export function useTripsData() {
     if (!enableRealtime) {
       return;
     }
-    
+
     // Only create subscription if one doesn't already exist
     if (!channelRef.current) {
       const channelName = `trips-data-${Date.now()}-${Math.random()}`;

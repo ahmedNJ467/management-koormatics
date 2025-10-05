@@ -1,18 +1,36 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 import { Resend } from "npm:resend@2.0.0";
-import jsPDF from "https://esm.sh/jspdf@2.5.1";
-import "https://esm.sh/jspdf-autotable@3.6.0";
+// @ts-ignore
+import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+// @ts-ignore
+import autoTable from "https://esm.sh/jspdf-autotable@3.6.0";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 
-// Define CORS headers
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
+// Define CORS headers with proper localhost support
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8080",
+    "https://kgmjttamzppmypwzargk.supabase.co",
+  ];
+
+  const corsOrigin = origin && allowedOrigins.includes(origin) ? origin : "*";
+
+  return {
+    "Access-Control-Allow-Origin": corsOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, Content-Type, Authorization, X-Client-Info, X-Requested-With",
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Max-Age": "86400",
+    "Content-Type": "application/json",
+    Vary: "Origin",
+  };
 };
 
 interface QuotationEmailRequest {
@@ -138,7 +156,7 @@ const generateQuotationPDF = (quotation: any): Uint8Array => {
   ]);
 
   // Add table using autoTable
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: tableStartY,
     head: [["Description", "Qty", "Unit Price", "Amount"]],
     body: tableData,
@@ -180,7 +198,7 @@ const generateQuotationPDF = (quotation: any): Uint8Array => {
   const total = subtotal + vatAmount - discountAmount;
 
   // Totals section
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  const finalY = (doc as any).lastAutoTable?.finalY + 10 || 100;
   const totalsX = pageW - margin - 60;
 
   doc.setFontSize(9);
@@ -275,6 +293,9 @@ const generateQuotationPDF = (quotation: any): Uint8Array => {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("Function called with method:", req.method);
+
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {

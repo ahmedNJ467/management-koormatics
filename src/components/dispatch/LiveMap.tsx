@@ -55,11 +55,21 @@ export function LiveMap({
   // Google Maps integration only
   const mapRef = useRef<HTMLDivElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const gmapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+  const { getGoogleMapsApiKey } = require("@/config/api-keys");
+  const [gmapsKey, setGmapsKey] = useState<string | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const interestPointMarkersRef = useRef<any[]>([]);
   const labelOverlaysRef = useRef<any[]>([]);
+
+  // Load Google Maps API key from database
+  useEffect(() => {
+    getGoogleMapsApiKey().then((key) => {
+      setGmapsKey(key);
+    }).catch((error) => {
+      console.error("Failed to load Google Maps API key:", error);
+    });
+  }, [getGoogleMapsApiKey]);
 
   // Memoize interest points to prevent unnecessary re-renders - show all active points
   const memoizedInterestPoints = useMemo(() => {

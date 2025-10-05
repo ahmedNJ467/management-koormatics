@@ -33,9 +33,9 @@ export function VehicleDetailsDialog({
   const handleNextImage = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!selectedVehicle?.vehicle_images) return;
+      if (!selectedVehicle?.images) return;
       setCurrentImageIndex((prevIndex) =>
-        prevIndex === (selectedVehicle.vehicle_images?.length || 0) - 1
+        prevIndex === (selectedVehicle.images?.length || 0) - 1
           ? 0
           : prevIndex + 1
       );
@@ -46,10 +46,10 @@ export function VehicleDetailsDialog({
   const handlePrevImage = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!selectedVehicle?.vehicle_images) return;
+      if (!selectedVehicle?.images) return;
       setCurrentImageIndex((prevIndex) =>
         prevIndex === 0
-          ? (selectedVehicle.vehicle_images?.length || 0) - 1
+          ? (selectedVehicle.images?.length || 0) - 1
           : prevIndex - 1
       );
     },

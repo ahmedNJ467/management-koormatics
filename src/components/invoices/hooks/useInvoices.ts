@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DisplayInvoice, convertToInvoice } from "@/lib/types/invoice";
 import { DisplayTrip } from "@/lib/types/trip";
 import { Client } from "@/lib/types/client";
-import { isInvoiceOverdue } from "@/lib/invoice-helpers";
+import { isInvoiceOverdue, formatDate } from "@/lib/invoice-helpers";
 
 export function useInvoices() {
   const queryClient = useQueryClient();
@@ -14,6 +14,7 @@ export function useInvoices() {
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
+      // Fetch regular invoices
       const { data: invoicesData, error: invoicesError } = await supabase
         .from("invoices")
         .select(`*, clients:client_id(name, email, address, phone)`)
@@ -21,9 +22,19 @@ export function useInvoices() {
 
       if (invoicesError) throw invoicesError;
 
-      const invoicesWithTrips = await Promise.all(
-        invoicesData.map(async (invoice) => {
-          if (!invoice || !('id' in invoice)) return null;
+      // Fetch lease invoices with lease details
+      const { data: leaseInvoicesData, error: leaseInvoicesError } =
+        await supabase
+          .from("lease_invoice_details")
+          .select("*")
+          .order("invoice_date", { ascending: false });
+
+      if (leaseInvoicesError) throw leaseInvoicesError;
+
+      // Process regular invoices
+      const regularInvoices = await Promise.all(
+        (invoicesData || []).map(async (invoice) => {
+          if (!invoice || !("id" in invoice)) return null;
           const { data: tripsData } = await supabase
             .from("trips")
             .select(`*`)
@@ -35,7 +46,8 @@ export function useInvoices() {
                     ...trip,
                     type: trip.service_type || "other",
                     status: "scheduled",
-                    client_name: (invoice as any).clients?.name || "Unknown Client",
+                    client_name:
+                      (invoice as any).clients?.name || "Unknown Client",
                   } as DisplayTrip)
               )
             : [];
@@ -44,7 +56,66 @@ export function useInvoices() {
           return displayInvoice;
         })
       );
-      return invoicesWithTrips.filter(Boolean);
+
+      // Process lease invoices
+      const leaseInvoices = (leaseInvoicesData || []).map(
+        (leaseInvoice: any) => {
+          const displayInvoice: DisplayInvoice = {
+            id: leaseInvoice.invoice_id,
+            client_id: null, // Lease invoices don't have client_id
+            client_name: leaseInvoice.lessee_name,
+            date: leaseInvoice.invoice_date,
+            due_date: leaseInvoice.invoice_due_date,
+            status: leaseInvoice.invoice_status,
+            total_amount: leaseInvoice.amount,
+            paid_amount: leaseInvoice.invoice_paid_amount || 0,
+            payment_date: null,
+            payment_method: null,
+            items: [
+              {
+                description: `Vehicle Lease - ${
+                  leaseInvoice.contract_number
+                } (${formatDate(
+                  leaseInvoice.billing_period_start
+                )} - ${formatDate(leaseInvoice.billing_period_end)})`,
+                quantity: 1,
+                unit_price: leaseInvoice.amount,
+                amount: leaseInvoice.amount,
+              },
+            ],
+            notes: ``,
+            created_at: leaseInvoice.created_at,
+            updated_at: leaseInvoice.updated_at,
+            trips: [], // Lease invoices don't have trips
+            isLeaseInvoice: true, // Flag to identify lease invoices
+            leaseDetails: {
+              contractNumber: leaseInvoice.contract_number,
+              lesseeName: leaseInvoice.lessee_name,
+              lesseeEmail: leaseInvoice.lessee_email,
+              vehicleInfo: `${leaseInvoice.make} ${leaseInvoice.model} (${leaseInvoice.registration})`,
+              billingPeriod: {
+                start: leaseInvoice.billing_period_start,
+                end: leaseInvoice.billing_period_end,
+              },
+            },
+          };
+          return displayInvoice;
+        }
+      );
+
+      // Combine and deduplicate invoices (lease invoices take priority)
+      const regularInvoicesFiltered = regularInvoices.filter(Boolean);
+      const leaseInvoiceIds = new Set(leaseInvoices.map((li) => li.id));
+
+      // Filter out regular invoices that are also lease invoices
+      const uniqueRegularInvoices = regularInvoicesFiltered.filter(
+        (invoice) => !leaseInvoiceIds.has(invoice.id)
+      );
+
+      const allInvoices = [...uniqueRegularInvoices, ...leaseInvoices];
+      return allInvoices.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
     },
   });
 
@@ -79,8 +150,9 @@ export function useInvoices() {
   useEffect(() => {
     const updateOverdueInvoices = async () => {
       if (!invoices) return;
-      const overdueInvoices = invoices.filter((invoice): invoice is DisplayInvoice => 
-        invoice !== null && isInvoiceOverdue(invoice)
+      const overdueInvoices = invoices.filter(
+        (invoice): invoice is DisplayInvoice =>
+          invoice !== null && isInvoiceOverdue(invoice)
       );
       if (overdueInvoices.length > 0) {
         await Promise.all(
@@ -99,7 +171,7 @@ export function useInvoices() {
 
   const filteredInvoices = useMemo(() => {
     return invoices?.filter((invoice) => {
-      if (!invoice || !('id' in invoice)) return false;
+      if (!invoice || !("id" in invoice)) return false;
       const matchesSearch =
         searchTerm === "" ||
         invoice.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||

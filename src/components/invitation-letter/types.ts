@@ -1,4 +1,5 @@
 export interface InvitationLetterData {
+  id?: number; // Database ID for unique identification
   refNumber: string;
   date: string;
   companyName: string;
@@ -13,4 +14,5 @@ export interface InvitationLetterData {
   visitDate: string;
   durationOfStay: string;
   purposeOfVisit: string;
+  subject: string;
 }

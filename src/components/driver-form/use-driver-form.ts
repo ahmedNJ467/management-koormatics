@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,15 +17,30 @@ export function useDriverForm(driver?: Driver) {
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverSchema),
     defaultValues: {
-      name: driver?.name ?? "",
-      contact: driver?.contact ?? "",
-      license_number: driver?.license_number ?? "",
-      license_type: driver?.license_type ?? "",
-      license_expiry: driver?.license_expiry ?? "",
-      status: driver?.status ?? "active",
-      is_vip: driver?.is_vip ?? false,
+      name: "",
+      contact: "",
+      license_number: "",
+      license_type: "",
+      license_expiry: "",
+      status: "active",
+      is_vip: false,
     },
   });
+
+  // Reset form when driver data changes
+  React.useEffect(() => {
+    if (driver) {
+      form.reset({
+        name: driver.name ?? "",
+        contact: driver.contact ?? "",
+        license_number: driver.license_number ?? "",
+        license_type: driver.license_type ?? "",
+        license_expiry: driver.license_expiry ?? "",
+        status: driver.status ?? "active",
+        is_vip: driver.is_vip ?? false,
+      });
+    }
+  }, [driver, form]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -50,7 +64,9 @@ export function useDriverForm(driver?: Driver) {
     setDocumentName(null);
   };
 
-  const handleAirportIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAirportIdChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       setAirportIdFile(file);

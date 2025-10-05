@@ -25,9 +25,9 @@ export function VehicleImagesField({
   >([]);
 
   useEffect(() => {
-    if (vehicle?.vehicle_images) {
-      const existingImageUrls = vehicle.vehicle_images.map((img) => ({
-        image_url: img.image_url,
+    if (vehicle?.images) {
+      const existingImageUrls = vehicle.images.map((img) => ({
+        image_url: img.url,
       }));
       setExistingImages(existingImageUrls);
       setImagePreviewUrls(existingImageUrls.map((img) => img.image_url));
@@ -58,12 +58,12 @@ export function VehicleImagesField({
 
     if (existingImageIndex !== -1 && vehicle) {
       try {
-        // Delete from database
+        // Update the vehicle's images array by removing the deleted image
+        const updatedImages = vehicle.images?.filter(img => img.url !== imageUrl) || [];
         const { error } = await supabase
-          .from("vehicle_images")
-          .delete()
-          .eq("vehicle_id", vehicle.id as any)
-          .eq("image_url", imageUrl as any);
+          .from("vehicles")
+          .update({ images: updatedImages })
+          .eq("id", vehicle.id as any);
 
         if (error) {
           toast({

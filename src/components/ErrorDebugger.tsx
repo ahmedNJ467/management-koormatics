@@ -6,7 +6,8 @@ import React, { useEffect } from "react";
  */
 export function ErrorDebugger() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") {
+    // Disabled for Fast Refresh compatibility
+    if (process.env.NODE_ENV !== "development" || true) {
       return;
     }
 

@@ -1,27 +1,15 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, Grid, List } from "lucide-react";
 import { Vehicle, VehicleStatus, VehicleType } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { VehicleFormDialog } from "@/components/vehicle-form-dialog";
-import { VehicleTable } from "@/components/vehicles/vehicle-table";
-import { VehicleDetailsDialog } from "@/components/vehicles/vehicle-details-dialog";
 import { VehiclesEmptyState } from "@/components/vehicles/vehicles-empty-state";
 import { VehiclesLoading } from "@/components/vehicles/vehicles-loading";
 import { VehiclesError } from "@/components/vehicles/vehicles-error";
+import { VehicleFormDialog } from "@/components/vehicle-form-dialog";
+import { VehicleTable } from "@/components/vehicles/vehicle-table";
+import { VehicleDetailsDialog } from "@/components/vehicles/vehicle-details-dialog";
 import { VehicleCards } from "@/components/vehicles/vehicle-cards";
 import { VehicleFilters } from "@/components/vehicles/vehicle-filters";
 
@@ -46,7 +34,7 @@ export default function Vehicles() {
     queryFn: async () => {
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from("vehicles")
-        .select("*, vehicle_images(image_url)")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (vehiclesError) {
@@ -75,14 +63,12 @@ export default function Vehicles() {
         notes: (v as any).notes || "",
         created_at: (v as any).created_at || new Date().toISOString(),
         updated_at: (v as any).updated_at || new Date().toISOString(),
-        vehicle_images: Array.isArray((v as any).vehicle_images)
-          ? (v as any).vehicle_images
+        images: Array.isArray((v as any).images)
+          ? (v as any).images
           : [],
       }));
 
-      return sanitizedVehicles as (Vehicle & {
-        vehicle_images: { image_url: string }[];
-      })[];
+      return sanitizedVehicles as Vehicle[];
     },
   });
 

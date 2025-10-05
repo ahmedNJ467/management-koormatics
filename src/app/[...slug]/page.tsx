@@ -45,10 +45,6 @@ const Reports = dynamic(() => import("@/pages/Reports"), {
   ssr: false,
   loading: () => <LoadingComponent />,
 });
-const Settings = dynamic(() => import("@/pages/Settings"), {
-  ssr: false,
-  loading: () => <LoadingComponent />,
-});
 const Profile = dynamic(() => import("@/pages/Profile"), {
   ssr: false,
   loading: () => <LoadingComponent />,
@@ -120,15 +116,15 @@ const TripFinance = dynamic(() => import("@/pages/TripFinance"), {
   ssr: false,
   loading: () => <LoadingComponent />,
 });
-const SettingsSecurity = dynamic(() => import("@/pages/SettingsSecurity"), {
-  ssr: false,
-  loading: () => <LoadingComponent />,
-});
 const Forbidden = dynamic(() => import("@/pages/Forbidden"), {
   ssr: false,
   loading: () => <LoadingComponent />,
 });
 const SecurityEscorts = dynamic(() => import("@/pages/SecurityEscorts"), {
+  ssr: false,
+  loading: () => <LoadingComponent />,
+});
+const Settings = dynamic(() => import("@/pages/Settings"), {
   ssr: false,
   loading: () => <LoadingComponent />,
 });
@@ -152,7 +148,6 @@ export default function DynamicPage() {
     maintenance: Maintenance,
     "fuel-logs": FuelLogs,
     reports: Reports,
-    settings: Settings,
     profile: Profile,
     quotations: Quotations,
     invoices: Invoices,
@@ -170,6 +165,7 @@ export default function DynamicPage() {
     "vehicle-incident-reports": VehicleIncidentReports,
     "vehicle-leasing": VehicleLeasing,
     "trip-finance": TripFinance,
+    settings: Settings,
     "403": Forbidden,
   };
 

@@ -67,7 +67,7 @@ const generateMinimalistPDF = async (data: InvitationLetterData) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
-  let y = 12;
+  let y = 20;
 
   // Colors
   const blue: [number, number, number] = [43, 108, 176];
@@ -76,12 +76,12 @@ const generateMinimalistPDF = async (data: InvitationLetterData) => {
   // Letterhead: logo left, company details right
   const logo = await loadImageAsDataUrl("/images/pbg.jpg");
   if (logo) {
-    doc.addImage(logo, "JPEG", margin, y, 26, 26);
+    doc.addImage(logo, "JPEG", margin, y - 8, 35, 32);
   }
   doc.setTextColor(blue[0], blue[1], blue[2]);
   doc.setFont(undefined, "bold");
   doc.setFontSize(16);
-  doc.text("PEACE BUSINESS GROUP", pageWidth - margin, y + 6, {
+  doc.text("PEACE BUSINESS GROUP", pageWidth - margin, y + 2, {
     align: "right",
   });
   doc.setTextColor(gray[0], gray[1], gray[2]);
@@ -92,13 +92,13 @@ const generateMinimalistPDF = async (data: InvitationLetterData) => {
     data.companyEmail,
     data.companyPhone,
   ].filter(Boolean) as string[];
-  let ty = y + 12;
+  let ty = y + 8;
   for (const line of companyLines) {
     doc.text(line, pageWidth - margin, ty, { align: "right" });
     ty += 4;
   }
-  // Divider under letterhead
-  y = Math.max(y + 30, ty + 4);
+  // Divider under letterhead - pushed down to accommodate logo
+  y = Math.max(y + 32 - 6, ty - 4); // Extremely tight spacing
   doc.setDrawColor(220);
   doc.setLineWidth(0.6);
   doc.line(margin, y, pageWidth - margin, y);
@@ -127,45 +127,79 @@ const generateMinimalistPDF = async (data: InvitationLetterData) => {
   doc.text(` ${dateStr}`, rightX + rlw, y);
   y += 10;
 
-  // Section heading
+  // Recipient address
   y += 4;
   doc.setFontSize(11);
   doc.setFont(undefined, "bold");
-  doc.text("FGS Immigration & Nationality", margin, y);
+  doc.text("To:", margin, y);
   y += 6;
-
-  // Purpose line
   doc.setFont(undefined, "normal");
   doc.setFontSize(10);
-  const purposeTitle = "Purpose: Peace Hotel Reservation";
-  doc.text(purposeTitle, margin, y);
-  // underline
-  const ptw = doc.getTextWidth(purposeTitle);
-  doc.setLineWidth(0.2);
-  doc.line(margin, y + 1.5, margin + ptw, y + 1.5);
+  doc.text("Federal Government of Somalia", margin, y);
+  y += 4;
+  doc.text("Immigration & Nationality Department", margin, y);
+  y += 4;
+  doc.text("Mogadishu, Somalia", margin, y);
   y += 8;
 
-  // Body paragraph (from purposeOfVisit field)
-  const clarificationLine =
-    "For further clarification you may contact peace hotel.";
-  let body =
+  // Salutation
+  doc.setFontSize(10);
+  doc.text("Dear Sir/Madam,", margin, y);
+  y += 8;
+
+  // Subject line
+  doc.setFont(undefined, "bold");
+  const subjectText = data.subject || "Official Invitation for Business Visit";
+  doc.text(`Subject: ${subjectText}`, margin, y);
+  y += 8;
+
+  // Body text processing
+  doc.setFont(undefined, "normal");
+  let bodyText =
     data.purposeOfVisit ||
-    "We would like to inform you that the below guest will be visiting Mogadishu and will be accommodated in Peace Hotel Mogadishu located next to Adan Cade International Airport. Peace Business Group will be responsible for her accommodation and safety while visiting Mogadishu.";
-  // Remove clarification line from body if present; we will place it below the table
-  body = body
-    .replace(/\s*For further clarification you may contact peace hotel\.?/i, "")
-    .trim();
-  const bodyLines = doc.splitTextToSize(body, pageWidth - 2 * margin);
-  doc.text(bodyLines, margin, y);
-  y += bodyLines.length * 4.5 + 4;
+    "We would like to inform you that the below guest will be visiting Mogadishu and he will be accommodated in Peace Hotel Mogadishu located next to Adan Cade International Airport. Peace Business Group will be responsible for his accommodation and safety while visiting Mogadishu.\n\nWe kindly request your assistance in facilitating the necessary visa and entry procedures for the above-mentioned guest. Should you require any additional information or documentation, please do not hesitate to contact our office.\n\nWe look forward to your favorable consideration.";
+
+  // Split body text into paragraphs
+  const paragraphs = bodyText.split("\n\n");
+  let firstParagraph = paragraphs[0] || "";
+
+  // Find the request paragraph (contains "We kindly request")
+  let requestParagraph = "";
+  let requestParagraphIndex = -1;
+  for (let i = 1; i < paragraphs.length; i++) {
+    if (paragraphs[i].includes("We kindly request")) {
+      requestParagraph = paragraphs[i];
+      requestParagraphIndex = i;
+      break;
+    }
+  }
+
+  // If no request paragraph found, use default
+  if (!requestParagraph) {
+    requestParagraph =
+      "We kindly request your assistance in facilitating the necessary visa and entry procedures for the above-mentioned guest. Should you require any additional information or documentation, please do not hesitate to contact us.\n\nWe look forward to your favorable consideration.";
+  }
+
+  // First paragraph
+  const firstParagraphLines = doc.splitTextToSize(
+    firstParagraph,
+    pageWidth - 2 * margin
+  );
+  doc.text(firstParagraphLines, margin, y);
+  y += firstParagraphLines.length * 4.5;
 
   // Guest details table
   const tableHead = [
-    ["NO", "NAME", "NATIONALITY", "ORG", "PASSPORT NO.", "PASSPORT EXP DATE"],
+    [
+      "NAME",
+      "NATIONALITY",
+      "ORGANIZATION",
+      "PASSPORT NO.",
+      "PASSPORT EXPIRY DATE",
+    ],
   ];
   const tableBody = [
     [
-      "1",
       data.guestName || "",
       data.nationality || "",
       data.organization || "",
@@ -186,28 +220,33 @@ const generateMinimalistPDF = async (data: InvitationLetterData) => {
 
   // Move y to after table
   y = (doc as any).lastAutoTable?.finalY
-    ? (doc as any).lastAutoTable.finalY + 10
-    : y + 30;
+    ? (doc as any).lastAutoTable.finalY + 6
+    : y + 20;
 
-  // Clarification line placed below the table
-  doc.setFontSize(10);
-  doc.text(clarificationLine, margin, y);
-  y += 10;
+  // Request paragraph
+  const requestParagraphLines = doc.splitTextToSize(
+    requestParagraph,
+    pageWidth - 2 * margin
+  );
+  doc.text(requestParagraphLines, margin, y);
+  y += requestParagraphLines.length * 4.5 + 8;
 
   // Closing and signature
   doc.setFontSize(10);
-  doc.text("Yours Sincerely,", margin, y);
+  doc.text("Yours sincerely,", margin, y);
   y += 6;
-  doc.text("Mr Bashir Osman", margin, y);
+  doc.text("Bashir Osman", margin, y);
   y += 5;
-  doc.text("CEO PBG", margin, y);
+  doc.text("Chief Executive Officer", margin, y);
+  y += 4;
+  doc.text("Peace Business Group", margin, y);
   // Place larger stamp & signature just below the closing text
   y += 4;
   try {
     const signImg = await loadImageAsDataUrl("/images/Stamp & Signature.png");
     if (signImg) {
-      const imgWidth = 110;
-      const imgHeight = 64;
+      const imgWidth = 130;
+      const imgHeight = 76;
       // align under the text, slightly indented
       doc.addImage(signImg, "PNG", margin + 20, y, imgWidth, imgHeight);
       y += imgHeight + 10;
@@ -224,7 +263,7 @@ const generateMinimalistPDF = async (data: InvitationLetterData) => {
   const footer = [
     "Peace Hotels, Mogadishu Somalia +252619494973 / +252619494974",
     "reservations@peacebusinessgroup.com or movcon@peacebusinessgroup.com",
-    "Close to Mogadishu airport, Wadajir-Mogadishu",
+    "Close to Adan Cade International Airport, Wadajir-Mogadishu",
   ];
   const baseY = doc.internal.pageSize.getHeight() - 18;
   let fy = baseY;

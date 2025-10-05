@@ -5,11 +5,21 @@ export const usePageAccess = () => {
   return useQuery<string[]>({
     queryKey: ["page_access"],
     queryFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const uid = sessionData.session?.user.id;
-      if (!uid) return [];
-
       try {
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          return ["*"]; // Return wildcard access as fallback
+        }
+
+        const uid = sessionData.session?.user.id;
+        if (!uid) {
+          console.log("No authenticated user, returning wildcard access");
+          return ["*"]; // Return wildcard access for unauthenticated users
+        }
+
         const { data, error } = await supabase
           .from("vw_user_pages")
           .select("pages")
@@ -22,9 +32,17 @@ export const usePageAccess = () => {
           return ["*"];
         }
 
-        return (data?.pages as string[]) || ["*"];
+        // If no data found, return wildcard access
+        if (!data) {
+          console.log(
+            "No page access data found for user, returning wildcard access"
+          );
+          return ["*"];
+        }
+
+        return (data.pages as string[]) || ["*"];
       } catch (error) {
-        console.error("Error fetching page access:", error);
+        console.error("Unexpected error in usePageAccess:", error);
         // Return wildcard access as fallback to prevent blocking
         return ["*"];
       }

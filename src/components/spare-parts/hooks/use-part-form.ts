@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +11,7 @@ interface UsePartFormProps {
 
 export const usePartForm = ({ defaultValues, onSubmit }: UsePartFormProps) => {
   const [compatibilityInput, setCompatibilityInput] = useState("");
-  
+
   const form = useForm<z.infer<typeof PartFormSchema>>({
     resolver: zodResolver(PartFormSchema),
     defaultValues: {
@@ -24,9 +23,10 @@ export const usePartForm = ({ defaultValues, onSubmit }: UsePartFormProps) => {
       unit_price: defaultValues?.unit_price || 0,
       location: defaultValues?.location || "",
       min_stock_level: defaultValues?.min_stock_level || 5,
+      purchase_date: defaultValues?.purchase_date || "",
       compatibility: defaultValues?.compatibility || [],
-      notes: defaultValues?.notes || ""
-    }
+      notes: defaultValues?.notes || "",
+    },
   });
 
   const handleSubmit = (data: z.infer<typeof PartFormSchema>) => {
@@ -36,10 +36,13 @@ export const usePartForm = ({ defaultValues, onSubmit }: UsePartFormProps) => {
 
   const addCompatibility = () => {
     if (!compatibilityInput.trim()) return;
-    
+
     const currentCompatibilities = form.getValues("compatibility") || [];
     if (!currentCompatibilities.includes(compatibilityInput.trim())) {
-      form.setValue("compatibility", [...currentCompatibilities, compatibilityInput.trim()]);
+      form.setValue("compatibility", [
+        ...currentCompatibilities,
+        compatibilityInput.trim(),
+      ]);
     }
     setCompatibilityInput("");
   };
@@ -47,8 +50,8 @@ export const usePartForm = ({ defaultValues, onSubmit }: UsePartFormProps) => {
   const removeCompatibility = (item: string) => {
     const currentCompatibilities = form.getValues("compatibility") || [];
     form.setValue(
-      "compatibility", 
-      currentCompatibilities.filter(c => c !== item)
+      "compatibility",
+      currentCompatibilities.filter((c) => c !== item)
     );
   };
 
@@ -58,6 +61,6 @@ export const usePartForm = ({ defaultValues, onSubmit }: UsePartFormProps) => {
     setCompatibilityInput,
     handleSubmit: form.handleSubmit(handleSubmit),
     addCompatibility,
-    removeCompatibility
+    removeCompatibility,
   };
 };

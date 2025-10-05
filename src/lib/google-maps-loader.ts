@@ -103,12 +103,33 @@ class GoogleMapsLoader {
         return;
       }
 
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-      if (!apiKey) {
-        reject(new Error("Google Maps API key not found"));
-        return;
-      }
+      // Import the centralized API key configuration
+      const { getGoogleMapsApiKey } = require("@/config/api-keys");
+      
+      // Get API key asynchronously
+      getGoogleMapsApiKey().then((apiKey) => {
+        if (!apiKey) {
+          reject(new Error("Google Maps API key not found"));
+          return;
+        }
+        
+        this.loadGoogleMapsScript(apiKey, libraries, callback, resolve, reject);
+      }).catch((error) => {
+        reject(new Error(`Failed to load Google Maps API key: ${error.message}`));
+      });
+    });
+  }
 
+  private loadGoogleMapsScript(
+    apiKey: string,
+    libraries: string[],
+    callback: string | undefined,
+    resolve: () => void,
+    reject: (error: Error) => void
+  ) {
+    try {
+      const scriptId = "google-maps-api-script";
+      
       // Create callback function
       const callbackName = callback || `_googleMapsLoaded_${Date.now()}`;
       (window as any)[callbackName] = () => {
@@ -116,9 +137,9 @@ class GoogleMapsLoader {
         this.loadState.isLoading = false;
 
         // Execute any pending callbacks
-        const pendingCallbacks = this.callbacks.get(cacheKey) || [];
+        const pendingCallbacks = this.callbacks.get(this.getCacheKey(libraries)) || [];
         pendingCallbacks.forEach((cb) => cb());
-        this.callbacks.delete(cacheKey);
+        this.callbacks.delete(this.getCacheKey(libraries));
 
         resolve();
       };
@@ -141,7 +162,11 @@ class GoogleMapsLoader {
       };
 
       document.head.appendChild(script);
-    });
+    } catch (error) {
+      this.loadState.error = error as Error;
+      this.loadState.isLoading = false;
+      reject(this.loadState.error);
+    }
   }
 
   private waitForGoogleMaps(

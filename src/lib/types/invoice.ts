@@ -1,8 +1,13 @@
+import { DisplayTrip } from "./trip";
 
-import { DisplayTrip } from './trip';
-
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-export type PaymentMethod = 'cash' | 'bank_transfer' | 'credit_card' | 'mobile_money' | 'cheque' | 'other';
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
+export type PaymentMethod =
+  | "cash"
+  | "bank_transfer"
+  | "credit_card"
+  | "mobile_money"
+  | "cheque"
+  | "other";
 
 // Define Json type to match Supabase's Json type
 export type Json =
@@ -39,6 +44,17 @@ export interface Invoice {
   discount_percentage?: number;
 }
 
+export interface LeaseDetails {
+  contractNumber: string;
+  lesseeName: string;
+  lesseeEmail: string;
+  vehicleInfo: string;
+  billingPeriod: {
+    start: string;
+    end: string;
+  };
+}
+
 export interface DisplayInvoice extends Invoice {
   client_name: string;
   client_email?: string;
@@ -46,6 +62,8 @@ export interface DisplayInvoice extends Invoice {
   client_phone?: string;
   trips?: DisplayTrip[];
   quotation_number?: string;
+  isLeaseInvoice?: boolean;
+  leaseDetails?: LeaseDetails;
 }
 
 // Helper functions for Supabase conversion
@@ -56,7 +74,7 @@ export const prepareForSupabase = (items: InvoiceItem[]): Json => {
 export const convertToInvoice = (supabaseData: any): DisplayInvoice => {
   let parsedItems: InvoiceItem[] = [];
   try {
-    if (typeof supabaseData.items === 'string') {
+    if (typeof supabaseData.items === "string") {
       parsedItems = JSON.parse(supabaseData.items);
     } else if (Array.isArray(supabaseData.items)) {
       parsedItems = supabaseData.items;

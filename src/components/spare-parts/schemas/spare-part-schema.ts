@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 export const PartFormSchema = z.object({
@@ -10,6 +9,7 @@ export const PartFormSchema = z.object({
   unit_price: z.number().min(0, "Price cannot be negative"),
   location: z.string().min(1, "Storage location is required"),
   min_stock_level: z.number().min(0, "Minimum stock level cannot be negative"),
+  purchase_date: z.string().optional(), // Purchase date as string (YYYY-MM-DD format)
   compatibility: z.array(z.string()).optional().default([]),
   part_image: z.any().optional(), // Allow any type for part_image to handle File objects
   notes: z.string().optional().default(""),

@@ -24,7 +24,9 @@ export function useReportsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fuel_logs")
-        .select("*, vehicles(make, model, registration)")
+        .select(
+          "*, vehicles!fuel_logs_vehicle_id_fkey(make, model, registration)"
+        )
         .order("date", { ascending: false });
 
       if (error) throw error;
@@ -38,7 +40,9 @@ export function useReportsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance")
-        .select("*, vehicles(make, model, registration)")
+        .select(
+          "*, vehicles!maintenance_vehicle_id_fkey(make, model, registration)"
+        )
         .order("date", { ascending: false });
 
       if (error) throw error;
@@ -52,9 +56,9 @@ export function useReportsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        // Explicitly join via fk_trips_vehicle_id to avoid ambiguity when multiple relationships exist
+        // Explicitly join via trips_vehicle_id_fkey to avoid ambiguity when multiple relationships exist
         .select(
-          "*, vehicles!fk_trips_vehicle_id(make, model, registration), drivers(name), clients(name)"
+          "*, vehicles!trips_vehicle_id_fkey(make, model, registration), drivers!trips_driver_id_fkey(name), clients!trips_client_id_fkey(name)"
         )
         .order("date", { ascending: false });
 
@@ -94,7 +98,7 @@ export function useReportsData() {
         await supabase
           .from("maintenance")
           .select(
-            "id, description, vehicle_id, vehicles(make, model, registration)"
+            "id, description, vehicle_id, vehicles!maintenance_vehicle_id_fkey(make, model, registration)"
           );
 
       if (maintenanceError) throw maintenanceError;
@@ -120,30 +124,32 @@ export function useReportsData() {
       }
 
       // Combine spare parts with vehicle and maintenance data
-      const partsWithRelationships = safeArrayResult<SparePart>(parts).map((part: SparePart) => {
-        let vehicleInfo = null;
+      const partsWithRelationships = safeArrayResult<SparePart>(parts).map(
+        (part: SparePart) => {
+          let vehicleInfo = null;
 
-        // Try to get vehicle info directly from part's vehicle_id
-        if (part.vehicle_id && vehiclesMap[part.vehicle_id]) {
-          vehicleInfo = {
-            make: vehiclesMap[part.vehicle_id].make,
-            model: vehiclesMap[part.vehicle_id].model,
-            registration: vehiclesMap[part.vehicle_id].registration,
+          // Try to get vehicle info directly from part's vehicle_id
+          if (part.vehicle_id && vehiclesMap[part.vehicle_id]) {
+            vehicleInfo = {
+              make: vehiclesMap[part.vehicle_id].make,
+              model: vehiclesMap[part.vehicle_id].model,
+              registration: vehiclesMap[part.vehicle_id].registration,
+            };
+          }
+          // If no direct vehicle_id, try to get it from the associated maintenance record
+          else if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
+            const maintenanceRecord = maintenanceMap[part.maintenance_id];
+            if (maintenanceRecord.vehicles) {
+              vehicleInfo = maintenanceRecord.vehicles;
+            }
+          }
+
+          return {
+            ...part,
+            vehicles: vehicleInfo,
           };
         }
-        // If no direct vehicle_id, try to get it from the associated maintenance record
-        else if (part.maintenance_id && maintenanceMap[part.maintenance_id]) {
-          const maintenanceRecord = maintenanceMap[part.maintenance_id];
-          if (maintenanceRecord.vehicles) {
-            vehicleInfo = maintenanceRecord.vehicles;
-          }
-        }
-
-        return {
-          ...part,
-          vehicles: vehicleInfo,
-        };
-      });
+      );
 
       return partsWithRelationships;
     },

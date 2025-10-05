@@ -26,6 +26,7 @@ import {
   MessageCircle,
   Shield,
   CreditCard,
+  Settings,
 } from "lucide-react";
 import { usePageAccess } from "@/hooks/use-page-access";
 
@@ -78,6 +79,10 @@ const navigationGroups = [
       { name: "Trip Finance", href: "/trip-finance", icon: Receipt },
     ],
   },
+  {
+    category: "System",
+    items: [{ name: "Settings", href: "/settings", icon: Settings }],
+  },
 ];
 
 const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
@@ -92,6 +97,7 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
     "/spare-parts",
     "/vehicle-inspections",
     "/vehicle-incident-reports",
+    "/settings",
   ],
   operations: [
     "/dashboard-management",
@@ -101,6 +107,7 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
     "/trips",
     "/clients",
     "/invitation-letter",
+    "/settings",
   ],
   finance: [
     "/dashboard-management",
@@ -111,6 +118,7 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
     "/quotations",
     "/invoices",
     "/trip-finance",
+    "/settings",
   ],
 };
 

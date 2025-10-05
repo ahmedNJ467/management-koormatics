@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCostAnalyticsData } from "./use-cost-analytics-data";
 import { useReportsData } from "@/components/reports/hooks/useReportsData";
+import { useLeaseInvoices } from "./useLeaseInvoices";
 import { calculateCombinedFinancialData } from "@/lib/financial-analytics";
 
 export function useCombinedFinancialData() {
@@ -26,12 +27,26 @@ export function useCombinedFinancialData() {
   // Get revenue data from reports
   const { tripsData, isLoadingTrips } = useReportsData();
 
+  // Get lease invoices data
+  const { leaseInvoices, isLoading: isLoadingLeaseInvoices } =
+    useLeaseInvoices();
+
   // Filter trips data by selected year
   const filteredTrips =
     tripsData?.filter((trip) => {
       if (!trip.date) return false;
       const tripYear = new Date(trip.date).getFullYear().toString();
       return tripYear === selectedYear;
+    }) || [];
+
+  // Filter lease invoices data by selected year
+  const filteredLeaseInvoices =
+    leaseInvoices?.filter((invoice) => {
+      if (!invoice.billing_period_start) return false;
+      const invoiceYear = new Date(invoice.billing_period_start)
+        .getFullYear()
+        .toString();
+      return invoiceYear === selectedYear;
     }) || [];
 
   // Calculate combined financial data
@@ -44,10 +59,11 @@ export function useCombinedFinancialData() {
     comparisonFuelData,
     comparisonSparePartsData || [],
     selectedYear,
-    comparisonYear
+    comparisonYear,
+    filteredLeaseInvoices
   );
 
-  const isLoading = isLoadingCosts || isLoadingTrips;
+  const isLoading = isLoadingCosts || isLoadingTrips || isLoadingLeaseInvoices;
 
   return {
     combinedData,

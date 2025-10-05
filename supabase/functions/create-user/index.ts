@@ -2,21 +2,21 @@ import { serve } from "https://deno.land/x/sift@0.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 serve(async (req) => {
-  // Handle CORS preflight
-  const origin = req.headers.get("origin") || "*";
+  // CORS headers
   const corsHeaders = {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
     "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, Content-Type, Authorization, X-Client-Info",
+      "authorization, x-client-info, apikey, content-type, Content-Type, Authorization, X-Client-Info, X-Requested-With",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
-    Vary: "Origin",
-  } as const;
+  };
+
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("", {
+    return new Response(null, {
+      status: 200,
       headers: corsHeaders,
-      status: 204,
     });
   }
 
@@ -28,17 +28,18 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize admin client only when needed and after CORS preflight handling
+    // Initialize admin client
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    // Prefer SERVICE_ROLE_KEY (CLI forbids SUPABASE_ prefix for secrets)
     const serviceKey =
       Deno.env.get("SERVICE_ROLE_KEY") ||
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
     if (!supabaseUrl || !serviceKey) {
       throw new Error(
         "Service configuration is missing. Contact the administrator."
       );
     }
+
     const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false },
     });
@@ -55,7 +56,7 @@ serve(async (req) => {
       );
     }
 
-    // 1. Create auth user (email confirmation disabled → immediately confirmed)
+    // 1. Create auth user
     const { data: userData, error: createError } =
       await supabaseAdmin.auth.admin.createUser({
         email,

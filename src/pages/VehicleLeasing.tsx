@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { generateInvoiceForLease } from "@/lib/lease-invoice-generator";
 import {
   Table,
   TableBody,
@@ -87,7 +88,7 @@ interface VehicleLease {
   lease_end_date: string;
   daily_rate: number;
   lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
-  payment_status: "current" | "overdue" | "partial" | "paid_ahead";
+  payment_status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
   notes?: string;
   insurance_required: boolean;
   maintenance_included: boolean;
@@ -154,7 +155,14 @@ export default function VehicleLeasing() {
         .order("lease_start_date", { ascending: false });
 
       if (error) throw error;
-      return data as any;
+
+      // Deduplicate leases by ID to prevent React key conflicts
+      const uniqueLeases = (data || []).filter(
+        (lease: any, index: number, self: any[]) =>
+          index === self.findIndex((l) => l.id === lease.id)
+      );
+
+      return uniqueLeases as any;
     },
   });
 
@@ -306,6 +314,45 @@ export default function VehicleLeasing() {
     setFormOpen(true);
   };
 
+  const handleGenerateInvoice = async (lease: VehicleLease) => {
+    try {
+      // Generate invoice for current month
+      const currentDate = new Date();
+      const billingPeriodStart = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        1
+      );
+      const billingPeriodEnd = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        0
+      );
+
+      await generateInvoiceForLease(
+        lease,
+        billingPeriodStart,
+        billingPeriodEnd
+      );
+
+      toast({
+        title: "Invoice Generated",
+        description: `Invoice generated successfully for lease ${lease.contract_number}`,
+      });
+
+      // Refresh the data
+      queryClient.invalidateQueries({ queryKey: ["vehicle-leases"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    } catch (error) {
+      toast({
+        title: "Failed to Generate Invoice",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: {
@@ -354,8 +401,20 @@ export default function VehicleLeasing() {
 
   const getPaymentStatusBadge = (status: string) => {
     const statusConfig = {
-      current: {
-        label: "Current",
+      draft: {
+        label: "Draft",
+        variant: "secondary" as const,
+        color:
+          "bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-400",
+      },
+      sent: {
+        label: "Sent",
+        variant: "default" as const,
+        color:
+          "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400",
+      },
+      paid: {
+        label: "Paid",
         variant: "default" as const,
         color:
           "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400",
@@ -365,22 +424,16 @@ export default function VehicleLeasing() {
         variant: "destructive" as const,
         color: "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400",
       },
-      partial: {
-        label: "Partial",
-        variant: "secondary" as const,
-        color:
-          "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400",
-      },
-      paid_ahead: {
-        label: "Paid Ahead",
+      cancelled: {
+        label: "Cancelled",
         variant: "outline" as const,
         color:
-          "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400",
+          "bg-gray-100 dark:bg-gray-900/20 text-gray-600 dark:text-gray-500",
       },
     };
 
     const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.current;
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
 
     return (
       <Badge variant={config.variant} className={config.color}>
@@ -624,10 +677,11 @@ export default function VehicleLeasing() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Payments</SelectItem>
-                <SelectItem value="current">Current</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="overdue">Overdue</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
-                <SelectItem value="paid_ahead">Paid Ahead</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
 
@@ -762,7 +816,8 @@ export default function VehicleLeasing() {
                           <TableCell>
                             <div className="space-y-1">
                               <div className="text-sm font-medium text-green-600 dark:text-green-400">
-                                ${lease.daily_rate?.toLocaleString() || "0"}/day
+                                ${lease.daily_rate?.toLocaleString() || "0"}
+                                /day
                               </div>
                               <div className="text-xs text-muted-foreground">
                                 Monthly: $
@@ -797,6 +852,12 @@ export default function VehicleLeasing() {
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit Lease
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleGenerateInvoice(lease)}
+                                >
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Generate Invoice
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem

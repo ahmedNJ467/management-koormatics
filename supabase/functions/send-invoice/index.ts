@@ -4,17 +4,33 @@ import { Resend } from "npm:resend@2.0.0";
 // @ts-ignore
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 // @ts-ignore
-import "https://esm.sh/jspdf-autotable@3.6.0";
+import autoTable from "https://esm.sh/jspdf-autotable@3.6.0";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 
-// Define CORS headers
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
+// Define CORS headers with proper localhost support
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8080",
+    "https://kgmjttamzppmypwzargk.supabase.co",
+  ];
+
+  const corsOrigin = origin && allowedOrigins.includes(origin) ? origin : "*";
+
+  return {
+    "Access-Control-Allow-Origin": corsOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, Content-Type, Authorization, X-Client-Info, X-Requested-With",
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Max-Age": "86400",
+    "Content-Type": "application/json",
+    Vary: "Origin",
+  };
 };
 
 interface InvoiceEmailRequest {
@@ -43,11 +59,11 @@ const formatCurrency = (amount: number): string => {
 const formatDate = (dateStr: string): string => {
   if (!dateStr) return "";
   try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   } catch (e) {
     return "Invalid Date";
   }
@@ -164,7 +180,7 @@ const generateInvoicePDF = (invoice: any): Uint8Array => {
   ]);
 
   // @ts-ignore
-  doc.autoTable({
+  autoTable(doc, {
     startY: tableStartY,
     head: [["Description", "Qty", "Unit Price", "Amount"]],
     body: tableData,
@@ -188,7 +204,7 @@ const generateInvoicePDF = (invoice: any): Uint8Array => {
   });
 
   // @ts-ignore
-  const finalY = doc.lastAutoTable.finalY || 100;
+  const finalY = (doc as any).lastAutoTable?.finalY || 100;
   let yPosTotals = finalY + 10;
 
   // Calculate totals
@@ -347,6 +363,9 @@ const generateInvoicePDF = (invoice: any): Uint8Array => {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("Function called with method:", req.method);
+
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {

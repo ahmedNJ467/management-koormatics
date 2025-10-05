@@ -1,11 +1,9 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VehiclesReport } from "./tabs/VehiclesReport";
 import { TripsReport } from "./tabs/TripsReport";
 import { MaintenanceReport } from "./tabs/MaintenanceReport";
 import { FuelReport } from "./tabs/FuelReport";
 import { DriversReport } from "./tabs/DriversReport";
-import { FinancialReport } from "./tabs/FinancialReport";
 import { DateRange } from "react-day-picker";
 
 interface ReportsTabsProps {
@@ -53,12 +51,11 @@ export function ReportsTabs({
         <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         <TabsTrigger value="fuel">Fuel</TabsTrigger>
         <TabsTrigger value="drivers">Drivers</TabsTrigger>
-        <TabsTrigger value="financial">Financial</TabsTrigger>
       </TabsList>
 
       <TabsContent value="trips">
-        <TripsReport 
-          tripsData={tripsData} 
+        <TripsReport
+          tripsData={tripsData}
           isLoading={isLoadingTrips}
           timeRange={timeRange}
           dateRange={dateRange}
@@ -66,8 +63,8 @@ export function ReportsTabs({
       </TabsContent>
 
       <TabsContent value="vehicles">
-        <VehiclesReport 
-          vehiclesData={vehiclesData} 
+        <VehiclesReport
+          vehiclesData={vehiclesData}
           isLoading={isLoadingVehicles}
           timeRange={timeRange}
           dateRange={dateRange}
@@ -75,8 +72,8 @@ export function ReportsTabs({
       </TabsContent>
 
       <TabsContent value="maintenance">
-        <MaintenanceReport 
-          maintenanceData={maintenanceData} 
+        <MaintenanceReport
+          maintenanceData={maintenanceData}
           isLoading={isLoadingMaintenance}
           timeRange={timeRange}
           dateRange={dateRange}
@@ -84,8 +81,8 @@ export function ReportsTabs({
       </TabsContent>
 
       <TabsContent value="fuel">
-        <FuelReport 
-          fuelData={fuelData} 
+        <FuelReport
+          fuelData={fuelData}
           isLoading={isLoadingFuel}
           timeRange={timeRange}
           dateRange={dateRange}
@@ -93,24 +90,9 @@ export function ReportsTabs({
       </TabsContent>
 
       <TabsContent value="drivers">
-        <DriversReport 
-          driversData={driversData} 
+        <DriversReport
+          driversData={driversData}
           isLoading={isLoadingDrivers}
-          timeRange={timeRange}
-          dateRange={dateRange}
-        />
-      </TabsContent>
-
-      <TabsContent value="financial">
-        <FinancialReport 
-          tripsData={tripsData}
-          maintenanceData={maintenanceData}
-          fuelData={fuelData}
-          sparePartsData={sparePartsData}
-          isLoadingTrips={isLoadingTrips}
-          isLoadingMaintenance={isLoadingMaintenance}
-          isLoadingFuel={isLoadingFuel}
-          isLoadingSpareparts={isLoadingSpareparts}
           timeRange={timeRange}
           dateRange={dateRange}
         />

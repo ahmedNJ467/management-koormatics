@@ -3,14 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 // Import centralized API keys configuration
-import {
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY,
-  validateAPIKeys,
-} from "@/config/api-keys";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, validateAPIKeys } from "@/config/api-keys";
 
-// Validate API keys on startup
-validateAPIKeys();
+// NOTE: Do not validate before client creation to avoid circular init
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -23,11 +18,8 @@ const FUNCTIONS_URL = (() => {
   if (explicit) return explicit;
   try {
     const u = new URL(SUPABASE_URL);
-    // Replace <ref>.supabase.co with <ref>.functions.supabase.co (or .in)
-    const host = u.host
-      .replace(".supabase.co", ".functions.supabase.co")
-      .replace(".supabase.in", ".functions.supabase.in");
-    return `${u.protocol}//${host}`;
+    // Use the same domain as the main Supabase URL for Edge Functions
+    return `${u.protocol}//${u.host}`;
   } catch {
     return undefined;
   }
@@ -37,8 +29,8 @@ export const supabase = createClient<Database>(
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   {
-    // Direct edge function calls to the dedicated Functions domain
-    ...(FUNCTIONS_URL ? { functions: { url: FUNCTIONS_URL } } : {}),
+    // Temporarily disable custom functions URL to fix CORS issues
+    // ...(FUNCTIONS_URL ? { functions: { url: FUNCTIONS_URL } } : {}),
     // Add auth configuration to handle cross-domain issues
     auth: {
       autoRefreshToken: true,
@@ -66,7 +58,18 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Add global error handler for network issues
+// Run API key validation after client is ready (non-blocking, browser only)
+if (typeof window !== "undefined") {
+  void (async () => {
+    try {
+      await validateAPIKeys();
+    } catch {
+      // swallow validation errors to avoid breaking runtime
+    }
+  })();
+}
+
+// Add global error handler for network and auth issues
 if (typeof window !== "undefined") {
   // Handle network errors globally
   window.addEventListener("unhandledrejection", (event) => {
@@ -74,6 +77,40 @@ if (typeof window !== "undefined") {
       console.warn(
         "Network error detected, this might be a temporary connection issue"
       );
+      event.preventDefault();
+    }
+  });
+
+  // Handle authentication errors globally
+  window.addEventListener("unhandledrejection", (event) => {
+    const error = event.reason;
+    if (
+      error?.message?.includes("Invalid Refresh Token") ||
+      error?.message?.includes("Refresh Token Not Found") ||
+      error?.message?.includes("refresh_token_not_found")
+    ) {
+      console.warn(
+        "Refresh token error detected, clearing session and redirecting to auth"
+      );
+
+      // Clear all auth-related storage
+      try {
+        localStorage.removeItem(
+          "sb-" + SUPABASE_URL.split("//")[1].split(".")[0] + "-auth-token"
+        );
+        sessionStorage.removeItem("supabase.auth.token");
+        sessionStorage.removeItem(
+          "sb-" + SUPABASE_URL.split("//")[1].split(".")[0] + "-auth-token"
+        );
+      } catch (e) {
+        console.warn("Failed to clear auth storage:", e);
+      }
+
+      // Redirect to auth page
+      if (window.location.pathname !== "/auth") {
+        window.location.href = "/auth";
+      }
+
       event.preventDefault();
     }
   });

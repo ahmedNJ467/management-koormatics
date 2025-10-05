@@ -322,7 +322,7 @@ export function AssignVehicleDialog({
                     newSelectedVehicles[idx] = value;
                     setSelectedVehicles(newSelectedVehicles);
                   }}
-                  value={selectedVehicles[idx] || ""} // Ensure value is a string, not undefined
+                  value={selectedVehicles[idx] || "none"} // Ensure value is a string, not undefined
                 >
                   <SelectTrigger id={`vehicle-${idx}`}>
                     <SelectValue

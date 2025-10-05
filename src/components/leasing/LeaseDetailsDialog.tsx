@@ -38,10 +38,8 @@ interface VehicleLease {
   monthly_rate?: number;
   daily_rate?: number;
   security_deposit?: number;
-  mileage_limit?: number;
-  excess_mileage_rate?: number;
   lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
-  payment_status: "current" | "overdue" | "partial" | "paid_ahead";
+  payment_status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
   contract_number?: string;
   contract_id?: string;
   notes?: string;
@@ -138,8 +136,18 @@ export function LeaseDetailsDialog({
 
   const getPaymentStatusBadge = (status: string) => {
     const statusConfig = {
-      current: {
-        label: "Current",
+      draft: {
+        label: "Draft",
+        variant: "secondary" as const,
+        color: "bg-gray-100 text-gray-800",
+      },
+      sent: {
+        label: "Sent",
+        variant: "default" as const,
+        color: "bg-blue-100 text-blue-800",
+      },
+      paid: {
+        label: "Paid",
         variant: "default" as const,
         color: "bg-green-100 text-green-800",
       },
@@ -148,20 +156,15 @@ export function LeaseDetailsDialog({
         variant: "destructive" as const,
         color: "bg-red-100 text-red-800",
       },
-      partial: {
-        label: "Partial",
-        variant: "secondary" as const,
-        color: "bg-yellow-100 text-yellow-800",
-      },
-      paid_ahead: {
-        label: "Paid Ahead",
+      cancelled: {
+        label: "Cancelled",
         variant: "outline" as const,
-        color: "bg-blue-100 text-blue-800",
+        color: "bg-gray-100 text-gray-600",
       },
     };
 
     const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.current;
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
 
     return (
       <Badge variant={config.variant} className={config.color}>
@@ -219,10 +222,15 @@ export function LeaseDetailsDialog({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
-                    ${(lease.monthly_rate || lease.daily_rate || 0).toLocaleString()}
+                    $
+                    {(
+                      lease.monthly_rate ||
+                      lease.daily_rate ||
+                      0
+                    ).toLocaleString()}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {lease.monthly_rate ? "Monthly Rate" : "Daily Rate"}
@@ -234,14 +242,6 @@ export function LeaseDetailsDialog({
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Total Value
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {(lease.mileage_limit || 0).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Miles/Year
                   </div>
                 </div>
               </div>
@@ -373,14 +373,6 @@ export function LeaseDetailsDialog({
                   </div>
                   <div className="font-medium">
                     ${(lease.security_deposit || 0).toLocaleString()}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Excess Mileage Rate
-                  </div>
-                  <div className="font-medium">
-                    ${lease.excess_mileage_rate || 0}/mile
                   </div>
                 </div>
                 <div>

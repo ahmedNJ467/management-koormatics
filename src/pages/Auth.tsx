@@ -54,6 +54,24 @@ export default function Auth() {
       ])) as any;
       if (error) throw error;
 
+      // Save credentials if "Remember Me" is checked
+      if (rememberMe) {
+        try {
+          localStorage.setItem("koormatics_saved_email", email);
+          localStorage.setItem("koormatics_remember_me", "true");
+        } catch (error) {
+          console.warn("Failed to save credentials:", error);
+        }
+      } else {
+        // Clear saved credentials if "Remember Me" is unchecked
+        try {
+          localStorage.removeItem("koormatics_saved_email");
+          localStorage.removeItem("koormatics_remember_me");
+        } catch (error) {
+          console.warn("Failed to clear saved credentials:", error);
+        }
+      }
+
       // Show success toast immediately
       toast({
         title: "Welcome back!",
@@ -116,6 +134,26 @@ export default function Auth() {
       setIsRedirecting(false);
     }
   };
+
+  // Load saved credentials on component mount
+  useEffect(() => {
+    const loadSavedCredentials = () => {
+      try {
+        const savedEmail = localStorage.getItem("koormatics_saved_email");
+        const savedRememberMe =
+          localStorage.getItem("koormatics_remember_me") === "true";
+
+        if (savedEmail && savedRememberMe) {
+          setEmail(savedEmail);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.warn("Failed to load saved credentials:", error);
+      }
+    };
+
+    loadSavedCredentials();
+  }, []);
 
   // Check if user is already logged in on component mount
   useEffect(() => {
@@ -181,16 +219,18 @@ export default function Auth() {
             </div>
           </div>
 
-          {/* Simplified Login */}
-          <form onSubmit={handleAuth} className="space-y-4">
+          {/* Login Form with Browser Credential Saving */}
+          <form onSubmit={handleAuth} className="space-y-4" autoComplete="on">
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
               <Input
                 id="email"
+                name="email"
                 type="email"
-                placeholder="User"
+                placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
                 className="pl-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-400 transition-colors"
               />
@@ -199,10 +239,12 @@ export default function Auth() {
             <div className="relative">
               <Input
                 id="password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
                 className="pl-3 pr-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-offset-0 focus:border-purple-400 transition-colors"
               />
@@ -221,9 +263,24 @@ export default function Auth() {
               </Button>
             </div>
 
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 text-white/80 text-sm">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-white/20 bg-white/5 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                />
+                <span>Remember me</span>
+              </label>
+            </div>
+
             <Button
               type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium h-12 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="default"
+              size="lg"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium h-12 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading || isRedirecting}
             >
               {isLoading ? (

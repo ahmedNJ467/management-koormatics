@@ -42,14 +42,15 @@ import {
 
 const leaseFormSchema = z.object({
   vehicle_id: z.string().min(1, "Please select a vehicle"),
-  contract_id: z.string().min(1, "Please select a contract"),
-  lessee_name: z.string().min(2, "Lessee name must be at least 2 characters"),
-  lessee_email: z.string().email("Please enter a valid email address"),
-  lessee_phone: z.string().min(10, "Please enter a valid phone number"),
-  lessee_address: z.string().min(10, "Please enter a complete address"),
+  contract_id: z.string().optional(),
+  client_id: z.string().min(1, "Please select a client"),
   lease_start_date: z.string().min(1, "Please select a start date"),
   lease_end_date: z.string().min(1, "Please select an end date"),
   daily_rate: z.number().min(1, "Daily rate must be greater than 0"),
+  monthly_rate: z.number().optional(),
+  security_deposit: z.number().optional(),
+  early_termination_fee: z.number().optional(),
+  contract_number: z.string().optional(),
   lease_status: z.enum([
     "active",
     "pending",
@@ -57,7 +58,7 @@ const leaseFormSchema = z.object({
     "terminated",
     "upcoming",
   ]),
-  payment_status: z.enum(["current", "overdue", "partial", "paid_ahead"]),
+  payment_status: z.enum(["draft", "sent", "paid", "overdue", "cancelled"]),
   notes: z.string().optional(),
   insurance_required: z.boolean(),
   maintenance_included: z.boolean(),
@@ -71,16 +72,17 @@ type LeaseFormData = z.infer<typeof leaseFormSchema>;
 interface VehicleLease {
   id: string;
   vehicle_id: string;
-  contract_id: string;
-  lessee_name: string;
-  lessee_email: string;
-  lessee_phone: string;
-  lessee_address: string;
+  contract_id?: string;
+  client_id: string;
   lease_start_date: string;
   lease_end_date: string;
-  daily_rate: number;
+  daily_rate?: number;
+  monthly_rate?: number;
+  security_deposit?: number;
+  early_termination_fee?: number;
+  contract_number?: string;
   lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
-  payment_status: "current" | "overdue" | "partial" | "paid_ahead";
+  payment_status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
   notes?: string;
   insurance_required: boolean;
   maintenance_included: boolean;
@@ -104,22 +106,23 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
     resolver: zodResolver(leaseFormSchema),
     defaultValues: {
       vehicle_id: "",
-      contract_id: "",
-      lessee_name: "",
-      lessee_email: "",
-      lessee_phone: "",
-      lessee_address: "",
+      contract_id: "no-contract",
+      client_id: "",
       lease_start_date: "",
       lease_end_date: "",
       daily_rate: 0,
+      monthly_rate: 0,
+      security_deposit: 0,
+      early_termination_fee: 0,
+      contract_number: "",
       lease_status: "pending",
-      payment_status: "current",
+      payment_status: "draft",
       notes: "",
       insurance_required: true,
       maintenance_included: false,
       driver_included: false,
       fuel_included: false,
-      assigned_driver_id: "none",
+      assigned_driver_id: "no-driver",
     },
   });
 
@@ -187,19 +190,54 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
     },
   });
 
+  // Fetch available clients
+  const {
+    data: clients,
+    isLoading: clientsLoading,
+    error: clientsError,
+  } = useQuery({
+    queryKey: ["clients-available"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, type, email, phone, address")
+        .order("name");
+      if (error) throw error;
+      console.log("Fetched clients:", data);
+      return data;
+    },
+  });
+
+  // Debug clients loading
+  useEffect(() => {
+    console.log("Clients loading state:", {
+      clientsLoading,
+      clientsError,
+      clientsCount: clients?.length,
+    });
+  }, [clientsLoading, clientsError, clients]);
+
   // Pre-fill form when editing
   useEffect(() => {
-    if (lease) {
+    if (lease && vehicles && contracts && drivers && clients) {
+      console.log("Prefilling form with lease data:", {
+        lease,
+        vehicles: vehicles?.length,
+        contracts: contracts?.length,
+        drivers: drivers?.length,
+      });
+
       form.reset({
         vehicle_id: lease.vehicle_id,
-        contract_id: lease.contract_id,
-        lessee_name: lease.lessee_name,
-        lessee_email: lease.lessee_email,
-        lessee_phone: lease.lessee_phone,
-        lessee_address: lease.lessee_address,
+        contract_id: lease.contract_id || "no-contract",
+        client_id: lease.client_id,
         lease_start_date: lease.lease_start_date.split("T")[0],
         lease_end_date: lease.lease_end_date.split("T")[0],
-        daily_rate: lease.daily_rate,
+        daily_rate: lease.daily_rate || 0,
+        monthly_rate: lease.monthly_rate || 0,
+        security_deposit: lease.security_deposit || 0,
+        early_termination_fee: lease.early_termination_fee || 0,
+        contract_number: lease.contract_number || "",
         lease_status: lease.lease_status,
         payment_status: lease.payment_status,
         notes: lease.notes || "",
@@ -207,32 +245,133 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
         maintenance_included: lease.maintenance_included,
         driver_included: lease.driver_included,
         fuel_included: lease.fuel_included,
-        assigned_driver_id: lease.assigned_driver_id || "none",
+        assigned_driver_id: lease.assigned_driver_id || "no-driver",
       });
+
+      console.log(
+        "Form reset completed. Current form values:",
+        form.getValues()
+      );
+
+      // Debug the specific fields that should be prefilled
+      console.log("Vehicle ID from lease:", lease.vehicle_id);
+      console.log("Contract ID from lease:", lease.contract_id);
+      console.log("Lease Status from lease:", lease.lease_status);
+      console.log("Payment Status from lease:", lease.payment_status);
+      console.log("Form vehicle_id value:", form.getValues("vehicle_id"));
+      console.log("Form contract_id value:", form.getValues("contract_id"));
+      console.log("Form lease_status value:", form.getValues("lease_status"));
+      console.log(
+        "Form payment_status value:",
+        form.getValues("payment_status")
+      );
+    }
+  }, [lease, vehicles, contracts, drivers, clients, form]);
+
+  // Watch form values for debugging
+  const formValues = form.watch();
+  useEffect(() => {
+    if (lease) {
+      console.log("Current form values:", formValues);
+    }
+  }, [formValues, lease]);
+
+  // Auto-calculate monthly rate when daily rate changes
+  const dailyRate = form.watch("daily_rate");
+  useEffect(() => {
+    if (dailyRate && dailyRate > 0) {
+      const calculatedMonthlyRate = dailyRate * 30;
+      const currentMonthlyRate = form.getValues("monthly_rate");
+      // Only update if the monthly rate hasn't been manually set or is 0
+      if (!currentMonthlyRate || currentMonthlyRate === 0) {
+        form.setValue("monthly_rate", calculatedMonthlyRate);
+      }
+    }
+  }, [dailyRate, form]);
+
+  // Auto-generate contract number for new leases
+  useEffect(() => {
+    if (!lease && !form.getValues("contract_number")) {
+      const generatePreviewNumber = () => {
+        const now = new Date();
+        const yy = now.getFullYear().toString().slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const random = Math.floor(1000 + Math.random() * 9000);
+        return `LSE-${yy}${mm}${dd}-${random}`;
+      };
+
+      // Set a preview contract number (will be regenerated on submit to ensure uniqueness)
+      form.setValue("contract_number", generatePreviewNumber());
     }
   }, [lease, form]);
 
   // Create/Update mutation
   const saveMutation = useMutation({
-    mutationFn: async (data: LeaseFormData) => {
-      if (lease) {
-        // Update existing lease
-        const { error } = await supabase
-          .from("vehicle_leases")
-          .update({
-            ...data,
+    mutationFn: async (submitData: any) => {
+      try {
+        console.log("Mutation received data:", submitData);
+
+        if (lease) {
+          // Update existing lease
+          console.log("Updating existing lease with ID:", lease.id);
+          const { error } = await supabase
+            .from("vehicle_leases")
+            .update({
+              ...submitData,
+              updated_at: new Date().toISOString(),
+            } as any)
+            .eq("id", lease.id as any);
+          if (error) {
+            console.error("Update error:", error);
+            console.error("Update error details:", {
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code,
+            });
+            throw error;
+          }
+        } else {
+          // Create new lease
+          console.log("Creating new lease");
+
+          // First, let's test if we can query the table
+          const { data: testData, error: testError } = await supabase
+            .from("vehicle_leases")
+            .select("id")
+            .limit(1);
+
+          if (testError) {
+            console.error("Table access test failed:", testError);
+            throw new Error(
+              `Cannot access vehicle_leases table: ${testError.message}`
+            );
+          }
+
+          console.log("Table access test passed, proceeding with insert");
+
+          const { error } = await supabase.from("vehicle_leases").insert({
+            ...submitData,
+            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          } as any)
-          .eq("id", lease.id as any);
-        if (error) throw error;
-      } else {
-        // Create new lease
-        const { error } = await supabase.from("vehicle_leases").insert({
-          ...data,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as any);
-        if (error) throw error;
+          } as any);
+          if (error) {
+            console.error("Insert error:", error);
+            console.error("Insert error details:", {
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code,
+            });
+            throw error;
+          }
+        }
+      } catch (err) {
+        console.error("Caught error in mutation:", err);
+        console.error("Error type:", typeof err);
+        console.error("Error constructor:", err?.constructor?.name);
+        throw err;
       }
     },
     onSuccess: () => {
@@ -244,56 +383,157 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
       });
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error saving lease:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+
+      let errorMessage = "Failed to save lease agreement";
+
+      // Handle specific database constraint violations
+      if (error?.code === "23505") {
+        if (error?.message?.includes("vehicle_leases_contract_number_key")) {
+          errorMessage =
+            "A lease with this contract number already exists. Please use a different contract number.";
+        } else if (error?.message?.includes("unique constraint")) {
+          errorMessage =
+            "This record already exists. Please check your data and try again.";
+        } else {
+          errorMessage =
+            "Duplicate entry detected. Please check your data and try again.";
+        }
+      } else if (error?.code === "23503") {
+        errorMessage =
+          "Referenced data not found. Please check your selections and try again.";
+      } else if (error?.code === "23514") {
+        errorMessage =
+          "Invalid data provided. Please check your input and try again.";
+      } else if (error?.message) {
+        errorMessage = `Failed to save lease agreement: ${error.message}`;
+      }
+
       toast({
         title: "Error",
-        description: "Failed to save lease agreement. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: LeaseFormData) => {
-    // TEMPORARY FIX: Map new schema to old database schema
-    const submitData = {
-      vehicle_id: data.vehicle_id,
-      contract_id: data.contract_id,
-      lessee_name: data.lessee_name,
-      lessee_email: data.lessee_email,
-      lessee_phone: data.lessee_phone,
-      lessee_address: data.lessee_address,
-      lease_start_date: data.lease_start_date,
-      lease_end_date: data.lease_end_date,
-
-      // Store both daily_rate and monthly_rate
-      daily_rate: data.daily_rate,
-      monthly_rate: (data.daily_rate || 0) * 30,
-
-      // Set default values for required old fields
-      security_deposit: 0,
-      mileage_limit: 12000, // Default annual mileage
-      excess_mileage_rate: 0.25, // Default per-mile rate
-      early_termination_fee: 0,
-
-      // Generate contract number from contract_id
-      contract_number: data.contract_id
-        ? `LSE-${data.contract_id.slice(-6)}`
-        : `LSE-${Date.now().toString().slice(-6)}`,
-
-      lease_status: data.lease_status,
-      payment_status: data.payment_status,
-      notes: data.notes || undefined,
-      insurance_required: data.insurance_required,
-      maintenance_included: data.maintenance_included,
-      driver_included: data.driver_included,
-      fuel_included: data.fuel_included,
-      assigned_driver_id:
-        data.assigned_driver_id === "none" ? null : data.assigned_driver_id,
+  // Generate a unique contract number
+  const generateUniqueContractNumber = async (): Promise<string> => {
+    const generateNumber = () => {
+      const now = new Date();
+      const yy = now.getFullYear().toString().slice(-2);
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const random = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+      return `LSE-${yy}${mm}${dd}-${random}`;
     };
 
-    console.log("Submitting lease data (with schema mapping):", submitData);
-    saveMutation.mutate(submitData);
+    let contractNumber = generateNumber();
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    // Check if contract number already exists
+    while (attempts < maxAttempts) {
+      const { data: existingLease } = await supabase
+        .from("vehicle_leases")
+        .select("contract_number")
+        .eq("contract_number", contractNumber)
+        .single();
+
+      if (!existingLease) {
+        return contractNumber;
+      }
+
+      // Generate a new number if this one exists
+      contractNumber = generateNumber();
+      attempts++;
+    }
+
+    // Fallback: use timestamp with microseconds for uniqueness
+    return `LSE-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  };
+
+  const onSubmit = async (data: LeaseFormData) => {
+    try {
+      // Calculate monthly rate if not provided
+      const monthlyRate = data.monthly_rate || (data.daily_rate || 0) * 30;
+
+      // Generate contract number if not provided
+      let contractNumber = data.contract_number;
+      if (!contractNumber) {
+        if (data.contract_id) {
+          contractNumber = `LSE-${data.contract_id.slice(-6)}`;
+        } else {
+          contractNumber = await generateUniqueContractNumber();
+        }
+      } else {
+        // If user provided a contract number, check if it already exists (only for new leases)
+        if (!lease) {
+          const { data: existingLease } = await supabase
+            .from("vehicle_leases")
+            .select("contract_number")
+            .eq("contract_number", contractNumber)
+            .single();
+
+          if (existingLease) {
+            toast({
+              title: "Contract Number Already Exists",
+              description:
+                "A lease with this contract number already exists. Please use a different contract number.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+
+      // Get client information from selected client
+      const selectedClient = clients?.find(
+        (client) => client.id === data.client_id
+      );
+
+      const submitData = {
+        vehicle_id: data.vehicle_id,
+        contract_id:
+          data.contract_id === "no-contract" ? null : data.contract_id,
+        // Include both client_id (for future) and lessee fields (for current DB)
+        client_id: data.client_id,
+        lessee_name: selectedClient?.name || "",
+        lessee_email: selectedClient?.email || "",
+        lessee_phone: selectedClient?.phone || "",
+        lessee_address: selectedClient?.address || "",
+        lease_start_date: data.lease_start_date,
+        lease_end_date: data.lease_end_date,
+        daily_rate: data.daily_rate,
+        monthly_rate: monthlyRate,
+        security_deposit: data.security_deposit || 0,
+        early_termination_fee: data.early_termination_fee || 0,
+        contract_number: contractNumber,
+        lease_status: data.lease_status,
+        payment_status: data.payment_status,
+        notes: data.notes || undefined,
+        insurance_required: data.insurance_required,
+        maintenance_included: data.maintenance_included,
+        driver_included: data.driver_included,
+        fuel_included: data.fuel_included,
+        assigned_driver_id:
+          data.assigned_driver_id === "no-driver"
+            ? null
+            : data.assigned_driver_id,
+      };
+
+      console.log("Submitting lease data:", submitData);
+      saveMutation.mutate(submitData);
+    } catch (error) {
+      console.error("Error in onSubmit:", error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare lease data. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -314,19 +554,29 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Select Vehicle *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    key={`vehicle-${field.value || "empty"}`}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a vehicle for lease" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {vehicles?.filter(vehicle => vehicle && 'id' in vehicle).map((vehicle) => (
-                        <SelectItem key={(vehicle as any).id} value={(vehicle as any).id}>
-                          {(vehicle as any).make} {(vehicle as any).model} ({(vehicle as any).year}) -{" "}
-                          {(vehicle as any).registration}
-                        </SelectItem>
-                      ))}
+                      {vehicles
+                        ?.filter((vehicle) => vehicle && "id" in vehicle)
+                        .map((vehicle) => (
+                          <SelectItem
+                            key={(vehicle as any).id}
+                            value={(vehicle as any).id}
+                          >
+                            {(vehicle as any).make} {(vehicle as any).model} (
+                            {(vehicle as any).year}) -{" "}
+                            {(vehicle as any).registration}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -339,23 +589,37 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
               name="contract_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Select Contract *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Select Contract</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    key={`contract-${field.value || "empty"}`}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a contract for this lease" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {contracts?.filter(contract => contract && 'id' in contract).map((contract) => (
-                        <SelectItem key={(contract as any).id} value={(contract as any).id}>
-                          {(contract as any).name} - {(contract as any).client_name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="no-contract">
+                        No contract selected
+                      </SelectItem>
+                      {contracts
+                        ?.filter((contract) => contract && "id" in contract)
+                        .map((contract) => (
+                          <SelectItem
+                            key={(contract as any).id}
+                            value={(contract as any).id}
+                          >
+                            {(contract as any).name} -{" "}
+                            {(contract as any).client_name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>
                     Select an active contract to associate with this lease
+                    (optional)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -364,76 +628,56 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
           </CardContent>
         </Card>
 
-        {/* Lessee Information */}
+        {/* Client Selection */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <User className="h-5 w-5 text-green-600" />
-              Lessee Information
+              Client Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="lessee_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="lessee_email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="john@example.com"
-                        type="email"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="lessee_phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+1 (555) 123-4567" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="lessee_address"
+              name="client_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address *</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="123 Main Street, City, State, ZIP Code"
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>Select Client *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    disabled={clientsLoading}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            clientsLoading
+                              ? "Loading clients..."
+                              : "Choose a client"
+                          }
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clients && clients.length > 0 ? (
+                        clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{client.name}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {client.type} • {client.email}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-clients" disabled>
+                          No clients available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -485,7 +729,11 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Lease Status *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      key={`lease-status-${field.value || "empty"}`}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -510,17 +758,22 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Payment Status *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      key={`payment-status-${field.value || "empty"}`}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="current">Current</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="sent">Sent</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
                         <SelectItem value="overdue">Overdue</SelectItem>
-                        <SelectItem value="partial">Partial</SelectItem>
-                        <SelectItem value="paid_ahead">Paid Ahead</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -540,32 +793,159 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="daily_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Daily Rate ($) *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="50.00"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : parseFloat(e.target.value)
+                          )
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Daily rental rate for this vehicle lease
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="monthly_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monthly Rate ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="1500.00"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : parseFloat(e.target.value)
+                          )
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Monthly rental rate (auto-calculated from daily rate)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="security_deposit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Security Deposit ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="500.00"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : parseFloat(e.target.value)
+                          )
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Security deposit amount required
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="early_termination_fee"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Early Termination Fee ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : parseFloat(e.target.value)
+                          )
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Fee for early lease termination
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
-              name="daily_rate"
+              name="contract_number"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Daily Rate ($) *</FormLabel>
+                  <FormLabel>Contract Number</FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="50.00"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : parseFloat(e.target.value)
-                        )
+                      placeholder="LSE-123456"
+                      {...field}
+                      className={
+                        field.value ? "bg-green-50 border-green-200" : ""
                       }
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
                     />
                   </FormControl>
                   <FormDescription>
-                    Daily rental rate for this vehicle lease
+                    {field.value ? (
+                      <span className="text-green-600">
+                        ✓ Contract number: {field.value}
+                      </span>
+                    ) : (
+                      "Unique contract identifier (auto-generated if empty)"
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -677,19 +1057,29 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Assign Driver</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || undefined}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a driver for this lease" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">No driver assigned</SelectItem>
-                        {drivers?.filter(driver => driver && 'id' in driver).map((driver) => (
-                          <SelectItem key={(driver as any).id} value={(driver as any).id}>
-                            {(driver as any).name} - {(driver as any).phone}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="no-driver">
+                          No driver assigned
+                        </SelectItem>
+                        {drivers
+                          ?.filter((driver) => driver && "id" in driver)
+                          .map((driver) => (
+                            <SelectItem
+                              key={(driver as any).id}
+                              value={(driver as any).id}
+                            >
+                              {(driver as any).name} - {(driver as any).phone}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>

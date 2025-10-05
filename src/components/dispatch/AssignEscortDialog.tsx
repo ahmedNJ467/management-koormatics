@@ -258,7 +258,7 @@ export function AssignEscortDialog({
                 </Label>
                 <Select
                   onValueChange={(value) => updateEscort(index, value)}
-                  value={selectedEscorts[index] || ""}
+                  value={selectedEscorts[index] || "none"}
                 >
                   <SelectTrigger id={`escort-${index}`}>
                     <SelectValue
@@ -267,7 +267,7 @@ export function AssignEscortDialog({
                   </SelectTrigger>
                   <SelectContent>
                     {getAvailableVehicles(index).length === 0 ? (
-                      <SelectItem value="" disabled>
+                      <SelectItem value="none" disabled>
                         No available vehicles
                       </SelectItem>
                     ) : (

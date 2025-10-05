@@ -117,26 +117,40 @@ export default function VehicleIncidentReports() {
   const { data: incidentReports, isLoading } = useQuery({
     queryKey: ["vehicle-incident-reports"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch incident reports first
+      const { data: reports, error: reportsError } = await supabase
         .from("vehicle_incident_reports")
-        .select(
-          `
-          *,
-          vehicle:vehicles (
-            make,
-            model,
-            registration
-          ),
-          driver:drivers (
-            name,
-            license_number
-          )
-        `
-        )
+        .select("*")
         .order("incident_date", { ascending: false });
 
-      if (error) throw error;
-      return data as any;
+      if (reportsError) throw reportsError;
+
+      // Fetch vehicles data
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from("vehicles")
+        .select("id, make, model, registration");
+
+      if (vehiclesError) throw vehiclesError;
+
+      // Fetch drivers data
+      const { data: driversData, error: driversError } = await supabase
+        .from("drivers")
+        .select("id, name, license_number");
+
+      if (driversError) throw driversError;
+
+      // Create lookup maps
+      const vehiclesMap = new Map(vehiclesData?.map(v => [v.id, v]) || []);
+      const driversMap = new Map(driversData?.map(d => [d.id, d]) || []);
+
+      // Combine the data
+      const enrichedReports = reports?.map(report => ({
+        ...report,
+        vehicle: report.vehicle_id ? vehiclesMap.get(report.vehicle_id) : null,
+        driver: report.driver_id ? driversMap.get(report.driver_id) : null,
+      })) || [];
+
+      return enrichedReports as any;
     },
   });
 

@@ -238,6 +238,11 @@ export function InvoicesTable({
                     <div className="text-sm text-muted-foreground">
                       {invoice.client_email}
                     </div>
+                    {invoice.isLeaseInvoice && invoice.leaseDetails && (
+                      <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                        Lease: {invoice.leaseDetails.contractNumber}
+                      </div>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm">
