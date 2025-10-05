@@ -20,6 +20,7 @@ export const usePageAccess = () => {
           return ["*"]; // Return wildcard access for unauthenticated users
         }
 
+        // Try to fetch from vw_user_pages view
         const { data, error } = await supabase
           .from("vw_user_pages")
           .select("pages")
@@ -27,7 +28,44 @@ export const usePageAccess = () => {
           .maybeSingle();
 
         if (error) {
-          console.error("Error fetching page access:", error);
+          console.error("Error fetching page access from vw_user_pages:", {
+            error,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          });
+
+          // If the view doesn't exist or has issues, try alternative approach
+          if (
+            error.code === "PGRST116" ||
+            error.message?.includes("relation") ||
+            error.message?.includes("does not exist")
+          ) {
+            console.log(
+              "vw_user_pages view not found, trying alternative approach"
+            );
+
+            // Try to get user roles directly
+            const { data: rolesData, error: rolesError } = await supabase
+              .from("user_roles")
+              .select("role_slug")
+              .eq("user_id", uid);
+
+            if (rolesError) {
+              console.error("Error fetching user roles:", rolesError);
+              return ["*"]; // Return wildcard access as fallback
+            }
+
+            // If user has super_admin role, give wildcard access
+            if (rolesData?.some((role) => role.role_slug === "super_admin")) {
+              return ["*"];
+            }
+
+            // Otherwise, return basic pages
+            return ["dashboard", "vehicles", "drivers", "trips"];
+          }
+
           // Return wildcard access as fallback to prevent blocking
           return ["*"];
         }
