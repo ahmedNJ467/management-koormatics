@@ -175,7 +175,7 @@ export function ImprovedMessageCenter() {
     (msg) => !msg.is_read && msg.sender_type !== "admin"
   ).length;
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => {
     switch (status) {
       case "scheduled":
         return "bg-blue-100 text-blue-800";

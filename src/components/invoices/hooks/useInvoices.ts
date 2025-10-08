@@ -62,20 +62,19 @@ export function useInvoices() {
         (leaseInvoice: any) => {
           const displayInvoice: DisplayInvoice = {
             id: leaseInvoice.invoice_id,
-            client_id: null, // Lease invoices don't have client_id
-            client_name: leaseInvoice.lessee_name,
+            client_id: leaseInvoice.client_id, // available from view
+            client_name: leaseInvoice.client_name,
+            client_email: leaseInvoice.client_email,
+            client_address: leaseInvoice.client_address,
+            client_phone: leaseInvoice.client_phone,
             date: leaseInvoice.invoice_date,
             due_date: leaseInvoice.invoice_due_date,
-            status: leaseInvoice.invoice_status,
+            status: leaseInvoice.status || "sent",
             total_amount: leaseInvoice.amount,
-            paid_amount: leaseInvoice.invoice_paid_amount || 0,
-            payment_date: null,
-            payment_method: null,
+            paid_amount: 0,
             items: [
               {
-                description: `Vehicle Lease - ${
-                  leaseInvoice.contract_number
-                } (${formatDate(
+                description: `Vehicle Lease (${formatDate(
                   leaseInvoice.billing_period_start
                 )} - ${formatDate(leaseInvoice.billing_period_end)})`,
                 quantity: 1,
@@ -83,15 +82,15 @@ export function useInvoices() {
                 amount: leaseInvoice.amount,
               },
             ],
-            notes: ``,
+            notes: "",
             created_at: leaseInvoice.created_at,
             updated_at: leaseInvoice.updated_at,
-            trips: [], // Lease invoices don't have trips
-            isLeaseInvoice: true, // Flag to identify lease invoices
+            trips: [],
+            isLeaseInvoice: true,
             leaseDetails: {
-              contractNumber: leaseInvoice.contract_number,
-              lesseeName: leaseInvoice.lessee_name,
-              lesseeEmail: leaseInvoice.lessee_email,
+              contractNumber: "-",
+              lesseeName: leaseInvoice.client_name,
+              lesseeEmail: leaseInvoice.client_email,
               vehicleInfo: `${leaseInvoice.make} ${leaseInvoice.model} (${leaseInvoice.registration})`,
               billingPeriod: {
                 start: leaseInvoice.billing_period_start,
