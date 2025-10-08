@@ -25,12 +25,25 @@ export function VehicleImagesField({
   >([]);
 
   useEffect(() => {
-    if (vehicle?.images) {
-      const existingImageUrls = vehicle.images.map((img) => ({
-        image_url: img.url,
-      }));
-      setExistingImages(existingImageUrls);
-      setImagePreviewUrls(existingImageUrls.map((img) => img.image_url));
+    if (vehicle?.id) {
+      // Load existing images from vehicle_images table
+      (async () => {
+        const { data, error } = await supabase
+          .from("vehicle_images")
+          .select("id, image_url")
+          .eq("vehicle_id", vehicle.id as any);
+        if (!error) {
+          const records = (data || []).map((r: any) => ({
+            id: r.id,
+            image_url: r.image_url,
+          }));
+          setExistingImages(records);
+          setImagePreviewUrls(records.map((r) => r.image_url));
+        } else {
+          setExistingImages([]);
+          setImagePreviewUrls([]);
+        }
+      })();
     } else {
       setExistingImages([]);
       setImagePreviewUrls([]);
@@ -58,12 +71,11 @@ export function VehicleImagesField({
 
     if (existingImageIndex !== -1 && vehicle) {
       try {
-        // Update the vehicle's images array by removing the deleted image
-        const updatedImages = vehicle.images?.filter(img => img.url !== imageUrl) || [];
+        const record = existingImages[existingImageIndex];
         const { error } = await supabase
-          .from("vehicles")
-          .update({ images: updatedImages })
-          .eq("id", vehicle.id as any);
+          .from("vehicle_images")
+          .delete()
+          .eq("id", record.id as any);
 
         if (error) {
           toast({

@@ -63,6 +63,7 @@ export function useProfile() {
 
       if (profileData) {
         // Map Supabase profile to our ProfileData interface
+        const p: any = profileData as any;
         const mappedProfile: ProfileData = {
           id: profileData.id,
           name:
@@ -70,20 +71,20 @@ export function useProfile() {
             user.user_metadata?.full_name ||
             user.email?.split("@")[0] ||
             "User",
-          email: profileData.email || user.email || "",
-          phone: profileData.phone || "",
-          address: profileData.address || "",
-          company: profileData.company || "",
-          profile_image_url: profileData.profile_image_url,
-          notification_preferences: profileData.notification_preferences || {
+          email: (profileData as any).email || user.email || "",
+          phone: p.phone || "",
+          address: p.address || "",
+          company: p.company || "",
+          profile_image_url: (profileData as any).profile_image_url ?? null,
+          notification_preferences: (profileData as any).notification_preferences || {
             email_notifications: true,
             push_notifications: true,
             sms_notifications: false,
             marketing_emails: false,
           },
-          two_factor_enabled: profileData.two_factor_enabled || false,
-          created_at: profileData.created_at,
-          updated_at: profileData.updated_at,
+          two_factor_enabled: (profileData as any).two_factor_enabled || false,
+          created_at: (profileData as any).created_at,
+          updated_at: (profileData as any).updated_at,
         };
         setProfile(mappedProfile);
       } else {
