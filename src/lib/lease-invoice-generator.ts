@@ -90,8 +90,10 @@ export async function generateMonthlyLeaseInvoices(): Promise<LeaseInvoiceGenera
     }
 
     // Check which leases already have invoices for this billing period
-    const { data: existingInvoices, error: existingError } = await supabase
-      .from("lease_invoices")
+    const { data: existingInvoices, error: existingError } = await (
+      supabase as any
+    )
+      .from("lease_invoices" as any)
       .select("lease_id")
       .eq("billing_period_start", format(billingPeriodStart, "yyyy-MM-dd"))
       .eq("billing_period_end", format(billingPeriodEnd, "yyyy-MM-dd"));
@@ -180,14 +182,14 @@ export async function generateInvoiceForLease(
   ];
 
   // Create the invoice
-  const { data: invoiceData, error: invoiceError } = await supabase
-    .from("invoices")
+  const { data: invoiceData, error: invoiceError } = await (supabase as any)
+    .from("invoices" as any)
     .insert({
-      client_id: null, // We'll need to create a client record for the lessee
+      client_id: null,
       date: format(new Date(), "yyyy-MM-dd"),
       due_date: format(add(new Date(), { days: 30 }), "yyyy-MM-dd"),
       status: "draft",
-      items: invoiceItems,
+      items: invoiceItems as any,
       total_amount: amount,
       paid_amount: 0,
       notes: ``,
@@ -200,8 +202,10 @@ export async function generateInvoiceForLease(
   }
 
   // Create the lease invoice record
-  const { data: leaseInvoiceData, error: leaseInvoiceError } = await supabase
-    .from("lease_invoices")
+  const { data: leaseInvoiceData, error: leaseInvoiceError } = await (
+    supabase as any
+  )
+    .from("lease_invoices" as any)
     .insert({
       lease_id: lease.id,
       invoice_id: invoiceData.id,
@@ -216,7 +220,10 @@ export async function generateInvoiceForLease(
 
   if (leaseInvoiceError) {
     // Clean up the created invoice if lease invoice creation fails
-    await supabase.from("invoices").delete().eq("id", invoiceData.id);
+    await (supabase as any)
+      .from("invoices" as any)
+      .delete()
+      .eq("id", invoiceData.id);
     throw new Error(
       `Failed to create lease invoice record: ${leaseInvoiceError.message}`
     );
@@ -276,8 +283,8 @@ function calculateLeaseAmount(
 export async function getLeaseInvoices(
   leaseId: string
 ): Promise<LeaseInvoiceData[]> {
-  const { data, error } = await supabase
-    .from("lease_invoices")
+  const { data, error } = await (supabase as any)
+    .from("lease_invoices" as any)
     .select("*")
     .eq("lease_id", leaseId)
     .order("billing_period_start", { ascending: false });
@@ -293,7 +300,9 @@ export async function getLeaseInvoices(
  * Get lease invoice details with related information
  */
 export async function getLeaseInvoiceDetails(leaseId?: string): Promise<any[]> {
-  let query = supabase.from("lease_invoice_details").select("*");
+  let query = (supabase as any)
+    .from("lease_invoice_details" as any)
+    .select("*");
 
   if (leaseId) {
     query = query.eq("lease_id", leaseId);
@@ -317,8 +326,8 @@ export async function updateLeaseInvoiceStatus(
   leaseInvoiceId: string,
   status: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from("lease_invoices")
+  const { error } = await (supabase as any)
+    .from("lease_invoices" as any)
     .update({ status })
     .eq("id", leaseInvoiceId);
 
@@ -335,8 +344,8 @@ export async function hasInvoiceForPeriod(
   billingPeriodStart: Date,
   billingPeriodEnd: Date
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("lease_invoices")
+  const { data, error } = await (supabase as any)
+    .from("lease_invoices" as any)
     .select("id")
     .eq("lease_id", leaseId)
     .eq("billing_period_start", format(billingPeriodStart, "yyyy-MM-dd"))

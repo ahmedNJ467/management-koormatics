@@ -107,15 +107,16 @@ class GoogleMapsLoader {
       const { getGoogleMapsApiKey } = require("@/config/api-keys");
       
       // Get API key asynchronously
-      getGoogleMapsApiKey().then((apiKey) => {
+      getGoogleMapsApiKey().then((apiKey: string) => {
         if (!apiKey) {
           reject(new Error("Google Maps API key not found"));
           return;
         }
         
         this.loadGoogleMapsScript(apiKey, libraries, callback, resolve, reject);
-      }).catch((error) => {
-        reject(new Error(`Failed to load Google Maps API key: ${error.message}`));
+      }).catch((error: any) => {
+        const msg = (error && error.message) || String(error);
+        reject(new Error(`Failed to load Google Maps API key: ${msg}`));
       });
     });
   }

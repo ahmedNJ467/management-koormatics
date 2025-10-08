@@ -18,8 +18,8 @@ export class ApiKeyService {
    */
   static async getApiKeyByName(name: string): Promise<string | null> {
     try {
-      const { data, error } = await supabase
-        .from("api_keys")
+      const { data, error } = await (supabase as any)
+        .from("api_keys" as any)
         .select("key_value, is_active, expires_at")
         .eq("name", name)
         .eq("is_active", true)
@@ -64,8 +64,8 @@ export class ApiKeyService {
    */
   static async getAllApiKeys(): Promise<ApiKey[]> {
     try {
-      const { data, error } = await supabase
-        .from("api_keys")
+      const { data, error } = await (supabase as any)
+        .from("api_keys" as any)
         .select("*")
         .order("created_at", { ascending: false });
 

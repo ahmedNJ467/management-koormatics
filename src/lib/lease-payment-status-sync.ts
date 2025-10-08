@@ -115,8 +115,8 @@ export function useLeasePaymentStatusSync() {
   const syncLeasePaymentStatus = async (invoiceId: string) => {
     try {
       // Get the lease_id from the invoice
-      const { data: leaseInvoice, error } = await supabase
-        .from("lease_invoices")
+      const { data: leaseInvoice, error } = await (supabase as any)
+        .from("lease_invoices" as any)
         .select("lease_id")
         .eq("invoice_id", invoiceId)
         .single();

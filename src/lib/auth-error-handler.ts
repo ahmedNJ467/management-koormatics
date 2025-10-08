@@ -75,8 +75,11 @@ export class AuthErrorHandler {
     if (typeof window === "undefined") return;
 
     try {
-      // Get the project reference for storage keys
-      const projectRef = supabase.supabaseUrl.split("//")[1].split(".")[0];
+      // Get the project reference for storage keys without using protected props
+      const projectUrl = (process as any).env?.NEXT_PUBLIC_SUPABASE_URL || "";
+      const projectRef = projectUrl
+        ? projectUrl.split("//")[1]?.split(".")[0]
+        : "";
       const storageKey = `sb-${projectRef}-auth-token`;
 
       // Clear localStorage
