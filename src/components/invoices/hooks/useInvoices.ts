@@ -11,7 +11,9 @@ export function useInvoices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: invoices, isLoading: invoicesLoading } = useQuery({
+  const { data: invoices, isLoading: invoicesLoading } = useQuery<
+    DisplayInvoice[]
+  >({
     queryKey: ["invoices"],
     queryFn: async () => {
       // Fetch regular invoices
@@ -32,7 +34,7 @@ export function useInvoices() {
       if (leaseInvoicesError) throw leaseInvoicesError;
 
       // Process regular invoices
-      const regularInvoices = await Promise.all(
+      const regularInvoices = (await Promise.all(
         (invoicesData || []).map(async (invoice) => {
           if (!invoice || !("id" in invoice)) return null;
           const { data: tripsData } = await supabase
@@ -55,7 +57,7 @@ export function useInvoices() {
           displayInvoice.trips = tripsForInvoice;
           return displayInvoice;
         })
-      );
+      )) as (DisplayInvoice | null)[];
 
       // Process lease invoices
       const leaseInvoices = (leaseInvoicesData || []).map(
@@ -103,7 +105,9 @@ export function useInvoices() {
       );
 
       // Combine and deduplicate invoices (lease invoices take priority)
-      const regularInvoicesFiltered = regularInvoices.filter(Boolean);
+      const regularInvoicesFiltered = regularInvoices.filter(
+        (inv): inv is DisplayInvoice => inv !== null
+      );
       const leaseInvoiceIds = new Set(leaseInvoices.map((li) => li.id));
 
       // Filter out regular invoices that are also lease invoices
@@ -112,9 +116,11 @@ export function useInvoices() {
       );
 
       const allInvoices = [...uniqueRegularInvoices, ...leaseInvoices];
-      return allInvoices.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      return allInvoices.sort((a, b) => {
+        const aTime = a?.date ? new Date(a.date).getTime() : 0;
+        const bTime = b?.date ? new Date(b.date).getTime() : 0;
+        return bTime - aTime;
+      });
     },
   });
 

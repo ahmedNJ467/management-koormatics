@@ -20,6 +20,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MANAGER_ROLE_OPTIONS } from "@/constants/roles";
+import type { ManagerRoleSlug } from "@/constants/roles";
 
 interface AddUserDialogProps {
   open: boolean;
@@ -33,7 +34,8 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role_slug: MANAGER_ROLE_OPTIONS[0]?.value || "fleet_manager",
+    role_slug: (MANAGER_ROLE_OPTIONS[0]?.value ||
+      "fleet_manager") as ManagerRoleSlug,
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -139,10 +141,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
               onValueChange={(value) =>
                 setFormData({
                   ...formData,
-                  role_slug: value as
-                    | "fleet_manager"
-                    | "operations_manager"
-                    | "finance_manager",
+                  role_slug: value as ManagerRoleSlug,
                 })
               }
             >
