@@ -25,11 +25,12 @@ export function useInvoices() {
       if (invoicesError) throw invoicesError;
 
       // Fetch lease invoices with lease details
-      const { data: leaseInvoicesData, error: leaseInvoicesError } =
-        await supabase
-          .from("lease_invoice_details")
-          .select("*")
-          .order("invoice_date", { ascending: false });
+      const { data: leaseInvoicesData, error: leaseInvoicesError } = await (
+        supabase as any
+      )
+        .from("lease_invoice_details" as any)
+        .select("*")
+        .order("invoice_date", { ascending: false });
 
       if (leaseInvoicesError) throw leaseInvoicesError;
 

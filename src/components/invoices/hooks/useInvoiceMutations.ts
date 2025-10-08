@@ -72,8 +72,8 @@ export function useInvoiceMutations() {
       // Sync lease payment status if this is a lease invoice
       if (data && "id" in data) {
         try {
-          const { data: leaseInvoice } = await supabase
-            .from("lease_invoices")
+          const { data: leaseInvoice } = await (supabase as any)
+            .from("lease_invoices" as any)
             .select("lease_id")
             .eq("invoice_id", data.id)
             .single();
@@ -147,8 +147,8 @@ export function useInvoiceMutations() {
 
       // Sync lease payment status if this is a lease invoice
       try {
-        const { data: leaseInvoice } = await supabase
-          .from("lease_invoices")
+        const { data: leaseInvoice } = await (supabase as any)
+          .from("lease_invoices" as any)
           .select("lease_id")
           .eq("invoice_id", variables.invoice.id)
           .single();

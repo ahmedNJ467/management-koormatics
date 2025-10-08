@@ -362,11 +362,6 @@ const Settings: React.FC = () => {
         role_slug: newUser.role,
       });
 
-      console.log("Supabase client config:", {
-        url: supabase.supabaseUrl,
-        functionsUrl: supabase.functionsUrl,
-      });
-
       // Use Supabase client with proper configuration
       const { data, error } = await supabase.functions.invoke(
         "create-user-v2",

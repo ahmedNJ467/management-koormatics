@@ -77,9 +77,7 @@ export const VehicleCards = memo(
             }
 
             const hasImage =
-              vehicle.images &&
-              Array.isArray(vehicle.images) &&
-              vehicle.images.length > 0;
+              Array.isArray(vehicle.images) && vehicle.images.length > 0;
             const insuranceExpiringSoon = isInsuranceExpiringSoon(
               vehicle.insurance_expiry || null
             );
@@ -114,7 +112,11 @@ export const VehicleCards = memo(
                   <div className="relative aspect-video bg-gray-50 rounded-lg overflow-hidden border flex items-center justify-center">
                     {hasImage ? (
                       <img
-                        src={vehicle.images[0]?.url || ""}
+                        src={
+                          (Array.isArray(vehicle.images) &&
+                            vehicle.images[0]?.url) ||
+                          ""
+                        }
                         alt={`${vehicle.make} ${vehicle.model}`}
                         className="w-full h-full object-contain"
                         onError={(e) => {
