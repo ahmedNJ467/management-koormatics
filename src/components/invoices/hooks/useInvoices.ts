@@ -109,7 +109,9 @@ export function useInvoices() {
       const regularInvoicesFiltered = regularInvoices.filter(
         (inv): inv is DisplayInvoice => inv !== null
       );
-      const leaseInvoiceIds = new Set(leaseInvoices.map((li) => li.id));
+      const leaseInvoiceIds = new Set(
+        leaseInvoices.map((li: DisplayInvoice) => li.id)
+      );
 
       // Filter out regular invoices that are also lease invoices
       const uniqueRegularInvoices = regularInvoicesFiltered.filter(

@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from './useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from './use-toast';
+import { useState, useEffect } from "react";
+import { useAuth } from "./useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "./use-toast";
 
 export interface UserSettings {
   email_notifications: boolean;
   sms_notifications: boolean;
-  theme_preference: 'light' | 'dark' | 'system';
+  theme_preference: "light" | "dark" | "system";
   language: string;
   timezone: string;
   date_format: string;
@@ -58,13 +58,14 @@ export function useUserSettings() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user.id)
+      const { data, error } = await (supabase as any)
+        .from("user_settings" as any)
+        .select("*")
+        .eq("user_id", user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      if (error && error.code !== "PGRST116") {
+        // PGRST116 = no rows returned
         throw error;
       }
 
@@ -72,32 +73,32 @@ export function useUserSettings() {
         setSettings({
           email_notifications: data.email_notifications ?? true,
           sms_notifications: data.sms_notifications ?? false,
-          theme_preference: data.theme_preference ?? 'system',
-          language: data.language ?? 'en',
-          timezone: data.timezone ?? 'UTC',
-          date_format: data.date_format ?? 'DD/MM/YYYY',
-          currency: data.currency ?? 'USD',
-          dashboard_refresh_interval: data.dashboard_refresh_interval ?? 30
+          theme_preference: data.theme_preference ?? "system",
+          language: data.language ?? "en",
+          timezone: data.timezone ?? "UTC",
+          date_format: data.date_format ?? "DD/MM/YYYY",
+          currency: data.currency ?? "USD",
+          dashboard_refresh_interval: data.dashboard_refresh_interval ?? 30,
         });
       } else {
         // Set default settings if none exist
         setSettings({
           email_notifications: true,
           sms_notifications: false,
-          theme_preference: 'system',
-          language: 'en',
-          timezone: 'UTC',
-          date_format: 'DD/MM/YYYY',
-          currency: 'USD',
-          dashboard_refresh_interval: 30
+          theme_preference: "system",
+          language: "en",
+          timezone: "UTC",
+          date_format: "DD/MM/YYYY",
+          currency: "USD",
+          dashboard_refresh_interval: 30,
         });
       }
     } catch (error) {
-      console.error('Error loading user settings:', error);
+      console.error("Error loading user settings:", error);
       toast({
-        title: 'Error loading settings',
-        description: 'Failed to load your settings. Please try again.',
-        variant: 'destructive',
+        title: "Error loading settings",
+        description: "Failed to load your settings. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -108,28 +109,28 @@ export function useUserSettings() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('user_settings')
+      const { error } = await (supabase as any)
+        .from("user_settings" as any)
         .upsert({
           user_id: user.id,
           ...newSettings,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
 
-      setSettings(prev => prev ? { ...prev, ...newSettings } : null);
-      
+      setSettings((prev) => (prev ? { ...prev, ...newSettings } : null));
+
       toast({
-        title: 'Settings saved',
-        description: 'Your preferences have been updated successfully.',
+        title: "Settings saved",
+        description: "Your preferences have been updated successfully.",
       });
     } catch (error) {
-      console.error('Error saving user settings:', error);
+      console.error("Error saving user settings:", error);
       toast({
-        title: 'Error saving settings',
-        description: 'Failed to save your settings. Please try again.',
-        variant: 'destructive',
+        title: "Error saving settings",
+        description: "Failed to save your settings. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -142,7 +143,7 @@ export function useUserSettings() {
     settings,
     isLoading,
     saveSettings,
-    refetch: loadSettings
+    refetch: loadSettings,
   };
 }
 
@@ -153,9 +154,9 @@ export function useSystemSettings() {
 
   const loadSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('*')
+      const { data, error } = await (supabase as any)
+        .from("system_settings" as any)
+        .select("*")
         .single();
 
       if (error) throw error;
@@ -164,11 +165,11 @@ export function useSystemSettings() {
         setSettings(data);
       }
     } catch (error) {
-      console.error('Error loading system settings:', error);
+      console.error("Error loading system settings:", error);
       toast({
-        title: 'Error loading system settings',
-        description: 'Failed to load system settings. Please try again.',
-        variant: 'destructive',
+        title: "Error loading system settings",
+        description: "Failed to load system settings. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -177,27 +178,27 @@ export function useSystemSettings() {
 
   const saveSettings = async (newSettings: Partial<SystemSettings>) => {
     try {
-      const { error } = await supabase
-        .from('system_settings')
+      const { error } = await (supabase as any)
+        .from("system_settings" as any)
         .upsert({
           ...newSettings,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
 
-      setSettings(prev => prev ? { ...prev, ...newSettings } : null);
-      
+      setSettings((prev) => (prev ? { ...prev, ...newSettings } : null));
+
       toast({
-        title: 'System settings saved',
-        description: 'System configuration has been updated successfully.',
+        title: "System settings saved",
+        description: "System configuration has been updated successfully.",
       });
     } catch (error) {
-      console.error('Error saving system settings:', error);
+      console.error("Error saving system settings:", error);
       toast({
-        title: 'Error saving system settings',
-        description: 'Failed to save system settings. Please try again.',
-        variant: 'destructive',
+        title: "Error saving system settings",
+        description: "Failed to save system settings. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -210,7 +211,7 @@ export function useSystemSettings() {
     settings,
     isLoading,
     saveSettings,
-    refetch: loadSettings
+    refetch: loadSettings,
   };
 }
 
@@ -224,55 +225,58 @@ export function useApiKeys() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('user_api_keys')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const { data, error } = await (supabase as any)
+        .from("user_api_keys" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       setApiKeys(data || []);
     } catch (error) {
-      console.error('Error loading API keys:', error);
+      console.error("Error loading API keys:", error);
       toast({
-        title: 'Error loading API keys',
-        description: 'Failed to load your API keys. Please try again.',
-        variant: 'destructive',
+        title: "Error loading API keys",
+        description: "Failed to load your API keys. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const generateApiKey = async (name: string = 'Default API Key') => {
+  const generateApiKey = async (name: string = "Default API Key") => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-api-key', {
-        body: { 
-          user_id: user.id,
-          name: name
+      const { data, error } = await supabase.functions.invoke(
+        "generate-api-key",
+        {
+          body: {
+            user_id: user.id,
+            name: name,
+          },
         }
-      });
+      );
 
       if (error) throw error;
 
       await loadApiKeys();
-      
+
       toast({
-        title: 'API Key generated',
-        description: 'Your new API key has been generated successfully.',
+        title: "API Key generated",
+        description: "Your new API key has been generated successfully.",
       });
 
       return data.api_key;
     } catch (error) {
-      console.error('Error generating API key:', error);
+      console.error("Error generating API key:", error);
       toast({
-        title: 'Error generating API key',
-        description: 'Failed to generate API key. Please try again.',
-        variant: 'destructive',
+        title: "Error generating API key",
+        description: "Failed to generate API key. Please try again.",
+        variant: "destructive",
       });
       throw error;
     }
@@ -280,25 +284,25 @@ export function useApiKeys() {
 
   const revokeApiKey = async (keyId: string) => {
     try {
-      const { error } = await supabase
-        .from('user_api_keys')
+      const { error } = await (supabase as any)
+        .from("user_api_keys" as any)
         .update({ is_active: false })
-        .eq('id', keyId);
+        .eq("id", keyId);
 
       if (error) throw error;
 
       await loadApiKeys();
-      
+
       toast({
-        title: 'API Key revoked',
-        description: 'The API key has been revoked successfully.',
+        title: "API Key revoked",
+        description: "The API key has been revoked successfully.",
       });
     } catch (error) {
-      console.error('Error revoking API key:', error);
+      console.error("Error revoking API key:", error);
       toast({
-        title: 'Error revoking API key',
-        description: 'Failed to revoke API key. Please try again.',
-        variant: 'destructive',
+        title: "Error revoking API key",
+        description: "Failed to revoke API key. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -312,7 +316,7 @@ export function useApiKeys() {
     isLoading,
     generateApiKey,
     revokeApiKey,
-    refetch: loadApiKeys
+    refetch: loadApiKeys,
   };
 }
 
@@ -325,18 +329,18 @@ export function useActivityLog() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('user_activity_log')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+      const { data, error } = await (supabase as any)
+        .from("user_activity_log" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
 
       setActivities(data || []);
     } catch (error) {
-      console.error('Error loading activity log:', error);
+      console.error("Error loading activity log:", error);
     } finally {
       setIsLoading(false);
     }
@@ -350,18 +354,16 @@ export function useActivityLog() {
     if (!user) return;
 
     try {
-      await supabase
-        .from('user_activity_log')
-        .insert({
-          user_id: user.id,
-          activity_type: activityType,
-          description: description,
-          metadata: metadata,
-          ip_address: null, // Could be populated from request context
-          user_agent: navigator.userAgent
-        });
+      await (supabase as any).from("user_activity_log" as any).insert({
+        user_id: user.id,
+        activity_type: activityType,
+        description: description,
+        metadata: metadata,
+        ip_address: null, // Could be populated from request context
+        user_agent: navigator.userAgent,
+      });
     } catch (error) {
-      console.error('Error logging activity:', error);
+      console.error("Error logging activity:", error);
     }
   };
 
@@ -373,6 +375,6 @@ export function useActivityLog() {
     activities,
     isLoading,
     logActivity,
-    refetch: loadActivities
+    refetch: loadActivities,
   };
 }
