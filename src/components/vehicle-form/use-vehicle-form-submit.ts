@@ -198,7 +198,7 @@ export function useVehicleFormSubmit(
             }
 
             if (retryVehicle) {
-              await uploadVehicleImages(retryVehicle.id, retryVehicle);
+              await uploadVehicleImages(retryVehicle.id, retryVehicle as any);
             }
 
             partialSuccess = true;
@@ -206,7 +206,7 @@ export function useVehicleFormSubmit(
             throw error;
           }
         } else if (newVehicle) {
-          await uploadVehicleImages(newVehicle.id, newVehicle);
+          await uploadVehicleImages(newVehicle.id, newVehicle as any);
           operationSuccess = true;
         }
       }
