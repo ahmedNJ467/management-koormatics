@@ -28,13 +28,25 @@ export const usePageAccess = () => {
           .maybeSingle();
 
         if (error) {
-          console.error("Error fetching page access from vw_user_pages:", {
-            error,
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code,
-          });
+          // Log the raw error object first (helps when devtools collapses structured logs)
+          console.error(
+            "Error fetching page access from vw_user_pages (raw):",
+            error
+          );
+
+          // Then log a safely-serializable summary to avoid `{}` display issues
+          const serialized = {
+            message: error?.message ?? "<no message>",
+            details: (error as any)?.details ?? "<no details>",
+            hint: (error as any)?.hint ?? "<no hint>",
+            code: (error as any)?.code ?? "<no code>",
+          };
+          console.error(
+            "Error fetching page access from vw_user_pages (summary):",
+            serialized,
+            "json:",
+            JSON.stringify(serialized)
+          );
 
           // If the view doesn't exist or has issues, try alternative approach
           if (

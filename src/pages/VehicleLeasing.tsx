@@ -131,33 +131,108 @@ export default function VehicleLeasing() {
   const { data: leases, isLoading } = useQuery({
     queryKey: ["vehicle-leases"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1) Load leases without relationship expansion to avoid PostgREST 400s
+      const { data: leaseRows, error: leasesError } = await supabase
         .from("vehicle_leases")
-        .select(
-          `
-          *,
-          vehicle:vehicles (
-            make,
-            model,
-            year,
-            registration,
-            vin
-          ),
-          assigned_driver:drivers (
-            name,
-            phone
-          ),
-          contract:contracts (
-            contract_number
-          )
-        `
-        )
+        .select("*")
         .order("lease_start_date", { ascending: false });
 
-      if (error) throw error;
+      if (leasesError) {
+        console.error("Error fetching vehicle leases (base):", {
+          message: (leasesError as any)?.message,
+          details: (leasesError as any)?.details,
+          hint: (leasesError as any)?.hint,
+          code: (leasesError as any)?.code,
+        });
+        throw leasesError;
+      }
+
+      const rows = leaseRows || [];
+      if (rows.length === 0) return [] as any;
+
+      // 2) Collect related IDs
+      const vehicleIds = Array.from(
+        new Set(
+          rows
+            .map((r: any) => r.vehicle_id)
+            .filter((v: string | null) => Boolean(v))
+        )
+      );
+      const driverIds = Array.from(
+        new Set(
+          rows
+            .map((r: any) => r.assigned_driver_id)
+            .filter((v: string | null) => Boolean(v))
+        )
+      );
+      const contractIds = Array.from(
+        new Set(
+          rows
+            .map((r: any) => r.contract_id)
+            .filter((v: string | null) => Boolean(v))
+        )
+      );
+
+      // 3) Batch load related entities
+      const [vehiclesRes, driversRes, contractsRes] = await Promise.all([
+        vehicleIds.length
+          ? supabase
+              .from("vehicles")
+              .select("id, make, model, year, registration, vin")
+              .in("id", vehicleIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        driverIds.length
+          ? supabase
+              .from("drivers")
+              .select("id, name, phone")
+              .in("id", driverIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        contractIds.length
+          ? supabase
+              .from("contracts")
+              .select("id, contract_number")
+              .in("id", contractIds)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
+
+      const { data: vehiclesData, error: vehiclesError } = vehiclesRes as any;
+      const { data: driversData, error: driversError } = driversRes as any;
+      const { data: contractsData, error: contractsError } =
+        contractsRes as any;
+
+      if (vehiclesError || driversError || contractsError) {
+        console.error("Error fetching related lease entities:", {
+          vehiclesError,
+          driversError,
+          contractsError,
+        });
+        throw vehiclesError || driversError || contractsError;
+      }
+
+      const vehicleById = new Map(
+        (vehiclesData || []).map((v: any) => [v.id, v])
+      );
+      const driverById = new Map(
+        (driversData || []).map((d: any) => [d.id, d])
+      );
+      const contractById = new Map(
+        (contractsData || []).map((c: any) => [c.id, c])
+      );
+
+      // 4) Merge into enriched lease objects
+      const enriched = rows.map((r: any) => ({
+        ...r,
+        vehicle: r.vehicle_id ? vehicleById.get(r.vehicle_id) || null : null,
+        assigned_driver: r.assigned_driver_id
+          ? driverById.get(r.assigned_driver_id) || null
+          : null,
+        contract: r.contract_id
+          ? contractById.get(r.contract_id) || null
+          : null,
+      }));
 
       // Deduplicate leases by ID to prevent React key conflicts
-      const uniqueLeases = (data || []).filter(
+      const uniqueLeases = enriched.filter(
         (lease: any, index: number, self: any[]) =>
           index === self.findIndex((l) => l.id === lease.id)
       );
