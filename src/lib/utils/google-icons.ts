@@ -5,11 +5,14 @@
  * @param iconName - The name of the Material Icon
  * @returns A valid Google Material Icons URL or fallback
  */
-export function getGoogleIconUrl(iconName: string): string {
+export function getGoogleIconUrl(iconName?: string): string {
   try {
-    // Validate icon name
+    // Validate icon name - handle undefined/null cases
     if (!iconName || typeof iconName !== "string" || iconName.trim() === "") {
-      console.warn("Invalid icon name provided:", iconName);
+      // Don't log warnings for undefined values to reduce console spam
+      if (iconName !== undefined && iconName !== null) {
+        console.warn("Invalid icon name provided:", iconName);
+      }
       return getFallbackIconUrl();
     }
 

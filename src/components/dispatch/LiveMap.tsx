@@ -146,7 +146,7 @@ export function LiveMap({
           gmapsKey ? "Available" : "Not available"
         );
 
-        // Use centralized Google Maps loader
+        // Use centralized Google Maps loader (no marker library needed for legacy markers)
         await loadGoogleMaps();
 
         const g = (window as any).google;
@@ -187,12 +187,18 @@ export function LiveMap({
       // Cleanup on unmount
       try {
         if (markersRef.current) {
-          markersRef.current.forEach((m) => m.setMap && m.setMap(null));
+          markersRef.current.forEach((m) => {
+            if (m && m.setMap) {
+              m.setMap(null);
+            }
+          });
         }
         if (interestPointMarkersRef.current) {
-          interestPointMarkersRef.current.forEach(
-            (m) => m.setMap && m.setMap(null)
-          );
+          interestPointMarkersRef.current.forEach((m) => {
+            if (m && m.setMap) {
+              m.setMap(null);
+            }
+          });
         }
         if (labelOverlaysRef.current) {
           labelOverlaysRef.current.forEach(
@@ -213,10 +219,16 @@ export function LiveMap({
 
     // Clear previous markers and labels
     try {
-      markersRef.current.forEach((m) => m.setMap && m.setMap(null));
-      interestPointMarkersRef.current.forEach(
-        (m) => m.setMap && m.setMap(null)
-      );
+      markersRef.current.forEach((m) => {
+        if (m && m.setMap) {
+          m.setMap(null);
+        }
+      });
+      interestPointMarkersRef.current.forEach((m) => {
+        if (m && m.setMap) {
+          m.setMap(null);
+        }
+      });
       labelOverlaysRef.current.forEach(
         (overlay) => overlay.setMap && overlay.setMap(null)
       );
@@ -235,12 +247,20 @@ export function LiveMap({
     const g = (window as any).google;
     if (!g?.maps) return;
 
-    // Add markers for trip points
+    // Add markers for trip points using legacy Marker API
     points.forEach((p) => {
       const marker = new g.maps.Marker({
         position: { lat: p.lat, lng: p.lng },
         map: mapInstanceRef.current,
         title: p.label,
+        icon: {
+          path: g.maps.SymbolPath.CIRCLE,
+          fillColor: "#00B3FF",
+          fillOpacity: 1,
+          strokeColor: "white",
+          strokeWeight: 2,
+          scale: 12,
+        },
       });
       markersRef.current.push(marker);
     });
@@ -265,17 +285,16 @@ export function LiveMap({
           // Create a custom marker with Google Material Icon
           const iconUrl = getGoogleIconUrl(point.icon || "place");
 
-          const iconConfig = {
-            url: iconUrl,
-            scaledSize: new g.maps.Size(28, 28),
-            anchor: new g.maps.Point(14, 14), // Center for proper positioning
-          };
-
+          // Use legacy Marker API for interest points
           const marker = new g.maps.Marker({
             position: { lat: point.latitude, lng: point.longitude },
             map: mapInstanceRef.current,
             title: point.name,
-            icon: iconConfig,
+            icon: {
+              url: iconUrl,
+              scaledSize: new g.maps.Size(32, 32),
+              anchor: new g.maps.Point(16, 16),
+            },
           });
 
           // Add name label to the map using a custom overlay (Google Maps style)
@@ -335,10 +354,10 @@ export function LiveMap({
                       point.color
                     }; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
                       <img src="https://fonts.gstatic.com/s/i/materialicons/${
-                        point.icon
+                        point.icon || "place"
                       }/v1/24px.svg" 
                            style="width: 20px; height: 20px; filter: invert(1);" 
-                           alt="${point.icon}" />
+                           alt="${point.icon || "place"}" />
                     </div>
                     <div style="font-weight: 600; font-size: 16px; color: #1f2937;">${
                       point.name
