@@ -6,8 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 export async function updateLeasePaymentStatus(leaseId: string): Promise<void> {
   try {
     // Get all invoices for this lease
-    const { data: leaseInvoices, error: invoiceError } = await supabase
-      .from("lease_invoices")
+    const { data: leaseInvoices, error: invoiceError } = await (supabase as any)
+      .from("lease_invoices" as any)
       .select(
         `
         *,
@@ -25,9 +25,9 @@ export async function updateLeasePaymentStatus(leaseId: string): Promise<void> {
 
     if (!leaseInvoices || leaseInvoices.length === 0) {
       // No invoices exist, set status to draft
-      await supabase
-        .from("vehicle_leases")
-        .update({ payment_status: "draft" })
+      await (supabase as any)
+        .from("vehicle_leases" as any)
+        .update({ payment_status: "draft" as any })
         .eq("id", leaseId);
       return;
     }
@@ -49,7 +49,7 @@ export async function updateLeasePaymentStatus(leaseId: string): Promise<void> {
     });
 
     // Determine overall payment status
-    let newPaymentStatus: string;
+    let newPaymentStatus: any;
 
     if (statusCounts.overdue > 0) {
       newPaymentStatus = "overdue";
@@ -64,8 +64,8 @@ export async function updateLeasePaymentStatus(leaseId: string): Promise<void> {
     }
 
     // Update the lease payment status
-    const { error: updateError } = await supabase
-      .from("vehicle_leases")
+    const { error: updateError } = await (supabase as any)
+      .from("vehicle_leases" as any)
       .update({
         payment_status: newPaymentStatus,
         updated_at: new Date().toISOString(),

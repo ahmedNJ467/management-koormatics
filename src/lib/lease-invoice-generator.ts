@@ -105,7 +105,7 @@ export async function generateMonthlyLeaseInvoices(): Promise<LeaseInvoiceGenera
     }
 
     const existingLeaseIds = new Set(
-      existingInvoices?.map((inv) => inv.lease_id) || []
+      (existingInvoices as any[])?.map((inv: any) => inv.lease_id) || []
     );
 
     // Filter out leases that already have invoices for this period

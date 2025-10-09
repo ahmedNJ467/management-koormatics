@@ -25,7 +25,8 @@ export const EMOJI_TO_GOOGLE_ICON_MAP: Record<string, string> = {
 
   // Market
   "🛒": "shopping_cart",
-  "🏪": "store",
+  // duplicate removed
+  // "🏪": "store",
   "🏬": "local_mall",
   "📦": "inventory",
   "🚚": "local_shipping",
