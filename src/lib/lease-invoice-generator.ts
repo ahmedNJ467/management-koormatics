@@ -33,7 +33,7 @@ export interface VehicleLease {
   lease_start_date: string;
   lease_end_date: string;
   monthly_rate: number;
-  daily_rate?: number;
+  daily_rate?: number | null;
   lease_status: string;
   payment_status: string;
   contract_number: string;

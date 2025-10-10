@@ -115,7 +115,7 @@ const InvitationLetter: React.FC = () => {
       const { error } = await supabase
         .from("invitation_letters")
         .delete()
-        .eq("id", deleteConfirm.item.id)
+        .eq("id", deleteConfirm.item.id.toString())
         .eq("generated_by", user.id);
 
       if (error) {
@@ -280,7 +280,7 @@ const InvitationLetter: React.FC = () => {
 
       const { data: insertedData, error } = await supabase
         .from("invitation_letters")
-        .insert([insertData])
+        .insert([insertData] as any)
         .select()
         .single();
 
@@ -298,7 +298,7 @@ const InvitationLetter: React.FC = () => {
 
       // Update the entry with the database ID
       if (insertedData) {
-        entry.id = insertedData.id;
+        entry.id = parseInt(insertedData.id);
       }
     } catch (e) {
       console.error("Failed to save invitation history:", e);

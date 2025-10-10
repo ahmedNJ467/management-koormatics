@@ -82,7 +82,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { safeArrayResult, safeSingleResult } from "@/lib/utils/type-guards";
-import type { Tank, TankFill, TankStats } from "@/lib/types";
+import type { Tank, TankFill, TankStats } from "@/lib/types/fuel";
 
 function FuelLogs() {
   const { toast } = useToast();
