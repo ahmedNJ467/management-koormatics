@@ -205,13 +205,15 @@ export function LiveMap({
             (overlay) => overlay.setMap && overlay.setMap(null)
           );
         }
-      } catch {}
+      } catch {
+        // Ignore map errors
+      }
       markersRef.current = [];
       interestPointMarkersRef.current = [];
       labelOverlaysRef.current = [];
       mapInstanceRef.current = null;
     };
-  }, [gmapsKey]);
+  }, [gmapsKey, onMapClick]);
 
   // Update markers when points change without re-initializing map
   useEffect(() => {
@@ -232,7 +234,9 @@ export function LiveMap({
       labelOverlaysRef.current.forEach(
         (overlay) => overlay.setMap && overlay.setMap(null)
       );
-    } catch {}
+    } catch {
+      // Ignore map cleanup errors
+    }
     markersRef.current = [];
     interestPointMarkersRef.current = [];
     labelOverlaysRef.current = [];

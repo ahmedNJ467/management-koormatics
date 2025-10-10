@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  Component,
-  ErrorInfo,
-  ReactNode,
-} from "react";
+import React, { useState, useEffect, Component, ErrorInfo } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";

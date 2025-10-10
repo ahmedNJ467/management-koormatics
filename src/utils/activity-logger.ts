@@ -32,31 +32,30 @@ const formatTripId = (tripId: string): string => {
   return tripId.substring(0, 8).toUpperCase();
 };
 
-// Format timestamps in a human-readable format
-const formatTimestamp = (date: Date): string => {
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return "just now";
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} day${days !== 1 ? "s" : ""} ago`;
-  }
-};
+// Format timestamps in a human-readable format (currently unused)
+// const formatTimestamp = (date: Date): string => {
+//   const now = new Date();
+//   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+//   if (diffInSeconds < 60) {
+//     return "just now";
+//   } else if (diffInSeconds < 3600) {
+//     const minutes = Math.floor(diffInSeconds / 60);
+//     return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+//   } else if (diffInSeconds < 86400) {
+//     const hours = Math.floor(diffInSeconds / 3600);
+//     return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+//   } else {
+//     const days = Math.floor(diffInSeconds / 86400);
+//     return `${days} day${days !== 1 ? "s" : ""} ago`;
+//   }
+// };
 
 // Add a new activity to the database
 export const logActivity = async ({
   title,
   type,
   relatedId,
-  tripDetails,
+  _tripDetails,
 }: ActivityLogParams): Promise<ActivityItemProps> => {
   const id = Date.now().toString();
   const timestamp = new Date();

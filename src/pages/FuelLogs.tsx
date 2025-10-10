@@ -1116,7 +1116,7 @@ function FuelLogs() {
                                     "border-blue-500/30 text-blue-400",
                                   log.fuel_type === "petrol" &&
                                     "border-green-500/30 text-green-400",
-                                  false && ""
+                                  ""
                                 )}
                               >
                                 {log.fuel_type}

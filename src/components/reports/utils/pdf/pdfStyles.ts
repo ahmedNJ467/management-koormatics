@@ -1,4 +1,3 @@
-
 import { Color } from "jspdf-autotable";
 
 // Enhanced professional color scheme with better contrast and readability
@@ -21,8 +20,8 @@ export const pdfColors = {
 
 // Enhanced configuration for better document layout
 export const pdfConfig = {
-  orientation: "landscape" as "landscape",
-  format: "a4" as "a4",
+  orientation: "landscape" as const,
+  format: "a4" as const,
   pageMargin: 0.6,
   companyName: "KOORMATICS",
   logoPath: "/koormatics-logo.svg",

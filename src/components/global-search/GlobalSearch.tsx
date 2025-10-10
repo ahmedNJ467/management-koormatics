@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -106,9 +106,9 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     } else {
       setResults([]);
     }
-  }, [searchTerm]);
+  }, [searchTerm, performSearch]);
 
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) return;
 
     setIsLoading(true);
@@ -191,7 +191,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     }
 
     setResults(searchResults);
-  };
+  }, [searchTerm]);
 
   const handleResultClick = (result: SearchResult) => {
     router.push(result.route);

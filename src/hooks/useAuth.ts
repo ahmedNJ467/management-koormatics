@@ -70,10 +70,14 @@ export function useAuth() {
         localStorage.removeItem("supabase.auth.token");
         // Note: We don't clear saved credentials here as user might want to stay logged in
         // Credentials are only cleared when user unchecks "Remember Me"
-      } catch {}
+      } catch {
+        // Ignore localStorage errors
+      }
       try {
         sessionStorage.removeItem("supabase.auth.token");
-      } catch {}
+      } catch {
+        // Ignore sessionStorage errors
+      }
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {

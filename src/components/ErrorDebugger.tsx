@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 
 /**
  * A debugging component that helps identify the source of errors
@@ -7,7 +7,7 @@ import React, { useEffect } from "react";
 export function ErrorDebugger() {
   useEffect(() => {
     // Disabled for Fast Refresh compatibility
-    if (process.env.NODE_ENV !== "development" || true) {
+    if (process.env.NODE_ENV !== "development") {
       return;
     }
 

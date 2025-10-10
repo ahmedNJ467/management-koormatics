@@ -105,10 +105,14 @@ const Navbar = memo(function Navbar({
       // Fallback: clear only our custom key and redirect
       try {
         localStorage.removeItem("supabase.auth.token");
-      } catch {}
+      } catch {
+        // Ignore localStorage errors
+      }
       try {
         sessionStorage.removeItem("supabase.auth.token");
-      } catch {}
+      } catch {
+        // Ignore sessionStorage errors
+      }
 
       toast({
         title: "Logout completed",

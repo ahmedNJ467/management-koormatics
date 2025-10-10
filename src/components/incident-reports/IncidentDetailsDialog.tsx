@@ -85,8 +85,6 @@ export function IncidentDetailsDialog({
   open,
   onOpenChange,
 }: IncidentDetailsDialogProps) {
-  if (!report) return null;
-
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case "minor":
@@ -104,17 +102,20 @@ export function IncidentDetailsDialog({
 
   // Fetch incident images from DB
   const { data: incidentImages } = useQuery({
-    queryKey: ["incident-images", report.id],
+    queryKey: ["incident-images", report?.id],
     enabled: !!report?.id,
     queryFn: async () => {
+      if (!report?.id) return [];
       const { data, error } = await supabase
         .from("vehicle_incident_images")
         .select("image_url, name")
-        .eq("incident_id", report.id as any);
+        .eq("incident_id", report.id);
       if (error) throw error;
       return data || [];
     },
   });
+
+  if (!report) return null;
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {

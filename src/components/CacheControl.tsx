@@ -49,7 +49,7 @@ export default function CacheControl() {
         title: "Authentication Data Refreshed",
         description: "User roles and permissions have been refreshed.",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to refresh authentication data.",
@@ -68,7 +68,7 @@ export default function CacheControl() {
         title: "Core Data Refreshed",
         description: "Trips, vehicles, and drivers data has been refreshed.",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to refresh core data.",
@@ -88,7 +88,7 @@ export default function CacheControl() {
         description:
           "All cached data has been cleared. You may need to refresh the page.",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to clear caches.",
@@ -118,7 +118,7 @@ export default function CacheControl() {
         title: "Specific Queries Invalidated",
         description: "Selected queries have been invalidated and will refetch.",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to invalidate queries.",

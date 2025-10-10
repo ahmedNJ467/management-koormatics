@@ -1,22 +1,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getCachedSession, sessionCache } from "@/lib/session-cache";
-import { useAuth } from "@/hooks/useAuth";
+import { getCachedSession } from "@/lib/session-cache";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { User, Eye, EyeOff } from "lucide-react";
 import KoormaticsLogo from "@/components/ui/koormatics-logo";

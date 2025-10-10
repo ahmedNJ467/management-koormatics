@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Vehicle, VehicleStatus, VehicleType } from "@/lib/types";
+import { Vehicle } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VehiclesEmptyState } from "@/components/vehicles/vehicles-empty-state";

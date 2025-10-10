@@ -55,7 +55,9 @@ function drawHeaderFooter(
   if (logoDataUrl) {
     try {
       doc.addImage(logoDataUrl, "PNG", 10, 5, 48, 14);
-    } catch {}
+    } catch {
+      // Ignore logo loading errors
+    }
   } else {
     doc.setTextColor(59, 130, 246);
     doc.setFont("helvetica", "bold");

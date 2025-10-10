@@ -517,7 +517,9 @@ export async function generateIncidentReportPdf(
       doc.setFontSize(8);
       doc.setTextColor(100);
       doc.text("Scan for digital record", marginX + 2, footerY + 78);
-    } catch {}
+    } catch {
+      // Ignore QR code generation errors
+    }
   }
 
   // Signature lines — non-overlapping, account for optional QR

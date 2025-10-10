@@ -284,7 +284,9 @@ export const generateInvoicePDF = async (invoice: DisplayInvoice) => {
         ...invoice.items,
       ];
     }
-  } catch {}
+  } catch {
+    // Ignore invoice processing errors
+  }
 
   autoTable(doc, {
     startY: tableStartY,

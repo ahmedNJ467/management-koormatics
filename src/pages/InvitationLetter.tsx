@@ -198,7 +198,9 @@ const InvitationLetter: React.FC = () => {
         if (raw) {
           setHistory(JSON.parse(raw) as InvitationLetterData[]);
         }
-      } catch {}
+      } catch {
+        // Ignore localStorage errors
+      }
     }
   };
 
@@ -212,7 +214,9 @@ const InvitationLetter: React.FC = () => {
       const next = [entry, ...prev].slice(0, 100);
       try {
         localStorage.setItem("invitationLetterHistory", JSON.stringify(next));
-      } catch {}
+      } catch {
+        // Ignore localStorage errors
+      }
       return next;
     });
   };

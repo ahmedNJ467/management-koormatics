@@ -15,12 +15,12 @@ interface LayoutProps {
 }
 
 const Layout = memo(function Layout({ children }: LayoutProps) {
-  const { isAllowed, loading } = useTenantScope();
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Start with sidebar open by default
+  const { isAllowed, loading: _loading } = useTenantScope();
+  const [_sidebarOpen, setSidebarOpen] = useState(true); // Start with sidebar open by default
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false); // Add mounted state for hydration
-  const isMobile = useIsMobile();
-  const router = useRouter();
+  const _isMobile = useIsMobile();
+  const _router = useRouter();
   const pathname = usePathname();
 
   // Ensure component is mounted on client side to prevent hydration mismatch
@@ -58,7 +58,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     } catch (error) {
       console.warn("Failed to save sidebar state to localStorage:", error);
     }
-  }, [sidebarOpen]);
+  }, []);
 
   // Check authentication status
   useEffect(() => {
@@ -165,7 +165,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, []);
 
   // Set sidebar state based on device type
   useEffect(() => {
@@ -178,7 +178,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         setSidebarOpen(true);
       }
     }
-  }, [isMobile]);
+  }, []);
 
   // Handle sidebar toggle with useCallback to prevent unnecessary re-renders
   const handleToggleSidebar = useCallback(() => {

@@ -43,7 +43,10 @@ export async function updateLeasePaymentStatus(leaseId: string): Promise<void> {
 
     leaseInvoices.forEach((leaseInvoice: any) => {
       const invoiceStatus = leaseInvoice.invoices?.status;
-      if (invoiceStatus && statusCounts.hasOwnProperty(invoiceStatus)) {
+      if (
+        invoiceStatus &&
+        Object.prototype.hasOwnProperty.call(statusCounts, invoiceStatus)
+      ) {
         statusCounts[invoiceStatus as keyof typeof statusCounts]++;
       }
     });

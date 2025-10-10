@@ -53,7 +53,9 @@ export function useTripsData() {
               byTrip[t.id] || (t.driver_id ? [t.driver_id] : []);
           }
         }
-      } catch {}
+      } catch {
+        // Ignore subscription errors
+      }
       const toProgress = mapped.filter((t) => {
         if (t.status !== "scheduled" || !t.date || !t.time) return false;
         const start = new Date(`${t.date}T${t.time}`);
@@ -220,7 +222,9 @@ export function useTripsData() {
       if (channelRef.current) {
         try {
           supabase.removeChannel(channelRef.current);
-        } catch {}
+        } catch {
+          // Ignore subscription errors
+        }
         channelRef.current = null;
       }
     };

@@ -101,7 +101,9 @@ export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
           if (lngEl && typeof lng === "number") lngEl.value = String(lng);
         });
       }
-    } catch {}
+    } catch {
+      // Ignore geocoding errors
+    }
   };
 
   const attachAutocomplete = (input: HTMLInputElement | null) => {

@@ -1,10 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { EnhancedOverview } from "@/components/dashboard/EnhancedOverview";
-import {
-  LazyRecentActivity,
-  LazyRecentTrips,
-  LazyWrapper,
-} from "@/components/LazyWrapper";
+import { useState, useEffect } from "react";
+import { LazyRecentActivity, LazyWrapper } from "@/components/LazyWrapper";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { realtimeManager } from "@/utils/realtime-manager";
@@ -14,31 +9,11 @@ import dynamic from "next/dynamic";
 import { useDashboardChartsData } from "@/hooks/use-dashboard-charts-data";
 import { useMaintenanceData } from "@/hooks/use-maintenance-data";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import KoormaticsLogo from "@/components/ui/koormatics-logo";
 import {
   DashboardSkeleton,
   ChartSkeleton,
 } from "@/components/ui/loading-skeleton";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
-import {
-  TrendingUp,
-  TrendingDown,
-  Car,
-  Users,
-  Wrench,
-  Fuel,
-  Calendar,
-  Activity,
-  BarChart3,
-  PieChart,
-  LineChart,
-  Target,
-  Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-} from "lucide-react";
 
 // Dynamically import charts to avoid SSR layout/measurement issues
 
@@ -175,9 +150,8 @@ export default function Dashboard() {
     }
 
     const unsubscribes: (() => void)[] = [];
-    let setupTimeout: NodeJS.Timeout;
 
-    setupTimeout = setTimeout(() => {
+    const setupTimeout = setTimeout(() => {
       unsubscribes.push(
         realtimeManager.subscribeToTable("vehicles", async () => {
           queryClient.invalidateQueries({ queryKey: ["vehicles"] });
@@ -268,19 +242,7 @@ export default function Dashboard() {
   const totalFuelLogs = fuelLogs?.length || 0;
 
   // Calculate meaningful performance metrics
-  const totalMaintenanceCost = (maintenance || []).reduce(
-    (sum, m) => sum + (m.cost || 0),
-    0
-  );
-  const completedMaintenance = (maintenance || []).filter(
-    (m) => m.status === "completed"
-  ).length;
-  const scheduledMaintenance = (maintenance || []).filter(
-    (m) => m.status === "scheduled"
-  ).length;
-  const inProgressMaintenance = (maintenance || []).filter(
-    (m) => m.status === "in_progress"
-  ).length;
+  // Maintenance metrics are available in chartData if needed
 
   // Calculate fleet utilization - vehicles with active drivers vs total vehicles
   const fleetUtilization =

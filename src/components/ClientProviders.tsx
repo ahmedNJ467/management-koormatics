@@ -69,7 +69,9 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
 
           try {
             sessionStorage.clear();
-          } catch {}
+          } catch {
+            // Ignore sessionStorage clear errors
+          }
 
           window.localStorage.setItem(versionKey, String(buildId));
           window.location.reload();

@@ -18,7 +18,7 @@ async function testApiKeyInsertion() {
     console.log("🔄 Testing API key insertion...");
 
     // First, try to check if the table exists
-    const { data: tableCheck, error: tableError } = await supabase
+    const { data: _tableCheck, error: tableError } = await supabase
       .from("api_keys")
       .select("id")
       .limit(1);

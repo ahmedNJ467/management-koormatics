@@ -1,28 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Plus,
-  Search,
-  Filter,
-  Calendar,
-  AlertTriangle,
-  Users,
-  Car,
-  TrendingUp,
-  Clock,
-  List,
-  Grid,
-  Check,
-  Crown,
-  X,
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Filter, AlertTriangle, Check, Crown, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
