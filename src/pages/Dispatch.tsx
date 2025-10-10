@@ -257,11 +257,17 @@ export default function Dispatch() {
 
         if (error) throw error;
 
+        // Mark that recent updates have occurred for cache clearing
+        const { cacheInvalidationManager } = await import(
+          "@/lib/cache-invalidation"
+        );
+        cacheInvalidationManager.markRecentUpdates();
+
         // If the status is being changed to cancelled, we need to be extra aggressive
         // about clearing caches to ensure vehicle availability is immediately updated
         if (status === "cancelled") {
-          // Clear all query caches
-          queryClient.clear();
+          // Use the cache invalidation manager for comprehensive clearing
+          await cacheInvalidationManager.clearAllCaches();
 
           // Then refetch everything
           await Promise.all([
@@ -277,17 +283,11 @@ export default function Dispatch() {
           // Force a component re-render
           setRefreshTrigger((prev) => prev + 1);
         } else {
-          // For other status changes, use the normal invalidation
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["trips"] }),
-            queryClient.invalidateQueries({ queryKey: ["vehicles"] }),
-            queryClient.invalidateQueries({ queryKey: ["drivers"] }),
-          ]);
-
-          // Also refetch immediately to ensure fresh data
-          await Promise.all([
-            queryClient.refetchQueries({ queryKey: ["trips"] }),
-            queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+          // For other status changes, use the cache invalidation manager
+          await cacheInvalidationManager.invalidateAndRefetch([
+            ["trips"],
+            ["vehicles"],
+            ["drivers"],
           ]);
         }
 

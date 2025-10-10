@@ -13,8 +13,8 @@ interface CachedSession {
 
 class SessionCache {
   private cache: CachedSession | null = null;
-  private readonly CACHE_DURATION = 30 * 1000; // 30 seconds
-  private readonly MAX_AGE = 5 * 60 * 1000; // 5 minutes max age
+  private readonly CACHE_DURATION = 10 * 1000; // 10 seconds (much shorter)
+  private readonly MAX_AGE = 2 * 60 * 1000; // 2 minutes max age (shorter)
   private isLoggingOut = false;
 
   getCachedSession(): any | null {

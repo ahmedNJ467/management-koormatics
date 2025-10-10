@@ -97,10 +97,10 @@ export const usePageAccess = () => {
         return ["*"];
       }
     },
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
-    gcTime: 30 * 60 * 1000, // Keep in memory for 30 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: false, // Don't refetch when component mounts if data exists
+    staleTime: 30 * 1000, // Cache for 30 seconds (much shorter for auth data)
+    gcTime: 5 * 60 * 1000, // Keep in memory for 5 minutes
+    refetchOnWindowFocus: true, // Refetch when window regains focus for fresh auth data
+    refetchOnMount: true, // Always refetch when component mounts for fresh auth data
     retry: 1, // Only retry once on failure
     // Add timeout to prevent hanging
     meta: {

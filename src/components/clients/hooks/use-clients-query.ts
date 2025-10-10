@@ -33,8 +33,9 @@ export function useClientsQuery() {
         supabase.from("clients").select("*").order("name"),
         supabase
           .from("contracts")
-          .select("client_name")
-          .eq("status", "active" as any),
+          .select("client_id, clients:client_id(name)")
+          .gte("end_date", new Date().toISOString().split("T")[0])
+          .lte("start_date", new Date().toISOString().split("T")[0]),
       ]);
 
       if (clientsResult.error) throw clientsResult.error;
@@ -45,17 +46,17 @@ export function useClientsQuery() {
         );
       }
 
-      // Use a Set for efficient look-ups of client names that have active contracts
+      // Use a Set for efficient look-ups of client IDs that have active contracts
       const clientsWithActiveContracts = new Set(
         (contractsResult.data as any[])?.map(
-          (contract) => contract.client_name
+          (contract) => contract.client_id
         ) || []
       );
 
       // Add has_active_contract flag to clients
       const clientsWithFlag = (clientsResult.data || []).map((client: any) => ({
         ...client,
-        has_active_contract: clientsWithActiveContracts.has(client.name),
+        has_active_contract: clientsWithActiveContracts.has(client.id),
       }));
 
       return clientsWithFlag as Client[];

@@ -1,10 +1,21 @@
-
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { Vehicle } from "@/lib/types";
 
-type VehicleFormData = Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>;
+type VehicleFormData = Omit<Vehicle, "id" | "created_at" | "updated_at">;
 
 interface VehicleTypeFieldProps {
   form: UseFormReturn<VehicleFormData>;
@@ -18,7 +29,7 @@ export function VehicleTypeField({ form }: VehicleTypeFieldProps) {
       render={({ field }) => (
         <FormItem>
           <FormLabel>Type</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select onValueChange={field.onChange} value={field.value}>
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder="Select vehicle type" />

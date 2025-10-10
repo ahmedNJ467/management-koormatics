@@ -124,25 +124,10 @@ export const handleSaveTrip = async (
       : null;
 
   // Get security escort fields
-  console.log("FormData security escort values:", {
-    has_security_escort: formData.get("has_security_escort"),
-    escort_count: formData.get("escort_count"),
-  });
-
   const hasSecurityEscort = formData.get("has_security_escort") === "true";
   const escortCount = hasSecurityEscort
     ? parseInt(formData.get("escort_count") as string) || 1
     : 0;
-
-  console.log("Saving trip with client type:", clientType);
-  console.log("Saving trip with passengers:", passengers);
-  console.log("Saving trip with stops:", stops);
-  console.log(
-    "Saving trip with security escort:",
-    hasSecurityEscort,
-    "count:",
-    escortCount
-  );
 
   try {
     // Basic validation for required fields

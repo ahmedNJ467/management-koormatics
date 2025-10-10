@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -13,6 +14,10 @@ interface TripStatusFieldProps {
 }
 
 export function TripStatusField({ editTrip }: TripStatusFieldProps) {
+  const [selectedStatus, setSelectedStatus] = useState(
+    editTrip?.status || "scheduled"
+  );
+
   if (!editTrip) {
     return null;
   }
@@ -20,7 +25,12 @@ export function TripStatusField({ editTrip }: TripStatusFieldProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor="status">Status</Label>
-      <Select name="status" defaultValue={editTrip.status} required>
+      <Select
+        name="status"
+        value={selectedStatus}
+        onValueChange={setSelectedStatus}
+        required
+      >
         <SelectTrigger id="status">
           <SelectValue placeholder="Select status" />
         </SelectTrigger>

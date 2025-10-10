@@ -98,6 +98,20 @@ export const logActivity = async ({
       return newActivity;
     }
 
+    // Check if activities table exists and has the right schema
+    const { data: tableExists, error: tableError } = await supabase
+      .from("activities")
+      .select("id")
+      .limit(1);
+
+    if (tableError && tableError.code === "PGRST116") {
+      console.warn(
+        "Activities table does not exist, skipping activity log:",
+        enhancedTitle
+      );
+      return newActivity;
+    }
+
     const { data, error } = await supabase.from("activities").insert([
       {
         title: enhancedTitle,
@@ -109,6 +123,13 @@ export const logActivity = async ({
 
     if (error) {
       console.error("Error saving activity to database:", error);
+      // Check if it's a schema/column error
+      if (error.code === "PGRST116" || error.message?.includes("column")) {
+        console.warn(
+          "Activities table schema mismatch, skipping activity log:",
+          enhancedTitle
+        );
+      }
       // Still return the activity object for local use
     } else {
       console.log("Activity logged successfully:", enhancedTitle);
@@ -130,6 +151,19 @@ export const getActivities = async (
     const isConnected = await checkSupabaseConnection();
     if (!isConnected) {
       console.warn("Database connection not available for fetching activities");
+      return [];
+    }
+
+    // Check if activities table exists first
+    const { data: tableExists, error: tableError } = await supabase
+      .from("activities")
+      .select("id")
+      .limit(1);
+
+    if (tableError && tableError.code === "PGRST116") {
+      console.warn(
+        "Activities table does not exist, returning empty activities list"
+      );
       return [];
     }
 

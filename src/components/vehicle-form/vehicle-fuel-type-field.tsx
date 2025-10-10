@@ -29,7 +29,7 @@ export function VehicleFuelTypeField({ form }: VehicleFuelTypeFieldProps) {
       render={({ field }) => (
         <FormItem>
           <FormLabel>Fuel Type</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select onValueChange={field.onChange} value={field.value}>
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder="Select fuel type" />

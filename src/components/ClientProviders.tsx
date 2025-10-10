@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ReactNode } from "react";
+import { cacheInvalidationManager } from "@/lib/cache-invalidation";
 
 export default function ClientProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -15,11 +16,11 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 1000,
-            gcTime: 5 * 60 * 1000,
+            staleTime: 30 * 1000, // 30 seconds (shorter for better UX)
+            gcTime: 5 * 60 * 1000, // 5 minutes
             retry: 1,
-            refetchOnWindowFocus: true,
-            refetchOnMount: true,
+            refetchOnWindowFocus: true, // Always refetch on focus for fresh data
+            refetchOnMount: true, // Always refetch on mount for fresh data
             refetchOnReconnect: true,
             retryOnMount: true,
             retryDelay: 1000,
@@ -31,6 +32,12 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
         },
       })
   );
+
+  // Initialize cache invalidation manager
+  useEffect(() => {
+    cacheInvalidationManager.setQueryClient(queryClient);
+    cacheInvalidationManager.setupAutoClearOnUnload();
+  }, [queryClient]);
 
   // On build change, clear caches and unregister service workers to avoid stale assets
   useEffect(() => {
@@ -72,23 +79,34 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // In development, aggressively clear caches on every load to avoid stale UI
+  // Clear caches on page load to ensure fresh data (both dev and prod)
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") {
-      (async () => {
-        try {
-          if ("serviceWorker" in navigator) {
-            const regs = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(regs.map((r) => r.unregister()));
-          }
-          if ("caches" in window) {
-            const names = await caches.keys();
-            await Promise.all(names.map((n) => caches.delete(n)));
-          }
-        } catch {}
-      })();
-    }
-  }, []);
+    (async () => {
+      try {
+        // Always clear browser caches to ensure fresh data
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+        if ("caches" in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map((n) => caches.delete(n)));
+        }
+
+        // Clear React Query cache on page load for critical data
+        if (queryClient) {
+          // Clear auth-related queries to ensure fresh authentication state
+          queryClient.invalidateQueries({ queryKey: ["page_access"] });
+          queryClient.invalidateQueries({ queryKey: ["user_roles"] });
+          queryClient.invalidateQueries({ queryKey: ["auth_session"] });
+        }
+
+        console.log("Caches cleared on page load for fresh data");
+      } catch (error) {
+        console.warn("Cache clearing failed:", error);
+      }
+    })();
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

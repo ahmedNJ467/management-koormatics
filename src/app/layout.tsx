@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        {/* Early cache/SW cleanup to avoid stale assets after deploy */}
+        {/* Aggressive cache/SW cleanup to avoid stale assets and data */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -42,18 +42,55 @@ export default function RootLayout({
                     process.env.NEXT_PUBLIC_BUILD_TAG ?? "dev"
                   }';
                   var stored = localStorage.getItem(TAG_KEY);
+                  
+                  // Always clear caches on page load for fresh data
+                  var shouldClearCaches = true;
+                  
                   if (!stored || stored !== CURRENT_TAG) {
+                    shouldClearCaches = true;
+                    localStorage.setItem(TAG_KEY, CURRENT_TAG);
+                  }
+                  
+                  if (shouldClearCaches) {
+                    // Clear service workers
                     if ('serviceWorker' in navigator) {
                       navigator.serviceWorker.getRegistrations().then(function(regs){
                         regs.forEach(function(r){r.unregister();});
                       });
                     }
+                    
+                    // Clear browser caches
                     if ('caches' in window) {
-                      caches.keys().then(function(names){ names.forEach(function(n){ caches.delete(n); }); });
+                      caches.keys().then(function(names){ 
+                        names.forEach(function(n){ caches.delete(n); }); 
+                      });
                     }
-                    try { sessionStorage.clear(); } catch (e) {}
-                    localStorage.setItem(TAG_KEY, CURRENT_TAG);
+                    
+                    // Clear session storage but preserve auth tokens
+                    try { 
+                      var authToken = sessionStorage.getItem('supabase.auth.token');
+                      sessionStorage.clear();
+                      if (authToken) {
+                        sessionStorage.setItem('supabase.auth.token', authToken);
+                      }
+                    } catch (e) {}
+                    
+                    // Clear localStorage items that might cause stale data
+                    try {
+                      localStorage.removeItem('react-query');
+                      localStorage.removeItem('tanstack-query');
+                    } catch (e) {}
                   }
+                  
+                  // Force fresh data on every page load
+                  window.addEventListener('load', function() {
+                    // Clear any remaining cached data
+                    if ('caches' in window) {
+                      caches.keys().then(function(names){ 
+                        names.forEach(function(n){ caches.delete(n); }); 
+                      });
+                    }
+                  });
                 } catch (e) { /* ignore */ }
               })();
             `,
