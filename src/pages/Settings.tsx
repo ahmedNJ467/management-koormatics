@@ -163,6 +163,11 @@ const Settings: React.FC = () => {
       // Get roles for each user
       const usersWithRoles = await Promise.all(
         (profilesData || []).map(async (user) => {
+          if (!user || typeof user !== "object" || !user.id) {
+            console.warn("Invalid user object:", user);
+            return null;
+          }
+
           const { data: userRolesData } = await supabase
             .from("user_roles")
             .select(
@@ -188,7 +193,8 @@ const Settings: React.FC = () => {
         })
       );
       console.log("All users with roles from profiles:", usersWithRoles);
-      setUsers(usersWithRoles);
+      // Filter out null values and set users
+      setUsers(usersWithRoles.filter((user) => user !== null));
     } catch (error: any) {
       console.error("Error loading users from profiles:", error);
       throw error;

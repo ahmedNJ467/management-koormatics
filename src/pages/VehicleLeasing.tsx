@@ -86,7 +86,10 @@ interface VehicleLease {
   lessee_address: string;
   lease_start_date: string;
   lease_end_date: string;
-  daily_rate: number;
+  daily_rate: number | null;
+  monthly_rate: number;
+  contract_number: string;
+  early_termination_fee?: number;
   lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
   payment_status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
   notes?: string;
