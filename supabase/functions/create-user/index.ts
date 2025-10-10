@@ -13,41 +13,38 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
-  }
-
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Initialize admin client
+    // Get environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey =
-      Deno.env.get("SERVICE_ROLE_KEY") ||
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceKey) {
-      throw new Error(
-        "Service configuration is missing. Contact the administrator."
+      return new Response(
+        JSON.stringify({ error: "Missing environment variables" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
       );
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+    // Create Supabase client
+    const supabase = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false },
     });
 
-    const { email, password, role_slug, full_name } = await req.json();
-
-    if (!email || !password || !role_slug) {
+    // Parse request body with error handling
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log("Request body received:", requestBody);
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
       return new Response(
-        JSON.stringify({ error: "email, password and role_slug are required" }),
+        JSON.stringify({ error: "Invalid JSON in request body" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -55,42 +52,113 @@ serve(async (req) => {
       );
     }
 
-    // 1. Create auth user
-    const { data: userData, error: createError } =
-      await supabaseAdmin.auth.admin.createUser({
+    const { email, password, role_slug, full_name } = requestBody;
+
+    // Validate required fields
+    if (!email || !password || !role_slug) {
+      console.log("Missing required fields:", {
+        email: !!email,
+        password: !!password,
+        role_slug: !!role_slug,
+        emailValue: email,
+        passwordLength: password ? password.length : 0,
+        roleSlugValue: role_slug,
+      });
+      return new Response(
+        JSON.stringify({
+          error: "Missing required fields",
+          details: {
+            email: !!email,
+            password: !!password,
+            role_slug: !!role_slug,
+          },
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Create user in auth
+    console.log("Attempting to create auth user...");
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
         user_metadata: {
-          full_name,
-          role_slug,
+          full_name: full_name || email,
+          role_slug: role_slug,
         },
       });
 
-    if (createError || !userData.user) {
-      throw createError || new Error("Failed to create user");
+    if (authError) {
+      console.error("Auth user creation failed:", authError);
+      return new Response(
+        JSON.stringify({ error: `Auth error: ${authError.message}` }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
-    // 2. Assign role
-    const { error: roleError } = await supabaseAdmin
+    if (!authData.user) {
+      console.error("No user data returned from auth creation");
+      return new Response(JSON.stringify({ error: "Failed to create user" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    console.log("Auth user created successfully:", authData.user.id);
+
+    // Assign role (handle existing roles gracefully)
+    console.log("Attempting to assign role:", role_slug);
+    const { error: roleError } = await supabase
       .from("user_roles")
-      .insert({ user_id: userData.user.id, role_slug });
+      .insert({
+        user_id: authData.user.id,
+        role_slug: role_slug,
+      })
+      .select()
+      .single();
 
     if (roleError) {
-      throw roleError;
+      // Check if it's a duplicate key error (user already has this role)
+      if (roleError.code === "23505") {
+        console.log("User already has this role, continuing...");
+      } else {
+        console.error("Role assignment failed:", roleError);
+        return new Response(
+          JSON.stringify({ error: `Role error: ${roleError.message}` }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    } else {
+      console.log("Role assigned successfully");
     }
 
+    // Return success
     return new Response(
-      JSON.stringify({ user_id: userData.user.id, email, role_slug }),
+      JSON.stringify({
+        success: true,
+        user_id: authData.user.id,
+        email: email,
+        role_slug: role_slug,
+      }),
       {
-        headers: { "Content-Type": "application/json", ...corsHeaders },
         status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
-  } catch (err) {
-    console.error("create-user error", err);
+  } catch (error) {
     return new Response(
-      JSON.stringify({ error: (err as any).message || String(err) }),
+      JSON.stringify({ error: `Server error: ${error.message}` }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

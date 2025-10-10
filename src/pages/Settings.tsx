@@ -53,6 +53,7 @@ import {
   Shield,
   Trash2,
   Edit,
+  Copy,
 } from "lucide-react";
 
 const Settings: React.FC = () => {
@@ -90,6 +91,18 @@ const Settings: React.FC = () => {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState<string | null>(
+    null
+  );
+  const [resetPasswordDialog, setResetPasswordDialog] = useState<{
+    open: boolean;
+    user: any;
+    newPassword: string;
+  }>({
+    open: false,
+    user: null,
+    newPassword: "",
+  });
 
   // Available roles (same as AddUserDialog)
   const userRoles = [
@@ -204,6 +217,69 @@ const Settings: React.FC = () => {
     }
     setNewUser((prev) => ({ ...prev, password }));
     setIsGeneratingPassword(false);
+  };
+
+  // Handle password reset
+  const handleResetPassword = async (user: any) => {
+    setResettingPassword(user.id);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "reset-user-password",
+        {
+          body: {
+            user_id: user.id,
+          },
+        }
+      );
+
+      if (error) {
+        toast({
+          title: "Error resetting password",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.success) {
+        setResetPasswordDialog({
+          open: true,
+          user: user,
+          newPassword: data.new_password,
+        });
+        toast({
+          title: "Password reset successfully",
+          description: "New password has been generated",
+        });
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast({
+        title: "Error resetting password",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setResettingPassword(null);
+    }
+  };
+
+  // Copy password to clipboard
+  const copyPasswordToClipboard = async (password: string) => {
+    try {
+      await navigator.clipboard.writeText(password);
+      toast({
+        title: "Password copied",
+        description: "Password has been copied to clipboard",
+      });
+    } catch (error) {
+      console.error("Failed to copy password:", error);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy password to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   // Delete user function
@@ -1008,6 +1084,20 @@ const Settings: React.FC = () => {
                                   <Button
                                     variant="ghost"
                                     size="sm"
+                                    onClick={() => handleResetPassword(user)}
+                                    disabled={resettingPassword === user.id}
+                                    className="text-orange-600 hover:text-orange-700"
+                                    title="Reset Password"
+                                  >
+                                    {resettingPassword === user.id ? (
+                                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    ) : (
+                                      <Key className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => handleDeleteUser(user.id)}
                                     disabled={deletingUserId === user.id}
                                     className="text-destructive hover:text-destructive"
@@ -1032,6 +1122,68 @@ const Settings: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Password Reset Dialog */}
+      <Dialog
+        open={resetPasswordDialog.open}
+        onOpenChange={(open) =>
+          setResetPasswordDialog((prev) => ({ ...prev, open }))
+        }
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Password Reset Successful</DialogTitle>
+            <DialogDescription>
+              A new password has been generated for{" "}
+              {resetPasswordDialog.user?.full_name ||
+                resetPasswordDialog.user?.email}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new_password">New Password</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="new_password"
+                  value={resetPasswordDialog.newPassword}
+                  readOnly
+                  className="font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    copyPasswordToClipboard(resetPasswordDialog.newPassword)
+                  }
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Please share this password securely with the user. They should
+                change it on their first login.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              onClick={() =>
+                setResetPasswordDialog({
+                  open: false,
+                  user: null,
+                  newPassword: "",
+                })
+              }
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
