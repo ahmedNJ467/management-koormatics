@@ -22,7 +22,7 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
             refetchOnWindowFocus: true, // Always refetch on focus for fresh data
             refetchOnMount: true, // Always refetch on mount for fresh data
             refetchOnReconnect: true,
-            keepPreviousData: true, // Smooth pagination and list refreshes
+            placeholderData: (previousData: any) => previousData, // Smooth pagination and list refreshes
             retryOnMount: true,
             retryDelay: 1000,
           },

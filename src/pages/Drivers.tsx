@@ -100,7 +100,7 @@ export default function Drivers() {
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     retry: 1,
   });
 
@@ -117,7 +117,7 @@ export default function Drivers() {
       return safeArrayResult<any>(data);
     },
     staleTime: 10 * 1000,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 
   // Calculate driver statistics

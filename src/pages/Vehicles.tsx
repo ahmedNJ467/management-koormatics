@@ -74,7 +74,7 @@ export default function Vehicles() {
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     retry: 1,
   });
 

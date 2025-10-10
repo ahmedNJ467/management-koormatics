@@ -65,7 +65,7 @@ export function useVehicleImages() {
 
       const { error: updateError } = await supabase
         .from("vehicles")
-        .update({ images: updatedImages })
+        .update({ images: updatedImages } as any)
         .eq("id", vehicleId);
 
       if (updateError) throw updateError;

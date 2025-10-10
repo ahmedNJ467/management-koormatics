@@ -69,7 +69,7 @@ export function VehicleImagesField({
 
         const { error } = await supabase
           .from("vehicles")
-          .update({ images: updatedImages })
+          .update({ images: updatedImages } as any)
           .eq("id", vehicle.id as any);
 
         if (error) {

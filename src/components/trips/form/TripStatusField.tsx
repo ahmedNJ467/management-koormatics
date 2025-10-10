@@ -28,7 +28,11 @@ export function TripStatusField({ editTrip }: TripStatusFieldProps) {
       <Select
         name="status"
         value={selectedStatus}
-        onValueChange={setSelectedStatus}
+        onValueChange={(value) =>
+          setSelectedStatus(
+            value as "scheduled" | "in_progress" | "completed" | "cancelled"
+          )
+        }
         required
       >
         <SelectTrigger id="status">

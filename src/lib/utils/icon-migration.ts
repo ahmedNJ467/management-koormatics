@@ -54,7 +54,7 @@ export const EMOJI_TO_GOOGLE_ICON_MAP: Record<string, string> = {
   // Hotel
   "🏨": "hotel",
   "🛏️": "bed",
-  "🍽️": "room_service",
+  "🍴": "room_service",
   "❄️": "ac_unit",
   "🏊": "pool",
   "📶": "wifi",
@@ -161,7 +161,6 @@ SET icon = CASE icon
   WHEN '🏦' THEN 'account_balance'
   WHEN '💳' THEN 'credit_card'
   WHEN '💰' THEN 'savings'
-  WHEN '🏧' THEN 'atm'
   WHEN '💵' THEN 'attach_money'
   WHEN '🏫' THEN 'school'
   WHEN '📚' THEN 'library_books'
