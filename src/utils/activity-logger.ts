@@ -55,7 +55,7 @@ export const logActivity = async ({
   title,
   type,
   relatedId,
-  _tripDetails,
+  tripDetails,
 }: ActivityLogParams): Promise<ActivityItemProps> => {
   const id = Date.now().toString();
   const timestamp = new Date();

@@ -14,6 +14,8 @@ import {
   ChartSkeleton,
 } from "@/components/ui/loading-skeleton";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
+import { Button } from "@/components/ui/button";
+import { Car, Users, Wrench, Fuel } from "lucide-react";
 
 // Dynamically import charts to avoid SSR layout/measurement issues
 

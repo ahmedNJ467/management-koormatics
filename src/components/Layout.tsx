@@ -16,11 +16,11 @@ interface LayoutProps {
 
 const Layout = memo(function Layout({ children }: LayoutProps) {
   const { isAllowed, loading: _loading } = useTenantScope();
-  const [_sidebarOpen, setSidebarOpen] = useState(true); // Start with sidebar open by default
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Start with sidebar open by default
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false); // Add mounted state for hydration
-  const _isMobile = useIsMobile();
-  const _router = useRouter();
+  const isMobile = useIsMobile();
+  const router = useRouter();
   const pathname = usePathname();
 
   // Ensure component is mounted on client side to prevent hydration mismatch

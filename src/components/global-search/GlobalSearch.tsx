@@ -100,14 +100,6 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  useEffect(() => {
-    if (searchTerm.length > 2) {
-      performSearch();
-    } else {
-      setResults([]);
-    }
-  }, [searchTerm, performSearch]);
-
   const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) return;
 
@@ -192,6 +184,14 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
     setResults(searchResults);
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (searchTerm.length > 2) {
+      performSearch();
+    } else {
+      setResults([]);
+    }
+  }, [searchTerm, performSearch]);
 
   const handleResultClick = (result: SearchResult) => {
     router.push(result.route);

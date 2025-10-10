@@ -23,13 +23,13 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".next-dev/types/**/*.ts",
-    ".next/types/**/*.ts",
-    "next-env.d.ts",
-    ".next-build/types/**/*.ts"
-  ],
-  "exclude": ["node_modules", "supabase/functions/**/*", "src/lib/__tests__/**"]
+  "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts"],
+  "exclude": [
+    "node_modules",
+    "supabase/functions/**/*",
+    "src/lib/__tests__/**",
+    ".next-dev/**",
+    ".next/**",
+    ".next-build/**"
+  ]
 }
