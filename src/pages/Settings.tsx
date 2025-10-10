@@ -70,7 +70,7 @@ const Settings: React.FC = () => {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   // State for users list
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   // State for password change
@@ -162,7 +162,7 @@ const Settings: React.FC = () => {
 
       // Get roles for each user
       const usersWithRoles = await Promise.all(
-        (profilesData || []).map(async (user) => {
+        (profilesData || []).map(async (user: any) => {
           if (!user || typeof user !== "object" || !user.id) {
             console.warn("Invalid user object:", user);
             return null;
@@ -194,7 +194,7 @@ const Settings: React.FC = () => {
       );
       console.log("All users with roles from profiles:", usersWithRoles);
       // Filter out null values and set users
-      setUsers(usersWithRoles.filter((user) => user !== null));
+      setUsers(usersWithRoles.filter((user: any) => user !== null));
     } catch (error: any) {
       console.error("Error loading users from profiles:", error);
       throw error;

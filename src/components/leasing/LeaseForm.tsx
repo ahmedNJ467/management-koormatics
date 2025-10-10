@@ -76,14 +76,28 @@ interface VehicleLease {
   client_id: string;
   lease_start_date: string;
   lease_end_date: string;
-  daily_rate?: number;
+  daily_rate?: number | null;
   monthly_rate?: number;
   security_deposit?: number;
   early_termination_fee?: number;
   contract_number?: string;
-  lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
-  payment_status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
-  notes?: string;
+  lease_status:
+    | "active"
+    | "pending"
+    | "expired"
+    | "terminated"
+    | "upcoming"
+    | string
+    | null;
+  payment_status:
+    | "draft"
+    | "sent"
+    | "paid"
+    | "overdue"
+    | "cancelled"
+    | string
+    | null;
+  notes?: string | null;
   insurance_required: boolean;
   maintenance_included: boolean;
   driver_included: boolean;
@@ -238,8 +252,18 @@ export function LeaseForm({ lease, onSuccess, onCancel }: LeaseFormProps) {
         security_deposit: lease.security_deposit || 0,
         early_termination_fee: lease.early_termination_fee || 0,
         contract_number: lease.contract_number || "",
-        lease_status: lease.lease_status,
-        payment_status: lease.payment_status,
+        lease_status: (lease.lease_status || "pending") as
+          | "active"
+          | "expired"
+          | "pending"
+          | "terminated"
+          | "upcoming",
+        payment_status: (lease.payment_status || "draft") as
+          | "draft"
+          | "sent"
+          | "paid"
+          | "overdue"
+          | "cancelled",
         notes: lease.notes || "",
         insurance_required: lease.insurance_required,
         maintenance_included: lease.maintenance_included,

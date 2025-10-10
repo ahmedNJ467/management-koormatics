@@ -34,18 +34,18 @@ export interface VehicleLease {
   lease_end_date: string;
   monthly_rate: number;
   daily_rate?: number | null;
-  lease_status: string;
-  payment_status: string;
+  lease_status: string | null;
+  payment_status: string | null;
   contract_number: string;
-  notes?: string;
-  insurance_required: boolean;
-  maintenance_included: boolean;
-  driver_included: boolean;
-  fuel_included: boolean;
-  assigned_driver_id?: string;
-  early_termination_fee: number;
-  created_at: string;
-  updated_at: string;
+  notes?: string | null;
+  insurance_required: boolean | null;
+  maintenance_included: boolean | null;
+  driver_included: boolean | null;
+  fuel_included: boolean | null;
+  assigned_driver_id?: string | null;
+  early_termination_fee: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface LeaseInvoiceGenerationResult {

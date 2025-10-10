@@ -36,13 +36,27 @@ interface VehicleLease {
   lease_start_date: string;
   lease_end_date: string;
   monthly_rate?: number;
-  daily_rate?: number;
+  daily_rate?: number | null;
   security_deposit?: number;
-  lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
-  payment_status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
+  lease_status:
+    | "active"
+    | "pending"
+    | "expired"
+    | "terminated"
+    | "upcoming"
+    | string
+    | null;
+  payment_status:
+    | "draft"
+    | "sent"
+    | "paid"
+    | "overdue"
+    | "cancelled"
+    | string
+    | null;
   contract_number?: string;
   contract_id?: string;
-  notes?: string;
+  notes?: string | null;
   insurance_required: boolean;
   maintenance_included: boolean;
   driver_included: boolean;
@@ -205,8 +219,8 @@ export function LeaseDetailsDialog({
                   Contract {lease.contract_number || lease.contract_id || "N/A"}
                 </span>
                 <div className="flex gap-2">
-                  {getStatusBadge(lease.lease_status)}
-                  {getPaymentStatusBadge(lease.payment_status)}
+                  {getStatusBadge(lease.lease_status || "pending")}
+                  {getPaymentStatusBadge(lease.payment_status || "draft")}
                 </div>
               </CardTitle>
             </CardHeader>

@@ -89,15 +89,30 @@ interface VehicleLease {
   daily_rate: number | null;
   monthly_rate: number;
   contract_number: string;
-  early_termination_fee?: number;
-  lease_status: "active" | "pending" | "expired" | "terminated" | "upcoming";
-  payment_status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
+  early_termination_fee: number;
+  lease_status:
+    | "active"
+    | "pending"
+    | "expired"
+    | "terminated"
+    | "upcoming"
+    | string
+    | null;
+  payment_status:
+    | "draft"
+    | "sent"
+    | "paid"
+    | "overdue"
+    | "cancelled"
+    | string
+    | null;
   notes?: string;
   insurance_required: boolean;
   maintenance_included: boolean;
   driver_included: boolean;
   fuel_included: boolean;
   assigned_driver_id?: string;
+  client_id: string;
   created_at: string;
   updated_at: string;
   vehicle?: {
