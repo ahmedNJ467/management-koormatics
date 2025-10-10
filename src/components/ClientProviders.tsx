@@ -16,12 +16,13 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30 * 1000, // 30 seconds (shorter for better UX)
+            staleTime: 5 * 1000, // 5 seconds for very fresh lists across pages
             gcTime: 5 * 60 * 1000, // 5 minutes
             retry: 1,
             refetchOnWindowFocus: true, // Always refetch on focus for fresh data
             refetchOnMount: true, // Always refetch on mount for fresh data
             refetchOnReconnect: true,
+            keepPreviousData: true, // Smooth pagination and list refreshes
             retryOnMount: true,
             retryDelay: 1000,
           },

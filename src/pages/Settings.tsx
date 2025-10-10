@@ -91,13 +91,8 @@ const Settings: React.FC = () => {
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
-  // Available roles
+  // Available roles (same as AddUserDialog)
   const userRoles = [
-    {
-      value: "super_admin",
-      label: "Super Administrator",
-      description: "Full system access and administration",
-    },
     {
       value: "fleet_manager",
       label: "Fleet Manager",
@@ -362,18 +357,15 @@ const Settings: React.FC = () => {
         role_slug: newUser.role,
       });
 
-      // Use Supabase client with proper configuration
-      const { data, error } = await supabase.functions.invoke(
-        "create-user-v2",
-        {
-          body: {
-            email: newUser.email,
-            password: newUser.password,
-            full_name: newUser.full_name,
-            role_slug: newUser.role,
-          },
-        }
-      );
+      // Use the same create-user function as AddUserDialog
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          email: newUser.email,
+          password: newUser.password,
+          role_slug: newUser.role,
+          full_name: newUser.full_name,
+        },
+      });
 
       console.log("Function response:", { data, error });
 

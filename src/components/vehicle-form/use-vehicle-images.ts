@@ -52,18 +52,23 @@ export function useVehicleImages() {
 
       const uploadedUrls = await Promise.all(imageUploadPromises);
 
-      // Persist image URLs in vehicle_images table (schema-supported)
+      // Persist image URLs in vehicles.images column (new schema)
       const imageRecords = uploadedUrls.map((url) => ({
         id: crypto.randomUUID(),
-        vehicle_id: vehicleId,
-        image_url: url,
+        url: url,
+        created_at: new Date().toISOString(),
       }));
 
-      const { error: insertError } = await supabase
-        .from("vehicle_images")
-        .insert(imageRecords as any);
+      // Get existing images and append new ones
+      const existingImages = vehicle?.images || [];
+      const updatedImages = [...existingImages, ...imageRecords];
 
-      if (insertError) throw insertError;
+      const { error: updateError } = await supabase
+        .from("vehicles")
+        .update({ images: updatedImages })
+        .eq("id", vehicleId);
+
+      if (updateError) throw updateError;
 
       // Clean up object URLs to prevent memory leaks
       imagePreviewUrls.forEach((url) => {

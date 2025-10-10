@@ -79,7 +79,9 @@ export default function Drivers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
-        .select("*")
+        .select(
+          "id, name, contact, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
+        )
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -93,6 +95,13 @@ export default function Drivers() {
 
       return safeArrayResult<Driver>(data);
     },
+    // Ensure the list feels responsive and stays fresh
+    staleTime: 5 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    keepPreviousData: true,
+    retry: 1,
   });
 
   // Fetch trips data for driver trip counts
@@ -101,12 +110,14 @@ export default function Drivers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        .select("id, driver_id")
+        .select("id, driver_id, status, date")
         .order("date", { ascending: false });
 
       if (error) throw error;
       return safeArrayResult<any>(data);
     },
+    staleTime: 10 * 1000,
+    keepPreviousData: true,
   });
 
   // Calculate driver statistics

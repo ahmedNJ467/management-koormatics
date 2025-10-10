@@ -2,6 +2,10 @@ import { ActivityItemProps } from "@/types/dashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { checkSupabaseConnection } from "./supabase-helpers";
 
+// Feature flag to disable activity logging if database issues persist
+// Set to false to completely disable database activity logging
+const ENABLE_ACTIVITY_LOGGING = false;
+
 type ActivityType =
   | "trip"
   | "maintenance"
@@ -88,6 +92,15 @@ export const logActivity = async ({
 
   // Save to the database with better error handling
   try {
+    // Skip database operations if activity logging is disabled
+    if (!ENABLE_ACTIVITY_LOGGING) {
+      console.log(
+        "Activity logging disabled, returning local activity:",
+        enhancedTitle
+      );
+      return newActivity;
+    }
+
     // Check if connection is healthy before attempting to save
     const isConnected = await checkSupabaseConnection();
     if (!isConnected) {
@@ -122,13 +135,23 @@ export const logActivity = async ({
     ]);
 
     if (error) {
-      console.error("Error saving activity to database:", error);
-      // Check if it's a schema/column error
-      if (error.code === "PGRST116" || error.message?.includes("column")) {
+      // Check if it's a schema/column error or any database error
+      if (
+        error.code === "PGRST116" ||
+        error.message?.includes("column") ||
+        error.message?.includes("relation") ||
+        error.code === "23502" || // not_null_violation
+        error.code === "23503" || // foreign_key_violation
+        error.code === "23505" || // unique_violation
+        Object.keys(error).length === 0
+      ) {
+        // empty error object
         console.warn(
-          "Activities table schema mismatch, skipping activity log:",
+          "Activities table schema mismatch or database error, skipping activity log:",
           enhancedTitle
         );
+      } else {
+        console.error("Error saving activity to database:", error);
       }
       // Still return the activity object for local use
     } else {
@@ -147,6 +170,12 @@ export const getActivities = async (
   limit?: number
 ): Promise<ActivityItemProps[]> => {
   try {
+    // Skip database operations if activity logging is disabled
+    if (!ENABLE_ACTIVITY_LOGGING) {
+      console.log("Activity logging disabled, returning empty activities list");
+      return [];
+    }
+
     // Check connection health first
     const isConnected = await checkSupabaseConnection();
     if (!isConnected) {

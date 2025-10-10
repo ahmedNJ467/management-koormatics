@@ -219,6 +219,39 @@ const Sidebar = memo(function Sidebar() {
           // Only show categories that have visible items
           if (!hasVisibleItems(group.items)) return null;
 
+          // For fleet domain, show items directly without category header
+          if (domain === "fleet" && group.category === "Fleet Management") {
+            return (
+              <div key={group.category} className="space-y-1">
+                {group.items
+                  .filter((item) => shouldShowItem(item.href))
+                  .map((item) => {
+                    const isActive = pathname === item.href;
+                    const hasPageAccess = hasAccess(item.href);
+
+                    if (!hasPageAccess) return null;
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors",
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        )}
+                        prefetch={true}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.name}</span>
+                      </Link>
+                    );
+                  })}
+              </div>
+            );
+          }
+
           const isExpanded = expandedCategories.has(group.category);
 
           return (

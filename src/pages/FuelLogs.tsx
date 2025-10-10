@@ -370,6 +370,9 @@ function FuelLogs() {
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [tankStats, setTankStats] = useState<Record<string, TankStats>>({});
   const [selectedTankId, setSelectedTankId] = useState<string | null>(null);
+  const [selectedTankFuelType, setSelectedTankFuelType] = useState<
+    string | null
+  >(null);
   const [tankFills, setTankFills] = useState<TankFill[]>([]);
   const [showFillDialog, setShowFillDialog] = useState(false);
   const [fillForm, setFillForm] = useState({
@@ -406,6 +409,23 @@ function FuelLogs() {
       }
 
       setTanks(tanks);
+
+      // Initialize fuel type selector and default selected tank
+      const availableFuelTypes = Array.from(
+        new Set((tanks || []).map((t) => t.fuel_type))
+      );
+      if (!selectedTankFuelType && availableFuelTypes.length > 0) {
+        const initialType = availableFuelTypes[0] as any;
+        setSelectedTankFuelType(initialType);
+        const firstOfType = tanks.find((t) => t.fuel_type === initialType);
+        setSelectedTankId(firstOfType ? firstOfType.id : null);
+      } else if (selectedTankFuelType) {
+        // Ensure selected tank id matches current type after refresh
+        const firstOfType = tanks.find(
+          (t) => t.fuel_type === selectedTankFuelType
+        );
+        if (firstOfType) setSelectedTankId(firstOfType.id);
+      }
 
       // Process tanks in parallel for better performance
       const tankPromises = tanks.map(async (tank) => {
@@ -1248,41 +1268,46 @@ function FuelLogs() {
 
             {/* Storage cards removed per requirements */}
             <div className="mb-4 flex items-center gap-4">
+              {/* Fuel type selector restricted to petrol/diesel */}
               <Select
-                value={selectedTankId || "none"}
-                onValueChange={setSelectedTankId}
+                value={selectedTankFuelType || "none"}
+                onValueChange={(val) => {
+                  setSelectedTankFuelType(val);
+                  const match = tanks.find((t) => t.fuel_type === (val as any));
+                  setSelectedTankId(match ? match.id : null);
+                }}
                 disabled={isLoadingTanks}
               >
                 <SelectTrigger className="w-64">
                   <SelectValue
                     placeholder={
                       isLoadingTanks
-                        ? "Loading tanks..."
+                        ? "Loading..."
                         : tanks.length === 0
                         ? "No tanks available"
-                        : "Select storage"
+                        : "Select fuel type"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
                   {isLoadingTanks ? (
                     <SelectItem value="loading" disabled>
-                      Loading tanks...
+                      Loading...
                     </SelectItem>
                   ) : tankError ? (
                     <SelectItem value="error" disabled>
-                      Error loading tanks
-                    </SelectItem>
-                  ) : tanks.length === 0 ? (
-                    <SelectItem value="empty" disabled>
-                      No tanks found
+                      Error loading
                     </SelectItem>
                   ) : (
-                    tanks.map((tank) => (
-                      <SelectItem key={tank.id} value={tank.id}>
-                        {tank.fuel_type}
-                      </SelectItem>
-                    ))
+                    ["petrol", "diesel"]
+                      .filter((ft) =>
+                        tanks.some((t) => t.fuel_type === (ft as any))
+                      )
+                      .map((ft) => (
+                        <SelectItem key={ft} value={ft}>
+                          {ft}
+                        </SelectItem>
+                      ))
                   )}
                 </SelectContent>
               </Select>

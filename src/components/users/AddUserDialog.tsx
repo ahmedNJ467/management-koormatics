@@ -34,8 +34,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role_slug: (MANAGER_ROLE_OPTIONS[0]?.value ||
-      "fleet_manager") as ManagerRoleSlug,
+    role_slug: "fleet_manager" as ManagerRoleSlug,
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -73,7 +72,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
       setFormData({
         email: "",
         password: "",
-        role_slug: MANAGER_ROLE_OPTIONS[0]?.value || "fleet_manager",
+        role_slug: "fleet_manager",
       });
     },
     onError: (err: any) =>

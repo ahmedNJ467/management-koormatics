@@ -11,13 +11,13 @@ export const usePageAccess = () => {
 
         if (sessionError) {
           console.error("Session error:", sessionError);
-          return ["*"]; // Return wildcard access as fallback
+          return []; // Strict fallback: no access on session error
         }
 
         const uid = sessionData.session?.user.id;
         if (!uid) {
-          console.log("No authenticated user, returning wildcard access");
-          return ["*"]; // Return wildcard access for unauthenticated users
+          console.log("No authenticated user, returning no access");
+          return []; // No access for unauthenticated users
         }
 
         // Try to fetch from vw_user_pages view
@@ -66,7 +66,7 @@ export const usePageAccess = () => {
 
             if (rolesError) {
               console.error("Error fetching user roles:", rolesError);
-              return ["*"]; // Return wildcard access as fallback
+              return []; // Strict fallback: no access on roles error
             }
 
             // If user has super_admin role, give wildcard access
@@ -74,27 +74,27 @@ export const usePageAccess = () => {
               return ["*"];
             }
 
-            // Otherwise, return basic pages
-            return ["dashboard", "vehicles", "drivers", "trips"];
+            // Otherwise, return no access until explicit pages are defined
+            return [];
           }
 
-          // Return wildcard access as fallback to prevent blocking
-          return ["*"];
+          // Strict fallback on other errors
+          return [];
         }
 
-        // If no data found, return wildcard access
+        // If no data found, return no access
         if (!data) {
           console.log(
-            "No page access data found for user, returning wildcard access"
+            "No page access data found for user, returning no access"
           );
-          return ["*"];
+          return [];
         }
 
-        return (data.pages as string[]) || ["*"];
+        return (data.pages as string[]) || [];
       } catch (error) {
         console.error("Unexpected error in usePageAccess:", error);
-        // Return wildcard access as fallback to prevent blocking
-        return ["*"];
+        // Strict fallback on unexpected error
+        return [];
       }
     },
     staleTime: 30 * 1000, // Cache for 30 seconds (much shorter for auth data)

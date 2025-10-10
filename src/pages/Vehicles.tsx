@@ -34,7 +34,9 @@ export default function Vehicles() {
     queryFn: async () => {
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from("vehicles")
-        .select("*")
+        .select(
+          "id, make, model, registration, type, status, year, color, vin, insurance_expiry, notes, created_at, updated_at, images"
+        )
         .order("created_at", { ascending: false });
 
       if (vehiclesError) {
@@ -63,13 +65,17 @@ export default function Vehicles() {
         notes: (v as any).notes || "",
         created_at: (v as any).created_at || new Date().toISOString(),
         updated_at: (v as any).updated_at || new Date().toISOString(),
-        images: Array.isArray((v as any).images)
-          ? (v as any).images
-          : [],
+        images: Array.isArray((v as any).images) ? (v as any).images : [],
       }));
 
       return sanitizedVehicles as Vehicle[];
     },
+    staleTime: 5 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    keepPreviousData: true,
+    retry: 1,
   });
 
   // Filter vehicles based on search and filters
