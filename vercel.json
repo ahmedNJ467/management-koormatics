@@ -4,6 +4,5 @@
   "env": {
     "CI": "true"
   },
-  "version": 4,
-  "name": "koormatics-management-system"
+  "version": 2
 }
