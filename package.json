@@ -1,7 +1,7 @@
 {
   "name": "koormatics",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "scripts": {
     "dev": "next dev --port 8080",
     "build": "next build",
