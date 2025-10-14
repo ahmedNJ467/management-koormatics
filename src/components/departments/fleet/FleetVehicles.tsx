@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   CheckCircle,
   FileText,
+  Activity,
 } from "lucide-react";
 
 export default function FleetVehicles() {

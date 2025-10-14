@@ -21,7 +21,6 @@ export interface InvitationFormData {
   passportExpiry: string;
   purposeOfVisit: string;
   durationOfStay: string;
-  dateOfVisit: string;
 }
 
 // Convert form data to database record
@@ -32,23 +31,22 @@ export const convertFormDataToDbRecord = (
 ): InvitationLetterInsert => {
   return {
     ref_number: formData.refNumber,
-    date: formData.date, // Use 'date' not 'letter_date'
+    letter_date: formData.date, // Use 'letter_date' not 'date'
     company_name: formData.companyName,
     company_address: formData.companyAddress,
     company_email: formData.companyEmail,
     company_phone: formData.companyPhone,
-    guest_name: formData.visitorName, // Use 'guest_name' not 'visitor_name'
-    nationality: formData.visitorNationality, // Use 'nationality' not 'visitor_nationality'
-    organization: formData.visitorOrg, // Use 'organization' not 'visitor_organization'
-    passport_number: formData.visitorPassport, // Use 'passport_number' not 'visitor_passport'
-    passport_expiry_date: formData.passportExpiry, // Use 'passport_expiry_date' not 'passport_expiry'
+    visitor_name: formData.visitorName, // Use 'visitor_name' not 'guest_name'
+    visitor_nationality: formData.visitorNationality, // Use 'visitor_nationality' not 'nationality'
+    visitor_organization: formData.visitorOrg, // Use 'visitor_organization' not 'organization'
+    visitor_passport: formData.visitorPassport, // Use 'visitor_passport' not 'passport_number'
+    passport_expiry: formData.passportExpiry, // Use 'passport_expiry' not 'passport_expiry_date'
     purpose_of_visit: formData.purposeOfVisit,
     duration_of_stay: formData.durationOfStay,
-    visit_date: formData.dateOfVisit, // Use 'visit_date' not 'date_of_visit'
+    date_of_visit: formData.date, // Use the same date as letter_date
     generated_by: userId,
-    // Note: file_name and form_data columns will be added via migration
-    // file_name: fileName,
-    // form_data: formData as any,
+    file_name: fileName,
+    form_data: formData as any,
   };
 };
 
@@ -58,20 +56,19 @@ export const convertDbRecordToFormData = (
 ): InvitationFormData => {
   return {
     refNumber: record.ref_number,
-    date: record.date, // Use 'date' not 'letter_date'
+    date: record.letter_date, // Use 'letter_date' not 'date'
     companyName: record.company_name,
     companyAddress: record.company_address,
     companyEmail: record.company_email,
     companyPhone: record.company_phone,
     logo: null,
-    visitorName: record.guest_name, // Use 'guest_name' not 'visitor_name'
-    visitorPassport: record.passport_number, // Use 'passport_number' not 'visitor_passport'
-    visitorNationality: record.nationality, // Use 'nationality' not 'visitor_nationality'
-    visitorOrg: record.organization, // Use 'organization' not 'visitor_organization'
-    passportExpiry: record.passport_expiry_date, // Use 'passport_expiry_date' not 'passport_expiry'
+    visitorName: record.visitor_name, // Use 'visitor_name' not 'guest_name'
+    visitorPassport: record.visitor_passport, // Use 'visitor_passport' not 'passport_number'
+    visitorNationality: record.visitor_nationality, // Use 'visitor_nationality' not 'nationality'
+    visitorOrg: record.visitor_organization, // Use 'visitor_organization' not 'organization'
+    passportExpiry: record.passport_expiry, // Use 'passport_expiry' not 'passport_expiry_date'
     purposeOfVisit: record.purpose_of_visit,
     durationOfStay: record.duration_of_stay,
-    dateOfVisit: record.visit_date, // Use 'visit_date' not 'date_of_visit'
   };
 };
 
