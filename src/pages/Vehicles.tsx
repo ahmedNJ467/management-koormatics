@@ -9,7 +9,7 @@ export default function Vehicles() {
 
   // Only fleet department can access vehicles management
   if (domain !== "fleet") {
-    return (
+  return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -22,7 +22,7 @@ export default function Vehicles() {
             </p>
           </CardContent>
         </Card>
-      </div>
+        </div>
     );
   }
 

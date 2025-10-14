@@ -4,5 +4,5 @@
   "env": {
     "CI": "true"
   },
-  "version": 2
+  "version": 3
 }
