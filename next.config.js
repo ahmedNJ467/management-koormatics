@@ -7,7 +7,7 @@ const nextConfig = {
   // },
 
   // Use custom build directory to avoid OneDrive file locking issues
-  distDir: ".next-build",
+  // distDir: ".next-build", // Disabled for Vercel deployment
 
   // Image optimization
   images: {
