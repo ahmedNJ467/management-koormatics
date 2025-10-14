@@ -36,12 +36,46 @@ const getDepartmentNavigation = (domain: AppDomain) => {
     case "management":
       return [
         {
-          category: "Management",
+          category: "System Management",
           items: [
             { name: "Dashboard", href: "/dashboard", icon: BarChart },
             { name: "Settings", href: "/settings", icon: Settings },
             { name: "Reports", href: "/reports", icon: FileText },
             { name: "Analytics", href: "/trip-analytics", icon: DollarSign },
+          ],
+        },
+        {
+          category: "Fleet Management",
+          items: [
+            { name: "Vehicles", href: "/vehicles", icon: Car },
+            { name: "Drivers", href: "/drivers", icon: Users },
+            { name: "Maintenance", href: "/maintenance", icon: Wrench },
+            { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
+            { name: "Spare Parts", href: "/spare-parts", icon: Package },
+            { name: "Vehicle Inspections", href: "/vehicle-inspections", icon: FileText },
+            { name: "Incident Reports", href: "/vehicle-incident-reports", icon: Shield },
+          ],
+        },
+        {
+          category: "Operations",
+          items: [
+            { name: "Dispatch", href: "/dispatch", icon: Navigation },
+            { name: "Trips", href: "/trips", icon: Calendar },
+            { name: "Clients", href: "/clients", icon: Users2 },
+            { name: "Chat", href: "/chat", icon: MessageCircle },
+            { name: "Security Escorts", href: "/security-escorts", icon: Shield },
+            { name: "Invitation Letters", href: "/invitation-letter", icon: Mail },
+          ],
+        },
+        {
+          category: "Finance",
+          items: [
+            { name: "Invoices", href: "/invoices", icon: Receipt },
+            { name: "Quotations", href: "/quotations", icon: FileText },
+            { name: "Cost Analytics", href: "/cost-analytics", icon: DollarSign },
+            { name: "Trip Finance", href: "/trip-finance", icon: CreditCard },
+            { name: "Vehicle Leasing", href: "/vehicle-leasing", icon: Car },
+            { name: "Contracts", href: "/contracts", icon: File },
           ],
         },
       ];
