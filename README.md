@@ -2,6 +2,8 @@
 
 A comprehensive fleet management solution built with React, TypeScript, and Supabase.
 
+<!-- Updated for Vercel deployment fix -->
+
 ## 🚀 New Features
 
 ### 📧 PDF Email Quotations ⭐ NEW
