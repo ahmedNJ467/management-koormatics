@@ -212,7 +212,21 @@ export function TripListItem({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
-          <TripTypeIcon type={trip.type} />
+          {(() => {
+            // Debug logging to identify undefined type values
+            if (!trip.type) {
+              console.warn(
+                "TripListItem: trip.type is undefined/null for trip:",
+                {
+                  id: trip.id,
+                  service_type: trip.service_type,
+                  display_type: trip.display_type,
+                  ui_service_type: trip.ui_service_type,
+                }
+              );
+            }
+            return <TripTypeIcon type={trip.type} />;
+          })()}
           {formatTripType(trip.type, trip.ui_service_type, trip.notes)}
         </div>
       </TableCell>

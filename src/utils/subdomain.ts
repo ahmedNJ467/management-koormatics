@@ -2,7 +2,7 @@ export type AppDomain = "management" | "fleet" | "operations" | "finance";
 
 export function getSubdomainFromHost(hostname: string): AppDomain {
   // Allow explicit override in any environment (useful for multi-project deployments)
-  const override = (import.meta as any).env?.VITE_APP_SUBDOMAIN as
+  const override = process.env.NEXT_PUBLIC_APP_SUBDOMAIN as
     | AppDomain
     | undefined;
   if (override) return override;
@@ -14,9 +14,11 @@ export function getSubdomainFromHost(hostname: string): AppDomain {
 
   // Handle Vercel domains specifically
   if (hostname.includes("fleet-koormatics.vercel.app")) return "fleet";
-  if (hostname.includes("operations-koormatics.vercel.app")) return "operations";
+  if (hostname.includes("operations-koormatics.vercel.app"))
+    return "operations";
   if (hostname.includes("finance-koormatics.vercel.app")) return "finance";
-  if (hostname.includes("management-koormatics.vercel.app")) return "management";
+  if (hostname.includes("management-koormatics.vercel.app"))
+    return "management";
 
   const firstLabel = hostname.split(".")[0]?.toLowerCase();
 
@@ -41,7 +43,7 @@ export function debugDomainDetection() {
   console.log("🔍 Domain Detection Debug:", {
     hostname,
     detectedDomain,
-    fullUrl: window.location.href
+    fullUrl: window.location.href,
   });
   return detectedDomain;
 }

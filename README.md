@@ -91,7 +91,7 @@ A comprehensive fleet management solution built with React, TypeScript, and Supa
 
    ```bash
    git clone <repository-url>
-   cd management-koormatics
+   cd koormatics
    ```
 
 2. **Install dependencies**

@@ -275,9 +275,10 @@ const InvitationLetter: React.FC = () => {
         passport_expiry_date: formatDate(entry.passportExpiryDate),
         purpose_of_visit: entry.purposeOfVisit,
         subject: entry.subject,
-        file_name: `invitation-letter-${entry.refNumber}.pdf`,
         generated_by: user.id,
-        form_data: entry as any,
+        // Note: file_name and form_data columns will be added via migration
+        // file_name: `invitation-letter-${entry.refNumber}.pdf`,
+        // form_data: entry as any,
       };
 
       console.log("Attempting to insert data:", insertData);
@@ -471,16 +472,6 @@ const InvitationLetter: React.FC = () => {
               </Card>
 
               <div className="flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    console.log("Current form data:", formData);
-                    console.log("Form data keys:", Object.keys(formData));
-                  }}
-                >
-                  Debug Form Data
-                </Button>
                 <PDFDownloader
                   data={formData as InvitationLetterData}
                   fileName={`invitation-letter-${formData.refNumber}.pdf`}

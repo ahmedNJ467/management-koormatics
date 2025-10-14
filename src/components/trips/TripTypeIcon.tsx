@@ -15,14 +15,24 @@ interface TripTypeIconProps {
 }
 
 export function TripTypeIcon({ type, className }: TripTypeIconProps) {
-  // Enhanced safety check for undefined/null type
-  if (!type || typeof type !== "string") {
+  // Handle undefined/null type gracefully without warning for expected cases
+  if (!type) {
+    return <Car className={className || "h-4 w-4"} />;
+  }
+
+  // Check if type is a valid string
+  if (typeof type !== "string") {
     console.warn("TripTypeIcon: Invalid type provided", type);
     return <Car className={className || "h-4 w-4"} />;
   }
 
   // Convert to string and check for valid values
-  const safeType = String(type).toLowerCase();
+  const safeType = String(type).toLowerCase().trim();
+
+  // Handle empty string case
+  if (!safeType) {
+    return <Car className={className || "h-4 w-4"} />;
+  }
 
   switch (safeType) {
     case "airport_pickup":

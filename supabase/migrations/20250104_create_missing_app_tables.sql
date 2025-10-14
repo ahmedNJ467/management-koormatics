@@ -156,10 +156,10 @@ CREATE POLICY "Super admins can view all activity" ON public.activity_log
 
 -- Insert default page access rules
 INSERT INTO public.page_access (page_path, role_slug, access_level) VALUES
-  ('/dashboard-management', 'super_admin', 'admin'),
-  ('/dashboard-management', 'fleet_manager', 'read'),
-  ('/dashboard-management', 'operations_manager', 'read'),
-  ('/dashboard-management', 'finance_manager', 'read'),
+  ('/dashboard', 'super_admin', 'admin'),
+  ('/dashboard', 'fleet_manager', 'read'),
+  ('/dashboard', 'operations_manager', 'read'),
+  ('/dashboard', 'finance_manager', 'read'),
   ('/vehicles', 'super_admin', 'admin'),
   ('/vehicles', 'fleet_manager', 'admin'),
   ('/vehicles', 'operations_manager', 'read'),

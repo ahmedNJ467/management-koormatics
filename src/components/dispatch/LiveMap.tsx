@@ -1,6 +1,6 @@
 import { DisplayTrip } from "@/lib/types/trip";
 import { InterestPoint } from "@/lib/types/interest-point";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps-loader";
 import { getGoogleIconUrl } from "@/lib/utils/google-icons";
 
@@ -42,7 +42,7 @@ interface LiveMapProps {
   showInterestPoints?: boolean;
 }
 
-export function LiveMap({
+export const LiveMap = memo(function LiveMap({
   trips,
   interestPoints = [],
   variant = "card",
@@ -61,6 +61,7 @@ export function LiveMap({
   const markersRef = useRef<any[]>([]);
   const interestPointMarkersRef = useRef<any[]>([]);
   const labelOverlaysRef = useRef<any[]>([]);
+  const isInitializedRef = useRef(false);
 
   // Load Google Maps API key from database
   useEffect(() => {
@@ -133,10 +134,11 @@ export function LiveMap({
     console.log("Map initialization effect triggered", {
       mapRef: !!mapRef.current,
       mapInstance: !!mapInstanceRef.current,
+      isInitialized: isInitializedRef.current,
     });
 
     if (!mapRef.current) return;
-    if (mapInstanceRef.current) return; // already initialized
+    if (isInitializedRef.current) return; // Prevent re-initialization
 
     const initGoogle = async () => {
       try {
@@ -172,52 +174,56 @@ export function LiveMap({
 
         console.log("Google Maps initialization complete!");
         mapInstanceRef.current = map;
+        isInitializedRef.current = true;
         setMapReady(true);
       } catch (e) {
         console.error("Google Maps init failed:", e);
       }
     };
 
-    // Initialize Google Maps
-    if (gmapsKey) {
+    // Initialize Google Maps only once
+    if (gmapsKey && !isInitializedRef.current) {
       initGoogle();
     }
 
     return () => {
-      // Cleanup on unmount
-      try {
-        if (markersRef.current) {
-          markersRef.current.forEach((m) => {
-            if (m && m.setMap) {
-              m.setMap(null);
-            }
-          });
+      // Only cleanup on unmount, not on re-renders
+      if (isInitializedRef.current) {
+        try {
+          if (markersRef.current) {
+            markersRef.current.forEach((m) => {
+              if (m && m.setMap) {
+                m.setMap(null);
+              }
+            });
+          }
+          if (interestPointMarkersRef.current) {
+            interestPointMarkersRef.current.forEach((m) => {
+              if (m && m.setMap) {
+                m.setMap(null);
+              }
+            });
+          }
+          if (labelOverlaysRef.current) {
+            labelOverlaysRef.current.forEach(
+              (overlay) => overlay.setMap && overlay.setMap(null)
+            );
+          }
+        } catch {
+          // Ignore map errors
         }
-        if (interestPointMarkersRef.current) {
-          interestPointMarkersRef.current.forEach((m) => {
-            if (m && m.setMap) {
-              m.setMap(null);
-            }
-          });
-        }
-        if (labelOverlaysRef.current) {
-          labelOverlaysRef.current.forEach(
-            (overlay) => overlay.setMap && overlay.setMap(null)
-          );
-        }
-      } catch {
-        // Ignore map errors
+        markersRef.current = [];
+        interestPointMarkersRef.current = [];
+        labelOverlaysRef.current = [];
+        mapInstanceRef.current = null;
+        isInitializedRef.current = false;
       }
-      markersRef.current = [];
-      interestPointMarkersRef.current = [];
-      labelOverlaysRef.current = [];
-      mapInstanceRef.current = null;
     };
-  }, [gmapsKey, onMapClick]);
+  }, [gmapsKey]); // Remove onMapClick from dependencies to prevent re-initialization
 
   // Update markers when points change without re-initializing map
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !mapReady) return;
 
     // Clear previous markers and labels
     try {
@@ -445,4 +451,4 @@ export function LiveMap({
       )}
     </div>
   );
-}
+});

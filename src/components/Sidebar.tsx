@@ -30,66 +30,106 @@ import {
 } from "lucide-react";
 import { usePageAccess } from "@/hooks/use-page-access";
 
-// Navigation structure with categories
-const navigationGroups = [
-  {
-    category: "Fleet Management",
-    items: [
-      { name: "Vehicles", href: "/vehicles", icon: Car },
-      { name: "Drivers", href: "/drivers", icon: Users },
-      { name: "Maintenance", href: "/maintenance", icon: Wrench },
-      { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
-      { name: "Spare Parts", href: "/spare-parts", icon: Package },
-      {
-        name: "Vehicle Inspections",
-        href: "/vehicle-inspections",
-        icon: FileText,
-      },
-      {
-        name: "Incident Reports",
-        href: "/vehicle-incident-reports",
-        icon: Shield,
-      },
-    ],
-  },
-  {
-    category: "Operations",
-    items: [
-      { name: "Dispatch", href: "/dispatch", icon: Navigation },
-      { name: "Chat", href: "/chat", icon: MessageCircle },
-      { name: "Security Escorts", href: "/security-escorts", icon: Shield },
-      { name: "Trips", href: "/trips", icon: Calendar },
-      { name: "Clients", href: "/clients", icon: Users2 },
-      { name: "Invitation Letter", href: "/invitation-letter", icon: Mail },
-    ],
-  },
-  {
-    category: "Finance",
-    items: [
-      {
-        name: "Analytics",
-        href: "/cost-analytics",
-        icon: DollarSign,
-      },
-      { name: "Reports", href: "/reports", icon: BarChart },
-      { name: "Vehicle Leasing", href: "/vehicle-leasing", icon: CreditCard },
-      { name: "Contracts", href: "/contracts", icon: File },
-      { name: "Quotations", href: "/quotations", icon: FileText },
-      { name: "Invoices", href: "/invoices", icon: Receipt },
-      { name: "Trip Finance", href: "/trip-finance", icon: Receipt },
-    ],
-  },
-  {
-    category: "System",
-    items: [{ name: "Settings", href: "/settings", icon: Settings }],
-  },
-];
+// Department-specific navigation structure
+const getDepartmentNavigation = (domain: AppDomain) => {
+  switch (domain) {
+    case "management":
+      return [
+        {
+          category: "Management",
+          items: [
+            { name: "Dashboard", href: "/dashboard", icon: BarChart },
+            { name: "Settings", href: "/settings", icon: Settings },
+            { name: "Reports", href: "/reports", icon: FileText },
+            { name: "Analytics", href: "/trip-analytics", icon: DollarSign },
+          ],
+        },
+      ];
+
+    case "fleet":
+      return [
+        {
+          category: "Fleet Management",
+          items: [
+            { name: "Dashboard", href: "/dashboard", icon: BarChart },
+            { name: "Vehicles", href: "/vehicles", icon: Car },
+            { name: "Drivers", href: "/drivers", icon: Users },
+            { name: "Maintenance", href: "/maintenance", icon: Wrench },
+            { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
+            { name: "Spare Parts", href: "/spare-parts", icon: Package },
+            {
+              name: "Vehicle Inspections",
+              href: "/vehicle-inspections",
+              icon: FileText,
+            },
+            {
+              name: "Incident Reports",
+              href: "/vehicle-incident-reports",
+              icon: Shield,
+            },
+          ],
+        },
+      ];
+
+    case "operations":
+      return [
+        {
+          category: "Operations",
+          items: [
+            { name: "Dashboard", href: "/dashboard", icon: BarChart },
+            { name: "Dispatch", href: "/dispatch", icon: Navigation },
+            { name: "Trips", href: "/trips", icon: Calendar },
+            { name: "Clients", href: "/clients", icon: Users2 },
+            { name: "Chat", href: "/chat", icon: MessageCircle },
+            {
+              name: "Security Escorts",
+              href: "/security-escorts",
+              icon: Shield,
+            },
+            {
+              name: "Invitation Letters",
+              href: "/invitation-letter",
+              icon: Mail,
+            },
+          ],
+        },
+      ];
+
+    case "finance":
+      return [
+        {
+          category: "Finance",
+          items: [
+            { name: "Dashboard", href: "/dashboard", icon: BarChart },
+            { name: "Invoices", href: "/invoices", icon: Receipt },
+            { name: "Quotations", href: "/quotations", icon: FileText },
+            {
+              name: "Cost Analytics",
+              href: "/cost-analytics",
+              icon: DollarSign,
+            },
+            { name: "Trip Finance", href: "/trip-finance", icon: CreditCard },
+            { name: "Vehicle Leasing", href: "/vehicle-leasing", icon: Car },
+            { name: "Contracts", href: "/contracts", icon: File },
+          ],
+        },
+      ];
+
+    default:
+      return [
+        {
+          category: "General",
+          items: [{ name: "Dashboard", href: "/dashboard", icon: BarChart }],
+        },
+      ];
+  }
+};
 
 const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
   "*": "*",
-  management: "*",
+  management: "*", // Management has access to everything including settings
   fleet: [
-    "/dashboard-management",
+    "/dashboard",
     "/vehicles",
     "/drivers",
     "/maintenance",
@@ -97,20 +137,18 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
     "/spare-parts",
     "/vehicle-inspections",
     "/vehicle-incident-reports",
-    "/settings",
   ],
   operations: [
-    "/dashboard-management",
+    "/dashboard",
     "/dispatch",
     "/chat",
     "/security-escorts",
     "/trips",
     "/clients",
     "/invitation-letter",
-    "/settings",
   ],
   finance: [
-    "/dashboard-management",
+    "/dashboard",
     "/cost-analytics",
     "/reports",
     "/vehicle-leasing",
@@ -118,7 +156,6 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
     "/quotations",
     "/invoices",
     "/trip-finance",
-    "/settings",
   ],
 };
 
@@ -169,6 +206,9 @@ const Sidebar = memo(function Sidebar() {
     [domain]
   );
 
+  // Get department-specific navigation
+  const navigationGroups = getDepartmentNavigation(domain);
+
   // Check if a category has any visible items
   const hasVisibleItems = useCallback(
     (items: (typeof navigationGroups)[0]["items"]) => {
@@ -201,10 +241,10 @@ const Sidebar = memo(function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Dashboard - Single link, no menu */}
         <Link
-          href="/dashboard-management"
+          href="/dashboard"
           className={cn(
             "flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors",
-            pathname === "/dashboard-management"
+            pathname === "/dashboard"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground hover:bg-accent"
           )}

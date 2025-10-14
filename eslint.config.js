@@ -35,6 +35,7 @@ module.exports = tseslint.config(
       "no-constant-binary-expression": "off",
       "react-hooks/exhaustive-deps": "off", // Too many optimization suggestions, not critical
       "react-hooks/rules-of-hooks": "error", // Keep this critical
+      "@typescript-eslint/triple-slash-reference": "off", // Allow triple slash references for Next.js type files
     },
   }
 );

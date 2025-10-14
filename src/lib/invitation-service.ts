@@ -32,22 +32,23 @@ export const convertFormDataToDbRecord = (
 ): InvitationLetterInsert => {
   return {
     ref_number: formData.refNumber,
-    letter_date: formData.date,
+    date: formData.date, // Use 'date' not 'letter_date'
     company_name: formData.companyName,
     company_address: formData.companyAddress,
     company_email: formData.companyEmail,
     company_phone: formData.companyPhone,
-    visitor_name: formData.visitorName,
-    visitor_nationality: formData.visitorNationality,
-    visitor_organization: formData.visitorOrg,
-    visitor_passport: formData.visitorPassport,
-    passport_expiry: formData.passportExpiry,
+    guest_name: formData.visitorName, // Use 'guest_name' not 'visitor_name'
+    nationality: formData.visitorNationality, // Use 'nationality' not 'visitor_nationality'
+    organization: formData.visitorOrg, // Use 'organization' not 'visitor_organization'
+    passport_number: formData.visitorPassport, // Use 'passport_number' not 'visitor_passport'
+    passport_expiry_date: formData.passportExpiry, // Use 'passport_expiry_date' not 'passport_expiry'
     purpose_of_visit: formData.purposeOfVisit,
     duration_of_stay: formData.durationOfStay,
-    date_of_visit: formData.dateOfVisit,
-    file_name: fileName,
+    visit_date: formData.dateOfVisit, // Use 'visit_date' not 'date_of_visit'
     generated_by: userId,
-    form_data: formData as any,
+    // Note: file_name and form_data columns will be added via migration
+    // file_name: fileName,
+    // form_data: formData as any,
   };
 };
 
@@ -57,20 +58,20 @@ export const convertDbRecordToFormData = (
 ): InvitationFormData => {
   return {
     refNumber: record.ref_number,
-    date: record.letter_date,
+    date: record.date, // Use 'date' not 'letter_date'
     companyName: record.company_name,
     companyAddress: record.company_address,
     companyEmail: record.company_email,
     companyPhone: record.company_phone,
     logo: null,
-    visitorName: record.visitor_name,
-    visitorPassport: record.visitor_passport,
-    visitorNationality: record.visitor_nationality,
-    visitorOrg: record.visitor_organization,
-    passportExpiry: record.passport_expiry,
+    visitorName: record.guest_name, // Use 'guest_name' not 'visitor_name'
+    visitorPassport: record.passport_number, // Use 'passport_number' not 'visitor_passport'
+    visitorNationality: record.nationality, // Use 'nationality' not 'visitor_nationality'
+    visitorOrg: record.organization, // Use 'organization' not 'visitor_organization'
+    passportExpiry: record.passport_expiry_date, // Use 'passport_expiry_date' not 'passport_expiry'
     purposeOfVisit: record.purpose_of_visit,
     durationOfStay: record.duration_of_stay,
-    dateOfVisit: record.date_of_visit,
+    dateOfVisit: record.visit_date, // Use 'visit_date' not 'date_of_visit'
   };
 };
 

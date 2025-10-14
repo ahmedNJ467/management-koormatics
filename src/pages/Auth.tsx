@@ -67,14 +67,7 @@ export default function Auth() {
       });
 
       // Determine dashboard path immediately based on domain
-      const dashboardPath =
-        domain === "fleet"
-          ? "/dashboard-fleet"
-          : domain === "operations"
-          ? "/dashboard-ops"
-          : domain === "finance"
-          ? "/dashboard-finance"
-          : "/dashboard-management";
+      const dashboardPath = "/dashboard";
 
       // Set redirecting state and redirect immediately
       setIsLoading(false);
@@ -159,14 +152,7 @@ export default function Auth() {
 
         // Only redirect if we have a valid session and we're not in logout process
         if (session?.user) {
-          const dashboardPath =
-            domain === "fleet"
-              ? "/dashboard-fleet"
-              : domain === "operations"
-              ? "/dashboard-ops"
-              : domain === "finance"
-              ? "/dashboard-finance"
-              : "/dashboard-management";
+          const dashboardPath = "/dashboard";
 
           // Redirect immediately if user is already authenticated
           router.replace(dashboardPath);

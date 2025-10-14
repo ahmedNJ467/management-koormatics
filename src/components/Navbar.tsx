@@ -53,10 +53,7 @@ const Navbar = memo(function Navbar({
   );
 
   const dashboardPathByDomain = useCallback(() => {
-    if (domain === "fleet") return "/dashboard-fleet";
-    if (domain === "operations") return "/dashboard-ops";
-    if (domain === "finance") return "/dashboard-finance";
-    return "/dashboard-management";
+    return "/dashboard";
   }, [domain]);
 
   const canSeeDashboard = useCallback(() => {
