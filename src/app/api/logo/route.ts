@@ -1,20 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     // Try multiple possible paths
     const possiblePaths = [
-      path.join(process.cwd(), 'public', 'images', 'Koormatics-logo.png'),
-      path.join(process.cwd(), 'public', 'Koormatics-logo.png'),
-      path.join(process.cwd(), 'Koormatics-logo.png'),
+      path.join(process.cwd(), "public", "images", "Koormatics-logo.png"),
+      path.join(process.cwd(), "public", "Koormatics-logo.png"),
+      path.join(process.cwd(), "Koormatics-logo.png"),
     ];
 
     let logoBuffer: Buffer | null = null;
-    let usedPath = '';
+    let usedPath = "";
 
     for (const logoPath of possiblePaths) {
       try {
@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (!logoBuffer) {
-      console.error('Logo file not found in any of the expected locations');
-      return new NextResponse('Logo not found', { status: 404 });
+      console.error("Logo file not found in any of the expected locations");
+      return new NextResponse("Logo not found", { status: 404 });
     }
 
     console.log(`Serving logo from: ${usedPath}`);
@@ -41,12 +41,12 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(arrayBuffer, {
       headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   } catch (error) {
-    console.error('Error serving logo:', error);
-    return new NextResponse('Logo not found', { status: 404 });
+    console.error("Error serving logo:", error);
+    return new NextResponse("Logo not found", { status: 404 });
   }
 }
