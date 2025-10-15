@@ -171,15 +171,31 @@ export default function Auth() {
   // Test background image loading
   useEffect(() => {
     const testBackgroundImage = () => {
+      console.log("Testing background image loading...");
       const img = new Image();
       img.onload = () => {
         console.log("Background image loaded successfully");
+        setBackgroundError(false);
       };
-      img.onerror = () => {
-        console.error("Background image failed to load, using gradient fallback");
+      img.onerror = (e) => {
+        console.error("Background image failed to load:", e);
+        console.error("Image src:", img.src);
+        console.error("Image complete:", img.complete);
+        console.error("Image naturalWidth:", img.naturalWidth);
         setBackgroundError(true);
       };
+      
+      // Try the image path
       img.src = "/images/auth-bg.jpg";
+      console.log("Attempting to load:", img.src);
+      
+      // Also try with a timeout to force fallback if it takes too long
+      setTimeout(() => {
+        if (!img.complete) {
+          console.error("Background image loading timeout, using gradient fallback");
+          setBackgroundError(true);
+        }
+      }, 3000);
     };
 
     testBackgroundImage();

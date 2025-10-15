@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Image from "next/image";
 
 interface KoormaticsLogoProps {
   className?: string;
@@ -38,17 +37,18 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
 
   return (
     <div className={`${sizeClasses[size]} ${className}`}>
-      <Image
+      <img
         src="/images/Koormatics-logo.png"
         alt="Koormatics Logo"
-        width={300}
-        height={80}
         className="h-full w-auto object-contain"
-        priority
-        unoptimized
-        onError={() => {
-          console.error("Logo failed to load, showing text fallback");
+        onError={(e) => {
+          console.error("Logo failed to load:", e);
+          console.error("Image src:", "/images/Koormatics-logo.png");
+          console.error("Image target:", e.target);
           setImageError(true);
+        }}
+        onLoad={() => {
+          console.log("Logo loaded successfully");
         }}
       />
     </div>
