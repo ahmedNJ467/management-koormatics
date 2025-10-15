@@ -134,6 +134,11 @@ export default function DynamicPage() {
   const slug = params?.slug as string[] | undefined;
   const path = slug?.join("/") || "";
 
+  // Exclude static file paths from dynamic routing
+  if (path.startsWith("images/") || path.startsWith("favicon") || path.startsWith("_next/")) {
+    return null; // Let Next.js handle static files
+  }
+
   // Route mapping based on the original App.tsx
   const routeMap: Record<string, React.ComponentType> = {
     dashboard: Dashboard,

@@ -51,7 +51,6 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
         onLoad={() => {
           console.log("Logo loaded successfully");
         }}
-        crossOrigin="anonymous"
       />
     </div>
   );
