@@ -3,9 +3,12 @@ const globals = require("globals");
 const reactHooks = require("eslint-plugin-react-hooks");
 const reactRefresh = require("eslint-plugin-react-refresh");
 const tseslint = require("typescript-eslint");
+const nextPlugin = require("@next/eslint-plugin-next");
 
 module.exports = tseslint.config(
   { ignores: ["dist", ".next", ".next-build", ".next-dev", "node_modules"] },
+  // Include Next.js plugin rules so Next can detect the plugin
+  nextPlugin.flatConfig.coreWebVitals,
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

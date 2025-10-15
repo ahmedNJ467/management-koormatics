@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     // Try multiple possible paths
@@ -32,8 +34,12 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`Serving logo from: ${usedPath}`);
-    
-    return new NextResponse(logoBuffer, {
+
+    const arrayBuffer = new ArrayBuffer(logoBuffer.byteLength);
+    const view = new Uint8Array(arrayBuffer);
+    view.set(logoBuffer);
+
+    return new NextResponse(arrayBuffer, {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=31536000, immutable',
