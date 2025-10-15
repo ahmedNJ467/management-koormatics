@@ -4,7 +4,6 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import AccessGuard from "@/components/auth/AccessGuard";
-import { useTenantScope } from "@/hooks/use-tenant-scope";
 
 // Loading component
 const LoadingComponent = () => (
@@ -13,86 +12,11 @@ const LoadingComponent = () => (
   </div>
 );
 
-// Dynamic imports for department-specific components
-const ManagementDashboard = dynamic(
-  () => import("@/pages/departments/management/Dashboard"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const FleetDashboard = dynamic(
-  () => import("@/pages/departments/fleet/Dashboard"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const OperationsDashboard = dynamic(
-  () => import("@/pages/departments/operations/Dashboard"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const FinanceDashboard = dynamic(
-  () => import("@/pages/departments/finance/Dashboard"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-
-// Department-specific page components
-const FleetVehicles = dynamic(
-  () => import("@/pages/departments/fleet/Vehicles"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const FleetDrivers = dynamic(
-  () => import("@/pages/departments/fleet/Drivers"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const OperationsTrips = dynamic(
-  () => import("@/pages/departments/operations/Trips"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const OperationsDispatch = dynamic(
-  () => import("@/pages/departments/operations/Dispatch"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const FinanceInvoices = dynamic(
-  () => import("@/pages/departments/finance/Invoices"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const FinanceReports = dynamic(
-  () => import("@/pages/departments/finance/Reports"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
-const ManagementSettings = dynamic(
-  () => import("@/pages/departments/management/Settings"),
-  {
-    ssr: false,
-    loading: () => <LoadingComponent />,
-  }
-);
+// Dynamic imports to prevent chunk loading issues
+const Dashboard = dynamic(() => import("@/pages/Dashboard"), {
+  ssr: false,
+  loading: () => <LoadingComponent />,
+});
 const Vehicles = dynamic(() => import("@/pages/Vehicles"), {
   ssr: false,
   loading: () => <LoadingComponent />,
@@ -209,36 +133,10 @@ export default function DynamicPage() {
   const params = useParams();
   const slug = params?.slug as string[] | undefined;
   const path = slug?.join("/") || "";
-  const { domain } = useTenantScope();
 
-  // Get department-specific component based on domain and path
-  const getDepartmentComponent = (path: string) => {
-    switch (domain) {
-      case "management":
-        if (path === "dashboard") return ManagementDashboard;
-        if (path === "settings") return ManagementSettings;
-        break;
-      case "fleet":
-        if (path === "dashboard") return FleetDashboard;
-        if (path === "vehicles") return FleetVehicles;
-        if (path === "drivers") return FleetDrivers;
-        break;
-      case "operations":
-        if (path === "dashboard") return OperationsDashboard;
-        if (path === "trips") return OperationsTrips;
-        if (path === "dispatch") return OperationsDispatch;
-        break;
-      case "finance":
-        if (path === "dashboard") return FinanceDashboard;
-        if (path === "invoices") return FinanceInvoices;
-        if (path === "reports") return FinanceReports;
-        break;
-    }
-    return null;
-  };
-
-  // Fallback route mapping for non-department-specific pages
+  // Route mapping based on the original App.tsx
   const routeMap: Record<string, React.ComponentType> = {
+    dashboard: Dashboard,
     vehicles: Vehicles,
     drivers: Drivers,
     trips: Trips,
@@ -267,9 +165,7 @@ export default function DynamicPage() {
     "403": Forbidden,
   };
 
-  // Try to get department-specific component first
-  const DepartmentComponent = getDepartmentComponent(path);
-  const Component = DepartmentComponent || routeMap[path];
+  const Component = routeMap[path];
 
   if (!Component) {
     return <NotFound />;

@@ -2,8 +2,6 @@
 
 A comprehensive fleet management solution built with React, TypeScript, and Supabase.
 
-<!-- Updated for Vercel deployment fix -->
-
 ## 🚀 New Features
 
 ### 📧 PDF Email Quotations ⭐ NEW
@@ -93,7 +91,7 @@ A comprehensive fleet management solution built with React, TypeScript, and Supa
 
    ```bash
    git clone <repository-url>
-   cd koormatics
+   cd management-koormatics
    ```
 
 2. **Install dependencies**

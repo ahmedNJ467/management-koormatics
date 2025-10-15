@@ -54,7 +54,7 @@ const Navbar = memo(function Navbar({
 
   const dashboardPathByDomain = useCallback(() => {
     return "/dashboard";
-  }, [domain]);
+  }, []);
 
   const canSeeDashboard = useCallback(() => {
     const dashboardPath = dashboardPathByDomain();
