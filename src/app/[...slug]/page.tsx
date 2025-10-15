@@ -135,7 +135,18 @@ export default function DynamicPage() {
   const path = slug?.join("/") || "";
 
   // Exclude static file paths from dynamic routing
-  if (path.startsWith("images/") || path.startsWith("favicon") || path.startsWith("_next/")) {
+  if (
+    path.startsWith("images/") || 
+    path.startsWith("favicon") || 
+    path.startsWith("_next/") ||
+    path.includes(".png") ||
+    path.includes(".jpg") ||
+    path.includes(".jpeg") ||
+    path.includes(".gif") ||
+    path.includes(".svg") ||
+    path.includes(".ico") ||
+    path.includes(".webp")
+  ) {
     return null; // Let Next.js handle static files
   }
 
