@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface KoormaticsLogoProps {
   className?: string;
@@ -9,6 +9,8 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
   className = "",
   size = "md",
 }) => {
+  const [imageError, setImageError] = useState(false);
+
   const sizeClasses = {
     sm: "h-8",
     md: "h-12",
@@ -16,6 +18,27 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
     xl: "h-20",
   };
 
+  // Try to load the PNG image first, fallback to SVG if it fails
+  if (!imageError) {
+    return (
+      <div className={`${sizeClasses[size]} ${className}`}>
+        <img
+          src="/api/logo"
+          alt="Koormatics Logo"
+          className="h-full w-auto object-contain"
+          onError={() => {
+            console.error("Logo failed to load, showing SVG fallback");
+            setImageError(true);
+          }}
+          onLoad={() => {
+            console.log("Logo loaded successfully");
+          }}
+        />
+      </div>
+    );
+  }
+
+  // SVG fallback that matches the actual Koormatics logo design
   return (
     <div className={`${sizeClasses[size]} ${className} flex items-center justify-center`}>
       <svg
