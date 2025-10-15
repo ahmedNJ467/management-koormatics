@@ -16,6 +16,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [backgroundError, setBackgroundError] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const { domain } = useTenantScope();
@@ -167,13 +168,34 @@ export default function Auth() {
     checkAuth();
   }, [router, domain]);
 
+  // Test background image loading
+  useEffect(() => {
+    const testBackgroundImage = () => {
+      const img = new Image();
+      img.onload = () => {
+        console.log("Background image loaded successfully");
+      };
+      img.onerror = () => {
+        console.error("Background image failed to load, using gradient fallback");
+        setBackgroundError(true);
+      };
+      img.src = "/images/auth-bg.jpg";
+    };
+
+    testBackgroundImage();
+  }, []);
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Authentication Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${
+          backgroundError 
+            ? "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" 
+            : ""
+        }`}
         style={{
-          backgroundImage: `url('/images/auth-bg.jpg')`,
+          backgroundImage: backgroundError ? "none" : `url('/images/auth-bg.jpg')`,
         }}
       >
         {/* Dark overlay for better readability */}
