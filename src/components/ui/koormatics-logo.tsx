@@ -45,11 +45,13 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
           console.error("Logo failed to load:", e);
           console.error("Image src:", "/images/Koormatics-logo.png");
           console.error("Image target:", e.target);
+          console.error("Current URL:", window.location.href);
           setImageError(true);
         }}
         onLoad={() => {
           console.log("Logo loaded successfully");
         }}
+        crossOrigin="anonymous"
       />
     </div>
   );

@@ -16,7 +16,6 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [backgroundError, setBackgroundError] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const { domain } = useTenantScope();
@@ -168,54 +167,15 @@ export default function Auth() {
     checkAuth();
   }, [router, domain]);
 
-  // Test background image loading
-  useEffect(() => {
-    const testBackgroundImage = () => {
-      console.log("Testing background image loading...");
-      const img = new Image();
-      img.onload = () => {
-        console.log("Background image loaded successfully");
-        setBackgroundError(false);
-      };
-      img.onerror = (e) => {
-        console.error("Background image failed to load:", e);
-        console.error("Image src:", img.src);
-        console.error("Image complete:", img.complete);
-        console.error("Image naturalWidth:", img.naturalWidth);
-        setBackgroundError(true);
-      };
-      
-      // Try the image path
-      img.src = "/images/auth-bg.jpg";
-      console.log("Attempting to load:", img.src);
-      
-      // Also try with a timeout to force fallback if it takes too long
-      setTimeout(() => {
-        if (!img.complete) {
-          console.error("Background image loading timeout, using gradient fallback");
-          setBackgroundError(true);
-        }
-      }, 3000);
-    };
-
-    testBackgroundImage();
-  }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Authentication Background Image */}
-      <div
-        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${
-          backgroundError 
-            ? "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" 
-            : ""
-        }`}
-        style={{
-          backgroundImage: backgroundError ? "none" : `url('/images/auth-bg.jpg')`,
-        }}
-      >
-        {/* Dark overlay for better readability */}
-        <div className="absolute inset-0 bg-black/60"></div>
+      {/* Authentication Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        {/* Additional pattern overlay for visual interest */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(120,119,198,0.2),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(120,119,198,0.2),transparent_50%)]"></div>
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
