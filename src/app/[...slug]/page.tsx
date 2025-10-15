@@ -139,13 +139,17 @@ export default function DynamicPage() {
     path.startsWith("images/") || 
     path.startsWith("favicon") || 
     path.startsWith("_next/") ||
+    path.startsWith("api/") ||
     path.includes(".png") ||
     path.includes(".jpg") ||
     path.includes(".jpeg") ||
     path.includes(".gif") ||
     path.includes(".svg") ||
     path.includes(".ico") ||
-    path.includes(".webp")
+    path.includes(".webp") ||
+    path.includes(".css") ||
+    path.includes(".js") ||
+    path.includes(".json")
   ) {
     return null; // Let Next.js handle static files
   }
