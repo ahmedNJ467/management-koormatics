@@ -7,6 +7,15 @@ export function getSubdomainFromHost(hostname: string): AppDomain {
     | undefined;
   if (override) return override;
 
+  // Check URL parameters for domain override (useful for testing)
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const domainParam = urlParams.get("domain") as AppDomain;
+    if (domainParam && ["management", "fleet", "operations", "finance"].includes(domainParam)) {
+      return domainParam;
+    }
+  }
+
   // Local development defaults
   if (!hostname || hostname.startsWith("127.")) {
     return "management";
