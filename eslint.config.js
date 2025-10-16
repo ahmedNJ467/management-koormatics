@@ -22,6 +22,7 @@ module.exports = tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      "@next/next/no-img-element": "off",
       "react-refresh/only-export-components": "off", // Development-only optimization, not critical
       // Only enforce the most critical rules for a large codebase
       "@typescript-eslint/no-unused-vars": "off", // Too many in this codebase, focus on critical issues
