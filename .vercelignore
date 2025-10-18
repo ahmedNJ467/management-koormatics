@@ -1,0 +1,16 @@
+node_modules
+.next
+dist
+.git
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+fleet-portal
+fleet-koormatics-portal
+*.md
+scripts
+supabase
+.DS_Store
+Thumbs.db
