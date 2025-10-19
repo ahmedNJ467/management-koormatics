@@ -1,0 +1,7 @@
+.next/
+.next-fleet/
+dist/
+out/
+build/
+.cache/
+node_modules/
