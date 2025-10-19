@@ -34,6 +34,7 @@
     "node_modules",
     "supabase/functions/**/*",
     "src/lib/__tests__/**/*",
+    "fleet-portal/src/lib/__tests__/**/*",
     ".next-dev/**",
     ".next/**",
     ".next-build/**"
