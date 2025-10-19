@@ -66,7 +66,7 @@ export default function FleetAuth() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const session = await getCachedSession();
+        const session = await getCachedSession(supabase);
         if (session?.user) {
           setIsRedirecting(true);
           router.push("/dashboard");

@@ -64,7 +64,7 @@ export default function FleetAuth() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const session = await getCachedSession();
+        const session = await getCachedSession(supabase);
         if (session?.user) {
           setIsRedirecting(true);
           router.push("/dashboard");
@@ -82,7 +82,9 @@ export default function FleetAuth() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-blue-600 font-medium">Redirecting to Fleet Portal...</p>
+          <p className="text-blue-600 font-medium">
+            Redirecting to Fleet Portal...
+          </p>
         </div>
       </div>
     );
@@ -118,7 +120,10 @@ export default function FleetAuth() {
           <form onSubmit={handleAuth} className="space-y-4" autoComplete="on">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-white">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-white"
+                >
                   Email Address
                 </label>
                 <div className="relative">
@@ -137,7 +142,10 @@ export default function FleetAuth() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-white">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-white"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -186,7 +194,9 @@ export default function FleetAuth() {
           {/* Footer */}
           <div className="text-center mt-8 text-white/60 text-sm">
             <p>&copy; {currentYear} Koormatics Fleet Management System</p>
-            <p className="mt-1">Access restricted to authorized fleet managers</p>
+            <p className="mt-1">
+              Access restricted to authorized fleet managers
+            </p>
           </div>
         </div>
       </div>
