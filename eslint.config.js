@@ -6,7 +6,34 @@ const tseslint = require("typescript-eslint");
 const nextPlugin = require("@next/eslint-plugin-next");
 
 module.exports = tseslint.config(
-  { ignores: ["dist", ".next", ".next-build", ".next-dev", "node_modules"] },
+  {
+    ignores: [
+      "dist",
+      ".next",
+      ".next-build",
+      ".next-dev",
+      ".next-fleet",
+      "out",
+      "build",
+      ".cache",
+      "node_modules",
+      // Deep ignores for monorepo build dirs:
+      "**/.next-fleet",
+      "**/.next-fleet/**",
+      "**/.next",
+      "**/.next/**",
+      "**/dist",
+      "**/dist/**",
+      "**/out",
+      "**/out/**",
+      "**/build",
+      "**/build/**",
+      "**/.cache",
+      "**/.cache/**",
+      "**/node_modules",
+      "**/node_modules/**",
+    ],
+  },
   // Include Next.js plugin rules so Next can detect the plugin
   nextPlugin.flatConfig.coreWebVitals,
   {
