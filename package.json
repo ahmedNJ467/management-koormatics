@@ -17,8 +17,7 @@
     "build:clean": "rimraf .next .next-build && next build",
     "start": "next start --port 8080",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "typecheck": "tsc --noEmit",
-    "prepare": "node scripts/prepare.js"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.1",

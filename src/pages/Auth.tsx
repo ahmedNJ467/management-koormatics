@@ -65,7 +65,9 @@ export default function Auth() {
       // Show success toast immediately
       toast({
         title: `Welcome to ${isFleetPortal ? "Fleet Portal" : "Koormatics"}!`,
-        description: `Successfully signed in to ${isFleetPortal ? "fleet management" : "Koormatics"}`,
+        description: `Successfully signed in to ${
+          isFleetPortal ? "fleet management" : "Koormatics"
+        }`,
       });
 
       // Determine dashboard path immediately based on domain
@@ -143,17 +145,17 @@ export default function Auth() {
     const checkAuth = async () => {
       try {
         // Add timeout for session check
-        const sessionPromise = getCachedSession(supabase);
+        const session = await getCachedSession(supabase);
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("Session check timeout")), 5000)
         );
 
         const {
-          data: { session },
-        } = (await Promise.race([sessionPromise, timeoutPromise])) as any;
+          data: { session: sessionFromCache },
+        } = (await Promise.race([session, timeoutPromise])) as any;
 
         // Only redirect if we have a valid session and we're not in logout process
-        if (session?.user) {
+        if (sessionFromCache?.user) {
           const dashboardPath = "/dashboard";
 
           // Redirect immediately if user is already authenticated
@@ -168,7 +170,6 @@ export default function Auth() {
     // Check auth immediately for instant login
     checkAuth();
   }, [router, domain]);
-
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -188,7 +189,9 @@ export default function Auth() {
               {isFleetPortal ? "Fleet Portal" : "Management System"}
             </h1>
             <div className="text-white/80 text-sm mb-2">
-              {isFleetPortal ? "Fleet Management System" : `Portal: ${domain.toUpperCase()}`}
+              {isFleetPortal
+                ? "Fleet Management System"
+                : `Portal: ${domain.toUpperCase()}`}
             </div>
           </div>
 
@@ -267,7 +270,9 @@ export default function Auth() {
                   Redirecting...
                 </div>
               ) : (
-                `Log in to ${isFleetPortal ? "Fleet Portal" : "Management System"}`
+                `Log in to ${
+                  isFleetPortal ? "Fleet Portal" : "Management System"
+                }`
               )}
             </Button>
           </form>
@@ -275,13 +280,14 @@ export default function Auth() {
           {/* Footer */}
           <div className="text-center mt-6">
             <p className="text-white/80 text-xs drop-shadow">
-              © {currentYear} Koormatics {isFleetPortal ? "Fleet Management" : "Management"} System · All rights reserved
+              © {currentYear} Koormatics{" "}
+              {isFleetPortal ? "Fleet Management" : "Management"} System · All
+              rights reserved
             </p>
             <p className="text-white/60 text-xs mt-1">
-              {isFleetPortal 
-                ? "Access restricted to authorized fleet managers" 
-                : "Access restricted to authorized personnel"
-              }
+              {isFleetPortal
+                ? "Access restricted to authorized fleet managers"
+                : "Access restricted to authorized personnel"}
             </p>
           </div>
         </div>
