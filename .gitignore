@@ -128,3 +128,19 @@ dist-ssr/
 *.local
 
 .vercel
+
+# Node
+node_modules/
+
+# Next.js
+.next/
+.next-fleet/
+
+# Build cache
+tsconfig.tsbuildinfo
+
+# Env files
+.env.local
+
+# Mac
+.DS_Store
