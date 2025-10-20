@@ -11,6 +11,6 @@ fleet-portal
 fleet-koormatics-portal
 *.md
 scripts
-supabase
+/supabase
 .DS_Store
 Thumbs.db
