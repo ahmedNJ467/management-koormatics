@@ -81,122 +81,109 @@ export default function FleetAuth() {
 
   if (isRedirecting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-blue-600 font-medium">
-            Redirecting to Fleet Portal...
-          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/30 border-t-white mx-auto mb-4"></div>
+          <p className="text-white font-medium">Redirecting...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Fleet Portal Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800">
-        {/* Fleet-themed pattern overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.3),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.2),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.2),transparent_50%)]"></div>
-      </div>
-
+    <div className="min-h-screen relative overflow-hidden">
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           {/* Fleet Portal Branding */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
-              <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 mr-4">
-                <Car className="h-8 w-8 text-white" />
-              </div>
               <KoormaticsLogo size="xl" className="drop-shadow-lg" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Fleet Portal</h1>
-            <div className="text-white/80 text-sm mb-2">
-              Fleet Management System
-            </div>
+            <div className="text-white/80 text-sm mb-2">Portal: FLEET</div>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleAuth} className="space-y-4" autoComplete="on">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="text-sm font-medium text-white"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/90 border-white/20"
-                    required
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+                className="pl-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-400 transition-colors"
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="password"
-                  className="text-sm font-medium text-white"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pr-10 bg-white/90 border-white/20"
-                    required
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff /> : <Eye />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 text-white text-sm">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-white/20 bg-white/10"
-                  />
-                  <span>Remember me</span>
-                </label>
-              </div>
-
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="pl-3 pr-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-offset-0 focus:border-purple-400 transition-colors"
+              />
               <Button
-                type="submit"
-                className="w-full bg-white text-blue-600 hover:bg-white/90 font-medium"
-                disabled={isLoading}
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white h-8 w-8"
               >
-                {isLoading ? "Signing In..." : "Sign In to Fleet Portal"}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </Button>
             </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 text-white/80 text-sm">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-white/20 bg-white/5 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                />
+                <span>Remember me</span>
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              variant="default"
+              size="lg"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium h-12 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Logging in...
+                </div>
+              ) : (
+                "Log in"
+              )}
+            </Button>
           </form>
 
           {/* Footer */}
-          <div className="text-center mt-8 text-white/60 text-sm">
-            <p>&copy; {currentYear} Koormatics Fleet Management System</p>
-            <p className="mt-1">
+          <div className="text-center mt-6">
+            <p className="text-white/80 text-xs drop-shadow">
+              © {currentYear} Koormatics · All rights reserved
+            </p>
+            <p className="text-white/60 text-xs mt-1">
               Access restricted to authorized fleet managers
             </p>
           </div>

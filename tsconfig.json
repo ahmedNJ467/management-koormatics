@@ -34,8 +34,7 @@
     "node_modules",
     "supabase/functions/**/*",
     "src/lib/__tests__/**/*",
-    "fleet-portal/**/*",
-    "fleet-koormatics-portal/**/*",
+    "fleet-koormatics/**/*",
     ".next-dev/**",
     ".next/**",
     ".next-build/**"

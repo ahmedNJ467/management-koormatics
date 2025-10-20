@@ -186,11 +186,11 @@ export default function Auth() {
               <KoormaticsLogo size="xl" className="drop-shadow-lg" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">
-              {isFleetPortal ? "Fleet Portal" : "Management System"}
+              {isFleetPortal ? "Fleet Portal" : ""}
             </h1>
             <div className="text-white/80 text-sm mb-2">
               {isFleetPortal
-                ? "Fleet Management System"
+                ? `Portal: ${domain.toUpperCase()}`
                 : `Portal: ${domain.toUpperCase()}`}
             </div>
           </div>
@@ -270,9 +270,7 @@ export default function Auth() {
                   Redirecting...
                 </div>
               ) : (
-                `Log in to ${
-                  isFleetPortal ? "Fleet Portal" : "Management System"
-                }`
+                "Log in"
               )}
             </Button>
           </form>
@@ -280,9 +278,7 @@ export default function Auth() {
           {/* Footer */}
           <div className="text-center mt-6">
             <p className="text-white/80 text-xs drop-shadow">
-              © {currentYear} Koormatics{" "}
-              {isFleetPortal ? "Fleet Management" : "Management"} System · All
-              rights reserved
+              © {currentYear} Koormatics · All rights reserved
             </p>
             <p className="text-white/60 text-xs mt-1">
               {isFleetPortal
