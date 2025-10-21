@@ -4,5 +4,6 @@
   "env": {
     "CI": "true"
   },
-  "version": 2
+  "version": 2,
+  "domains": ["management-koormatics.vercel.app", "fleet-koormatics.vercel.app"]
 }

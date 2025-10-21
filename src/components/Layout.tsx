@@ -88,7 +88,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         // Fallback to Supabase session check
         const {
           data: { session },
-        } = await getCachedSession(supabase);
+        } = await (getCachedSession as any)(supabase);
 
         if (!mounted) return;
 
