@@ -5,5 +5,8 @@
     "CI": "true"
   },
   "version": 2,
-  "domains": ["management-koormatics.vercel.app", "fleet-koormatics.vercel.app"]
+  "domains": [
+    "management-koormatics.vercel.app",
+    "fleet-koormatics.vercel.app"
+  ]
 }
