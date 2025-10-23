@@ -62,6 +62,9 @@ const Settings: React.FC = () => {
   const { toast } = useToast();
   const { domain } = useTenantScope();
 
+  // Debug logging for domain detection
+  console.log("Settings Debug:", { domain, isFleet: domain === "fleet" });
+
   // State for user creation
   const [newUser, setNewUser] = useState({
     email: "",
@@ -553,6 +556,13 @@ const Settings: React.FC = () => {
             <TabsTrigger value="security">Security</TabsTrigger>
           )}
         </TabsList>
+        
+        {/* Debug info - remove after testing */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="text-xs text-gray-500 p-2 bg-gray-100 rounded">
+            Debug: domain = "{domain}", isFleet = {domain === "fleet" ? "true" : "false"}
+          </div>
+        )}
 
         <TabsContent value="account" className="space-y-6">
           <div className="grid gap-6">
