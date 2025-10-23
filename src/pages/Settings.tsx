@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +60,7 @@ import {
 const Settings: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { domain } = useTenantScope();
 
   // State for user creation
   const [newUser, setNewUser] = useState({
@@ -541,9 +543,15 @@ const Settings: React.FC = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Tabs defaultValue="account" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList
+          className={`grid w-full ${
+            domain === "fleet" ? "grid-cols-1" : "grid-cols-2"
+          }`}
+        >
           <TabsTrigger value="account">Account Settings</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+          {domain !== "fleet" && (
+            <TabsTrigger value="security">Security</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="account" className="space-y-6">
@@ -705,7 +713,8 @@ const Settings: React.FC = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-6">
+        {domain !== "fleet" && (
+          <TabsContent value="security" className="space-y-6">
           <div className="grid gap-6">
             {/* User Account Creation */}
             <Card>
@@ -1127,6 +1136,7 @@ const Settings: React.FC = () => {
             </Card>
           </div>
         </TabsContent>
+        )}
       </Tabs>
 
       {/* Password Reset Dialog */}
