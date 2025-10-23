@@ -552,7 +552,7 @@ const Settings: React.FC = () => {
           }`}
         >
           <TabsTrigger value="account">Account Settings</TabsTrigger>
-          {domain !== "fleet" && (
+          {domain && domain !== "fleet" && (
             <TabsTrigger value="security">Security</TabsTrigger>
           )}
         </TabsList>
@@ -723,7 +723,7 @@ const Settings: React.FC = () => {
           </div>
         </TabsContent>
 
-        {domain !== "fleet" && (
+        {domain && domain !== "fleet" && (
           <TabsContent value="security" className="space-y-6">
           <div className="grid gap-6">
             {/* User Account Creation */}
