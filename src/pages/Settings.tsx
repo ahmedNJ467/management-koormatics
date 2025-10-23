@@ -547,13 +547,9 @@ const Settings: React.FC = () => {
     <div className="container mx-auto p-6 space-y-6">
       <Tabs defaultValue="account" className="space-y-6">
         {domain !== "fleet" && (
-          <TabsList
-            className={`grid w-full ${
-              domain === "fleet" ? "grid-cols-1" : "grid-cols-2"
-            }`}
-          >
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="account">Account Settings</TabsTrigger>
-            {domain && domain !== "fleet" && (
+            {domain !== "fleet" && (
               <TabsTrigger value="security">Security</TabsTrigger>
             )}
           </TabsList>
