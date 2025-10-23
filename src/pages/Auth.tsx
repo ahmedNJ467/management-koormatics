@@ -178,20 +178,10 @@ export default function Auth() {
           {/* Portal-specific Branding */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
-              {isFleetPortal && (
-                <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 mr-4">
-                  <Car className="h-8 w-8 text-white" />
-                </div>
-              )}
               <KoormaticsLogo size="xl" className="drop-shadow-lg" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              {isFleetPortal ? "Fleet Portal" : ""}
-            </h1>
             <div className="text-white/80 text-sm mb-2">
-              {isFleetPortal
-                ? `Portal: ${domain.toUpperCase()}`
-                : `Portal: ${domain.toUpperCase()}`}
+              Portal: {domain.toUpperCase()}
             </div>
           </div>
 
@@ -281,9 +271,7 @@ export default function Auth() {
               © {currentYear} Koormatics · All rights reserved
             </p>
             <p className="text-white/60 text-xs mt-1">
-              {isFleetPortal
-                ? "Access restricted to authorized fleet managers"
-                : "Access restricted to authorized personnel"}
+              Access restricted to authorized personnel
             </p>
           </div>
         </div>
