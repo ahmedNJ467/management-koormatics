@@ -1,4 +1,3 @@
-import Image from "next/image";
 import React from "react";
 
 interface KoormaticsLogoProps {
@@ -19,13 +18,11 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
 
   return (
     <div className={`${sizeClasses[size]} ${className}`}>
-      <Image
+      <img
         src="/images/Koormatics-logo.jpg"
         alt="Koormatics Logo"
-        width={120}
-        height={40}
         className="h-full w-auto object-contain"
-        priority
+        style={{ imageRendering: 'auto' }}
       />
     </div>
   );
