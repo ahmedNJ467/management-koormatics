@@ -22,7 +22,7 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
         src="/images/Koormatics-logo.jpg"
         alt="Koormatics Logo"
         className="h-full w-auto object-contain"
-        style={{ imageRendering: 'auto' }}
+        style={{ imageRendering: "auto" }}
       />
     </div>
   );
