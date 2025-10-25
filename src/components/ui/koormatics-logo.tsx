@@ -19,10 +19,15 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
   return (
     <div className={`${sizeClasses[size]} ${className}`}>
       <img
-        src="/images/Koormatics-logo.jpg"
+        src="/koormatics-logo.jpg"
         alt="Koormatics Logo"
         className="h-full w-auto object-contain"
         style={{ imageRendering: "auto" }}
+        onError={(e) => {
+          console.error('Logo failed to load:', e);
+          e.currentTarget.style.display = 'none';
+        }}
+        onLoad={() => console.log('Logo loaded successfully')}
       />
     </div>
   );
