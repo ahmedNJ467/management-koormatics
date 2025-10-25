@@ -19,7 +19,7 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
   return (
     <div className={`${sizeClasses[size]} ${className}`}>
       <img
-        src="/koormatics-logo.jpg"
+        src="/koormatics-logo.png"
         alt="Koormatics Logo"
         className="h-full w-auto object-contain"
         style={{ imageRendering: "auto" }}
