@@ -53,14 +53,14 @@ export default function Vehicles() {
       const sanitizedVehicles = vehiclesData.map((v: any) => ({
         ...v,
         id: (v as any).id || "",
-        make: (v as any).make || "Unknown",
-        model: (v as any).model || "Model",
-        registration: (v as any).registration || "N/A",
-        type: (v as any).type || "armoured",
+        make: (v as any).make || "",
+        model: (v as any).model || "",
+        registration: (v as any).registration || "",
+        type: (v as any).type || "",
         status: (v as any).status || "active",
         year: (v as any).year || null,
-        color: (v as any).color || "N/A",
-        vin: (v as any).vin || "N/A",
+        color: (v as any).color || "",
+        vin: (v as any).vin || "",
         insurance_expiry: (v as any).insurance_expiry || null,
         notes: (v as any).notes || "",
         created_at: (v as any).created_at || new Date().toISOString(),
@@ -232,6 +232,7 @@ export default function Vehicles() {
             <VehicleTable
               vehicles={paginatedVehicles}
               onVehicleClick={handleVehicleClick}
+              isLoading={isLoading}
             />
           ) : (
             <VehicleCards
