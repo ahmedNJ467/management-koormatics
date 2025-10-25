@@ -70,11 +70,11 @@ export default function Vehicles() {
 
       return sanitizedVehicles as Vehicle[];
     },
-    staleTime: 5 * 1000,
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    placeholderData: (previousData) => previousData,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
+    refetchOnWindowFocus: false, // Don't refetch when window gets focus
+    refetchOnMount: false, // Don't refetch when component mounts - use cached data
+    placeholderData: (previousData) => previousData, // Show cached data immediately
     retry: 1,
   });
 
