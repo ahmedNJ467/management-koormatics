@@ -822,16 +822,7 @@ export default function VehicleLeasing() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <div className="flex items-center justify-center gap-2">
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                          Loading vehicle leases...
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredLeases?.length === 0 ? (
+                  {filteredLeases?.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8">
                         <div className="flex flex-col items-center gap-2">

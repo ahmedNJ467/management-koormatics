@@ -273,7 +273,7 @@ const SpareParts = () => {
           parts={paginatedParts}
           onEdit={openEditDialog}
           onDelete={openDeleteDialog}
-          isLoading={isLoading}
+          isLoading={false}
           onSort={handleSort}
           sortConfig={sortConfig}
         />

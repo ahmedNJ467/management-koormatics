@@ -1001,41 +1001,7 @@ function FuelLogs() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isLoading ? (
-                      <>
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={`skeleton-${i}`}>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-20"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-32"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-16"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-16"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-20"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-16"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-20"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-24"></div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="h-4 bg-muted rounded animate-pulse w-16"></div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </>
-                    ) : filteredFuelLogs.length === 0 ? (
+                    {filteredFuelLogs.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={9} className="text-center py-8">
                           <div className="flex flex-col items-center gap-2 text-muted-foreground">

@@ -705,13 +705,7 @@ export default function VehicleIncidentReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
-                        Loading incident reports...
-                      </TableCell>
-                    </TableRow>
-                  ) : paginatedReports?.length === 0 ? (
+                  {paginatedReports?.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8">
                         No incident reports found

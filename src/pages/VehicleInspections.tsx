@@ -546,13 +546,7 @@ export default function VehicleInspections() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
-                        Loading inspections...
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredInspections?.length === 0 ? (
+                  {filteredInspections?.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8">
                         No inspections found

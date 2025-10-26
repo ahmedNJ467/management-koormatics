@@ -401,13 +401,7 @@ export default function Maintenance() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center">
-                    Loading records...
-                  </TableCell>
-                </TableRow>
-              ) : paginatedRecords?.length === 0 ? (
+              {paginatedRecords?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2">
