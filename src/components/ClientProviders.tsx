@@ -16,14 +16,14 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 1000, // 5 seconds for very fresh lists across pages
-            gcTime: 5 * 60 * 1000, // 5 minutes
+            staleTime: 30 * 60 * 1000, // 30 minutes - data stays fresh longer
+            gcTime: 60 * 60 * 1000, // 1 hour - keep in cache longer
             retry: 1,
-            refetchOnWindowFocus: true, // Always refetch on focus for fresh data
-            refetchOnMount: true, // Always refetch on mount for fresh data
+            refetchOnWindowFocus: false, // Don't refetch on focus - use cache
+            refetchOnMount: false, // Don't refetch on mount - use cache for instant loading
             refetchOnReconnect: true,
-            placeholderData: (previousData: any) => previousData, // Smooth pagination and list refreshes
-            retryOnMount: true,
+            placeholderData: (previousData: any) => previousData, // Show cached data immediately
+            retryOnMount: false, // Don't retry on mount - use cache
             retryDelay: 1000,
           },
           mutations: {
@@ -82,29 +82,24 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // Clear caches on page load to ensure fresh data (both dev and prod)
+  // Only clear critical auth caches on page load - keep data caches for instant loading
   useEffect(() => {
     (async () => {
       try {
-        // Always clear browser caches to ensure fresh data
+        // Only clear service workers if they exist
         if ("serviceWorker" in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();
           await Promise.all(regs.map((r) => r.unregister()));
         }
-        if ("caches" in window) {
-          const names = await caches.keys();
-          await Promise.all(names.map((n) => caches.delete(n)));
-        }
 
-        // Clear React Query cache on page load for critical data
+        // Clear only auth-related queries on page load for fresh authentication state
         if (queryClient) {
-          // Clear auth-related queries to ensure fresh authentication state
           queryClient.invalidateQueries({ queryKey: ["page_access"] });
           queryClient.invalidateQueries({ queryKey: ["user_roles"] });
           queryClient.invalidateQueries({ queryKey: ["auth_session"] });
         }
 
-        console.log("Caches cleared on page load for fresh data");
+        console.log("Auth caches cleared, data caches preserved for instant loading");
       } catch (error) {
         console.warn("Cache clearing failed:", error);
       }
