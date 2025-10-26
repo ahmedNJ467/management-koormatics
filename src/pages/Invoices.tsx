@@ -219,38 +219,6 @@ export default function Invoices() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="p-4 px-6 space-y-6">
-          <div className="border-b border-border pb-4 pt-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">
-                Invoices
-              </h1>
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  </CardTitle>
-                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const handleEdit = (invoice: DisplayInvoice) => {
     setEditInvoice(invoice);
     setCreateInvoiceOpen(true);

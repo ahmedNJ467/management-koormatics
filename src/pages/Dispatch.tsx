@@ -374,33 +374,6 @@ export default function Dispatch() {
     [queryClient, toast]
   );
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="p-4 px-6 space-y-6">
-          <div className="border-b border-border pb-4 pt-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">
-                Dispatch
-              </h1>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="border rounded-md p-4 bg-card animate-pulse"
-              >
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-                <div className="h-6 bg-muted rounded w-3/4 mt-3"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative h-full w-full overflow-hidden m-0 p-0">
       {/* Map fills available space inside page wrapper so sidebar can push it */}
