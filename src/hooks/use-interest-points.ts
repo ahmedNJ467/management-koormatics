@@ -19,7 +19,10 @@ export const useInterestPoints = () => {
   } = useQuery<InterestPoint[]>({
     queryKey: ["interest-points"],
     queryFn: InterestPointService.getAllInterestPoints,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+    refetchOnMount: false, // Don't refetch
+    refetchOnWindowFocus: false, // Don't refetch
     retry: (failureCount, error) => {
       // Don't retry on authentication or table not found errors
       if (error instanceof Error) {

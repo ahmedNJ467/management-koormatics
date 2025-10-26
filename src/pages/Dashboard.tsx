@@ -76,8 +76,8 @@ export default function Dashboard() {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
@@ -91,8 +91,8 @@ export default function Dashboard() {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
@@ -100,14 +100,12 @@ export default function Dashboard() {
   const { data: fuelLogs = [], isLoading: fuelLogsLoading } = useQuery({
     queryKey: ["fuel_logs"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fuel_logs")
-        .select("id, date, volume, cost, fuel_type, vehicle_id, created_at");
+      const { data, error } = await supabase.from("fuel_logs").select("*");
       if (error) throw error;
       return data || [];
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });

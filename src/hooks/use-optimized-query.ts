@@ -55,10 +55,11 @@ export function useOptimizedQuery<TData, TError>(
   return useQuery({
     queryKey,
     queryFn: wrappedQueryFn,
-    staleTime: 60 * 1000, // 1 minute (shorter for better UX)
-    gcTime: 5 * 60 * 1000, // 5 minutes (shorter)
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 2, // Retry failed requests twice (default is 3)
-    refetchOnWindowFocus: true, // Enable refetching when window regains focus for fresh data
     ...queryOptions,
     meta: {
       ...(queryOptions.meta || {}),
