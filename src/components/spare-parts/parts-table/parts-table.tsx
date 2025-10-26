@@ -38,13 +38,22 @@ export const PartsTable = ({
 
   if (parts.length === 0) {
     return (
-      <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded border">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-          No parts found
-        </h3>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          No spare parts match your current search or filter criteria.
-        </p>
+      <div className="text-center py-12 border rounded-lg bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <svg className="h-6 w-6 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
+              No parts found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              No spare parts match your current search or filter criteria.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
