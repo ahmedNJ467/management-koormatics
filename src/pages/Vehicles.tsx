@@ -223,16 +223,14 @@ export default function Vehicles() {
         </div>
 
         {/* Content */}
-        {isLoading ? (
-          <VehiclesLoading />
-        ) : error ? (
+        {error ? (
           <VehiclesError />
-        ) : paginatedVehicles && paginatedVehicles.length > 0 ? (
+        ) : vehicles && vehicles.length > 0 ? (
           viewMode === "table" ? (
             <VehicleTable
               vehicles={paginatedVehicles}
               onVehicleClick={handleVehicleClick}
-              isLoading={isLoading}
+              isLoading={false}
             />
           ) : (
             <VehicleCards
