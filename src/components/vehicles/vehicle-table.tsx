@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Vehicle } from "@/lib/types";
 import { formatVehicleId } from "@/lib/utils";
+import React from "react";
 
 interface VehicleTableProps {
   vehicles: Vehicle[];
@@ -198,55 +199,55 @@ export const VehicleTable = memo(
           ) : (
             vehicles
               .map((vehicle) => {
-              if (!vehicle || typeof vehicle !== "object") {
-                console.warn("Invalid vehicle object:", vehicle);
-                return null;
-              }
+                if (!vehicle || typeof vehicle !== "object") {
+                  console.warn("Invalid vehicle object:", vehicle);
+                  return null;
+                }
 
-              const insuranceExpiringSoon = isInsuranceExpiringSoon(
-                vehicle.insurance_expiry || null
-              );
-              const insuranceExpired = isInsuranceExpired(
-                vehicle.insurance_expiry || null
-              );
+                const insuranceExpiringSoon = isInsuranceExpiringSoon(
+                  vehicle.insurance_expiry || null
+                );
+                const insuranceExpired = isInsuranceExpired(
+                  vehicle.insurance_expiry || null
+                );
+                const [imgLoaded, setImgLoaded] = React.useState(false);
 
-              return (
-                <TableRow
-                  key={vehicle.id || Math.random()}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleVehicleClick(vehicle)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        {vehicle.images &&
-                        Array.isArray(vehicle.images) &&
-                        vehicle.images.length > 0 ? (
-                          <img
-                            src={vehicle.images[0]?.url || ""}
-                            alt={`${safeString(
-                              vehicle.make,
-                              "Vehicle"
-                            )} ${safeString(vehicle.model)}`}
-                            className="w-24 h-16 object-cover rounded-none"
-                          />
-                        ) : (
-                          <div className="w-24 h-16 bg-muted flex items-center justify-center rounded-none">
+                return (
+                  <TableRow
+                    key={vehicle.id || Math.random()}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleVehicleClick(vehicle)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-24 h-16">
+                          {/* Always show the placeholder; hide only if image is loaded */}
+                          <div
+                            className={`absolute inset-0 w-full h-full flex items-center justify-center rounded-none bg-muted transition-opacity duration-200 ${imgLoaded ? "opacity-0" : "opacity-100"}`}
+                          >
                             <Car className="h-8 w-8 text-muted-foreground" />
                           </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium">
-                          {safeString(vehicle.make, "Unknown")}{" "}
-                          {safeString(vehicle.model, "Model")}
+                          {/* Render real image if present */}
+                          {vehicle.images && Array.isArray(vehicle.images) && vehicle.images.length > 0 && (
+                            <img
+                              src={vehicle.images[0]?.url || ""}
+                              alt={`${safeString(vehicle.make, "Vehicle")} ${safeString(vehicle.model)}`}
+                              className={`w-24 h-16 object-cover rounded-none transition-opacity duration-200 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+                              onLoad={() => setImgLoaded(true)}
+                              onError={() => setImgLoaded(false)}
+                            />
+                          )}
                         </div>
-                        <div className="text-sm text-muted-foreground font-mono">
-                          {formatVehicleId(safeString(vehicle.id, ""))}
+                        <div>
+                          <div className="font-medium">
+                            {safeString(vehicle.make, "Unknown")} {safeString(vehicle.model, "Model")}
+                          </div>
+                          <div className="text-sm text-muted-foreground font-mono">
+                            {formatVehicleId(safeString(vehicle.id, ""))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
+                    </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {getTypeIcon(vehicle.type)}
