@@ -30,12 +30,26 @@ interface VehicleTableProps {
 
 export const VehicleTable = memo(
   ({ vehicles, onVehicleClick, isLoading = false }: VehicleTableProps) => {
+    const [loadedImages, setLoadedImages] = React.useState<Set<string>>(new Set());
+
     const handleVehicleClick = useCallback(
       (vehicle: Vehicle) => {
         onVehicleClick(vehicle);
       },
       [onVehicleClick]
     );
+
+    const handleImageLoad = useCallback((vehicleId: string) => {
+      setLoadedImages((prev) => new Set(prev).add(vehicleId));
+    }, []);
+
+    const handleImageError = useCallback((vehicleId: string) => {
+      setLoadedImages((prev) => {
+        const next = new Set(prev);
+        next.delete(vehicleId);
+        return next;
+      });
+    }, []);
 
     const getStatusIcon = (status: string) => {
       switch (status) {
@@ -210,7 +224,8 @@ export const VehicleTable = memo(
                 const insuranceExpired = isInsuranceExpired(
                   vehicle.insurance_expiry || null
                 );
-                const [imgLoaded, setImgLoaded] = React.useState(false);
+                const vehicleId = safeString(vehicle.id, "");
+                const imgLoaded = loadedImages.has(vehicleId);
 
                 return (
                   <TableRow
@@ -233,8 +248,8 @@ export const VehicleTable = memo(
                               src={vehicle.images[0]?.url || ""}
                               alt={`${safeString(vehicle.make, "Vehicle")} ${safeString(vehicle.model)}`}
                               className={`w-24 h-16 object-cover rounded-none transition-opacity duration-200 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-                              onLoad={() => setImgLoaded(true)}
-                              onError={() => setImgLoaded(false)}
+                              onLoad={() => handleImageLoad(vehicleId)}
+                              onError={() => handleImageError(vehicleId)}
                             />
                           )}
                         </div>
