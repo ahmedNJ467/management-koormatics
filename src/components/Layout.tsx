@@ -9,6 +9,7 @@ import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 import { getCachedSession, sessionCache } from "@/lib/session-cache";
 import { debugDomainDetection } from "@/utils/subdomain";
+import { cn } from "@/lib/utils";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -265,14 +266,23 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
             {/* Sidebar - Below navbar, slides in/out */}
             <div
-              className={`
-            ${sidebarOpen ? "w-64" : "w-0"}
-            transition-all duration-300 ease-in-out
-            bg-background border-r
-            overflow-hidden
-          `}
+              className={cn(
+                sidebarOpen ? "w-64" : "w-0",
+                "transition-all duration-300 ease-in-out",
+                "bg-background border-r overflow-hidden",
+                // Fixed positioning on mobile to ensure it appears above overlay
+                isMobile && sidebarOpen
+                  ? "fixed top-16 left-0 h-[calc(100vh-4rem)] z-50"
+                  : "relative"
+              )}
+              onClick={(e) => {
+                // Stop propagation to prevent overlay from closing sidebar when clicking inside
+                if (isMobile) {
+                  e.stopPropagation();
+                }
+              }}
             >
-              <Sidebar />
+              <Sidebar onLinkClick={isMobile ? () => setSidebarOpen(false) : undefined} />
             </div>
 
             {/* Main Content - Naturally expands/contracts */}

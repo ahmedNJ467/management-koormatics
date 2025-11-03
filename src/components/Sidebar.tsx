@@ -124,7 +124,11 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
   ],
 };
 
-const Sidebar = memo(function Sidebar() {
+interface SidebarComponentProps {
+  onLinkClick?: () => void;
+}
+
+const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -134,6 +138,13 @@ const Sidebar = memo(function Sidebar() {
     new Set()
   );
   const { data: pages = [], isLoading } = usePageAccess();
+
+  // Handle link click to close sidebar on mobile
+  const handleLinkClick = useCallback(() => {
+    if (onLinkClick && isMobile) {
+      onLinkClick();
+    }
+  }, [onLinkClick, isMobile]);
 
   // Prefetch vehicles data on hover for instant loading
   const prefetchVehicles = useCallback(() => {
@@ -233,6 +244,7 @@ const Sidebar = memo(function Sidebar() {
               : "text-muted-foreground hover:text-foreground hover:bg-accent"
           )}
           prefetch={true}
+          onClick={handleLinkClick}
         >
           <BarChart className="h-4 w-4" />
           <span>Dashboard</span>
@@ -269,6 +281,7 @@ const Sidebar = memo(function Sidebar() {
                         onMouseEnter={
                           item.href === "/vehicles" ? prefetchVehicles : undefined
                         }
+                        onClick={handleLinkClick}
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.name}</span>
