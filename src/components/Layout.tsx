@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCachedSession, sessionCache } from "@/lib/session-cache";
 import { debugDomainDetection } from "@/utils/subdomain";
 import { cn } from "@/lib/utils";
+import { useInactivityTimeout } from "@/hooks/use-inactivity-timeout";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +25,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   // Ensure component is mounted on client side to prevent hydration mismatch
   useEffect(() => {
@@ -198,6 +201,38 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleToggleSidebar]);
+
+  // Handle auto-logout after 10 minutes of inactivity
+  const handleInactivityTimeout = useCallback(async () => {
+    try {
+      // Sign out user
+      await signOut();
+
+      // Redirect to auth page if not already there
+      if (pathname !== "/auth") {
+        router.push("/auth");
+      }
+    } catch (error) {
+      console.error("Error during inactivity timeout logout:", error);
+      // Fallback: clear storage and redirect
+      try {
+        localStorage.removeItem("supabase.auth.token");
+        sessionStorage.removeItem("supabase.auth.token");
+        if (pathname !== "/auth") {
+          router.push("/auth");
+        }
+      } catch (e) {
+        console.error("Error during fallback logout:", e);
+      }
+    }
+  }, [signOut, router, pathname]);
+
+  // Use inactivity timeout hook (only when authenticated)
+  useInactivityTimeout({
+    timeoutMs: 10 * 60 * 1000, // 10 minutes
+    enabled: isAuthenticated === true, // Only enable when authenticated
+    onTimeout: handleInactivityTimeout,
+  });
 
   // Handle loading and access states
   // Prevent hydration mismatch by showing loading until mounted
