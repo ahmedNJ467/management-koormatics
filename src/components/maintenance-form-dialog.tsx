@@ -38,12 +38,24 @@ export function MaintenanceFormDialog({
 
   useEffect(() => {
     if (maintenance) {
+      // Format dates for HTML date input (YYYY-MM-DD format)
+      const formatDateForInput = (dateString: string | undefined): string => {
+        if (!dateString) return "";
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return "";
+          return date.toISOString().split("T")[0];
+        } catch {
+          return "";
+        }
+      };
+
       form.reset({
         vehicle_id: maintenance.vehicle_id,
-        date: maintenance.date,
+        date: formatDateForInput(maintenance.date),
         description: maintenance.description,
-        expense: maintenance.cost,
-        next_scheduled: maintenance.next_scheduled || "",
+        expense: maintenance.expense,
+        next_scheduled: formatDateForInput(maintenance.next_scheduled),
         status: maintenance.status,
         notes: maintenance.notes || "",
         service_provider: maintenance.service_provider || "",

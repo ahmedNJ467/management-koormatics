@@ -61,8 +61,18 @@ export default function Maintenance() {
         .from("maintenance")
         .select(
           `
-          *,
-          vehicle:vehicles (
+          id,
+          vehicle_id,
+          date,
+          description,
+          expense,
+          status,
+          service_provider,
+          notes,
+          created_at,
+          updated_at,
+          next_scheduled,
+          vehicles!maintenance_vehicle_id_fkey (
             id,
             make,
             model,
@@ -73,7 +83,12 @@ export default function Maintenance() {
         .order("date", { ascending: false });
 
       if (error) throw error;
-      return safeArrayResult<Maintenance>(data);
+      // Transform vehicles to vehicle (column names now match form fields exactly)
+      const transformedData = (data || []).map((item: any) => ({
+        ...item,
+        vehicle: item.vehicles || null,
+      }));
+      return safeArrayResult<Maintenance>(transformedData);
     },
   });
 
@@ -122,7 +137,7 @@ export default function Maintenance() {
 
   // Calculate summary statistics
   const totalCost =
-    filteredRecords?.reduce((sum, record) => sum + record.cost, 0) || 0;
+    filteredRecords?.reduce((sum, record) => sum + record.expense, 0) || 0;
   const completedCount =
     filteredRecords?.filter((record) => record.status === "completed").length ||
     0;
@@ -160,7 +175,7 @@ export default function Maintenance() {
           `"${record.description}"`,
           record.service_provider || "",
           record.status,
-          record.cost,
+          record.expense,
           record.next_scheduled
             ? new Date(record.next_scheduled).toLocaleDateString()
             : "",
@@ -449,7 +464,7 @@ export default function Maintenance() {
                     </TableCell>
                     <TableCell className="text-right">
                       $
-                      {record.cost.toLocaleString(undefined, {
+                      {record.expense.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}

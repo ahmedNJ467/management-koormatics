@@ -29,6 +29,7 @@ export default function Vehicles() {
     data: vehicles,
     isLoading,
     error,
+    isFetching,
   } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
@@ -50,32 +51,34 @@ export default function Vehicles() {
 
       if (!vehiclesData) return [];
 
+      // Optimize data transformation - only set defaults where needed
       const sanitizedVehicles = vehiclesData.map((v: any) => ({
-        ...v,
-        id: (v as any).id || "",
-        make: (v as any).make || "",
-        model: (v as any).model || "",
-        registration: (v as any).registration || "",
-        type: (v as any).type || "",
-        status: (v as any).status || "active",
-        year: (v as any).year || null,
-        color: (v as any).color || "",
-        vin: (v as any).vin || "",
-        insurance_expiry: (v as any).insurance_expiry || null,
-        notes: (v as any).notes || "",
-        created_at: (v as any).created_at || new Date().toISOString(),
-        updated_at: (v as any).updated_at || new Date().toISOString(),
-        images: Array.isArray((v as any).images) ? (v as any).images : [],
+        id: v.id || "",
+        make: v.make || "",
+        model: v.model || "",
+        registration: v.registration || "",
+        type: v.type || "",
+        status: v.status || "active",
+        year: v.year ?? null,
+        color: v.color || "",
+        vin: v.vin || "",
+        insurance_expiry: v.insurance_expiry ?? null,
+        notes: v.notes || "",
+        created_at: v.created_at || new Date().toISOString(),
+        updated_at: v.updated_at || new Date().toISOString(),
+        images: Array.isArray(v.images) ? v.images : [],
       }));
 
       return sanitizedVehicles as Vehicle[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for longer
-    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
+    staleTime: 30 * 60 * 1000, // 30 minutes - data is fresh for longer
+    gcTime: 60 * 60 * 1000, // 1 hour - keep in cache longer
     refetchOnWindowFocus: false, // Don't refetch when window gets focus
     refetchOnMount: false, // Don't refetch when component mounts - use cached data
     placeholderData: (previousData) => previousData, // Show cached data immediately
     retry: 1,
+    // Optimistic updates - show cached data while fetching in background
+    notifyOnChangeProps: ["data", "error"], // Only notify on data or error changes
   });
 
   // Filter vehicles based on search and filters
@@ -225,12 +228,14 @@ export default function Vehicles() {
         {/* Content */}
         {error ? (
           <VehiclesError />
+        ) : isLoading && !vehicles ? (
+          <VehiclesLoading />
         ) : vehicles && vehicles.length > 0 ? (
           viewMode === "table" ? (
             <VehicleTable
               vehicles={paginatedVehicles}
               onVehicleClick={handleVehicleClick}
-              isLoading={false}
+              isLoading={isFetching && vehicles.length > 0}
             />
           ) : (
             <VehicleCards

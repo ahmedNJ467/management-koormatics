@@ -3,6 +3,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { AppDomain } from "@/utils/subdomain";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -125,12 +127,34 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
 const Sidebar = memo(function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { domain } = useTenantScope();
   const isMobile = useIsMobile();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
   const { data: pages = [], isLoading } = usePageAccess();
+
+  // Prefetch vehicles data on hover for instant loading
+  const prefetchVehicles = useCallback(() => {
+    const cachedData = queryClient.getQueryData(["vehicles"]);
+    if (!cachedData) {
+      queryClient.prefetchQuery({
+        queryKey: ["vehicles"],
+        queryFn: async () => {
+          const { data, error } = await supabase
+            .from("vehicles")
+            .select(
+              "id, make, model, registration, type, status, year, color, vin, insurance_expiry, notes, created_at, updated_at, images"
+            )
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+          return data || [];
+        },
+        staleTime: 30 * 60 * 1000,
+      });
+    }
+  }, [queryClient]);
 
   // Function to check if user has access to a specific page
   const hasAccess = useCallback(
@@ -242,6 +266,9 @@ const Sidebar = memo(function Sidebar() {
                             : "text-muted-foreground hover:text-foreground hover:bg-accent"
                         )}
                         prefetch={true}
+                        onMouseEnter={
+                          item.href === "/vehicles" ? prefetchVehicles : undefined
+                        }
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.name}</span>
@@ -289,6 +316,11 @@ const Sidebar = memo(function Sidebar() {
                               : "text-muted-foreground hover:text-foreground hover:bg-accent"
                           )}
                           prefetch={true}
+                          onMouseEnter={
+                            item.href === "/vehicles"
+                              ? prefetchVehicles
+                              : undefined
+                          }
                         >
                           <item.icon className="h-4 w-4" />
                           <span>{item.name}</span>

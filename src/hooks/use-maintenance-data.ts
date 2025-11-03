@@ -10,8 +10,18 @@ export function useMaintenanceData() {
         .from("maintenance")
         .select(
           `
-          *,
-          vehicle:vehicles (
+          id,
+          vehicle_id,
+          date,
+          description,
+          expense,
+          status,
+          service_provider,
+          notes,
+          created_at,
+          updated_at,
+          next_scheduled,
+          vehicles!maintenance_vehicle_id_fkey (
             id,
             make,
             model,
@@ -27,7 +37,8 @@ export function useMaintenanceData() {
       const transformedData = (data || []).map((item: any) => ({
         ...item,
         status: item.status || ("scheduled" as const), // Provide default status
-        cost: item.cost || 0, // Ensure cost is a number
+        expense: item.expense || 0, // Ensure expense is a number
+        vehicle: item.vehicles || null, // Map vehicles to vehicle to match type
       }));
 
       return transformedData;

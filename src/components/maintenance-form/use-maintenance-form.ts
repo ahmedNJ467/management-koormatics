@@ -28,15 +28,27 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  // Format dates for HTML date input (YYYY-MM-DD format)
+  const formatDateForInput = (dateString: string | undefined): string => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      return date.toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  };
+
   const form = useForm<MaintenanceFormValues>({
     resolver: zodResolver(maintenanceSchema),
     defaultValues: maintenance
       ? {
           vehicle_id: maintenance.vehicle_id,
-          date: maintenance.date,
+          date: formatDateForInput(maintenance.date),
           description: maintenance.description,
-          expense: maintenance.cost,
-          next_scheduled: maintenance.next_scheduled || "",
+          expense: maintenance.expense,
+          next_scheduled: formatDateForInput(maintenance.next_scheduled),
           status: maintenance.status,
           notes: maintenance.notes || "",
           service_provider: maintenance.service_provider || "",
@@ -70,9 +82,9 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
         vehicle_id: values.vehicle_id,
         date: values.date,
         description: values.description,
-        cost: Number(values.expense),
+        expense: Number(values.expense), // Column name matches form field exactly
         status: values.status,
-        next_scheduled: values.next_scheduled || null,
+        next_scheduled: values.next_scheduled || null, // Column name matches form field exactly
         notes: values.notes || null,
         service_provider: values.service_provider || null,
       };
@@ -84,17 +96,24 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
           .from("maintenance")
           .update(formattedValues as any)
           .eq("id", maintenance.id as any)
+          .select("id")
           .single();
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Maintenance update error:", updateError);
+          throw new Error(updateError.message || `Failed to update maintenance: ${updateError.code || "Unknown error"}`);
+        }
       } else {
         const { data: newMaintenance, error: insertError } = await supabase
           .from("maintenance")
           .insert(formattedValues as any)
-          .select()
+          .select("id, vehicle_id, date, description, expense, status, service_provider, notes, created_at, updated_at, next_scheduled")
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error("Maintenance insert error:", insertError);
+          throw new Error(insertError.message || `Failed to create maintenance: ${insertError.code || "Unknown error"}`);
+        }
         if (newMaintenance && "id" in newMaintenance) {
           maintenanceId = newMaintenance.id as any;
         }
@@ -113,11 +132,16 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
           // Update each selected spare part
           for (const part of values.spare_parts) {
             // Get current part data
-            const { data: currentPart } = await supabase
+            const { data: currentPart, error: partFetchError } = await supabase
               .from("spare_parts")
               .select("quantity, quantity_used, min_stock_level")
               .eq("id", part.id as any)
               .single();
+
+            if (partFetchError) {
+              console.error("Error fetching spare part:", partFetchError);
+              throw new Error(`Failed to fetch spare part: ${partFetchError.message || "Unknown error"}`);
+            }
 
             if (currentPart && "quantity" in currentPart) {
               const newQuantity = Math.max(
@@ -128,7 +152,7 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
                 ((currentPart as any).quantity_used || 0) + part.quantity;
 
               // Update the spare part
-              await supabase
+              const { error: partUpdateError } = await supabase
                 .from("spare_parts")
                 .update({
                   quantity: newQuantity,
@@ -143,6 +167,11 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
                       : "in_stock",
                 } as any)
                 .eq("id", part.id as any);
+
+              if (partUpdateError) {
+                console.error("Error updating spare part:", partUpdateError);
+                throw new Error(`Failed to update spare part: ${partUpdateError.message || "Unknown error"}`);
+              }
             }
           }
         }
@@ -154,9 +183,9 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
           vehicle_id: values.vehicle_id,
           date: values.next_scheduled,
           description: `Follow-up: ${values.description}`,
-          cost: 0, // Default cost for scheduled maintenance
+          expense: 0, // Default expense for scheduled maintenance
           status: "scheduled" as const, // Fix TypeScript issue by using 'as const'
-          next_scheduled: null, // Will be set when this maintenance is planned
+          next_scheduled: null, // Column name matches form field exactly
           notes: `Auto-generated follow-up maintenance for previous service on ${values.date}`,
           service_provider: values.service_provider || null,
         };
@@ -208,12 +237,34 @@ export function useMaintenanceForm(maintenance?: Maintenance) {
       form.reset();
     } catch (error) {
       console.error("Error:", error);
+      
+      // Better error message extraction
+      let errorMessage = "Failed to save maintenance record";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === "object") {
+        // Handle Supabase errors
+        const supabaseError = error as any;
+        if (supabaseError.message) {
+          errorMessage = supabaseError.message;
+        } else if (supabaseError.error) {
+          errorMessage = supabaseError.error;
+        } else if (supabaseError.code) {
+          errorMessage = `Error ${supabaseError.code}: ${supabaseError.message || "Unknown error"}`;
+        } else {
+          // Try to stringify the error object
+          try {
+            errorMessage = JSON.stringify(error);
+          } catch {
+            errorMessage = "An unknown error occurred";
+          }
+        }
+      }
+      
       toast({
         title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to save maintenance record",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

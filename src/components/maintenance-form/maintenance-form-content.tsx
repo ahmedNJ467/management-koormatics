@@ -80,10 +80,12 @@ export function MaintenanceFormContent({
         .from("spare_parts")
         .select("*")
         .gt("quantity", 0)
-        .in("status", ["in_stock", "low_stock"] as any)
         .order("name", { ascending: true });
 
       if (error) throw error;
+      
+      // All parts with quantity > 0 are either in_stock or low_stock (status is computed from quantity)
+      // So we don't need additional filtering beyond quantity > 0
       return (data || []) as unknown as SparePart[];
     },
   });

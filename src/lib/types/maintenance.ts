@@ -6,9 +6,9 @@ export interface Maintenance {
   vehicle_id: string;
   date: string;
   description: string;
-  cost: number;
+  expense: number; // Matches database column and form field name
   status: MaintenanceStatus;
-  next_scheduled?: string;
+  next_scheduled?: string; // Matches database column and form field name
   notes?: string;
   service_provider?: string;
   created_at?: string;

@@ -41,7 +41,20 @@ export function useReportsData() {
       const { data, error } = await supabase
         .from("maintenance")
         .select(
-          "*, vehicles!maintenance_vehicle_id_fkey(make, model, registration)"
+          `
+          id,
+          vehicle_id,
+          date,
+          description,
+          expense,
+          status,
+          service_provider,
+          notes,
+          created_at,
+          updated_at,
+          next_scheduled,
+          vehicles!maintenance_vehicle_id_fkey(make, model, registration)
+        `
         )
         .order("date", { ascending: false });
 

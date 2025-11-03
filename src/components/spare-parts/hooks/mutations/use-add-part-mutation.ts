@@ -40,23 +40,40 @@ export const useAddPartMutation = () => {
 
       console.log("Inserting part data:", partToInsert);
 
-      // First insert the part
+      // First insert the part - only select id first to avoid column errors
       const { data, error } = await supabase
         .from("spare_parts")
-        .insert([partToInsert] as any);
+        .insert([partToInsert] as any)
+        .select("id")
+        .single();
 
       if (error) {
         console.error("Error inserting part:", error);
-        throw error;
+        console.error("Error details:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw new Error(
+          `Failed to insert part: ${error.message || error.code || "Unknown error"}`
+        );
+      }
+
+      // Get the inserted part ID
+      const insertedPartId = data?.id || (data as any)?.id;
+      
+      if (!insertedPartId) {
+        throw new Error("Failed to get inserted part ID");
       }
 
       // Update part notes if provided
-      if (newPart.notes && data && data[0] && "id" in data[0]) {
-        await updatePartNotes((data[0] as any).id, newPart.notes);
+      if (newPart.notes && insertedPartId) {
+        await updatePartNotes(insertedPartId, newPart.notes);
       }
 
       // Handle image upload if provided
-      if (newPart.part_image instanceof File) {
+      if (newPart.part_image instanceof File && insertedPartId) {
         // Check if part_image column exists
         const hasPartImageColumn = await checkPartImageColumnExists();
 
@@ -68,13 +85,13 @@ export const useAddPartMutation = () => {
               "The part was saved but the database doesn't support image uploads",
             variant: "default",
           });
-          return data?.[0];
+          return data;
         }
 
         // Upload the image
         const filePath = await uploadPartImage(
           newPart.part_image,
-          data && data[0] && "id" in data[0] ? (data[0] as any).id : "",
+          insertedPartId,
           (errorMessage) => {
             toast({
               title: "Image upload failed",
@@ -84,10 +101,10 @@ export const useAddPartMutation = () => {
           }
         );
 
-        if (filePath && data && data[0] && "id" in data[0]) {
+        if (filePath && insertedPartId) {
           // Update the part with the image path
           await updatePartWithImagePath(
-            (data[0] as any).id,
+            insertedPartId,
             filePath,
             (errorMessage) => {
               toast({
@@ -100,7 +117,7 @@ export const useAddPartMutation = () => {
         }
       }
 
-      return data?.[0];
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spare_parts"] });
