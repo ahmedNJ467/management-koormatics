@@ -263,6 +263,7 @@ export function IncidentReportForm({
   onCancel,
 }: IncidentReportFormProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch vehicles for dropdown
@@ -398,12 +399,22 @@ export function IncidentReportForm({
 
       if (report) {
         // Update existing report
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("vehicle_incident_reports")
           .update(cleanedValues as any)
-          .eq("id", report.id as any);
+          .eq("id", report.id as any)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating incident report:", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            error: error,
+          });
+          throw new Error(error.message || `Failed to update incident report: ${error.code || "Unknown error"}`);
+        }
 
         // Upload images for existing report and insert DB rows
         if (imagesToUpload.length > 0) {
@@ -451,6 +462,19 @@ export function IncidentReportForm({
           }
         }
 
+        // Mark that updates have occurred
+        const { cacheInvalidationManager } = await import("@/lib/cache-invalidation");
+        cacheInvalidationManager.markRecentUpdates();
+
+        // Remove cached data to force fresh fetch
+        queryClient.removeQueries({ queryKey: ["vehicle-incident-reports"] });
+
+        // Invalidate and refetch to ensure fresh data
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["vehicle-incident-reports"] }),
+          queryClient.refetchQueries({ queryKey: ["vehicle-incident-reports"] }),
+        ]);
+
         toast({
           title: "Incident report updated",
           description: "The incident report has been updated successfully.",
@@ -463,7 +487,16 @@ export function IncidentReportForm({
           .select("id")
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating incident report:", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            error: error,
+          });
+          throw new Error(error.message || `Failed to create incident report: ${error.code || "Unknown error"}`);
+        }
 
         // Upload images for new report and insert DB rows
         if (created && 'id' in created && created.id && imagesToUpload.length > 0) {
@@ -511,6 +544,19 @@ export function IncidentReportForm({
           }
         }
 
+        // Mark that updates have occurred
+        const { cacheInvalidationManager } = await import("@/lib/cache-invalidation");
+        cacheInvalidationManager.markRecentUpdates();
+
+        // Remove cached data to force fresh fetch
+        queryClient.removeQueries({ queryKey: ["vehicle-incident-reports"] });
+
+        // Invalidate and refetch to ensure fresh data
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["vehicle-incident-reports"] }),
+          queryClient.refetchQueries({ queryKey: ["vehicle-incident-reports"] }),
+        ]);
+
         toast({
           title: "Incident report created",
           description: "The incident report has been created successfully.",
@@ -519,10 +565,38 @@ export function IncidentReportForm({
 
       onSuccess();
     } catch (error) {
-      console.error("Error saving incident report:", error);
+      // Extract error details more comprehensively
+      let errorDetails: any = {};
+      let errorMessage = "Failed to save incident report. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        errorDetails = {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        };
+      } else if (error && typeof error === "object") {
+        // Try to extract Supabase error properties
+        errorDetails = {
+          message: (error as any).message || "Unknown error",
+          code: (error as any).code,
+          details: (error as any).details,
+          hint: (error as any).hint,
+          error: error,
+        };
+        errorMessage = (error as any).message || errorDetails.code || errorMessage;
+      }
+
+      console.error("Error saving incident report:", {
+        error,
+        errorDetails,
+        errorString: JSON.stringify(error, null, 2),
+      });
+      
       toast({
         title: "Error",
-        description: "Failed to save incident report. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

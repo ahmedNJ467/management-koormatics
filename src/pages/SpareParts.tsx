@@ -8,6 +8,7 @@ import { PartsTable } from "@/components/spare-parts/parts-table/parts-table";
 import { AddPartDialog } from "@/components/spare-parts/dialogs/add-part-dialog";
 import { EditPartDialog } from "@/components/spare-parts/dialogs/edit-part-dialog";
 import { DeletePartDialog } from "@/components/spare-parts/dialogs/delete-part-dialog";
+import { PartDetailsDialog } from "@/components/spare-parts/dialogs/part-details-dialog";
 import { exportToCSV } from "@/components/reports/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -27,6 +28,7 @@ const SpareParts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
 
   // Simplified filter states
@@ -97,11 +99,18 @@ const SpareParts = () => {
   const openEditDialog = (part: SparePart) => {
     setSelectedPart(part);
     setIsEditDialogOpen(true);
+    setIsDetailsDialogOpen(false); // Close details dialog when opening edit
   };
 
   const openDeleteDialog = (part: SparePart) => {
     setSelectedPart(part);
     setIsDeleteDialogOpen(true);
+    setIsDetailsDialogOpen(false); // Close details dialog when opening delete
+  };
+
+  const handlePartClick = (part: SparePart) => {
+    setSelectedPart(part);
+    setIsDetailsDialogOpen(true);
   };
 
   const handleExportCSV = () => {
@@ -271,8 +280,7 @@ const SpareParts = () => {
         {/* Parts Table */}
         <PartsTable
           parts={paginatedParts}
-          onEdit={openEditDialog}
-          onDelete={openDeleteDialog}
+          onPartClick={handlePartClick}
           isLoading={false}
           onSort={handleSort}
           sortConfig={sortConfig}
@@ -399,10 +407,27 @@ const SpareParts = () => {
             if (selectedPart) {
               deletePartMutation.mutate(selectedPart.id);
               setIsDeleteDialogOpen(false);
+              setSelectedPart(null);
             }
           }}
           isDeleting={deletePartMutation.isPending}
           selectedPart={selectedPart}
+        />
+
+        <PartDetailsDialog
+          isOpen={isDetailsDialogOpen}
+          onOpenChange={setIsDetailsDialogOpen}
+          part={selectedPart}
+          onEdit={() => {
+            if (selectedPart) {
+              openEditDialog(selectedPart);
+            }
+          }}
+          onDelete={() => {
+            if (selectedPart) {
+              openDeleteDialog(selectedPart);
+            }
+          }}
         />
       </div>
     </div>

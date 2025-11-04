@@ -26,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import {
   Car,
@@ -99,6 +99,7 @@ export function VehicleInspectionForm({
   onCancel,
 }: VehicleInspectionFormProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch vehicles for dropdown
@@ -222,42 +223,195 @@ export function VehicleInspectionForm({
     return () => subscription.unsubscribe();
   }, [form]);
 
+  // Helper function to remove a column from data object
+  const removeColumn = (data: any, columnName: string): any => {
+    const filtered = { ...data };
+    delete filtered[columnName];
+    return filtered;
+  };
+
   const onSubmit = async (values: InspectionFormValues) => {
     setIsSubmitting(true);
     try {
+      let dataToSave: any = { ...values };
+      
+      // Auto-populate inspection_type based on pre_trip/post_trip if the column exists
+      if (values.pre_trip) {
+        dataToSave.inspection_type = "pre_trip";
+      } else if (values.post_trip) {
+        dataToSave.inspection_type = "post_trip";
+      } else {
+        dataToSave.inspection_type = "general";
+      }
+
+      // Map overall_status to status if status column exists (for database compatibility)
+      // Map 'pass' -> 'passed', 'fail' -> 'failed', 'conditional' -> 'pending'
+      if (values.overall_status) {
+        const statusMap: Record<string, string> = {
+          'pass': 'passed',
+          'fail': 'failed',
+          'conditional': 'pending'
+        };
+        dataToSave.status = statusMap[values.overall_status] || 'passed';
+      }
+      
+      const maxRetries = 5; // Prevent infinite loops
+      let skippedColumns: string[] = [];
+
+      const performOperation = async (operation: "insert" | "update"): Promise<{ data: any; skipped: string[] }> => {
+        let currentRetryCount = 0;
+        let currentDataToSave = { ...dataToSave };
+        const skipped: string[] = [];
+
+        while (currentRetryCount < maxRetries) {
+          if (operation === "update") {
+            const { data, error } = await supabase
+              .from("vehicle_inspections")
+              .update(currentDataToSave as any)
+              .eq("id", inspection!.id)
+              .select();
+
+            if (error) {
+              console.error("Supabase error during update:", {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+              });
+              
+              // If error is about missing column, remove it and retry
+              if ((error.code === "42703" || error.message?.includes("column")) && currentRetryCount < maxRetries - 1) {
+                const columnName = error.message.match(/column '([^']+)'/)?.[1];
+                if (columnName) {
+                  console.log(`Column ${columnName} does not exist in database, removing from update`);
+                  currentDataToSave = removeColumn(currentDataToSave, columnName);
+                  skipped.push(columnName);
+                  currentRetryCount++;
+                  continue; // Retry without the problematic column
+                }
+              }
+              
+              // Create a proper Error object with all details
+              const errorObj = new Error(error.message || `Database error: ${error.code || "Unknown"}`);
+              (errorObj as any).code = error.code;
+              (errorObj as any).details = error.details;
+              (errorObj as any).hint = error.hint;
+              throw errorObj;
+            }
+            return { data, skipped };
+          } else {
+            const { data, error } = await supabase
+              .from("vehicle_inspections")
+              .insert([currentDataToSave] as any)
+              .select();
+
+            if (error) {
+              console.error("Supabase error during insert:", {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+              });
+              
+              // If error is about missing column, remove it and retry
+              if ((error.code === "42703" || error.message?.includes("column")) && currentRetryCount < maxRetries - 1) {
+                const columnName = error.message.match(/column '([^']+)'/)?.[1];
+                if (columnName) {
+                  console.log(`Column ${columnName} does not exist in database, removing from insert`);
+                  currentDataToSave = removeColumn(currentDataToSave, columnName);
+                  skipped.push(columnName);
+                  currentRetryCount++;
+                  continue; // Retry without the problematic column
+                }
+              }
+              
+              // Create a proper Error object with all details
+              const errorObj = new Error(error.message || `Database error: ${error.code || "Unknown"}`);
+              (errorObj as any).code = error.code;
+              (errorObj as any).details = error.details;
+              (errorObj as any).hint = error.hint;
+              throw errorObj;
+            }
+            return { data, skipped };
+          }
+        }
+        throw new Error("Maximum retries reached while removing missing columns");
+      };
+
+      let result;
       if (inspection) {
         // Update existing inspection
-        const { error } = await supabase
-          .from("vehicle_inspections")
-          .update(values as any)
-          .eq("id", inspection.id);
-
-        if (error) throw error;
-
-        toast({
-          title: "Inspection updated",
-          description: "The vehicle inspection has been updated successfully.",
-        });
+        result = await performOperation("update");
       } else {
         // Create new inspection
-        const { error } = await supabase
-          .from("vehicle_inspections")
-          .insert(values as any);
+        result = await performOperation("insert");
+      }
 
-        if (error) throw error;
+      skippedColumns = result.skipped;
 
+      if (inspection) {
+        toast({
+          title: "Inspection updated",
+          description: skippedColumns.length > 0 
+            ? `The vehicle inspection has been updated successfully. Note: ${skippedColumns.join(", ")} column(s) are not available in the database.`
+            : "The vehicle inspection has been updated successfully.",
+        });
+      } else {
         toast({
           title: "Inspection created",
-          description: "The vehicle inspection has been created successfully.",
+          description: skippedColumns.length > 0
+            ? `The vehicle inspection has been created successfully. Note: ${skippedColumns.join(", ")} column(s) are not available in the database.`
+            : "The vehicle inspection has been created successfully.",
         });
       }
 
+      // Mark that updates have occurred
+      const { cacheInvalidationManager } = await import("@/lib/cache-invalidation");
+      cacheInvalidationManager.markRecentUpdates();
+
+      // Remove cached data to force fresh fetch
+      queryClient.removeQueries({ queryKey: ["vehicle-inspections"] });
+
+      // Invalidate and refetch to ensure fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["vehicle-inspections"] }),
+        queryClient.refetchQueries({ queryKey: ["vehicle-inspections"] }),
+      ]);
+
       onSuccess();
     } catch (error) {
-      console.error("Error saving inspection:", error);
+      // Extract error details more comprehensively
+      let errorDetails: any = {};
+      let errorMessage = "Failed to save inspection. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        errorDetails = {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        };
+      } else if (error && typeof error === "object") {
+        // Try to extract Supabase error properties
+        errorDetails = {
+          message: (error as any).message || "Unknown error",
+          code: (error as any).code,
+          details: (error as any).details,
+          hint: (error as any).hint,
+          error: error,
+        };
+        errorMessage = (error as any).message || errorDetails.code || errorMessage;
+      }
+
+      console.error("Error saving inspection:", {
+        error,
+        errorDetails,
+        errorString: JSON.stringify(error, null, 2),
+      });
+      
       toast({
         title: "Error",
-        description: "Failed to save inspection. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

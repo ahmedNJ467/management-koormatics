@@ -8,13 +8,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Edit, Trash2, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 
 interface PartsTableProps {
   parts: SparePart[];
-  onEdit: (part: SparePart) => void;
-  onDelete: (part: SparePart) => void;
+  onPartClick: (part: SparePart) => void;
   isLoading: boolean;
   onSort: (column: string) => void;
   sortConfig: { column: string; direction: "asc" | "desc" };
@@ -22,8 +20,7 @@ interface PartsTableProps {
 
 export const PartsTable = ({
   parts,
-  onEdit,
-  onDelete,
+  onPartClick,
   isLoading,
   onSort,
   sortConfig,
@@ -73,21 +70,24 @@ export const PartsTable = ({
     if (part.quantity <= 0) {
       return {
         label: "Out of Stock",
-        variant: "destructive" as const,
-        color: "text-red-600 dark:text-red-400",
+        icon: XCircle,
+        className: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 dark:bg-red-500/20 dark:border-red-500/30",
+        iconClassName: "text-red-600 dark:text-red-400",
       };
     }
     if (part.quantity <= part.min_stock_level) {
       return {
         label: "Low Stock",
-        variant: "secondary" as const,
-        color: "text-yellow-600 dark:text-yellow-400",
+        icon: AlertTriangle,
+        className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 dark:bg-yellow-500/20 dark:border-yellow-500/30",
+        iconClassName: "text-yellow-600 dark:text-yellow-400",
       };
     }
     return {
       label: "In Stock",
-      variant: "default" as const,
-      color: "text-green-600 dark:text-green-400",
+      icon: CheckCircle,
+      className: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 dark:bg-green-500/20 dark:border-green-500/30",
+      iconClassName: "text-green-600 dark:text-green-400",
     };
   };
 
@@ -145,7 +145,6 @@ export const PartsTable = ({
               </div>
             </TableHead>
             <TableHead className="min-w-[120px]">Stock Status</TableHead>
-            <TableHead className="min-w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -154,7 +153,8 @@ export const PartsTable = ({
             return (
               <TableRow
                 key={part.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                onClick={() => onPartClick(part)}
               >
                 <TableCell className="font-medium py-3">{part.name}</TableCell>
                 <TableCell className="font-mono text-sm py-3">
@@ -176,38 +176,20 @@ export const PartsTable = ({
                   ${part.unit_price.toFixed(2)}
                 </TableCell>
                 <TableCell className="py-3">
-                  <div className="flex flex-col gap-1">
-                    <Badge
-                      variant={stockStatus.variant}
-                      className={stockStatus.color}
-                    >
-                      {stockStatus.label}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Min: {part.min_stock_level}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="py-3">
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(part)}
-                      title="Edit part"
-                      className="h-8 w-8 p-0 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(part)}
-                      title="Delete part"
-                      className="h-8 w-8 p-0 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <stockStatus.icon className={`h-4 w-4 ${stockStatus.iconClassName}`} />
+                      <Badge
+                        variant="outline"
+                        className={`${stockStatus.className} font-medium text-xs`}
+                      >
+                        {stockStatus.label}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="font-medium">Min:</span>
+                      <span>{part.min_stock_level}</span>
+                    </div>
                   </div>
                 </TableCell>
               </TableRow>

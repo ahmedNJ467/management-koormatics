@@ -80,22 +80,37 @@ export class CacheInvalidationManager {
 
   /**
    * Invalidate specific query keys and refetch immediately
+   * This ensures data is fresh after mutations
    */
   async invalidateAndRefetch(queryKeys: string[][]): Promise<void> {
     if (!this.queryClient) return;
 
     try {
-      // Invalidate queries
+      // Mark that updates have occurred
+      this.markRecentUpdates();
+
+      // Remove cached data for these queries to force fresh fetch
+      queryKeys.forEach((key) => {
+        this.queryClient!.removeQueries({ queryKey: key });
+      });
+
+      // Invalidate queries (marks them as stale)
       await Promise.all(
         queryKeys.map((key) =>
-          this.queryClient!.invalidateQueries({ queryKey: key })
+          this.queryClient!.invalidateQueries({ 
+            queryKey: key,
+            refetchType: 'active' // Only refetch active queries
+          })
         )
       );
 
-      // Refetch immediately
+      // Force immediate refetch regardless of stale time
       await Promise.all(
         queryKeys.map((key) =>
-          this.queryClient!.refetchQueries({ queryKey: key })
+          this.queryClient!.refetchQueries({ 
+            queryKey: key,
+            type: 'active' // Only refetch active queries
+          })
         )
       );
 
@@ -139,7 +154,7 @@ export class CacheInvalidationManager {
 
     // Clear caches when page is about to unload (after updates)
     window.addEventListener("beforeunload", () => {
-      // Only clear if there were recent updates (you can add a flag for this)
+      // Only clear if there were recent updates
       const hasRecentUpdates = sessionStorage.getItem("has_recent_updates");
       if (hasRecentUpdates) {
         sessionCache.clearCache();
@@ -154,6 +169,7 @@ export class CacheInvalidationManager {
   markRecentUpdates(): void {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("has_recent_updates", "true");
+      sessionStorage.setItem("last_update_time", Date.now().toString());
     }
   }
 

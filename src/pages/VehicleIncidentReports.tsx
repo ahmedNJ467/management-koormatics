@@ -123,7 +123,16 @@ export default function VehicleIncidentReports() {
         .select("*")
         .order("incident_date", { ascending: false });
 
-      if (reportsError) throw reportsError;
+      if (reportsError) {
+        console.error("Error fetching incident reports:", {
+          message: reportsError.message,
+          code: reportsError.code,
+          details: reportsError.details,
+          hint: reportsError.hint,
+          error: reportsError,
+        });
+        throw reportsError;
+      }
 
       // Fetch vehicles data
       const { data: vehiclesData, error: vehiclesError } = await supabase

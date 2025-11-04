@@ -11,6 +11,7 @@ import {
 } from "../../utils/upload-utils";
 import { updatePartNotes } from "../../utils/notes-utils";
 import { getStatusFromQuantity } from "../../utils/status-utils";
+import { cacheInvalidationManager } from "@/lib/cache-invalidation";
 
 export const useAddPartMutation = () => {
   const { toast } = useToast();
@@ -119,8 +120,19 @@ export const useAddPartMutation = () => {
 
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["spare_parts"] });
+    onSuccess: async () => {
+      // Mark that updates have occurred
+      cacheInvalidationManager.markRecentUpdates();
+      
+      // Remove cached data to force fresh fetch
+      queryClient.removeQueries({ queryKey: ["spare_parts"] });
+      
+      // Invalidate and refetch to ensure fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["spare_parts"] }),
+        queryClient.refetchQueries({ queryKey: ["spare_parts"] }),
+      ]);
+      
       toast({
         title: "Part added successfully",
         description: "The new part has been added to inventory.",

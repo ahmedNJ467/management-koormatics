@@ -238,7 +238,19 @@ export function useVehicleFormSubmit(
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      // Mark that updates have occurred
+      const { cacheInvalidationManager } = await import("@/lib/cache-invalidation");
+      cacheInvalidationManager.markRecentUpdates();
+      
+      // Remove cached data to force fresh fetch
+      queryClient.removeQueries({ queryKey: ["vehicles"] });
+      
+      // Invalidate and refetch to ensure fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["vehicles"] }),
+        queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+      ]);
+      
       onOpenChange(false);
     } catch (error) {
       handleError(

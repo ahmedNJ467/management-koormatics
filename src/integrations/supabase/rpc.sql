@@ -59,6 +59,7 @@ END;
 $$;
 
 -- Function to update a part's notes
+-- This function checks if the notes column exists before updating
 CREATE OR REPLACE FUNCTION public.update_part_notes(
   part_id UUID,
   notes_value TEXT
@@ -66,9 +67,21 @@ CREATE OR REPLACE FUNCTION public.update_part_notes(
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  UPDATE public.spare_parts
-  SET notes = notes_value
-  WHERE id = part_id;
+  -- Check if notes column exists before updating
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'spare_parts' 
+    AND column_name = 'notes'
+  ) THEN
+    UPDATE public.spare_parts
+    SET notes = notes_value
+    WHERE id = part_id;
+  ELSE
+    -- If notes column doesn't exist, silently do nothing
+    -- This prevents errors when the column hasn't been added to the database
+    RAISE NOTICE 'notes column does not exist in spare_parts table';
+  END IF;
 END;
 $$;
 

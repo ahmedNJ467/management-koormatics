@@ -168,17 +168,32 @@ export const deletePartImage = async (imagePath: string): Promise<boolean> => {
 
 export const checkPartImageColumnExists = async (): Promise<boolean> => {
   try {
-    const { data: columnCheck } = await supabase
+    // Try to select the part_image column
+    // If it doesn't exist, we'll get an error
+    const { data: columnCheck, error } = await supabase
       .from("spare_parts")
       .select("part_image")
       .limit(1);
 
-    const hasPartImageColumn =
-      columnCheck && columnCheck.length > 0 && "part_image" in columnCheck[0];
+    // If there's an error, the column likely doesn't exist
+    if (error) {
+      // Check if it's a column doesn't exist error (code 42703 or similar)
+      if (error.code === "42703" || error.message?.includes("column") || error.message?.includes("does not exist")) {
+        console.log("part_image column does not exist in the database");
+        return false;
+      }
+      // Other errors might be permission issues, but we'll assume column doesn't exist
+      console.log("Error checking part_image column:", error.message);
+      return false;
+    }
 
-    return hasPartImageColumn || false;
+    // If we got data (even if null), the column exists
+    const hasPartImageColumn = columnCheck !== null && columnCheck !== undefined;
+
+    return hasPartImageColumn;
   } catch (error) {
-    console.error("Error checking part_image column:", error);
+    // If any exception occurs, assume column doesn't exist
+    console.log("Error checking part_image column:", error);
     return false;
   }
 };

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Car,
@@ -21,6 +22,9 @@ import {
   XCircle,
   FileText,
   Clock,
+  Edit,
+  Trash2,
+  FileDown,
 } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 
@@ -28,12 +32,18 @@ interface InspectionDetailsDialogProps {
   inspection: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onDownloadPdf?: () => void;
 }
 
 export function InspectionDetailsDialog({
   inspection,
   open,
   onOpenChange,
+  onEdit,
+  onDelete,
+  onDownloadPdf,
 }: InspectionDetailsDialogProps) {
   if (!inspection) return null;
 
@@ -408,6 +418,33 @@ export function InspectionDetailsDialog({
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Actions */}
+          {(onEdit || onDelete || onDownloadPdf) && (
+            <div className="flex items-center justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+              {onDownloadPdf && (
+                <Button variant="outline" onClick={onDownloadPdf}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="destructive" onClick={onDelete}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+              {onEdit && (
+                <Button onClick={onEdit}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </DialogContent>

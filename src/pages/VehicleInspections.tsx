@@ -15,11 +15,6 @@ import {
   Filter,
   Car,
   User,
-  Eye,
-  Edit,
-  Trash2,
-  MoreVertical,
-  FileDown,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,12 +33,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isValid } from "date-fns";
@@ -270,7 +259,16 @@ export default function VehicleInspections() {
 
   const handleEditInspection = (inspection: VehicleInspection) => {
     setSelectedInspection(inspection);
+    setDetailsOpen(false);
     setFormOpen(true);
+  };
+
+  const handleDeleteInspection = (inspectionId: string) => {
+    if (confirm("Are you sure you want to delete this inspection?")) {
+      deleteMutation.mutate(inspectionId);
+      setDetailsOpen(false);
+      setSelectedInspection(null);
+    }
   };
 
   const handleDownloadPdf = async (inspection: VehicleInspection) => {
@@ -542,19 +540,22 @@ export default function VehicleInspections() {
                     <TableHead>Mileage</TableHead>
                     <TableHead>Fuel Level</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredInspections?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={8} className="text-center py-8">
                         No inspections found
                       </TableCell>
                     </TableRow>
                   ) : (
                     paginatedInspections?.map((inspection: any) => (
-                      <TableRow key={inspection.id}>
+                      <TableRow 
+                        key={inspection.id}
+                        className="hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => handleViewDetails(inspection)}
+                      >
                         <TableCell>
                           {formatDate(inspection.inspection_date)}
                         </TableCell>
@@ -601,42 +602,6 @@ export default function VehicleInspections() {
                               </Badge>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleViewDetails(inspection)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleEditInspection(inspection)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDownloadPdf(inspection)}
-                              >
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Download PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(inspection.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
@@ -791,6 +756,21 @@ export default function VehicleInspections() {
           inspection={selectedInspection}
           open={detailsOpen}
           onOpenChange={setDetailsOpen}
+          onEdit={() => {
+            if (selectedInspection) {
+              handleEditInspection(selectedInspection);
+            }
+          }}
+          onDelete={() => {
+            if (selectedInspection) {
+              handleDeleteInspection(selectedInspection.id);
+            }
+          }}
+          onDownloadPdf={() => {
+            if (selectedInspection) {
+              handleDownloadPdf(selectedInspection);
+            }
+          }}
         />
       </div>
     </div>

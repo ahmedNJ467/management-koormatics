@@ -11,8 +11,6 @@ import {
 } from "@/components/ui/table";
 import {
   Plus,
-  Pencil,
-  Trash2,
   Search,
   Filter,
   Download,
@@ -22,13 +20,14 @@ import {
   Car,
   TrendingUp,
   AlertTriangle,
-  MoreVertical,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { FuelLog } from "@/lib/types";
 import { AddFuelLogDialog } from "@/components/fuel-log-form/add-fuel-log-dialog";
 import { EditFuelLogDialog } from "@/components/fuel-log-form/edit-fuel-log-dialog";
+import { FuelLogDetailsDialog } from "@/components/fuel-log-form/fuel-log-details-dialog";
+import { TankFillDetailsDialog } from "@/components/fuel-log-form/tank-fill-details-dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -75,12 +74,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import { safeArrayResult, safeSingleResult } from "@/lib/utils/type-guards";
 import type { Tank, TankFill, TankStats } from "@/lib/types/fuel";
 
@@ -91,6 +84,9 @@ function FuelLogs() {
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [selectedFuelLog, setSelectedFuelLog] = useState<FuelLog | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isTankFillDetailsDialogOpen, setIsTankFillDetailsDialogOpen] = useState(false);
+  const [selectedTankFill, setSelectedTankFill] = useState<TankFill | null>(null);
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -995,15 +991,12 @@ function FuelLogs() {
                         Distance (km)
                       </TableHead>
                       <TableHead className="font-medium">Filled By</TableHead>
-                      <TableHead className="w-[100px] font-medium">
-                        Actions
-                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredFuelLogs.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8">
+                        <TableCell colSpan={8} className="text-center py-8">
                           <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <Fuel className="h-8 w-8" />
                             {hasActiveFilters ? (
@@ -1051,7 +1044,11 @@ function FuelLogs() {
                         return (
                           <TableRow
                             key={log.id}
-                            className="hover:bg-muted/30 transition-colors"
+                            className="hover:bg-muted/30 transition-colors cursor-pointer"
+                            onClick={() => {
+                              setSelectedFuelLog(log);
+                              setIsDetailsDialogOpen(true);
+                            }}
                           >
                             <TableCell>
                               <div className="flex items-center gap-2">
@@ -1117,32 +1114,6 @@ function FuelLogs() {
                               <span className="text-sm text-muted-foreground">
                                 {log.filled_by || "—"}
                               </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setSelectedFuelLog(log);
-                                    setEditFormOpen(true);
-                                  }}
-                                  className="h-8 w-8"
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setSelectedFuelLog(log);
-                                    setShowDeleteConfirm(true);
-                                  }}
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -1228,6 +1199,25 @@ function FuelLogs() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {/* Fuel Log Details Dialog */}
+            <FuelLogDetailsDialog
+              isOpen={isDetailsDialogOpen}
+              onOpenChange={setIsDetailsDialogOpen}
+              fuelLog={selectedFuelLog}
+              onEdit={() => {
+                if (selectedFuelLog) {
+                  setIsDetailsDialogOpen(false);
+                  setEditFormOpen(true);
+                }
+              }}
+              onDelete={() => {
+                if (selectedFuelLog) {
+                  setIsDetailsDialogOpen(false);
+                  setShowDeleteConfirm(true);
+                }
+              }}
+            />
           </TabsContent>
           <TabsContent value="tanks">
             {/* Summary cards removed per requirements */}
@@ -1343,14 +1333,13 @@ function FuelLogs() {
                         <TableHead>Total Cost</TableHead>
                         <TableHead>Supplier</TableHead>
                         <TableHead>Notes</TableHead>
-                        <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tankFills.length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={7}
+                            colSpan={6}
                             className="text-center text-muted-foreground"
                           >
                             No fill history for this tank.
@@ -1358,7 +1347,14 @@ function FuelLogs() {
                         </TableRow>
                       ) : (
                         tankFills.map((fill) => (
-                          <TableRow key={fill.id}>
+                          <TableRow 
+                            key={fill.id}
+                            className="hover:bg-muted/30 transition-colors cursor-pointer"
+                            onClick={() => {
+                              setSelectedTankFill(fill);
+                              setIsTankFillDetailsDialogOpen(true);
+                            }}
+                          >
                             <TableCell>{fill.fill_date}</TableCell>
                             <TableCell>{fill.amount}</TableCell>
                             <TableCell>
@@ -1373,31 +1369,6 @@ function FuelLogs() {
                             </TableCell>
                             <TableCell>{fill.supplier || "-"}</TableCell>
                             <TableCell>{fill.notes || "-"}</TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem
-                                    onClick={() => handleEditFill(fill)}
-                                  >
-                                    <Pencil className="h-4 w-4 mr-2" /> Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setEditingFill(fill);
-                                      setShowDeleteDialog(true);
-                                    }}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
                           </TableRow>
                         ))
                       )}
@@ -1673,6 +1644,26 @@ function FuelLogs() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {/* Tank Fill Details Dialog */}
+            <TankFillDetailsDialog
+              isOpen={isTankFillDetailsDialogOpen}
+              onOpenChange={setIsTankFillDetailsDialogOpen}
+              tankFill={selectedTankFill}
+              onEdit={() => {
+                if (selectedTankFill) {
+                  setIsTankFillDetailsDialogOpen(false);
+                  handleEditFill(selectedTankFill);
+                }
+              }}
+              onDelete={() => {
+                if (selectedTankFill) {
+                  setIsTankFillDetailsDialogOpen(false);
+                  setEditingFill(selectedTankFill);
+                  setShowDeleteDialog(true);
+                }
+              }}
+            />
           </TabsContent>
         </Tabs>
       </div>

@@ -30,6 +30,7 @@ export default function Vehicles() {
     isLoading,
     error,
     isFetching,
+    refetch,
   } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
@@ -71,15 +72,27 @@ export default function Vehicles() {
 
       return sanitizedVehicles as Vehicle[];
     },
-    staleTime: 30 * 60 * 1000, // 30 minutes - data is fresh for longer
+    staleTime: 0, // Always consider data stale to force refetch on mount
     gcTime: 60 * 60 * 1000, // 1 hour - keep in cache longer
-    refetchOnWindowFocus: false, // Don't refetch when window gets focus
-    refetchOnMount: false, // Don't refetch when component mounts - use cached data
-    placeholderData: (previousData) => previousData, // Show cached data immediately
-    retry: 1,
-    // Optimistic updates - show cached data while fetching in background
-    notifyOnChangeProps: ["data", "error"], // Only notify on data or error changes
+    refetchOnWindowFocus: true, // Refetch when window gets focus to get latest data
+    refetchOnMount: true, // Force refetch on mount regardless of stale time
+    refetchOnReconnect: true, // Refetch when network reconnects
+    retry: 2, // Retry failed requests
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
+
+  // Force initial fetch on mount - ensure data loads immediately
+  useEffect(() => {
+    // Always refetch on mount to ensure fresh data
+    // This bypasses any cache issues or default QueryClient settings
+    const timer = setTimeout(() => {
+      if (!isFetching && !isLoading) {
+        refetch();
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []); // Only run on mount
 
   // Filter vehicles based on search and filters
   const filteredVehicles = useMemo(() => {
@@ -143,8 +156,20 @@ export default function Vehicles() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    onSuccess: async () => {
+      // Mark that updates have occurred
+      const { cacheInvalidationManager } = await import("@/lib/cache-invalidation");
+      cacheInvalidationManager.markRecentUpdates();
+      
+      // Remove cached data to force fresh fetch
+      queryClient.removeQueries({ queryKey: ["vehicles"] });
+      
+      // Invalidate and refetch to ensure fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["vehicles"] }),
+        queryClient.refetchQueries({ queryKey: ["vehicles"] }),
+      ]);
+      
       toast({
         title: "Vehicle deleted",
         description: "Vehicle has been successfully deleted",
@@ -228,7 +253,7 @@ export default function Vehicles() {
         {/* Content */}
         {error ? (
           <VehiclesError />
-        ) : isLoading && !vehicles ? (
+        ) : (isLoading || isFetching) && !vehicles ? (
           <VehiclesLoading />
         ) : vehicles && vehicles.length > 0 ? (
           viewMode === "table" ? (

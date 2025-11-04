@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { deletePartImage } from "../../utils/upload-utils";
+import { cacheInvalidationManager } from "@/lib/cache-invalidation";
 
 export const useDeletePartMutation = () => {
   const { toast } = useToast();
@@ -36,8 +37,19 @@ export const useDeletePartMutation = () => {
       
       return partId;
     },
-    onSuccess: (id) => {
-      queryClient.invalidateQueries({ queryKey: ["spare_parts"] });
+    onSuccess: async (id) => {
+      // Mark that updates have occurred
+      cacheInvalidationManager.markRecentUpdates();
+      
+      // Remove cached data to force fresh fetch
+      queryClient.removeQueries({ queryKey: ["spare_parts"] });
+      
+      // Invalidate and refetch to ensure fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["spare_parts"] }),
+        queryClient.refetchQueries({ queryKey: ["spare_parts"] }),
+      ]);
+      
       toast({
         title: "Part deleted",
         description: "The part has been removed from inventory.",

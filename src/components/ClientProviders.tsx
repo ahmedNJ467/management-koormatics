@@ -16,19 +16,27 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30 * 60 * 1000, // 30 minutes - data stays fresh longer
-            gcTime: 60 * 60 * 1000, // 1 hour - keep in cache longer
+            staleTime: 0, // Always consider data stale - force refetch after mutations
+            gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache for shorter time
             retry: 1,
-            refetchOnWindowFocus: false, // Don't refetch on focus - use cache
-            refetchOnMount: false, // Don't refetch on mount - use cache for instant loading
+            refetchOnWindowFocus: true, // Refetch on focus to get latest data
+            refetchOnMount: true, // Always refetch on mount to ensure fresh data
             refetchOnReconnect: true,
-            placeholderData: (previousData: any) => previousData, // Show cached data immediately
+            placeholderData: (previousData: any) => previousData, // Show cached data immediately while fetching
             retryOnMount: false, // Don't retry on mount - use cache
             retryDelay: 1000,
           },
           mutations: {
             retry: 1,
             retryDelay: 1000,
+            // Automatically mark updates after any successful mutation
+            onSuccess: () => {
+              // Mark that updates have occurred for cache clearing on refresh
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("has_recent_updates", "true");
+                sessionStorage.setItem("last_update_time", Date.now().toString());
+              }
+            },
           },
         },
       })
@@ -38,6 +46,33 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
     cacheInvalidationManager.setQueryClient(queryClient);
     cacheInvalidationManager.setupAutoClearOnUnload();
+
+    // Check for recent updates on mount and clear stale cache BEFORE any queries run
+    // This MUST run synchronously in the useEffect to clear cache before queries execute
+    if (typeof window !== "undefined") {
+      const hasRecentUpdates = sessionStorage.getItem("has_recent_updates");
+      const lastUpdateTime = sessionStorage.getItem("last_update_time");
+      
+      if (hasRecentUpdates || lastUpdateTime) {
+        // Clear all React Query cache immediately
+        queryClient.clear();
+        
+        // Also clear browser caches if available (async but fire and forget)
+        if ("caches" in window) {
+          caches.keys().then((cacheNames) => {
+            cacheNames.forEach((name) => {
+              caches.delete(name).catch(() => {});
+            });
+          }).catch(() => {});
+        }
+        
+        // Remove the flags after clearing
+        sessionStorage.removeItem("has_recent_updates");
+        sessionStorage.removeItem("last_update_time");
+        
+        console.log("Cache cleared due to recent updates detected - fresh data will be fetched");
+      }
+    }
   }, [queryClient]);
 
   // On build change, clear caches and unregister service workers to avoid stale assets
@@ -105,6 +140,22 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
       }
     })();
   }, [queryClient]);
+
+  // Add a beforeunload handler to ensure cache is marked before page refresh
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // If there are recent updates, ensure they're persisted
+      const hasRecentUpdates = sessionStorage.getItem("has_recent_updates");
+      if (hasRecentUpdates) {
+        // Keep the flag so it's detected on next page load
+        sessionStorage.setItem("has_recent_updates", "true");
+        sessionStorage.setItem("last_update_time", Date.now().toString());
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
