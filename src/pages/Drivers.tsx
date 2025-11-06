@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DriverFormDialog } from "@/components/driver-form-dialog";
+import { DriverDetailsDialog } from "@/components/drivers/driver-details-dialog";
+import { DeleteDriverDialog } from "@/components/driver-form/delete-driver-dialog";
 import type { Driver } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +43,10 @@ export default function Drivers() {
   const queryClient = useQueryClient();
   const [isAddingDriver, setIsAddingDriver] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | undefined>();
+  const [driverForDetails, setDriverForDetails] = useState<Driver | null>(null);
+  const [driverForEdit, setDriverForEdit] = useState<Driver | undefined>();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [driverToDelete, setDriverToDelete] = useState<Driver | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [licenseTypeFilter, setLicenseTypeFilter] = useState<string>("all");
@@ -235,6 +241,8 @@ export default function Drivers() {
   const handleDriverDeleted = () => {
     queryClient.invalidateQueries({ queryKey: ["drivers"] });
     setSelectedDriver(undefined);
+    setDriverToDelete(undefined);
+    setShowDeleteDialog(false);
   };
 
   // Quick action handlers
@@ -330,7 +338,22 @@ export default function Drivers() {
   }, [queryClient]);
 
   const handleDriverClick = (driver: Driver) => {
-    setSelectedDriver(driver);
+    setDriverForDetails(driver);
+  };
+
+  const handleEditFromDetails = () => {
+    if (driverForDetails) {
+      setDriverForEdit(driverForDetails);
+      setDriverForDetails(null);
+    }
+  };
+
+  const handleDeleteFromDetails = () => {
+    if (driverForDetails) {
+      setDriverToDelete(driverForDetails);
+      setDriverForDetails(null);
+      setShowDeleteDialog(true);
+    }
   };
 
   // Filter drivers based on search and filters
@@ -964,14 +987,34 @@ export default function Drivers() {
           </div>
         )}
 
+        <DriverDetailsDialog
+          isOpen={!!driverForDetails}
+          onOpenChange={(open) => {
+            if (!open) setDriverForDetails(null);
+          }}
+          driver={driverForDetails}
+          onEdit={handleEditFromDetails}
+          onDelete={handleDeleteFromDetails}
+        />
+
         <DriverFormDialog
-          open={isAddingDriver || !!selectedDriver}
+          open={isAddingDriver || !!driverForEdit || !!selectedDriver}
           onOpenChange={(open) => {
             setIsAddingDriver(open);
-            if (!open) setSelectedDriver(undefined);
+            if (!open) {
+              setDriverForEdit(undefined);
+              setSelectedDriver(undefined);
+            }
           }}
-          driver={selectedDriver}
+          driver={driverForEdit || selectedDriver}
           onDriverDeleted={handleDriverDeleted}
+        />
+
+        <DeleteDriverDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          driver={driverToDelete}
+          onDelete={handleDriverDeleted}
         />
       </div>
     </div>
