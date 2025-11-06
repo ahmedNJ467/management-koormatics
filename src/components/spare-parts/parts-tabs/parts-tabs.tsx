@@ -53,8 +53,7 @@ export const PartsTabs = ({
         <TabsContent value="all" className="mt-3">
           <PartsTable
             parts={filteredParts}
-            onEdit={onEdit}
-            onDelete={onDelete}
+            onPartClick={onEdit}
             isLoading={isLoading}
             onSort={onSort}
             sortConfig={sortConfig}
@@ -64,8 +63,7 @@ export const PartsTabs = ({
         <TabsContent value="in_stock" className="mt-3">
           <PartsTable
             parts={inStockParts}
-            onEdit={onEdit}
-            onDelete={onDelete}
+            onPartClick={onEdit}
             isLoading={isLoading}
             onSort={onSort}
             sortConfig={sortConfig}
@@ -75,8 +73,7 @@ export const PartsTabs = ({
         <TabsContent value="low_stock" className="mt-3">
           <PartsTable
             parts={lowStockParts}
-            onEdit={onEdit}
-            onDelete={onDelete}
+            onPartClick={onEdit}
             isLoading={isLoading}
             onSort={onSort}
             sortConfig={sortConfig}
@@ -86,8 +83,7 @@ export const PartsTabs = ({
         <TabsContent value="out_of_stock" className="mt-3">
           <PartsTable
             parts={outOfStockParts}
-            onEdit={onEdit}
-            onDelete={onDelete}
+            onPartClick={onEdit}
             isLoading={isLoading}
             onSort={onSort}
             sortConfig={sortConfig}

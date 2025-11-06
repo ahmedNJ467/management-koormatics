@@ -43,7 +43,7 @@ export const PartDetailsDialog = ({
       if (part.part_image.startsWith("http://") || part.part_image.startsWith("https://")) {
         setImageUrl(part.part_image);
         setIsLoadingImage(false);
-      } else {
+      } else if (part.part_image) {
         // It's a storage path, convert to public URL
         getPublicImageUrl(part.part_image)
           .then((url) => {
@@ -51,22 +51,28 @@ export const PartDetailsDialog = ({
               setImageUrl(url);
             } else {
               // If getPublicImageUrl fails, try direct Supabase URL
-              const { data } = supabase.storage
-                .from("images")
-                .getPublicUrl(part.part_image);
-              setImageUrl(data?.publicUrl || null);
+              if (part.part_image) {
+                const { data } = supabase.storage
+                  .from("images")
+                  .getPublicUrl(part.part_image);
+                setImageUrl(data?.publicUrl || null);
+              }
             }
             setIsLoadingImage(false);
           })
           .catch((error) => {
             console.error("Error loading image URL:", error);
             // Fallback: try direct Supabase URL
-            try {
-              const { data } = supabase.storage
-                .from("images")
-                .getPublicUrl(part.part_image);
-              setImageUrl(data?.publicUrl || null);
-            } catch (e) {
+            if (part.part_image) {
+              try {
+                const { data } = supabase.storage
+                  .from("images")
+                  .getPublicUrl(part.part_image);
+                setImageUrl(data?.publicUrl || null);
+              } catch (e) {
+                setImageUrl(null);
+              }
+            } else {
               setImageUrl(null);
             }
             setIsLoadingImage(false);
