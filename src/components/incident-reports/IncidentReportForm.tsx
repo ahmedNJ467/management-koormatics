@@ -93,7 +93,7 @@ function ExistingIncidentImages({
       return;
     }
     const confirmDelete = window.confirm(
-      "Remove this photo from the incident?"
+      "Are you sure you want to delete this photo from the incident record? This action cannot be undone."
     );
     if (!confirmDelete) return;
     // Remove from storage
