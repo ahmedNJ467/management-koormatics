@@ -37,6 +37,16 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -105,6 +115,9 @@ export default function VehicleIncidentReports() {
   const [formOpen, setFormOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedReport, setSelectedReport] =
+    useState<VehicleIncidentReport | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] =
     useState<VehicleIncidentReport | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<string>("all");
@@ -326,10 +339,23 @@ export default function VehicleIncidentReports() {
     },
   });
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this incident report?")) {
-      deleteMutation.mutate(id);
-    }
+  const openDeleteDialog = (report: VehicleIncidentReport) => {
+    setReportToDelete(report);
+    setDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setReportToDelete(null);
+  };
+
+  const confirmDelete = () => {
+    if (!reportToDelete) return;
+    deleteMutation.mutate(reportToDelete.id, {
+      onSettled: () => {
+        closeDeleteDialog();
+      },
+    });
   };
 
   const handleViewDetails = (report: VehicleIncidentReport) => {
@@ -901,7 +927,7 @@ export default function VehicleIncidentReports() {
                                 Export PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDelete(report.id)}
+                                onClick={() => openDeleteDialog(report)}
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -1043,6 +1069,47 @@ export default function VehicleIncidentReports() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setReportToDelete(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Incident Report</AlertDialogTitle>
+              <AlertDialogDescription>
+                {reportToDelete
+                  ? `Are you sure you want to delete the incident report for ${
+                      reportToDelete.vehicle
+                        ? `${reportToDelete.vehicle.make} ${reportToDelete.vehicle.model} (${reportToDelete.vehicle.registration})`
+                        : "this vehicle"
+                    }? This action cannot be undone.`
+                  : "Are you sure you want to delete this incident report? This action cannot be undone."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={() => closeDeleteDialog()}
+                disabled={deleteMutation.isLoading}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleteMutation.isLoading}
+              >
+                {deleteMutation.isLoading ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Details Dialog */}
         <IncidentDetailsDialog
