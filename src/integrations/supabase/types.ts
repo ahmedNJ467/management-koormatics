@@ -1173,6 +1173,42 @@ export type Database = {
         }
         Relationships: []
       }
+      security_guards: {
+        Row: {
+          created_at: string | null
+          id: string
+          id_number: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          rank: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          id_number?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          rank?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          id_number?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          rank?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           actual_dropoff_time: string | null

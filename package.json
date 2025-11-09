@@ -4,6 +4,9 @@
   "version": "1.0.2",
   "scripts": {
     "dev": "next dev --port 8080",
+    "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/kill-port-8080.ps1; npm run dev",
+    "dev:start": "powershell -ExecutionPolicy Bypass -File scripts/start-dev-server.ps1",
+    "kill:8080": "powershell -ExecutionPolicy Bypass -File scripts/kill-port-8080.ps1",
     "build": "next build",
     "build:dev": "NODE_ENV=development next build",
     "build:windows": "node scripts/build-windows.js",
