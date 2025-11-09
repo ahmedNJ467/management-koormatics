@@ -1096,16 +1096,16 @@ export default function VehicleIncidentReports() {
             <AlertDialogFooter>
               <AlertDialogCancel
                 onClick={() => closeDeleteDialog()}
-                disabled={deleteMutation.isLoading}
+                disabled={deleteMutation.isPending}
               >
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDelete}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                disabled={deleteMutation.isLoading}
+                disabled={deleteMutation.isPending}
               >
-                {deleteMutation.isLoading ? "Deleting..." : "Delete"}
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
