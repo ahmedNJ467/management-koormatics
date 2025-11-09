@@ -65,10 +65,13 @@ export default function SecurityEscorts() {
     queryKey: ["security_guards"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("security_guards" as any)
-        .select("*")
+        .from("security_guards")
+        .select("id, name, phone, id_number, rank, status, notes, created_at, updated_at")
         .order("created_at", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching security guards:", error);
+        throw error;
+      }
       return safeArrayResult<Guard>(data);
     },
   });

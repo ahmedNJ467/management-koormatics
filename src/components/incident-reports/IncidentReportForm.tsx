@@ -371,31 +371,85 @@ export function IncidentReportForm({
       const { incident_images, ...formValues } = values;
       const imagesToUpload = (incident_images || []).filter((img) => img?.file);
 
+      // Helper function to safely trim strings
+      const safeTrim = (value: string | undefined | null): string | null => {
+        if (!value || typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed === "" ? null : trimmed;
+      };
+
+      // Helper function to validate UUID format
+      const isValidUUID = (uuid: string | null | undefined): boolean => {
+        if (!uuid) return false;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(uuid);
+      };
+
+      // Handle cost fields: convert 0 or undefined to null, but preserve positive values
+      const estimatedCost = values.estimated_damage_cost && values.estimated_damage_cost > 0 
+        ? values.estimated_damage_cost 
+        : null;
+      const actualCost = values.actual_repair_cost && values.actual_repair_cost > 0 
+        ? values.actual_repair_cost 
+        : null;
+
+      // Validate required fields before sending
+      if (!values.vehicle_id) {
+        throw new Error("Vehicle is required");
+      }
+      if (!isValidUUID(values.vehicle_id)) {
+        throw new Error("Invalid vehicle ID format. Please select a valid vehicle.");
+      }
+      if (values.driver_id && values.driver_id !== "none" && !isValidUUID(values.driver_id)) {
+        throw new Error("Invalid driver ID format. Please select a valid driver or leave it empty.");
+      }
+      if (!values.location || (typeof values.location === 'string' && values.location.trim().length === 0)) {
+        throw new Error("Location is required");
+      }
+      if (!values.description || (typeof values.description === 'string' && values.description.trim().length < 10)) {
+        throw new Error("Description must be at least 10 characters");
+      }
+      if (!values.reported_by || (typeof values.reported_by === 'string' && values.reported_by.trim().length === 0)) {
+        throw new Error("Reporter name is required");
+      }
+      // Validate date format
+      if (!values.incident_date || !/^\d{4}-\d{2}-\d{2}$/.test(values.incident_date)) {
+        throw new Error("Invalid incident date format. Please select a valid date.");
+      }
+
       const cleanedValues = {
         vehicle_id: values.vehicle_id,
-        driver_id: values.driver_id === "none" ? null : values.driver_id,
+        driver_id: values.driver_id === "none" || !values.driver_id ? null : values.driver_id,
         incident_date: values.incident_date,
-        incident_time: values.incident_time || null,
+        incident_time: safeTrim(values.incident_time),
         incident_type: values.incident_type,
         severity: values.severity,
         status: values.status,
-        location: values.location,
-        description: values.description,
-        injuries_reported: values.injuries_reported,
-        police_report_number: values.police_report_number || null,
-        insurance_claim_number: values.insurance_claim_number || null,
-        estimated_damage_cost: values.estimated_damage_cost || null,
-        actual_repair_cost: values.actual_repair_cost || null,
-        third_party_involved: values.third_party_involved,
-        third_party_details: values.third_party_details || null,
-        witness_details: values.witness_details || null,
+        location: typeof values.location === 'string' ? values.location.trim() : String(values.location || ''),
+        description: typeof values.description === 'string' ? values.description.trim() : String(values.description || ''),
+        injuries_reported: values.injuries_reported ?? false,
+        police_report_number: safeTrim(values.police_report_number),
+        insurance_claim_number: safeTrim(values.insurance_claim_number),
+        estimated_damage_cost: estimatedCost,
+        actual_repair_cost: actualCost,
+        third_party_involved: values.third_party_involved ?? false,
+        third_party_details: safeTrim(values.third_party_details),
+        witness_details: safeTrim(values.witness_details),
         // If new images present, ensure photos_attached true
-        photos_attached: imagesToUpload.length > 0 || values.photos_attached,
-        reported_by: values.reported_by,
-        follow_up_required: values.follow_up_required,
-        follow_up_date: values.follow_up_date || null,
-        notes: values.notes || null,
+        photos_attached: imagesToUpload.length > 0 || values.photos_attached || false,
+        reported_by: typeof values.reported_by === 'string' ? values.reported_by.trim() : String(values.reported_by || ''),
+        follow_up_required: values.follow_up_required ?? false,
+        follow_up_date: safeTrim(values.follow_up_date),
+        notes: safeTrim(values.notes),
       };
+
+      // Log the data being sent for debugging
+      console.log("Attempting to save incident report with data:", {
+        ...cleanedValues,
+        // Don't log sensitive details, just structure
+        vehicle_id: cleanedValues.vehicle_id ? `${cleanedValues.vehicle_id.substring(0, 8)}...` : null,
+        driver_id: cleanedValues.driver_id ? `${cleanedValues.driver_id.substring(0, 8)}...` : null,
+      });
 
       if (report) {
         // Update existing report
@@ -406,14 +460,32 @@ export function IncidentReportForm({
           .select();
 
         if (error) {
-          console.error("Error updating incident report:", {
+          // Create a detailed error message
+          const errorInfo = {
             message: error.message,
             code: error.code,
             details: error.details,
             hint: error.hint,
-            error: error,
-          });
-          throw new Error(error.message || `Failed to update incident report: ${error.code || "Unknown error"}`);
+            status: (error as any).status,
+            statusText: (error as any).statusText,
+          };
+          
+          console.error("Error updating incident report:", errorInfo);
+          console.error("Full error object:", error);
+          console.error("Data that was sent:", cleanedValues);
+          
+          // Build a user-friendly error message
+          let userMessage = error.message || "Failed to update incident report";
+          if (error.details) {
+            userMessage += `: ${error.details}`;
+          } else if (error.hint) {
+            userMessage += `: ${error.hint}`;
+          }
+          if (error.code) {
+            userMessage += ` (${error.code})`;
+          }
+          
+          throw new Error(userMessage);
         }
 
         // Upload images for existing report and insert DB rows
@@ -488,14 +560,32 @@ export function IncidentReportForm({
           .single();
 
         if (error) {
-          console.error("Error creating incident report:", {
+          // Create a detailed error message
+          const errorInfo = {
             message: error.message,
             code: error.code,
             details: error.details,
             hint: error.hint,
-            error: error,
-          });
-          throw new Error(error.message || `Failed to create incident report: ${error.code || "Unknown error"}`);
+            status: (error as any).status,
+            statusText: (error as any).statusText,
+          };
+          
+          console.error("Error creating incident report:", errorInfo);
+          console.error("Full error object:", error);
+          console.error("Data that was sent:", cleanedValues);
+          
+          // Build a user-friendly error message
+          let userMessage = error.message || "Failed to create incident report";
+          if (error.details) {
+            userMessage += `: ${error.details}`;
+          } else if (error.hint) {
+            userMessage += `: ${error.hint}`;
+          }
+          if (error.code) {
+            userMessage += ` (${error.code})`;
+          }
+          
+          throw new Error(userMessage);
         }
 
         // Upload images for new report and insert DB rows
@@ -578,26 +668,35 @@ export function IncidentReportForm({
         };
       } else if (error && typeof error === "object") {
         // Try to extract Supabase error properties
+        const supabaseError = error as any;
         errorDetails = {
-          message: (error as any).message || "Unknown error",
-          code: (error as any).code,
-          details: (error as any).details,
-          hint: (error as any).hint,
-          error: error,
+          message: supabaseError.message || "Unknown error",
+          code: supabaseError.code,
+          details: supabaseError.details,
+          hint: supabaseError.hint,
+          status: supabaseError.status,
+          statusText: supabaseError.statusText,
         };
-        errorMessage = (error as any).message || errorDetails.code || errorMessage;
+        errorMessage = supabaseError.message || errorDetails.code || errorMessage;
       }
 
-      console.error("Error saving incident report:", {
-        error,
-        errorDetails,
-        errorString: JSON.stringify(error, null, 2),
-      });
+      // Log comprehensive error information
+      console.error("Error saving incident report:");
+      console.error("Error object:", error);
+      console.error("Error details:", errorDetails);
+      
+      // Try to stringify error for better visibility
+      try {
+        console.error("Error as JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      } catch (e) {
+        console.error("Could not stringify error:", e);
+      }
       
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
+        duration: 10000, // Show longer so user can read it
       });
     } finally {
       setIsSubmitting(false);
