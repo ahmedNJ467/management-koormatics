@@ -396,14 +396,7 @@ export default function Invoices() {
 
         {/* Invoices Table */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Invoices</CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <InvoicesTable
               invoices={enhancedFilteredInvoices.filter(
                 (invoice): invoice is DisplayInvoice => invoice !== null
