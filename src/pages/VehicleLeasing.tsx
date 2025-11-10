@@ -643,14 +643,14 @@ export default function VehicleLeasing() {
         {/* Summary Cards - match Quotations */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Total Leases
               </CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="px-4 pb-3 pt-1">
-              <div className="text-2xl font-bold">{summaryStats.total}</div>
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">{summaryStats.total}</div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 All lease agreements
               </p>
@@ -658,27 +658,27 @@ export default function VehicleLeasing() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Active Leases
               </CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="px-4 pb-3 pt-1">
-              <div className="text-2xl font-bold">{summaryStats.active}</div>
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">{summaryStats.active}</div>
               <p className="text-xs text-muted-foreground mt-0.5">Currently active</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Expiring Soon
               </CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="px-4 pb-3 pt-1">
-              <div className="text-2xl font-bold">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">
                 {summaryStats.expiringSoon}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">Within 30 days</p>
@@ -686,14 +686,14 @@ export default function VehicleLeasing() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Monthly Revenue
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="px-4 pb-3 pt-1">
-              <div className="text-2xl font-bold">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">
                 ${summaryStats.monthlyRevenue.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -703,12 +703,12 @@ export default function VehicleLeasing() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="px-4 pb-3 pt-1">
-              <div className="text-2xl font-bold">{summaryStats.overdue}</div>
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">{summaryStats.overdue}</div>
               <p className="text-xs text-muted-foreground mt-0.5">Payment overdue</p>
             </CardContent>
           </Card>

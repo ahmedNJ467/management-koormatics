@@ -276,123 +276,78 @@ export default function Invoices() {
         </div>
 
         {/* Analytics Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Total Invoices
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analytics.total}</div>
-              <p className="text-xs text-muted-foreground">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">{analytics.total}</div>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {analytics.draft} draft, {analytics.sent} sent
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">
                 {formatCurrency(analytics.totalValue)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Avg: {formatCurrency(analytics.avgInvoiceValue)}
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold text-orange-600">
                 {formatCurrency(analytics.outstandingValue)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {analytics.sent + analytics.overdue} unpaid
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">Paid Value</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold text-green-600">
                 {formatCurrency(analytics.paidValue)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {analytics.paid} paid invoices
               </p>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Additional Analytics Row */}
-        <div className="grid gap-4 md:grid-cols-3">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertCircle className="h-3.5 w-3.5 text-red-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold text-red-600">
                 {formatCurrency(analytics.overdueValue)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {analytics.overdue} overdue invoices
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Payment Rate
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.total > 0
-                  ? Math.round((analytics.paid / analytics.total) * 100)
-                  : 0}
-                %
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Invoice completion rate
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Collection Rate
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.totalValue > 0
-                  ? Math.round(
-                      (analytics.paidValue / analytics.totalValue) * 100
-                    )
-                  : 0}
-                %
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Value collection rate
               </p>
             </CardContent>
           </Card>

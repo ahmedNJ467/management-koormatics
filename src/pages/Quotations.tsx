@@ -534,64 +534,64 @@ export default function Quotations() {
         {/* Analytics Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Total Quotations
               </CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analytics.total}</div>
-              <p className="text-xs text-muted-foreground">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">{analytics.total}</div>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {analytics.draft} draft, {analytics.sent} sent
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">
                 {formatCurrency(analytics.totalValue)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Avg: {formatCurrency(analytics.avgValue)}
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Pending Value
               </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold">
                 {formatCurrency(analytics.pendingValue)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {analytics.draft + analytics.sent} quotations
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0.5 pt-2 px-3">
               <CardTitle className="text-sm font-medium">
                 Approved Value
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="px-3 pb-2 pt-0.5">
+              <div className="text-xl font-bold text-green-600">
                 {formatCurrency(analytics.approvedValue)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {analytics.approved} approved
               </p>
             </CardContent>
