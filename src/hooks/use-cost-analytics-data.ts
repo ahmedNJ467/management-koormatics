@@ -53,7 +53,7 @@ export function useCostAnalyticsData(selectedYear: string) {
         // Try fetching maintenance data without the join first
         const { data, error } = await supabase
           .from("maintenance")
-          .select("cost, description, date, vehicle_id, status")
+          .select("expense, description, date, vehicle_id, status")
           .gte("date", `${selectedYear}-01-01`)
           .lte("date", `${selectedYear}-12-31`);
 
