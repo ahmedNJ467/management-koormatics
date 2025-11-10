@@ -302,7 +302,19 @@ export default function SecurityEscorts() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={() => setAddOpen(true)} size="sm">
+              <Button
+                onClick={() => {
+                  setEditingGuardId(null);
+                  setGName("");
+                  setGPhone("");
+                  setGIdNo("");
+                  setGRank("");
+                  setGStatus("active");
+                  setGNotes("");
+                  setAddOpen(true);
+                }}
+                size="sm"
+              >
                 Add Guard
               </Button>
             </div>
@@ -370,7 +382,16 @@ export default function SecurityEscorts() {
                   className="flex-1"
                 />
               </div>
-              <Button onClick={() => setTeamOpen(true)} size="sm">
+              <Button
+                onClick={() => {
+                  setEditingTeamId(null);
+                  setTeamName("");
+                  setSelectedIds([]);
+                  setTeamVehicleId("");
+                  setTeamOpen(true);
+                }}
+                size="sm"
+              >
                 Create Team
               </Button>
             </div>
@@ -563,125 +584,215 @@ export default function SecurityEscorts() {
         </Dialog>
 
         {/* Add Guard Dialog */}
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogContent className="sm:max-w-[700px]">
+        <Dialog
+          open={addOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingGuardId(null);
+              setGName("");
+              setGPhone("");
+              setGIdNo("");
+              setGRank("");
+              setGStatus("active");
+              setGNotes("");
+            }
+            setAddOpen(open);
+          }}
+        >
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{editingGuardId ? "Edit Guard" : "Onboard Guard"}</DialogTitle>
-              <DialogDescription>Enter basic details.</DialogDescription>
+              <DialogTitle>
+                {editingGuardId ? "Edit Guard" : "Onboard Guard"}
+              </DialogTitle>
+              <DialogDescription>
+                {editingGuardId
+                  ? "Update the guard's information below."
+                  : "Enter the guard's basic details to onboard them."}
+              </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-              <Input
-                placeholder="Full name"
-                value={gName}
-                onChange={(e) => setGName(e.target.value)}
-                className="md:col-span-2"
-              />
-              <Input
-                placeholder="Phone"
-                value={gPhone}
-                onChange={(e) => setGPhone(e.target.value)}
-                className="md:col-span-1"
-              />
-              <Input
-                placeholder="ID/Badge No."
-                value={gIdNo}
-                onChange={(e) => setGIdNo(e.target.value)}
-                className="md:col-span-1"
-              />
-              <Input
-                placeholder="Rank/Role"
-                value={gRank}
-                onChange={(e) => setGRank(e.target.value)}
-                className="md:col-span-1"
-              />
-              <Select value={gStatus} onValueChange={setGStatus}>
-                <SelectTrigger className="md:col-span-1">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="leave">On Leave</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Notes"
-                value={gNotes}
-                onChange={(e) => setGNotes(e.target.value)}
-                className="md:col-span-6"
-              />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Full Name *</label>
+                  <Input
+                    placeholder="Enter full name"
+                    value={gName}
+                    onChange={(e) => setGName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Phone</label>
+                  <Input
+                    placeholder="Enter phone number"
+                    value={gPhone}
+                    onChange={(e) => setGPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">ID/Badge Number</label>
+                  <Input
+                    placeholder="Enter ID or badge number"
+                    value={gIdNo}
+                    onChange={(e) => setGIdNo(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Rank/Role</label>
+                  <Input
+                    placeholder="Enter rank or role"
+                    value={gRank}
+                    onChange={(e) => setGRank(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Status</label>
+                  <Select value={gStatus} onValueChange={setGStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="leave">On Leave</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Notes</label>
+                <Input
+                  placeholder="Enter any additional notes"
+                  value={gNotes}
+                  onChange={(e) => setGNotes(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAddOpen(false)}>
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAddOpen(false);
+                  setEditingGuardId(null);
+                  setGName("");
+                  setGPhone("");
+                  setGIdNo("");
+                  setGRank("");
+                  setGStatus("active");
+                  setGNotes("");
+                }}
+              >
                 Cancel
               </Button>
               <Button
                 onClick={() => addGuard.mutate()}
                 disabled={!gName.trim() || addGuard.isPending}
               >
-                {addGuard.isPending ? "Saving..." : editingGuardId ? "Save Changes" : "Add Guard"}
+                {addGuard.isPending
+                  ? "Saving..."
+                  : editingGuardId
+                  ? "Save Changes"
+                  : "Add Guard"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
 
         {/* Create Team Dialog */}
-        <Dialog open={teamOpen} onOpenChange={setTeamOpen}>
-          <DialogContent className="sm:max-w-[800px]">
+        <Dialog
+          open={teamOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingTeamId(null);
+              setTeamName("");
+              setSelectedIds([]);
+              setTeamVehicleId("");
+            }
+            setTeamOpen(open);
+          }}
+        >
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{editingTeamId ? "Edit Team" : "Create Team"}</DialogTitle>
+              <DialogTitle>
+                {editingTeamId ? "Edit Team" : "Create Team"}
+              </DialogTitle>
               <DialogDescription>
-                Assign a vehicle and select guards.
+                {editingTeamId
+                  ? "Update the team's vehicle and guard assignments."
+                  : "Assign a vehicle and select guards to create a new escort team."}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-              <Input
-                placeholder="Team name"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                className="md:col-span-3"
-              />
-              <Select value={teamVehicleId} onValueChange={setTeamVehicleId}>
-                <SelectTrigger className="md:col-span-3">
-                  <SelectValue placeholder="Select vehicle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(availableVehicles || []).map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.registration || `${v.make || ""} ${v.model || ""}`}
-                    </SelectItem>
-                  ))}
-                  {availableVehicles.length === 0 && (
-                    <div className="px-2 py-1 text-xs text-muted-foreground">
-                      No available vehicles
-                    </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Team Name *</label>
+                  <Input
+                    placeholder="Enter team name"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Vehicle *</label>
+                  <Select value={teamVehicleId} onValueChange={setTeamVehicleId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(availableVehicles || []).map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.registration || `${v.make || ""} ${v.model || ""}`}
+                        </SelectItem>
+                      ))}
+                      {availableVehicles.length === 0 && (
+                        <div className="px-2 py-1 text-sm text-muted-foreground">
+                          No available vehicles
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Guards</label>
+                <div className="border rounded-lg p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
+                  <div className="flex flex-wrap gap-3">
+                    {(guardsQuery.data || []).map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => toggleGuard(g.id)}
+                        className={`px-4 py-2 text-sm border rounded-lg transition-colors ${
+                          selectedIds.includes(g.id)
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted border-border"
+                        }`}
+                      >
+                        {g.name} {g.rank ? `(${g.rank})` : ""}
+                      </button>
+                    ))}
+                  </div>
+                  {guardsQuery.data?.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No guards available. Please add guards first.
+                    </p>
                   )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-2">
-                Select guards
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedIds.length} guard{selectedIds.length !== 1 ? "s" : ""}
+                </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {(guardsQuery.data || []).map((g) => (
-                  <button
-                    key={g.id}
-                    onClick={() => toggleGuard(g.id)}
-                    className={`text-xs border rounded px-2 py-1 ${
-                      selectedIds.includes(g.id)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-background"
-                    }`}
-                  >
-                    {g.name} {g.rank ? `(${g.rank})` : ""}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-2 text-xs">Selected: {selectedIds.length}</div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setTeamOpen(false)}>
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTeamOpen(false);
+                  setEditingTeamId(null);
+                  setTeamName("");
+                  setSelectedIds([]);
+                  setTeamVehicleId("");
+                }}
+              >
                 Cancel
               </Button>
               <Button
