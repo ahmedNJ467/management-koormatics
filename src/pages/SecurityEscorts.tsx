@@ -102,6 +102,9 @@ export default function SecurityEscorts() {
 
   // Guards add dialog state
   const [addOpen, setAddOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedGuard, setSelectedGuard] = useState<Guard | null>(null);
+  const [editingGuardId, setEditingGuardId] = useState<string | null>(null);
   const [gName, setGName] = useState("");
   const [gPhone, setGPhone] = useState("");
   const [gIdNo, setGIdNo] = useState("");
@@ -119,6 +122,14 @@ export default function SecurityEscorts() {
         status: gStatus,
         notes: gNotes,
       };
+      if (editingGuardId) {
+        const { error } = await supabase
+          .from("security_guards" as any)
+          .update(payload as any)
+          .eq("id", editingGuardId as any);
+        if (error) throw error;
+        return;
+      }
       const { error } = await supabase
         .from("security_guards" as any)
         .insert([payload] as any);
@@ -126,6 +137,7 @@ export default function SecurityEscorts() {
     },
     onSuccess: async () => {
       setAddOpen(false);
+      setEditingGuardId(null);
       setGName("");
       setGPhone("");
       setGIdNo("");
@@ -133,7 +145,7 @@ export default function SecurityEscorts() {
       setGStatus("active");
       setGNotes("");
       await qc.invalidateQueries({ queryKey: ["security_guards"] });
-      toast({ title: "Guard onboarded" });
+      toast({ title: "Guard saved" });
     },
     onError: (err: any) => {
       toast({
@@ -147,6 +159,9 @@ export default function SecurityEscorts() {
 
   // Team add dialog state
   const [teamOpen, setTeamOpen] = useState(false);
+  const [teamDetailsOpen, setTeamDetailsOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<EscortTeam | null>(null);
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [teamName, setTeamName] = useState("");
   const [teamVehicleId, setTeamVehicleId] = useState<string>("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -181,6 +196,14 @@ export default function SecurityEscorts() {
         guard_ids: selectedIds,
         vehicle_id: teamVehicleId,
       };
+      if (editingTeamId) {
+        const { error } = await supabase
+          .from("escort_teams" as any)
+          .update(payload)
+          .eq("id", editingTeamId as any);
+        if (error) throw error;
+        return;
+      }
       const { error } = await supabase
         .from("escort_teams" as any)
         .insert([payload] as any);
@@ -188,13 +211,14 @@ export default function SecurityEscorts() {
     },
     onSuccess: async () => {
       setTeamOpen(false);
+      setEditingTeamId(null);
       setTeamName("");
       setSelectedIds([]);
       setTeamVehicleId("");
       await qc.invalidateQueries({ queryKey: ["escort_teams"] });
       toast({
-        title: "Team created",
-        description: "Team created with vehicle.",
+        title: "Team saved",
+        description: "Team details have been saved.",
       });
     },
     onError: (err: any) => {
@@ -297,7 +321,14 @@ export default function SecurityEscorts() {
                 </TableHeader>
                 <TableBody>
                   {(filteredGuards || []).map((g) => (
-                    <TableRow key={g.id}>
+                    <TableRow
+                      key={g.id}
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedGuard(g);
+                        setDetailsOpen(true);
+                      }}
+                    >
                       <TableCell className="font-medium">{g.name}</TableCell>
                       <TableCell>{g.rank || "-"}</TableCell>
                       <TableCell>{g.phone || "-"}</TableCell>
@@ -372,7 +403,14 @@ export default function SecurityEscorts() {
                         `${vehicle.make || ""} ${vehicle.model || ""}`
                       : "-";
                     return (
-                      <TableRow key={t.id}>
+                      <TableRow
+                        key={t.id}
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedTeam(t);
+                          setTeamDetailsOpen(true);
+                        }}
+                      >
                         <TableCell className="font-medium">
                           {t.team_name}
                         </TableCell>
@@ -401,11 +439,134 @@ export default function SecurityEscorts() {
           </TabsContent>
         </Tabs>
 
+        {/* Guard Details Dialog */}
+        <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Guard Details</DialogTitle>
+              <DialogDescription>Profile overview</DialogDescription>
+            </DialogHeader>
+            {selectedGuard && (
+              <div className="space-y-2 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-muted-foreground">Name</div>
+                    <div className="font-medium">{selectedGuard.name}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Phone</div>
+                    <div>{selectedGuard.phone || "-"}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">ID Number</div>
+                    <div>{selectedGuard.id_number || "-"}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Rank</div>
+                    <div>{selectedGuard.rank || "-"}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Status</div>
+                    <Badge variant="outline">{selectedGuard.status || "-"}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Notes</div>
+                  <div>{selectedGuard.notes || "-"}</div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDetailsOpen(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setDetailsOpen(false);
+                      setEditingGuardId(selectedGuard.id);
+                      setGName(selectedGuard.name || "");
+                      setGPhone(selectedGuard.phone || "");
+                      setGIdNo(selectedGuard.id_number || "");
+                      setGRank(selectedGuard.rank || "");
+                      setGStatus((selectedGuard.status as string) || "active");
+                      setGNotes(selectedGuard.notes || "");
+                      setAddOpen(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Team Details Dialog */}
+        <Dialog open={teamDetailsOpen} onOpenChange={setTeamDetailsOpen}>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle>Team Details</DialogTitle>
+              <DialogDescription>Team composition</DialogDescription>
+            </DialogHeader>
+            {selectedTeam && (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-muted-foreground">Team Name</div>
+                    <div className="font-medium">{selectedTeam.team_name}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Vehicle</div>
+                    <div>
+                      {(vehiclesQuery.data || []).find(
+                        (v) => v.id === selectedTeam.vehicle_id
+                      )?.registration || "-"}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Members</div>
+                  <div>
+                    {selectedTeam.guard_ids
+                      .map(
+                        (id) =>
+                          (guardsQuery.data || []).find((g) => g.id === id)
+                            ?.name || id
+                      )
+                      .join(", ") || "-"}
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setTeamDetailsOpen(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setTeamDetailsOpen(false);
+                      setEditingTeamId(selectedTeam.id);
+                      setTeamOpen(true);
+                      setTeamName(selectedTeam.team_name);
+                      setTeamVehicleId(selectedTeam.vehicle_id || "");
+                      setSelectedIds(selectedTeam.guard_ids || []);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Add Guard Dialog */}
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogContent className="sm:max-w-[700px]">
             <DialogHeader>
-              <DialogTitle>Onboard Guard</DialogTitle>
+              <DialogTitle>{editingGuardId ? "Edit Guard" : "Onboard Guard"}</DialogTitle>
               <DialogDescription>Enter basic details.</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
@@ -458,7 +619,7 @@ export default function SecurityEscorts() {
                 onClick={() => addGuard.mutate()}
                 disabled={!gName.trim() || addGuard.isPending}
               >
-                {addGuard.isPending ? "Saving..." : "Add Guard"}
+                {addGuard.isPending ? "Saving..." : editingGuardId ? "Save Changes" : "Add Guard"}
               </Button>
             </div>
           </DialogContent>
@@ -468,7 +629,7 @@ export default function SecurityEscorts() {
         <Dialog open={teamOpen} onOpenChange={setTeamOpen}>
           <DialogContent className="sm:max-w-[800px]">
             <DialogHeader>
-              <DialogTitle>Create Team</DialogTitle>
+              <DialogTitle>{editingTeamId ? "Edit Team" : "Create Team"}</DialogTitle>
               <DialogDescription>
                 Assign a vehicle and select guards.
               </DialogDescription>
@@ -529,7 +690,11 @@ export default function SecurityEscorts() {
                   !teamName.trim() || !teamVehicleId || createTeam.isPending
                 }
               >
-                {createTeam.isPending ? "Creating..." : "Create Team"}
+                {createTeam.isPending
+                  ? "Saving..."
+                  : editingTeamId
+                  ? "Save Changes"
+                  : "Create Team"}
               </Button>
             </div>
           </DialogContent>
