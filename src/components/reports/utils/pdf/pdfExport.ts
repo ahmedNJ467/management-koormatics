@@ -315,6 +315,21 @@ function generateTripsTable(doc: jsPDF, data: any[], pageWidth: number) {
       }
     }
 
+    // Format return time to AM/PM format
+    let returnTimeDisplay = "N/A";
+    if (trip.return_time) {
+      try {
+        const rtime = new Date(`2000-01-01T${trip.return_time}`);
+        returnTimeDisplay = rtime.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      } catch (e) {
+        returnTimeDisplay = trip.return_time;
+      }
+    }
+
     // Format flight info from airline and flight_number
     let flightInfoDisplay = "N/A";
     if (trip.airline || trip.flight_number) {
@@ -334,6 +349,7 @@ function generateTripsTable(doc: jsPDF, data: any[], pageWidth: number) {
       trip.dropoff_location || "N/A",
       stopsDisplay,
       timeDisplay,
+      returnTimeDisplay,
       flightInfoDisplay,
       trip.vehicles ? `${trip.vehicles.make} ${trip.vehicles.model}` : "N/A",
       trip.drivers?.name || "N/A",
@@ -353,6 +369,7 @@ function generateTripsTable(doc: jsPDF, data: any[], pageWidth: number) {
         "Dropoff Location",
         "Stops",
         "Scheduled Time",
+        "Return Time",
         "Flight Info",
         "Vehicle",
         "Driver",

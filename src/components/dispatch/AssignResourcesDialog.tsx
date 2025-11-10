@@ -238,7 +238,10 @@ export function AssignResourcesDialog({
       if (assignments.length > 0) {
         const { error: assignError } = await supabase
           .from("trip_assignments")
-          .insert(assignments);
+          .upsert(assignments as any, {
+            onConflict: "trip_id,driver_id",
+            ignoreDuplicates: false,
+          } as any);
         if (assignError) throw assignError;
       }
     },

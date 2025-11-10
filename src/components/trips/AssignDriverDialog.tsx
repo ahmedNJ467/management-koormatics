@@ -201,14 +201,20 @@ export function AssignDriverDialog({
       // Create assignment record with valid status value
       const { error: assignmentError } = await supabase
         .from("trip_assignments")
-        .insert([
+        .upsert(
+          [
+            {
+              trip_id: tripToAssign.id,
+              driver_id: selectedDriver,
+              notes: assignmentNote,
+              status: "assigned",
+            },
+          ] as any,
           {
-            trip_id: tripToAssign.id,
-            driver_id: selectedDriver,
-            notes: assignmentNote,
-            status: "assigned",
-          },
-        ] as any);
+            onConflict: "trip_id,driver_id",
+            ignoreDuplicates: false,
+          } as any
+        );
 
       if (assignmentError) throw assignmentError;
 

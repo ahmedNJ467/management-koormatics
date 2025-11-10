@@ -8,14 +8,20 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
   // Insert into trip_assignments
   const { error: assignmentError } = await supabase
     .from("trip_assignments")
-    .insert([
+    .upsert(
+      [
+        {
+          trip_id: tripId,
+          driver_id: driverId,
+          assigned_at: new Date().toISOString(),
+          status: "assigned",
+        },
+      ] as any,
       {
-        trip_id: tripId,
-        driver_id: driverId,
-        assigned_at: new Date().toISOString(),
-        status: "assigned",
-      },
-    ] as any);
+        onConflict: "trip_id,driver_id",
+        ignoreDuplicates: false,
+      } as any
+    );
 
   if (assignmentError) throw assignmentError;
 
@@ -70,15 +76,23 @@ export const handleAssignDriver = async (
 
   try {
     // Use the correct status value
-    const { error } = await supabase.from("trip_assignments").insert([
-      {
-        trip_id: tripToAssign.id,
-        driver_id: assignDriver,
-        assigned_at: new Date().toISOString(),
-        status: "assigned",
-        notes: assignNote || null,
-      },
-    ] as any);
+    const { error } = await supabase
+      .from("trip_assignments")
+      .upsert(
+        [
+          {
+            trip_id: tripToAssign.id,
+            driver_id: assignDriver,
+            assigned_at: new Date().toISOString(),
+            status: "assigned",
+            notes: assignNote || null,
+          },
+        ] as any,
+        {
+          onConflict: "trip_id,driver_id",
+          ignoreDuplicates: false,
+        } as any
+      );
 
     if (error) throw error;
 
