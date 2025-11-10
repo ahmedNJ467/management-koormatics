@@ -13,7 +13,7 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
         trip_id: tripId,
         driver_id: driverId,
         assigned_at: new Date().toISOString(),
-        status: "pending", // Using the valid "pending" status value
+        status: "assigned",
       },
     ] as any);
 
@@ -75,7 +75,7 @@ export const handleAssignDriver = async (
         trip_id: tripToAssign.id,
         driver_id: assignDriver,
         assigned_at: new Date().toISOString(),
-        status: "pending", // Using the valid "pending" status value
+        status: "assigned",
         notes: assignNote || null,
       },
     ] as any);

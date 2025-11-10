@@ -231,7 +231,7 @@ export function AssignResourcesDialog({
           assignments.push({
             trip_id: trip.id,
             driver_id: driverId,
-            status: "pending",
+            status: "assigned",
           });
         }
       });

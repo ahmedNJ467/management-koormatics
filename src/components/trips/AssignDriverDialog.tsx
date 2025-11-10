@@ -206,7 +206,7 @@ export function AssignDriverDialog({
             trip_id: tripToAssign.id,
             driver_id: selectedDriver,
             notes: assignmentNote,
-            status: "pending", // Using "pending" instead of "assigned"
+            status: "assigned",
           },
         ] as any);
 
