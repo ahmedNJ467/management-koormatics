@@ -170,10 +170,11 @@ export default function SecurityEscorts() {
     () =>
       new Set(
         (teamsQuery.data || [])
+          .filter((t) => t.id !== editingTeamId) // Exclude current team when editing
           .map((t) => t.vehicle_id)
           .filter(Boolean) as string[]
       ),
-    [teamsQuery.data]
+    [teamsQuery.data, editingTeamId]
   );
 
   const availableVehicles = useMemo(() => {
@@ -193,21 +194,27 @@ export default function SecurityEscorts() {
       if (!teamVehicleId) throw new Error("Select a team vehicle.");
       const payload: any = {
         team_name: teamName.trim(),
-        guard_ids: selectedIds,
-        vehicle_id: teamVehicleId,
+        guard_ids: selectedIds.length > 0 ? selectedIds : [],
+        vehicle_id: teamVehicleId || null,
       };
       if (editingTeamId) {
         const { error } = await supabase
           .from("escort_teams" as any)
-          .update(payload)
+          .update(payload as any)
           .eq("id", editingTeamId as any);
-        if (error) throw error;
+        if (error) {
+          console.error("Update error:", error);
+          throw error;
+        }
         return;
       }
       const { error } = await supabase
         .from("escort_teams" as any)
         .insert([payload] as any);
-      if (error) throw error;
+      if (error) {
+        console.error("Insert error:", error);
+        throw error;
+      }
     },
     onSuccess: async () => {
       setTeamOpen(false);
