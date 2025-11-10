@@ -84,7 +84,14 @@ export function IncidentDetailsDialog({
   report,
   open,
   onOpenChange,
-}: IncidentDetailsDialogProps) {
+  onEdit,
+  onDelete,
+  onDownloadPdf,
+}: IncidentDetailsDialogProps & {
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onDownloadPdf?: () => void;
+}) {
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case "minor":
@@ -598,6 +605,42 @@ export function IncidentDetailsDialog({
               </div>
             </CardContent>
           </Card>
+
+          {/* Actions */}
+          {(onEdit || onDelete || onDownloadPdf) && (
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                className="inline-flex items-center h-9 rounded-md border px-3 text-sm"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </button>
+              {onDownloadPdf && (
+                <button
+                  className="inline-flex items-center h-9 rounded-md border px-3 text-sm"
+                  onClick={onDownloadPdf}
+                >
+                  Download PDF
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  className="inline-flex items-center h-9 rounded-md bg-destructive text-destructive-foreground px-3 text-sm"
+                  onClick={onDelete}
+                >
+                  Delete
+                </button>
+              )}
+              {onEdit && (
+                <button
+                  className="inline-flex items-center h-9 rounded-md bg-primary text-primary-foreground px-3 text-sm"
+                  onClick={onEdit}
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

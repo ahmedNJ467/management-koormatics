@@ -12,12 +12,7 @@ import {
 import {
   Search,
   Filter,
-  Download,
   MapPin,
-  Eye,
-  Edit,
-  Trash2,
-  MoreVertical,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -46,12 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+ 
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isValid } from "date-fns";
@@ -368,6 +358,55 @@ export default function VehicleIncidentReports() {
     setFormOpen(true);
   };
 
+  const exportSelectedReportPdf = async () => {
+    if (!selectedReport) return;
+    const report = selectedReport as any;
+    try {
+      const exportData = {
+        ...report,
+        driver: report.driver
+          ? {
+              name: report.driver.name,
+              license_number: report.driver.license_number,
+            }
+          : undefined,
+        vehicle: report.vehicle
+          ? {
+              make: report.vehicle.make,
+              model: report.vehicle.model,
+              registration: report.vehicle.registration,
+            }
+          : undefined,
+      } as any;
+      try {
+        const { data: dbImages } = await supabase
+          .from("vehicle_incident_images")
+          .select("image_url, name")
+          .eq("incident_id", report.id as any);
+        if (dbImages && dbImages.length > 0) {
+          (exportData as any).photos = dbImages.map((r: any) => ({
+            url: r.image_url,
+            name: r.name ?? undefined,
+          }));
+        }
+      } catch {}
+      await generateIncidentReportPdf(exportData, {
+        logoUrl: window.location.origin + "/images/Koormatics-logo.png",
+      });
+      toast({
+        title: "PDF exported successfully",
+        description: "Incident report has been exported to PDF.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description:
+          "Failed to export incident report to PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case "minor":
@@ -736,13 +775,12 @@ export default function VehicleIncidentReports() {
                     <TableHead>Status</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Cost</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedReports?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={8} className="text-center py-8">
                         No incident reports found
                       </TableCell>
                     </TableRow>
@@ -820,140 +858,6 @@ export default function VehicleIncidentReports() {
                               </span>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
-                        >
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="h-8 w-8 p-0"
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => e.stopPropagation()}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleViewDetails(report)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleEditReport(report)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={async () => {
-                                  try {
-                                    const exportData = {
-                                      ...report,
-                                      driver: report.driver
-                                        ? {
-                                            name: report.driver.name,
-                                            license_number:
-                                              report.driver.license_number,
-                                          }
-                                        : undefined,
-                                      vehicle: report.vehicle
-                                        ? {
-                                            make: report.vehicle.make,
-                                            model: report.vehicle.model,
-                                            registration:
-                                              report.vehicle.registration,
-                                          }
-                                        : undefined,
-                                    } as any;
-
-                                    // Prefer DB-stored image URLs; fallback to storage listing
-                                    try {
-                                      const { data: dbImages } = await supabase
-                                        .from("vehicle_incident_images")
-                                        .select("image_url, name")
-                                        .eq("incident_id", report.id as any);
-                                      if (dbImages && dbImages.length > 0) {
-                                        (exportData as any).photos =
-                                          dbImages.map((r) => ({
-                                            url: (r as any).image_url,
-                                            name: (r as any).name ?? undefined,
-                                          }));
-                                      } else {
-                                        const listRes = await supabase.storage
-                                          .from("images")
-                                          .list(`incidents/${report.id}`, {
-                                            limit: 50,
-                                          });
-                                        if (
-                                          listRes.data &&
-                                          listRes.data.length > 0
-                                        ) {
-                                          const photos = listRes.data
-                                            .filter(
-                                              (f) => !f.name.startsWith(".")
-                                            )
-                                            .map((f) => {
-                                              const { data } = supabase.storage
-                                                .from("images")
-                                                .getPublicUrl(
-                                                  `incidents/${report.id}/${f.name}`
-                                                );
-                                              return {
-                                                url: data.publicUrl,
-                                                name: f.name,
-                                              };
-                                            });
-                                          (exportData as any).photos = photos;
-                                        }
-                                      }
-                                    } catch (e) {
-                                      // ignore
-                                    }
-
-                                    await generateIncidentReportPdf(
-                                      exportData,
-                                      {
-                                        logoUrl:
-                                          window.location.origin +
-                                          "/images/Koormatics-logo.png",
-                                      }
-                                    );
-                                    toast({
-                                      title: "PDF exported successfully",
-                                      description:
-                                        "Incident report has been exported to PDF.",
-                                    });
-                                  } catch (error) {
-                                    console.error(
-                                      "Error exporting PDF:",
-                                      error
-                                    );
-                                    toast({
-                                      title: "Export failed",
-                                      description:
-                                        "Failed to export incident report to PDF. Please try again.",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Export PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => openDeleteDialog(report)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1135,6 +1039,13 @@ export default function VehicleIncidentReports() {
           report={selectedReport}
           open={detailsOpen}
           onOpenChange={setDetailsOpen}
+          onEdit={() => {
+            if (selectedReport) handleEditReport(selectedReport as any);
+          }}
+          onDelete={() => {
+            if (selectedReport) openDeleteDialog(selectedReport as any);
+          }}
+          onDownloadPdf={exportSelectedReportPdf}
         />
       </div>
     </div>
