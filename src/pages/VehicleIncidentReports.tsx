@@ -748,7 +748,18 @@ export default function VehicleIncidentReports() {
                     </TableRow>
                   ) : (
                     paginatedReports?.map((report: any) => (
-                      <TableRow key={report.id}>
+                      <TableRow
+                        key={report.id}
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => handleViewDetails(report)}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleViewDetails(report);
+                          }
+                        }}
+                      >
                         <TableCell>
                           <div>
                             <div className="font-medium">
@@ -810,10 +821,18 @@ export default function VehicleIncidentReports() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
