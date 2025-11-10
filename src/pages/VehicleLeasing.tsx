@@ -71,8 +71,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isValid, differenceInDays, addDays } from "date-fns";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { DateRange } from "react-day-picker";
 import { LeaseForm } from "@/components/leasing/LeaseForm";
 import { LeaseDetailsDialog } from "@/components/leasing/LeaseDetailsDialog";
 
@@ -140,10 +138,7 @@ export default function VehicleLeasing() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedLease, setSelectedLease] = useState<VehicleLease | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [vehicleFilter, setVehicleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<DateRange>();
 
   // Fetch vehicle leases
   const { data: leases, isLoading } = useQuery({
@@ -331,29 +326,9 @@ export default function VehicleLeasing() {
         }
       }
 
-      // Vehicle filter
-      if (vehicleFilter !== "all" && lease.vehicle_id !== vehicleFilter) {
-        return false;
-      }
-
       // Status filter
       if (statusFilter !== "all" && lease.lease_status !== statusFilter) {
         return false;
-      }
-
-      // Payment status filter
-      if (
-        paymentStatusFilter !== "all" &&
-        lease.payment_status !== paymentStatusFilter
-      ) {
-        return false;
-      }
-
-      // Date range filter
-      if (dateRange?.from || dateRange?.to) {
-        const leaseStart = parseISO(lease.lease_start_date);
-        if (dateRange.from && leaseStart < dateRange.from) return false;
-        if (dateRange.to && leaseStart > dateRange.to) return false;
       }
 
       return true;
@@ -361,10 +336,7 @@ export default function VehicleLeasing() {
   }, [
     leases,
     searchTerm,
-    vehicleFilter,
     statusFilter,
-    paymentStatusFilter,
-    dateRange,
   ]);
 
   // Delete mutation
@@ -548,10 +520,7 @@ export default function VehicleLeasing() {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setVehicleFilter("all");
     setStatusFilter("all");
-    setPaymentStatusFilter("all");
-    setDateRange(undefined);
   };
 
   const exportToCSV = () => {
@@ -715,85 +684,40 @@ export default function VehicleLeasing() {
         </div>
 
         {/* Filters */}
-        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by vehicle, lessee name, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Vehicles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Vehicles</SelectItem>
-                {vehicles?.map((vehicle) => (
-                  <SelectItem
-                    key={(vehicle as any).id}
-                    value={(vehicle as any).id}
-                  >
-                    {(vehicle as any).make} {(vehicle as any).model} (
-                    {(vehicle as any).registration})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={paymentStatusFilter}
-              onValueChange={setPaymentStatusFilter}
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Payment Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Payments</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              className="w-[240px]"
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by vehicle, lessee name, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
             />
+          </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                <Filter className="h-4 w-4 mr-2" />
-                Clear
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="terminated">Terminated</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              <Filter className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
         </div>
 
