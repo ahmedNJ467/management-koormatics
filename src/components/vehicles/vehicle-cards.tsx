@@ -109,7 +109,7 @@ export const VehicleCards = memo(
 
                 <CardContent className="space-y-3">
                   {/* Vehicle Image */}
-                  <div className="relative h-48 w-full bg-muted rounded-lg overflow-hidden border flex items-center justify-center">
+                  <div className="relative h-60 w-full bg-background rounded-lg overflow-hidden border flex items-center justify-center">
                     {hasImage ? (
                       <img
                         src={
@@ -118,7 +118,7 @@ export const VehicleCards = memo(
                           ""
                         }
                         alt={`${vehicle.make} ${vehicle.model}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
