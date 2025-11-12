@@ -603,97 +603,168 @@ export default function Dashboard() {
     );
   };
 
+  const isManagementDashboard = domain === "management";
+  const isFleetDashboard = !isManagementDashboard;
+
   const summarySections = useMemo<{ title: string; cards: SummaryCardConfig[] }[]>(
     () => [
-      {
-        title: "Fleet Management",
-        cards: [
-          {
-            title: "Vehicles",
-            value: totalVehicles,
-            subtitle: `${fleetUtilization}% utilization`,
-            icon: Car,
-          },
-          {
-            title: "Drivers",
-            value: totalDrivers,
-            subtitle: `${activeDrivers} active`,
-            icon: Users,
-          },
-          {
-            title: "Maintenance",
-            value: pendingMaintenance,
-            subtitle: "Scheduled tasks",
-            icon: Wrench,
-          },
-          {
-            title: "Fuel Logs",
-            value: totalFuelLogs,
-            subtitle: "Entries logged",
-            icon: Fuel,
-          },
-        ],
-      },
-      {
-        title: "Financial & Operations",
-        cards: [
-          {
-            title: "Invoices",
-            value: totalInvoices,
-            subtitle: `${outstandingInvoices} outstanding`,
-            icon: FileText,
-          },
-          {
-            title: "Quotations",
-            value: totalQuotations,
-            subtitle: `${pendingQuotations} pending`,
-            icon: DollarSign,
-          },
-          {
-            title: "Trips",
-            value: totalTrips,
-            subtitle: `${completedTrips} completed`,
-            icon: Calendar,
-          },
-          {
-            title: "Clients",
-            value: totalClients,
-            subtitle: "Active engagements",
-            icon: Building2,
-          },
-        ],
-      },
-      {
-        title: "Security, Leasing & Inventory",
-        cards: [
-          {
-            title: "Security Guards",
-            value: totalGuards,
-            subtitle: `${activeGuards} active`,
-            icon: Shield,
-          },
-          {
-            title: "Incidents",
-            value: totalIncidents,
-            subtitle: `${criticalIncidents} critical`,
-            icon: AlertTriangle,
-          },
-          {
-            title: "Leasing",
-            value: activeLeases,
-            subtitle: `${totalLeases} total`,
-            icon: TrendingUp,
-          },
-          {
-            title: "Spare Parts",
-            value: totalParts,
-            subtitle: `${lowStockParts} low stock`,
-            icon: Package,
-          },
-        ],
-      },
+      ...(isManagementDashboard
+        ? [
+            {
+              title: "Fleet Management",
+              cards: [
+                {
+                  title: "Vehicles",
+                  value: totalVehicles,
+                  subtitle: `${fleetUtilization}% utilization`,
+                  icon: Car,
+                },
+                {
+                  title: "Drivers",
+                  value: totalDrivers,
+                  subtitle: `${activeDrivers} active`,
+                  icon: Users,
+                },
+                {
+                  title: "Maintenance",
+                  value: pendingMaintenance,
+                  subtitle: "Scheduled tasks",
+                  icon: Wrench,
+                },
+                {
+                  title: "Fuel Logs",
+                  value: totalFuelLogs,
+                  subtitle: "Entries logged",
+                  icon: Fuel,
+                },
+              ],
+            },
+            {
+              title: "Financial & Operations",
+              cards: [
+                {
+                  title: "Invoices",
+                  value: totalInvoices,
+                  subtitle: `${outstandingInvoices} outstanding`,
+                  icon: FileText,
+                },
+                {
+                  title: "Quotations",
+                  value: totalQuotations,
+                  subtitle: `${pendingQuotations} pending`,
+                  icon: DollarSign,
+                },
+                {
+                  title: "Trips",
+                  value: totalTrips,
+                  subtitle: `${completedTrips} completed`,
+                  icon: Calendar,
+                },
+                {
+                  title: "Clients",
+                  value: totalClients,
+                  subtitle: "Active engagements",
+                  icon: Building2,
+                },
+              ],
+            },
+            {
+              title: "Security, Leasing & Inventory",
+              cards: [
+                {
+                  title: "Security Guards",
+                  value: totalGuards,
+                  subtitle: `${activeGuards} active`,
+                  icon: Shield,
+                },
+                {
+                  title: "Incidents",
+                  value: totalIncidents,
+                  subtitle: `${criticalIncidents} critical`,
+                  icon: AlertTriangle,
+                },
+                {
+                  title: "Leasing",
+                  value: activeLeases,
+                  subtitle: `${totalLeases} total`,
+                  icon: TrendingUp,
+                },
+                {
+                  title: "Spare Parts",
+                  value: totalParts,
+                  subtitle: `${lowStockParts} low stock`,
+                  icon: Package,
+                },
+              ],
+            },
+          ]
+        : []),
+      ...(isFleetDashboard || !isManagementDashboard
+        ? [
+            {
+              title: "Fleet Operations",
+              cards: [
+                {
+                  title: "Vehicles",
+                  value: totalVehicles,
+                  subtitle: `${fleetUtilization}% utilization`,
+                  icon: Car,
+                },
+                {
+                  title: "Active Drivers",
+                  value: activeDrivers,
+                  subtitle: `${totalDrivers} total`,
+                  icon: Users,
+                },
+                {
+                  title: "Maintenance",
+                  value: pendingMaintenance,
+                  subtitle: "Scheduled tasks",
+                  icon: Wrench,
+                },
+                {
+                  title: "Fuel Logs",
+                  value: totalFuelLogs,
+                  subtitle: "Entries logged",
+                  icon: Fuel,
+                },
+              ],
+            },
+            {
+              title: "Trip Performance",
+              cards: [
+                {
+                  title: "Trips",
+                  value: totalTrips,
+                  subtitle: `${completedTrips} completed`,
+                  icon: Calendar,
+                },
+                {
+                  title: "Incidents",
+                  value: totalIncidents,
+                  subtitle: `${criticalIncidents} critical`,
+                  icon: AlertTriangle,
+                },
+                {
+                  title: "Active Leases",
+                  value: activeLeases,
+                  subtitle: `${totalLeases} total`,
+                  icon: TrendingUp,
+                },
+                {
+                  title: "Spare Parts",
+                  value: totalParts,
+                  subtitle: `${lowStockParts} low stock`,
+                  icon: Package,
+                },
+              ],
+            },
+          ]
+        : []),
     ],
     [
+      isManagementDashboard,
+      isFleetDashboard,
       totalVehicles,
       fleetUtilization,
       totalDrivers,
@@ -783,92 +854,172 @@ export default function Dashboard() {
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-12">
           <section className="lg:col-span-8 space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="bg-card border border-border p-4">
-                <h3 className="text-sm font-medium text-foreground mb-4">
-                  Fuel Consumption
-                </h3>
-                <div className="h-[280px] w-full">
-                  <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
-                    <FuelConsumptionChart
-                      data={chartData?.fuelConsumptionData || []}
-                      compact
-                    />
-                  </LazyWrapper>
-                </div>
-              </div>
+            {isManagementDashboard ? (
+              <>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Fuel Consumption
+                    </h3>
+                    <div className="h-[280px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
+                        <FuelConsumptionChart
+                          data={chartData?.fuelConsumptionData || []}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
 
-              <div className="bg-card border border-border p-4">
-                <h3 className="text-sm font-medium text-foreground mb-4">
-                  Financial Overview
-                </h3>
-                <div className="h-[280px] w-full">
-                  <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
-                    <FinancialOverviewChart data={financialOverviewData} />
-                  </LazyWrapper>
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Financial Overview
+                    </h3>
+                    <div className="h-[280px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
+                        <FinancialOverviewChart data={financialOverviewData} />
+                      </LazyWrapper>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="bg-card border border-border p-4">
-                <h3 className="text-sm font-medium text-foreground mb-4">
-                  Maintenance Costs
-                </h3>
-                <div className="h-[250px] w-full">
-                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                    <MaintenanceCostsChart
-                      data={chartData?.maintenanceCostsData || []}
-                      compact
-                    />
-                  </LazyWrapper>
-                </div>
-              </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Maintenance Costs
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <MaintenanceCostsChart
+                          data={chartData?.maintenanceCostsData || []}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
 
-              <div className="bg-card border border-border p-4">
-                <h3 className="text-sm font-medium text-foreground mb-4">
-                  Fleet Utilization
-                </h3>
-                <div className="h-[250px] w-full">
-                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                    <PerformanceMetricsChart
-                      data={performanceMetrics}
-                      compact
-                    />
-                  </LazyWrapper>
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Fleet Utilization
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <PerformanceMetricsChart
+                          data={performanceMetrics}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="bg-card border border-border p-4">
-                <h3 className="text-sm font-medium text-foreground mb-4">
-                  Fleet Distribution
-                </h3>
-                <div className="h-[250px] w-full">
-                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                    <FleetDistributionChart
-                      data={chartData?.fleetDistributionData || []}
-                      compact
-                    />
-                  </LazyWrapper>
-                </div>
-              </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Fleet Distribution
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <FleetDistributionChart
+                          data={chartData?.fleetDistributionData || []}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
 
-              <div className="bg-card border border-border p-4">
-                <h3 className="text-sm font-medium text-foreground mb-4">
-                  Driver Status
-                </h3>
-                <div className="h-[250px] w-full">
-                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                    <DriverStatusChart
-                      data={driverStatusChartData}
-                      compact
-                    />
-                  </LazyWrapper>
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Driver Status
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <DriverStatusChart
+                          data={driverStatusChartData}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-card border border-border p-4">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Fuel Consumption
+                  </h3>
+                  <div className="h-[320px] w-full">
+                    <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
+                      <FuelConsumptionChart
+                        data={chartData?.fuelConsumptionData || []}
+                        compact
+                      />
+                    </LazyWrapper>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Maintenance Costs
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <MaintenanceCostsChart
+                          data={chartData?.maintenanceCostsData || []}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Fleet Utilization
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <PerformanceMetricsChart
+                          data={performanceMetrics}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Fleet Distribution
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <FleetDistributionChart
+                          data={chartData?.fleetDistributionData || []}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      Driver Status
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                        <DriverStatusChart
+                          data={driverStatusChartData}
+                          compact
+                        />
+                      </LazyWrapper>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </section>
 
           {/* Right Sidebar */}
