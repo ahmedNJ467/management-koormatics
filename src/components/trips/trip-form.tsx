@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, Controller } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -142,6 +142,12 @@ export function TripForm({
     }
   }, [watchServiceType]);
 
+  useEffect(() => {
+    if (!watchServiceType) {
+      setValue("service_type", "airport_pickup");
+    }
+  }, [watchServiceType, setValue]);
+
   const isAirportService =
     serviceType === "airport_pickup" || serviceType === "airport_dropoff";
   const needsReturnTime = [
@@ -223,31 +229,38 @@ export function TripForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="service_type">Service Type</Label>
-              <Select
-                value={
-                  watchServiceType ||
-                  (editTrip?.type
-                    ? reverseServiceTypeMap[editTrip.type] || editTrip.type
-                    : "airport_pickup")
-                }
-                onValueChange={(value) =>
-                  setValue("service_type", value, { shouldDirty: true })
-                }
-              >
-                <SelectTrigger id="service_type">
-                  <SelectValue placeholder="Select service type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypeOptions.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {tripTypeDisplayMap[type] ||
-                        type
-                          .replace(/_/g, " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="service_type"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={
+                      field.value ||
+                      (editTrip?.type
+                        ? reverseServiceTypeMap[editTrip.type] || editTrip.type
+                        : "airport_pickup")
+                    }
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setServiceType(value);
+                    }}
+                  >
+                    <SelectTrigger id="service_type">
+                      <SelectValue placeholder="Select service type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {serviceTypeOptions.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {tripTypeDisplayMap[type] ||
+                            type
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <FormField
