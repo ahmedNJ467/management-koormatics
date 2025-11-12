@@ -318,7 +318,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicle_leases")
-        .select("id, lease_status");
+        .select("id");
       if (error) {
         console.error("Dashboard vehicle leases fetch error:", {
           message: (error as any)?.message,
@@ -629,7 +629,7 @@ export default function Dashboard() {
 
   // Leasing Department
   const activeLeases =
-    leases?.filter((l) => l.lease_status === "active")?.length || 0;
+    leases?.filter((l: any) => l?.lease_status === "active")?.length || 0;
   const totalLeases = leases?.length || 0;
 
   // Inventory Department
