@@ -129,7 +129,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("id, status, amount, created_at");
+        .select("id, status, created_at");
       if (error) throw error;
       return data || [];
     },
@@ -143,7 +143,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quotations")
-        .select("id, status, total_amount, created_at");
+        .select("id, status, created_at");
       if (error) throw error;
       return data || [];
     },
@@ -158,7 +158,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        .select("id, status, amount, date, created_at");
+        .select("id, status");
       if (error) throw error;
       return data || [];
     },
@@ -173,7 +173,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, created_at");
+        .select("id");
       if (error) throw error;
       return data || [];
     },
@@ -217,7 +217,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicle_leases")
-        .select("id, lease_status, monthly_payment");
+        .select("id, lease_status");
       if (error) throw error;
       return data || [];
     },
@@ -433,8 +433,6 @@ export default function Dashboard() {
 
   // Financial Department
   const totalInvoices = invoices?.length || 0;
-  const paidInvoices =
-    invoices?.filter((i) => i.status === "paid")?.length || 0;
   const outstandingInvoices =
     invoices?.filter((i) => i.status === "sent" || i.status === "overdue")
       ?.length || 0;
@@ -446,7 +444,6 @@ export default function Dashboard() {
   // Operations Department
   const totalTrips = trips?.length || 0;
   const completedTrips = trips?.filter((t) => t.status === "completed")?.length || 0;
-  const scheduledTrips = trips?.filter((t) => t.status === "scheduled")?.length || 0;
 
   // Clients Department
   const totalClients = clients?.length || 0;
