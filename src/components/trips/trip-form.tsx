@@ -94,10 +94,11 @@ export function TripForm({
       setValue("service_type", uiServiceType);
       setServiceType(uiServiceType);
 
+      setValue("client_id", editTrip.client_id || "");
+      setValue("vehicle_id", editTrip.vehicle_id || "");
+      setValue("driver_id", editTrip.driver_id || "");
+
       // Set all other form fields
-      setValue("client_id", editTrip.client_id);
-      setValue("vehicle_id", editTrip.vehicle_id);
-      setValue("driver_id", editTrip.driver_id);
       setValue("date", editTrip.date);
       setValue("time", editTrip.time);
       setValue("return_time", editTrip.return_time || "");
@@ -126,6 +127,15 @@ export function TripForm({
           | "individual"
           | undefined
       );
+    }
+  }, [editTrip, setValue]);
+
+  useEffect(() => {
+    if (!editTrip) {
+      setValue("service_type", "");
+      setServiceType("airport_pickup");
+      setSelectedClient("");
+      setSelectedClientType(undefined);
     }
   }, [editTrip, setValue]);
 
@@ -266,19 +276,14 @@ export function TripForm({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    value={
-                      field.value ||
-                      (editTrip?.type
-                        ? reverseServiceTypeMap[editTrip.type] || editTrip.type
-                        : "airport_pickup")
-                    }
+                    value={field.value || ""}
                     onValueChange={(value) => {
                       field.onChange(value);
                       setServiceType(value);
                     }}
                   >
                     <SelectTrigger id="service_type">
-                      <SelectValue placeholder="Select service" />
+                      <SelectValue placeholder="Select service type" />
                     </SelectTrigger>
                     <SelectContent>
                       {serviceTypeOptions.map((type) => (
