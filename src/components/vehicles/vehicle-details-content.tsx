@@ -174,12 +174,12 @@ export const VehicleDetailsContent = memo(
           <Card>
             <CardContent className="p-0">
               <div className="relative">
-                <div className="w-full aspect-video bg-white rounded-t-xl overflow-hidden relative border border-border shadow-sm flex items-center justify-center">
+                <div className="w-full h-[320px] md:h-[420px] bg-muted rounded-t-xl overflow-hidden relative border border-border shadow-sm flex items-center justify-center">
                   {currentImage && (
                     <img
                       src={currentImage}
                       alt={`Vehicle ${currentImageIndex + 1}`}
-                      className="w-full h-full object-contain rounded-t-xl transition-all duration-200"
+                      className="w-full h-full object-cover rounded-t-xl transition-all duration-200"
                     />
                   )}
                   {hasMultipleImages && (
