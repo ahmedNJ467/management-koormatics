@@ -13,13 +13,30 @@ import { cn } from "@/lib/utils";
 import { useInactivityTimeout } from "@/hooks/use-inactivity-timeout";
 import { useAuth } from "@/hooks/useAuth";
 
+let sidebarStateRef = false;
+
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = memo(function Layout({ children }: LayoutProps) {
   const { isAllowed, loading: _loading } = useTenantScope();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpenState, _setSidebarOpenState] = useState(() => sidebarStateRef);
+
+  const setSidebarOpen = useCallback(
+    (
+      value: boolean | ((prev: boolean) => boolean)
+    ) => {
+      _setSidebarOpenState((prev) => {
+        const next = typeof value === "function" ? value(prev) : value;
+        sidebarStateRef = next;
+        return next;
+      });
+    },
+    []
+  );
+
+  const sidebarOpen = sidebarOpenState;
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false); // Add mounted state for hydration
   const isMobile = useIsMobile();
@@ -150,13 +167,15 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
 
   // Set sidebar state based on device type
   useEffect(() => {
-    setSidebarOpen(false);
-  }, [isMobile]);
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [isMobile, setSidebarOpen]);
 
   // Handle sidebar toggle with useCallback to prevent unnecessary re-renders
   const handleToggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);
-  }, []);
+  }, [setSidebarOpen]);
 
   // Add keyboard shortcut for sidebar toggle
   useEffect(() => {
