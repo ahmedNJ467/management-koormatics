@@ -65,7 +65,12 @@ export function TripForm({
 
   const methods = useForm<Record<string, any>>({
     defaultValues: {
+      client_id: "",
+      vehicle_id: "",
+      driver_id: "",
       service_type: "airport_pickup",
+      status: "scheduled",
+      is_recurring: false,
     },
   });
   const { register, watch, setValue, reset, control } = methods;
@@ -169,7 +174,7 @@ export function TripForm({
               control={control}
               render={({ field }) => (
                 <Select
-                  value={field.value || editTrip?.client_id || ""}
+                  value={field.value || ""}
                   onValueChange={(value) => {
                     field.onChange(value);
                     setSelectedClient(value);
@@ -182,7 +187,7 @@ export function TripForm({
                   }}
                 >
                   <SelectTrigger id="client_id">
-                    <SelectValue placeholder="Select a client" />
+                    <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
                     {clients.map((client) => (
@@ -198,40 +203,52 @@ export function TripForm({
 
           <div className="space-y-2">
             <Label htmlFor="vehicle_id">Vehicle</Label>
-            <Select
-              defaultValue={editTrip?.vehicle_id}
-              onValueChange={(value) => setValue("vehicle_id", value)}
-            >
-              <SelectTrigger id="vehicle_id">
-                <SelectValue placeholder="Select a vehicle" />
-              </SelectTrigger>
-              <SelectContent>
-                {vehicles.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.make} {vehicle.model} ({vehicle.registration})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="vehicle_id"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || ""}
+                  onValueChange={(value) => field.onChange(value)}
+                >
+                  <SelectTrigger id="vehicle_id">
+                    <SelectValue placeholder="Select vehicle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicles.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.make} {vehicle.model} ({vehicle.registration})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="driver_id">Driver</Label>
-            <Select
-              defaultValue={editTrip?.driver_id}
-              onValueChange={(value) => setValue("driver_id", value)}
-            >
-              <SelectTrigger id="driver_id">
-                <SelectValue placeholder="Select a driver" />
-              </SelectTrigger>
-              <SelectContent>
-                {drivers.map((driver) => (
-                  <SelectItem key={driver.id} value={driver.id}>
-                    {driver.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="driver_id"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || ""}
+                  onValueChange={(value) => field.onChange(value)}
+                >
+                  <SelectTrigger id="driver_id">
+                    <SelectValue placeholder="Select driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {drivers.map((driver) => (
+                      <SelectItem key={driver.id} value={driver.id}>
+                        {driver.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
         </div>
 
@@ -261,7 +278,7 @@ export function TripForm({
                     }}
                   >
                     <SelectTrigger id="service_type">
-                      <SelectValue placeholder="Select service type" />
+                      <SelectValue placeholder="Select service" />
                     </SelectTrigger>
                     <SelectContent>
                       {serviceTypeOptions.map((type) => (
