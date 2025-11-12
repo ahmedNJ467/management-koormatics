@@ -29,7 +29,10 @@ import {
   AlertTriangle,
   Package,
   TrendingUp,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/invoice-helpers";
 import { isDateInMonth } from "@/utils/date-utils";
 
 type SummaryCardConfig = {
@@ -105,6 +108,11 @@ export default function Dashboard() {
     []
   );
 
+  const isManagementDashboard = domain === "management";
+  const isFleetDashboard = domain === "fleet";
+  const isOperationsDashboard = domain === "operations";
+  const isFinanceDashboard = domain === "finance";
+
   // Performance monitoring - call at the top level
   const { markRenderStart, markRenderEnd } = usePerformanceMonitor("Dashboard");
 
@@ -159,11 +167,20 @@ export default function Dashboard() {
   // Financial Department
   const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
     queryKey: ["invoices"],
+    enabled: isManagementDashboard || isFinanceDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
         .select("id, status, total_amount, paid_amount, created_at, date");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard invoices fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -173,11 +190,20 @@ export default function Dashboard() {
 
   const { data: quotations = [], isLoading: quotationsLoading } = useQuery({
     queryKey: ["quotations"],
+    enabled: isManagementDashboard || isFinanceDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quotations")
         .select("id, status, total_amount, created_at");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard quotations fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -188,11 +214,20 @@ export default function Dashboard() {
   // Operations Department
   const { data: trips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ["trips"],
+    enabled: !isFinanceDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
         .select("id, status");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard trips fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -203,11 +238,20 @@ export default function Dashboard() {
   // Clients Department
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ["clients"],
+    enabled: isManagementDashboard || isFinanceDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
         .select("id");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard clients fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -218,11 +262,20 @@ export default function Dashboard() {
   // Security Department
   const { data: securityGuards = [], isLoading: guardsLoading } = useQuery({
     queryKey: ["security_guards"],
+    enabled: isManagementDashboard || isOperationsDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("security_guards")
         .select("id, status");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard security guards fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -232,11 +285,20 @@ export default function Dashboard() {
 
   const { data: incidentReports = [], isLoading: incidentsLoading } = useQuery({
     queryKey: ["vehicle-incident-reports"],
+    enabled: isManagementDashboard || isOperationsDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicle_incident_reports")
         .select("id, status, severity");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard incident reports fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -247,11 +309,20 @@ export default function Dashboard() {
   // Leasing Department
   const { data: leases = [], isLoading: leasesLoading } = useQuery({
     queryKey: ["vehicle-leases"],
+    enabled: isManagementDashboard || isFleetDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicle_leases")
         .select("id, lease_status");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard vehicle leases fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -262,11 +333,20 @@ export default function Dashboard() {
   // Inventory Department
   const { data: spareParts = [], isLoading: sparePartsLoading } = useQuery({
     queryKey: ["spare-parts"],
+    enabled: isManagementDashboard || isFleetDashboard,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("spare_parts")
         .select("id, quantity, min_stock_level");
-      if (error) throw error;
+      if (error) {
+        console.error("Dashboard spare parts fetch error:", {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        return [];
+      }
       return data || [];
     },
     staleTime: 30 * 60 * 1000,
@@ -527,6 +607,10 @@ export default function Dashboard() {
   // Operations Department
   const totalTrips = trips?.length || 0;
   const completedTrips = trips?.filter((t) => t.status === "completed")?.length || 0;
+  const scheduledTrips = trips?.filter((t) => t.status === "scheduled")?.length || 0;
+  const inProgressTrips =
+    trips?.filter((t) => t.status === "in_progress")?.length || 0;
+  const cancelledTrips = trips?.filter((t) => t.status === "cancelled")?.length || 0;
 
   // Clients Department
   const totalClients = clients?.length || 0;
@@ -549,6 +633,50 @@ export default function Dashboard() {
       (p) => p.quantity <= (p.min_stock_level || 0)
     )?.length || 0;
   const totalParts = spareParts?.length || 0;
+
+  // Finance metrics
+  const paidInvoices = invoices?.filter((i) => i.status === "paid")?.length || 0;
+  const overdueInvoicesCount =
+    invoices?.filter((i) => i.status === "overdue")?.length || 0;
+  const overdueInvoiceAmount = invoices?.reduce(
+    (sum: number, invoice: any) =>
+      invoice?.status === "overdue"
+        ? sum +
+          Math.max(
+            0,
+            Number(invoice?.total_amount || 0) -
+              Number(invoice?.paid_amount || 0)
+          )
+        : sum,
+    0
+  ) || 0;
+  const totalInvoicedAmount = invoices?.reduce(
+    (sum: number, invoice: any) => sum + Number(invoice?.total_amount || 0),
+    0
+  ) || 0;
+  const totalPaidAmount = invoices?.reduce(
+    (sum: number, invoice: any) => sum + Number(invoice?.paid_amount || 0),
+    0
+  ) || 0;
+  const outstandingInvoiceAmount = invoices?.reduce(
+    (sum: number, invoice: any) =>
+      sum +
+      Math.max(
+        0,
+        Number(invoice?.total_amount || 0) - Number(invoice?.paid_amount || 0)
+      ),
+    0
+  ) || 0;
+
+  const approvedQuotations =
+    quotations?.filter((q) => q.status === "approved")?.length || 0;
+  const rejectedQuotations =
+    quotations?.filter((q) => q.status === "rejected")?.length || 0;
+
+  const totalMaintenanceExpense = maintenance?.reduce(
+    (sum, record: any) => sum + Number(record?.expense || 0),
+    0
+  ) || 0;
 
   // Calculate meaningful performance metrics
   // Maintenance metrics are available in chartData if needed
@@ -603,168 +731,296 @@ export default function Dashboard() {
     );
   };
 
-  const isManagementDashboard = domain === "management";
-  const isFleetDashboard = !isManagementDashboard;
-
   const summarySections = useMemo<{ title: string; cards: SummaryCardConfig[] }[]>(
-    () => [
-      ...(isManagementDashboard
-        ? [
-            {
-              title: "Fleet Management",
-              cards: [
-                {
-                  title: "Vehicles",
-                  value: totalVehicles,
-                  subtitle: `${fleetUtilization}% utilization`,
-                  icon: Car,
-                },
-                {
-                  title: "Drivers",
-                  value: totalDrivers,
-                  subtitle: `${activeDrivers} active`,
-                  icon: Users,
-                },
-                {
-                  title: "Maintenance",
-                  value: pendingMaintenance,
-                  subtitle: "Scheduled tasks",
-                  icon: Wrench,
-                },
-                {
-                  title: "Fuel Logs",
-                  value: totalFuelLogs,
-                  subtitle: "Entries logged",
-                  icon: Fuel,
-                },
-              ],
-            },
-            {
-              title: "Financial & Operations",
-              cards: [
-                {
-                  title: "Invoices",
-                  value: totalInvoices,
-                  subtitle: `${outstandingInvoices} outstanding`,
-                  icon: FileText,
-                },
-                {
-                  title: "Quotations",
-                  value: totalQuotations,
-                  subtitle: `${pendingQuotations} pending`,
-                  icon: DollarSign,
-                },
-                {
-                  title: "Trips",
-                  value: totalTrips,
-                  subtitle: `${completedTrips} completed`,
-                  icon: Calendar,
-                },
-                {
-                  title: "Clients",
-                  value: totalClients,
-                  subtitle: "Active engagements",
-                  icon: Building2,
-                },
-              ],
-            },
-            {
-              title: "Security, Leasing & Inventory",
-              cards: [
-                {
-                  title: "Security Guards",
-                  value: totalGuards,
-                  subtitle: `${activeGuards} active`,
-                  icon: Shield,
-                },
-                {
-                  title: "Incidents",
-                  value: totalIncidents,
-                  subtitle: `${criticalIncidents} critical`,
-                  icon: AlertTriangle,
-                },
-                {
-                  title: "Leasing",
-                  value: activeLeases,
-                  subtitle: `${totalLeases} total`,
-                  icon: TrendingUp,
-                },
-                {
-                  title: "Spare Parts",
-                  value: totalParts,
-                  subtitle: `${lowStockParts} low stock`,
-                  icon: Package,
-                },
-              ],
-            },
-          ]
-        : []),
-      ...(isFleetDashboard || !isManagementDashboard
-        ? [
-            {
-              title: "Fleet Operations",
-              cards: [
-                {
-                  title: "Vehicles",
-                  value: totalVehicles,
-                  subtitle: `${fleetUtilization}% utilization`,
-                  icon: Car,
-                },
-                {
-                  title: "Active Drivers",
-                  value: activeDrivers,
-                  subtitle: `${totalDrivers} total`,
-                  icon: Users,
-                },
-                {
-                  title: "Maintenance",
-                  value: pendingMaintenance,
-                  subtitle: "Scheduled tasks",
-                  icon: Wrench,
-                },
-                {
-                  title: "Fuel Logs",
-                  value: totalFuelLogs,
-                  subtitle: "Entries logged",
-                  icon: Fuel,
-                },
-              ],
-            },
-            {
-              title: "Trip Performance",
-              cards: [
-                {
-                  title: "Trips",
-                  value: totalTrips,
-                  subtitle: `${completedTrips} completed`,
-                  icon: Calendar,
-                },
-                {
-                  title: "Incidents",
-                  value: totalIncidents,
-                  subtitle: `${criticalIncidents} critical`,
-                  icon: AlertTriangle,
-                },
-                {
-                  title: "Active Leases",
-                  value: activeLeases,
-                  subtitle: `${totalLeases} total`,
-                  icon: TrendingUp,
-                },
-                {
-                  title: "Spare Parts",
-                  value: totalParts,
-                  subtitle: `${lowStockParts} low stock`,
-                  icon: Package,
-                },
-              ],
-            },
-          ]
-        : []),
-    ],
+    () => {
+      if (isManagementDashboard) {
+        return [
+          {
+            title: "Fleet Management",
+            cards: [
+              {
+                title: "Vehicles",
+                value: totalVehicles,
+                subtitle: `${fleetUtilization}% utilization`,
+                icon: Car,
+              },
+              {
+                title: "Drivers",
+                value: totalDrivers,
+                subtitle: `${activeDrivers} active`,
+                icon: Users,
+              },
+              {
+                title: "Maintenance",
+                value: pendingMaintenance,
+                subtitle: "Scheduled tasks",
+                icon: Wrench,
+              },
+              {
+                title: "Fuel Logs",
+                value: totalFuelLogs,
+                subtitle: "Entries logged",
+                icon: Fuel,
+              },
+            ],
+          },
+          {
+            title: "Financial & Operations",
+            cards: [
+              {
+                title: "Invoices",
+                value: totalInvoices,
+                subtitle: `${outstandingInvoices} outstanding`,
+                icon: FileText,
+              },
+              {
+                title: "Quotations",
+                value: totalQuotations,
+                subtitle: `${pendingQuotations} pending`,
+                icon: DollarSign,
+              },
+              {
+                title: "Trips",
+                value: totalTrips,
+                subtitle: `${completedTrips} completed`,
+                icon: Calendar,
+              },
+              {
+                title: "Clients",
+                value: totalClients,
+                subtitle: "Active engagements",
+                icon: Building2,
+              },
+            ],
+          },
+          {
+            title: "Security, Leasing & Inventory",
+            cards: [
+              {
+                title: "Security Guards",
+                value: totalGuards,
+                subtitle: `${activeGuards} active`,
+                icon: Shield,
+              },
+              {
+                title: "Incidents",
+                value: totalIncidents,
+                subtitle: `${criticalIncidents} critical`,
+                icon: AlertTriangle,
+              },
+              {
+                title: "Leasing",
+                value: activeLeases,
+                subtitle: `${totalLeases} total`,
+                icon: TrendingUp,
+              },
+              {
+                title: "Spare Parts",
+                value: totalParts,
+                subtitle: `${lowStockParts} low stock`,
+                icon: Package,
+              },
+            ],
+          },
+        ];
+      }
+
+      if (isFleetDashboard) {
+        return [
+          {
+            title: "Fleet Operations",
+            cards: [
+              {
+                title: "Vehicles",
+                value: totalVehicles,
+                subtitle: `${fleetUtilization}% utilization`,
+                icon: Car,
+              },
+              {
+                title: "Active Drivers",
+                value: activeDrivers,
+                subtitle: `${totalDrivers} total`,
+                icon: Users,
+              },
+              {
+                title: "Maintenance Tasks",
+                value: pendingMaintenance,
+                subtitle: "Scheduled",
+                icon: Wrench,
+              },
+              {
+                title: "Fuel Logs",
+                value: totalFuelLogs,
+                subtitle: "Entries logged",
+                icon: Fuel,
+              },
+            ],
+          },
+          {
+            title: "Asset Readiness",
+            cards: [
+              {
+                title: "Active Leases",
+                value: activeLeases,
+                subtitle: `${totalLeases} total`,
+                icon: TrendingUp,
+              },
+              {
+                title: "Spare Parts",
+                value: totalParts,
+                subtitle: `${lowStockParts} low stock`,
+                icon: Package,
+              },
+              {
+                title: "Incidents",
+                value: totalIncidents,
+                subtitle: `${criticalIncidents} critical`,
+                icon: AlertTriangle,
+              },
+              {
+                title: "Security Guards",
+                value: totalGuards,
+                subtitle: `${activeGuards} active`,
+                icon: Shield,
+              },
+            ],
+          },
+        ];
+      }
+
+      if (isOperationsDashboard) {
+        return [
+          {
+            title: "Trip Operations",
+            cards: [
+              {
+                title: "Total Trips",
+                value: totalTrips,
+                subtitle: `${completedTrips} completed`,
+                icon: Calendar,
+              },
+              {
+                title: "In Progress",
+                value: inProgressTrips,
+                subtitle: `${scheduledTrips} scheduled`,
+                icon: TrendingUp,
+              },
+              {
+                title: "Cancelled",
+                value: cancelledTrips,
+                subtitle: "Cancellations",
+                icon: XCircle,
+              },
+              {
+                title: "Active Drivers",
+                value: activeDrivers,
+                subtitle: `${totalDrivers} total`,
+                icon: Users,
+              },
+            ],
+          },
+          {
+            title: "Operational Support",
+            cards: [
+              {
+                title: "Maintenance Tasks",
+                value: pendingMaintenance,
+                subtitle: "Scheduled",
+                icon: Wrench,
+              },
+              {
+                title: "Fuel Logs",
+                value: totalFuelLogs,
+                subtitle: "Entries logged",
+                icon: Fuel,
+              },
+              {
+                title: "Incidents",
+                value: totalIncidents,
+                subtitle: `${criticalIncidents} critical`,
+                icon: AlertTriangle,
+              },
+              {
+                title: "Security Guards",
+                value: totalGuards,
+                subtitle: `${activeGuards} active`,
+                icon: Shield,
+              },
+            ],
+          },
+        ];
+      }
+
+      if (isFinanceDashboard) {
+        return [
+          {
+            title: "Revenue & Collections",
+            cards: [
+              {
+                title: "Total Invoiced",
+                value: formatCurrency(totalInvoicedAmount),
+                subtitle: `${totalInvoices} invoices`,
+                icon: DollarSign,
+              },
+              {
+                title: "Collected",
+                value: formatCurrency(totalPaidAmount),
+                subtitle: `${paidInvoices} paid`,
+                icon: TrendingUp,
+              },
+              {
+                title: "Outstanding",
+                value: formatCurrency(outstandingInvoiceAmount),
+                subtitle: `${outstandingInvoices} outstanding`,
+                icon: FileText,
+              },
+              {
+                title: "Overdue",
+                value: formatCurrency(overdueInvoiceAmount),
+                subtitle: `${overdueInvoicesCount} invoices`,
+                icon: AlertTriangle,
+              },
+            ],
+          },
+          {
+            title: "Sales Pipeline",
+            cards: [
+              {
+                title: "Quotations",
+                value: totalQuotations,
+                subtitle: `${pendingQuotations} pending`,
+                icon: Package,
+              },
+              {
+                title: "Approved Quotes",
+                value: approvedQuotations,
+                subtitle: `${rejectedQuotations} rejected`,
+                icon: CheckCircle,
+              },
+              {
+                title: "Maintenance Spend",
+                value: formatCurrency(totalMaintenanceExpense),
+                subtitle: "Tracked costs",
+                icon: Wrench,
+              },
+              {
+                title: "Fuel Logs",
+                value: totalFuelLogs,
+                subtitle: "Entries logged",
+                icon: Fuel,
+              },
+            ],
+          },
+        ];
+      }
+
+      return [];
+    },
     [
       isManagementDashboard,
       isFleetDashboard,
+      isOperationsDashboard,
+      isFinanceDashboard,
       totalVehicles,
       fleetUtilization,
       totalDrivers,
@@ -777,6 +1033,9 @@ export default function Dashboard() {
       pendingQuotations,
       totalTrips,
       completedTrips,
+      inProgressTrips,
+      scheduledTrips,
+      cancelledTrips,
       totalClients,
       totalGuards,
       activeGuards,
@@ -786,7 +1045,242 @@ export default function Dashboard() {
       totalLeases,
       totalParts,
       lowStockParts,
+      paidInvoices,
+      totalInvoicedAmount,
+      totalPaidAmount,
+      outstandingInvoiceAmount,
+      overdueInvoiceAmount,
+      overdueInvoicesCount,
+      approvedQuotations,
+      rejectedQuotations,
+      totalMaintenanceExpense,
     ]
+  );
+
+  const renderManagementCharts = () => (
+    <>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fuel Consumption
+          </h3>
+          <div className="h-[280px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
+              <FuelConsumptionChart
+                data={chartData?.fuelConsumptionData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Financial Overview
+          </h3>
+          <div className="h-[280px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
+              <FinancialOverviewChart data={financialOverviewData} />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Maintenance Costs
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <MaintenanceCostsChart
+                data={chartData?.maintenanceCostsData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fleet Utilization
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <PerformanceMetricsChart data={performanceMetrics} compact />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fleet Distribution
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <FleetDistributionChart
+                data={chartData?.fleetDistributionData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Driver Status
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <DriverStatusChart data={driverStatusChartData} compact />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderFleetOrOperationsCharts = () => (
+    <>
+      <div className="bg-card border border-border p-4">
+        <h3 className="text-sm font-medium text-foreground mb-4">
+          Fuel Consumption
+        </h3>
+        <div className="h-[320px] w-full">
+          <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
+            <FuelConsumptionChart
+              data={chartData?.fuelConsumptionData || []}
+              compact
+            />
+          </LazyWrapper>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Maintenance Costs
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <MaintenanceCostsChart
+                data={chartData?.maintenanceCostsData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fleet Utilization
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <PerformanceMetricsChart data={performanceMetrics} compact />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fleet Distribution
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <FleetDistributionChart
+                data={chartData?.fleetDistributionData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Driver Status
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <DriverStatusChart data={driverStatusChartData} compact />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderFinanceCharts = () => (
+    <>
+      <div className="bg-card border border-border p-4">
+        <h3 className="text-sm font-medium text-foreground mb-4">
+          Financial Overview
+        </h3>
+        <div className="h-[320px] w-full">
+          <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
+            <FinancialOverviewChart data={financialOverviewData} />
+          </LazyWrapper>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Maintenance Costs
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <MaintenanceCostsChart
+                data={chartData?.maintenanceCostsData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fuel Consumption
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <FuelConsumptionChart
+                data={chartData?.fuelConsumptionData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fleet Utilization
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <PerformanceMetricsChart data={performanceMetrics} compact />
+            </LazyWrapper>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Driver Status
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <DriverStatusChart data={driverStatusChartData} compact />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+    </>
   );
 
   // ALL HOOKS HAVE BEEN CALLED - NOW HANDLE CONDITIONAL RENDERING
@@ -854,172 +1348,10 @@ export default function Dashboard() {
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-12">
           <section className="lg:col-span-8 space-y-6">
-            {isManagementDashboard ? (
-              <>
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Fuel Consumption
-                    </h3>
-                    <div className="h-[280px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
-                        <FuelConsumptionChart
-                          data={chartData?.fuelConsumptionData || []}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Financial Overview
-                    </h3>
-                    <div className="h-[280px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
-                        <FinancialOverviewChart data={financialOverviewData} />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Maintenance Costs
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <MaintenanceCostsChart
-                          data={chartData?.maintenanceCostsData || []}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Fleet Utilization
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <PerformanceMetricsChart
-                          data={performanceMetrics}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Fleet Distribution
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <FleetDistributionChart
-                          data={chartData?.fleetDistributionData || []}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Driver Status
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <DriverStatusChart
-                          data={driverStatusChartData}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-card border border-border p-4">
-                  <h3 className="text-sm font-medium text-foreground mb-4">
-                    Fuel Consumption
-                  </h3>
-                  <div className="h-[320px] w-full">
-                    <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
-                      <FuelConsumptionChart
-                        data={chartData?.fuelConsumptionData || []}
-                        compact
-                      />
-                    </LazyWrapper>
-                  </div>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Maintenance Costs
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <MaintenanceCostsChart
-                          data={chartData?.maintenanceCostsData || []}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Fleet Utilization
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <PerformanceMetricsChart
-                          data={performanceMetrics}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Fleet Distribution
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <FleetDistributionChart
-                          data={chartData?.fleetDistributionData || []}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border p-4">
-                    <h3 className="text-sm font-medium text-foreground mb-4">
-                      Driver Status
-                    </h3>
-                    <div className="h-[250px] w-full">
-                      <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                        <DriverStatusChart
-                          data={driverStatusChartData}
-                          compact
-                        />
-                      </LazyWrapper>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+            {isManagementDashboard && renderManagementCharts()}
+            {isFleetDashboard && renderFleetOrOperationsCharts()}
+            {isOperationsDashboard && renderFleetOrOperationsCharts()}
+            {isFinanceDashboard && renderFinanceCharts()}
           </section>
 
           {/* Right Sidebar */}
