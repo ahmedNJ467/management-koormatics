@@ -89,7 +89,7 @@ export const DriverDetailsDialog = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="pr-10">{driver.name}</DialogTitle>
+          <DialogTitle className="pr-10">{driver.name || "Driver"}</DialogTitle>
           <DialogDescription>
             Driver Details
           </DialogDescription>
@@ -106,10 +106,12 @@ export const DriverDetailsDialog = ({
                   className="h-full w-full object-cover"
                 />
                 <AvatarFallback className="text-3xl font-semibold bg-muted/50">
-                  {driver.name
-                    .split(" ")
+                  {(driver.name || "")
+                    .trim()
+                    .split(/\s+/)
+                    .filter(Boolean)
                     .map((n) => n[0])
-                    .join("")}
+                    .join("") || "DR"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-center gap-2">
@@ -202,7 +204,7 @@ export const DriverDetailsDialog = ({
                   <div className="flex-1">
                     <p className="text-sm font-medium">License Document</p>
                     <p className="text-xs text-muted-foreground">
-                      {driver.document_url.split("/").pop()}
+                      {String(driver.document_url).split("/").pop()}
                     </p>
                   </div>
                   <Button
@@ -221,7 +223,7 @@ export const DriverDetailsDialog = ({
                   <div className="flex-1">
                     <p className="text-sm font-medium">Airport ID Card</p>
                     <p className="text-xs text-muted-foreground">
-                      {driver.airport_id_url.split("/").pop()}
+                      {String(driver.airport_id_url).split("/").pop()}
                     </p>
                   </div>
                   <Button
