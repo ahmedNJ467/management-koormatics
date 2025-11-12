@@ -35,15 +35,18 @@ export function DriverFormDialog({
     isSubmitting,
     setIsSubmitting,
     avatarFile,
+    avatarRemoved,
     documentFile,
     airportIdFile,
     avatarPreview,
     setAvatarPreview,
+    setAvatarRemoved,
     documentName,
     setDocumentName,
     airportIdName,
     setAirportIdName,
     handleAvatarChange,
+    clearAvatar,
     handleDocumentChange,
     clearDocument,
     handleAirportIdChange,
@@ -62,6 +65,7 @@ export function DriverFormDialog({
         is_vip: driver.is_vip || false,
       });
       setAvatarPreview(driver.avatar_url || null);
+      setAvatarRemoved(false);
       setDocumentName(
         driver.document_url ? driver.document_url.split("/").pop() || null : null
       );
@@ -79,6 +83,7 @@ export function DriverFormDialog({
         is_vip: false,
       });
       setAvatarPreview(null);
+      setAvatarRemoved(false);
       setDocumentName(null);
       setAirportIdName(null);
     }
@@ -130,6 +135,7 @@ export function DriverFormDialog({
             driverId,
             "avatar"
           );
+          setAvatarRemoved(false);
         }
         if (documentFile) {
           documentUrl = await uploadDriverFile(
@@ -153,11 +159,12 @@ export function DriverFormDialog({
             .eq("id", driverId as any);
         }
 
-        if (avatarUrl || documentUrl) {
+        if (avatarUrl || documentUrl || avatarRemoved) {
           const { error: fileUpdateError } = await supabase
             .from("drivers")
             .update({
-              ...(avatarUrl && { avatar_url: avatarUrl }),
+              ...(avatarFile && avatarUrl && { avatar_url: avatarUrl }),
+              ...(!avatarFile && avatarRemoved && { avatar_url: null }),
               ...(documentUrl && { document_url: documentUrl }),
             } as any)
             .eq("id", driverId as any);
@@ -215,6 +222,7 @@ export function DriverFormDialog({
             documentName={documentName}
             airportIdName={airportIdName}
             onAvatarChange={handleAvatarChange}
+            onAvatarClear={clearAvatar}
             onDocumentChange={handleDocumentChange}
             onDocumentClear={clearDocument}
             onAirportIdChange={handleAirportIdChange}

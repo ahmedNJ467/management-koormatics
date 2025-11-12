@@ -16,6 +16,7 @@ interface DriverFormContentProps {
   documentName: string | null;
   airportIdName: string | null;
   onAvatarChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onAvatarClear: () => void;
   onDocumentChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDocumentClear: () => void;
   onAirportIdChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -33,6 +34,7 @@ export function DriverFormContent({
   documentName,
   airportIdName,
   onAvatarChange,
+  onAvatarClear,
   onDocumentChange,
   onDocumentClear,
   onAirportIdChange,
@@ -52,6 +54,8 @@ export function DriverFormContent({
               <AvatarUploadField
                 avatarPreview={avatarPreview}
                 onAvatarChange={onAvatarChange}
+                onAvatarClear={onAvatarClear}
+                canClear={Boolean(avatarPreview || driver?.avatar_url)}
               />
               <DocumentUploadField
                 documentName={documentName}

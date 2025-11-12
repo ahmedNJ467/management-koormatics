@@ -13,6 +13,7 @@ export function useDriverForm(driver?: Driver) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string | null>(null);
   const [airportIdName, setAirportIdName] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
 
   const form = useForm<DriverFormValues>({
     resolver: zodResolver(driverSchema),
@@ -48,7 +49,14 @@ export function useDriverForm(driver?: Driver) {
       setAvatarFile(file);
       const objectUrl = URL.createObjectURL(file);
       setAvatarPreview(objectUrl);
+      setAvatarRemoved(false);
     }
+  };
+
+  const clearAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setAvatarRemoved(true);
   };
 
   const handleDocumentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,15 +92,18 @@ export function useDriverForm(driver?: Driver) {
     isSubmitting,
     setIsSubmitting,
     avatarFile,
+    avatarRemoved,
     documentFile,
     airportIdFile,
     avatarPreview,
     setAvatarPreview,
+    setAvatarRemoved,
     documentName,
     setDocumentName,
     airportIdName,
     setAirportIdName,
     handleAvatarChange,
+    clearAvatar,
     handleDocumentChange,
     clearDocument,
     handleAirportIdChange,

@@ -99,9 +99,13 @@ export const DriverDetailsDialog = ({
           {/* Profile Section */}
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <div className="flex flex-col items-center gap-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={driver.avatar_url} alt={driver.name} />
-                <AvatarFallback className="text-2xl font-semibold bg-muted/50">
+              <Avatar className="h-32 w-32 ring-2 ring-border">
+                <AvatarImage
+                  src={driver.avatar_url}
+                  alt={driver.name}
+                  className="h-full w-full object-cover"
+                />
+                <AvatarFallback className="text-3xl font-semibold bg-muted/50">
                   {driver.name
                     .split(" ")
                     .map((n) => n[0])
