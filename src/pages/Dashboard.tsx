@@ -42,6 +42,11 @@ type SummaryCardConfig = {
   icon: LucideIcon;
 };
 
+type SummarySection = {
+  title?: string;
+  cards: SummaryCardConfig[];
+};
+
 // Dynamically import charts to avoid SSR layout/measurement issues
 
 const FuelConsumptionChart = dynamic(
@@ -731,7 +736,7 @@ export default function Dashboard() {
     );
   };
 
-  const summarySections = useMemo<{ title: string; cards: SummaryCardConfig[] }[]>(
+  const summarySections = useMemo<SummarySection[]>(
     () => {
       if (isManagementDashboard) {
         return [
@@ -828,7 +833,6 @@ export default function Dashboard() {
       if (isFleetDashboard) {
         return [
           {
-            title: "Fleet Operations",
             cards: [
               {
                 title: "Vehicles",
@@ -854,11 +858,6 @@ export default function Dashboard() {
                 subtitle: "Entries logged",
                 icon: Fuel,
               },
-            ],
-          },
-          {
-            title: "Trip Performance",
-            cards: [
               {
                 title: "Trips",
                 value: totalTrips,
@@ -891,7 +890,6 @@ export default function Dashboard() {
       if (isOperationsDashboard) {
         return [
           {
-            title: "Trip Operations",
             cards: [
               {
                 title: "Total Trips",
@@ -917,11 +915,6 @@ export default function Dashboard() {
                 subtitle: `${totalDrivers} total`,
                 icon: Users,
               },
-            ],
-          },
-          {
-            title: "Operational Support",
-            cards: [
               {
                 title: "Maintenance Tasks",
                 value: pendingMaintenance,
@@ -1328,15 +1321,17 @@ export default function Dashboard() {
 
         {/* Summary Sections */}
         <div className="space-y-6">
-          {summarySections.map((section) => (
-            <div key={section.title}>
-              <h2 className="text-sm font-medium text-muted-foreground mb-3">
-                {section.title}
-              </h2>
+          {summarySections.map((section, index) => (
+            <div key={section.title ?? `section-${index}`}>
+              {section.title ? (
+                <h2 className="text-sm font-medium text-muted-foreground mb-3">
+                  {section.title}
+                </h2>
+              ) : null}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {section.cards.map((card) => (
                   <SummaryCard
-                    key={`${section.title}-${card.title}`}
+                    key={`${section.title ?? index}-${card.title}`}
                     {...card}
                   />
                 ))}
