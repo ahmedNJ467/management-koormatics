@@ -286,7 +286,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                 }
               }}
             >
-              <Sidebar onLinkClick={isMobile ? () => setSidebarOpen(false) : undefined} />
+              <Sidebar onLinkClick={undefined} />
             </div>
 
             {/* Main Content - Naturally expands/contracts */}
