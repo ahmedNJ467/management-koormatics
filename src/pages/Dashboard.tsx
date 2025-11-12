@@ -857,19 +857,13 @@ export default function Dashboard() {
             ],
           },
           {
-            title: "Asset Readiness",
+            title: "Trip Performance",
             cards: [
               {
-                title: "Active Leases",
-                value: activeLeases,
-                subtitle: `${totalLeases} total`,
-                icon: TrendingUp,
-              },
-              {
-                title: "Spare Parts",
-                value: totalParts,
-                subtitle: `${lowStockParts} low stock`,
-                icon: Package,
+                title: "Trips",
+                value: totalTrips,
+                subtitle: `${completedTrips} completed`,
+                icon: Calendar,
               },
               {
                 title: "Incidents",
@@ -878,10 +872,16 @@ export default function Dashboard() {
                 icon: AlertTriangle,
               },
               {
-                title: "Security Guards",
-                value: totalGuards,
-                subtitle: `${activeGuards} active`,
-                icon: Shield,
+                title: "In Progress",
+                value: inProgressTrips,
+                subtitle: `${scheduledTrips} scheduled`,
+                icon: TrendingUp,
+              },
+              {
+                title: "Spare Parts",
+                value: totalParts,
+                subtitle: `${lowStockParts} low stock`,
+                icon: Package,
               },
             ],
           },
