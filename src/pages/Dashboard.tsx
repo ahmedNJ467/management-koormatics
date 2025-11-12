@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { LazyRecentActivity, LazyWrapper } from "@/components/LazyWrapper";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/loading-skeleton";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 import { Button } from "@/components/ui/button";
+import type { LucideIcon } from "lucide-react";
 import {
   Car,
   Users,
@@ -29,6 +30,14 @@ import {
   Package,
   TrendingUp,
 } from "lucide-react";
+import { isDateInMonth } from "@/utils/date-utils";
+
+type SummaryCardConfig = {
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  icon: LucideIcon;
+};
 
 // Dynamically import charts to avoid SSR layout/measurement issues
 
@@ -61,6 +70,30 @@ const PerformanceMetricsChart = dynamic(
       </div>
     ),
   }
+);
+
+const FinancialOverviewChart = dynamic(
+  () =>
+    import("@/components/dashboard/charts/FinancialOverviewChart").then(
+      (m) => m.FinancialOverviewChart
+    ),
+  { ssr: false }
+);
+
+const FleetDistributionChart = dynamic(
+  () =>
+    import("@/components/dashboard/charts/FleetDistributionChart").then(
+      (m) => m.FleetDistributionChart
+    ),
+  { ssr: false }
+);
+
+const DriverStatusChart = dynamic(
+  () =>
+    import("@/components/dashboard/charts/DriverStatusChart").then(
+      (m) => m.DriverStatusChart
+    ),
+  { ssr: false }
 );
 
 export default function Dashboard() {
@@ -129,7 +162,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("id, status, created_at");
+        .select("id, status, total_amount, paid_amount, created_at, date");
       if (error) throw error;
       return data || [];
     },
@@ -143,7 +176,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quotations")
-        .select("id, status, created_at");
+        .select("id, status, total_amount, created_at");
       if (error) throw error;
       return data || [];
     },
@@ -422,6 +455,56 @@ export default function Dashboard() {
     };
   }, [markRenderStart, markRenderEnd]);
 
+  const lastSixMonths = useMemo(() => {
+    return Array.from({ length: 6 }, (_, index) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - index));
+      return date.toLocaleString("default", { month: "short" });
+    });
+  }, []);
+
+  const maintenanceCostByMonth = useMemo(() => {
+    const map = new Map<string, number>();
+    (chartData?.maintenanceCostsData || []).forEach((item: any) => {
+      if (item?.month) {
+        map.set(item.month, Number(item.cost) || 0);
+      }
+    });
+    return map;
+  }, [chartData?.maintenanceCostsData]);
+
+  const financialOverviewData = useMemo(() => {
+    return lastSixMonths.map((month) => {
+      const monthInvoices = invoices.filter((invoice: any) => {
+        const invoiceDate = invoice?.date || invoice?.created_at;
+        return isDateInMonth(invoiceDate, month);
+      });
+
+      const revenue = monthInvoices.reduce((sum: number, invoice: any) => {
+        const paidAmount = Number(invoice?.paid_amount) || 0;
+        const totalAmount = Number(invoice?.total_amount) || 0;
+        return sum + (paidAmount > 0 ? paidAmount : totalAmount);
+      }, 0);
+
+      const costs = maintenanceCostByMonth.get(month) || 0;
+      const profit = revenue - costs;
+
+      return {
+        month,
+        revenue: Math.max(0, Math.round(revenue)),
+        costs: Math.max(0, Math.round(costs)),
+        profit: Math.max(0, Math.round(profit)),
+      };
+    });
+  }, [invoices, lastSixMonths, maintenanceCostByMonth]);
+
+  const driverStatusChartData = useMemo(() => {
+    return (chartData?.driverStatusData || []).map((item: any) => ({
+      status: item?.name || "Unknown",
+      count: item?.value || 0,
+    }));
+  }, [chartData?.driverStatusData]);
+
   // Calculate key metrics - Fleet Management
   const totalVehicles = vehicles?.length || 0;
   const activeDrivers =
@@ -487,6 +570,154 @@ export default function Dashboard() {
     },
   ];
 
+  const totalIncidents = incidentReports?.length || 0;
+
+  const SummaryCard = ({
+    title,
+    value,
+    subtitle,
+    icon: Icon,
+  }: SummaryCardConfig) => {
+    const formattedValue =
+      typeof value === "number" ? value.toLocaleString() : value;
+    const subtitleText =
+      typeof subtitle === "string" && subtitle.trim().length > 0
+        ? subtitle
+        : "\u00A0";
+
+    return (
+      <div className="bg-card border border-border rounded-lg p-4 h-full min-h-[130px] flex flex-col justify-between">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="text-2xl font-semibold text-foreground mt-2">
+              {formattedValue}
+            </p>
+          </div>
+          <div className="rounded-md bg-muted p-2 text-muted-foreground">
+            <Icon className="h-5 w-5" />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">{subtitleText}</p>
+      </div>
+    );
+  };
+
+  const summarySections = useMemo<{ title: string; cards: SummaryCardConfig[] }[]>(
+    () => [
+      {
+        title: "Fleet Management",
+        cards: [
+          {
+            title: "Vehicles",
+            value: totalVehicles,
+            subtitle: `${fleetUtilization}% utilization`,
+            icon: Car,
+          },
+          {
+            title: "Drivers",
+            value: totalDrivers,
+            subtitle: `${activeDrivers} active`,
+            icon: Users,
+          },
+          {
+            title: "Maintenance",
+            value: pendingMaintenance,
+            subtitle: "Scheduled tasks",
+            icon: Wrench,
+          },
+          {
+            title: "Fuel Logs",
+            value: totalFuelLogs,
+            subtitle: "Entries logged",
+            icon: Fuel,
+          },
+        ],
+      },
+      {
+        title: "Financial & Operations",
+        cards: [
+          {
+            title: "Invoices",
+            value: totalInvoices,
+            subtitle: `${outstandingInvoices} outstanding`,
+            icon: FileText,
+          },
+          {
+            title: "Quotations",
+            value: totalQuotations,
+            subtitle: `${pendingQuotations} pending`,
+            icon: DollarSign,
+          },
+          {
+            title: "Trips",
+            value: totalTrips,
+            subtitle: `${completedTrips} completed`,
+            icon: Calendar,
+          },
+          {
+            title: "Clients",
+            value: totalClients,
+            subtitle: "Active engagements",
+            icon: Building2,
+          },
+        ],
+      },
+      {
+        title: "Security, Leasing & Inventory",
+        cards: [
+          {
+            title: "Security Guards",
+            value: totalGuards,
+            subtitle: `${activeGuards} active`,
+            icon: Shield,
+          },
+          {
+            title: "Incidents",
+            value: totalIncidents,
+            subtitle: `${criticalIncidents} critical`,
+            icon: AlertTriangle,
+          },
+          {
+            title: "Leasing",
+            value: activeLeases,
+            subtitle: `${totalLeases} total`,
+            icon: TrendingUp,
+          },
+          {
+            title: "Spare Parts",
+            value: totalParts,
+            subtitle: `${lowStockParts} low stock`,
+            icon: Package,
+          },
+        ],
+      },
+    ],
+    [
+      totalVehicles,
+      fleetUtilization,
+      totalDrivers,
+      activeDrivers,
+      pendingMaintenance,
+      totalFuelLogs,
+      totalInvoices,
+      outstandingInvoices,
+      totalQuotations,
+      pendingQuotations,
+      totalTrips,
+      completedTrips,
+      totalClients,
+      totalGuards,
+      activeGuards,
+      totalIncidents,
+      criticalIncidents,
+      activeLeases,
+      totalLeases,
+      totalParts,
+      lowStockParts,
+    ]
+  );
+
   // ALL HOOKS HAVE BEEN CALLED - NOW HANDLE CONDITIONAL RENDERING
   // Use single return with conditional rendering to prevent unmounting
   // Handle conditional rendering - but always render the same structure
@@ -530,202 +761,35 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Key Metrics Grid - All Departments */}
-        <div className="space-y-4">
-          {/* Fleet Management */}
-          <div>
-            <h2 className="text-sm font-medium text-muted-foreground mb-3">
-              Fleet Management
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Vehicles</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {totalVehicles}
-                    </p>
-                  </div>
-                  <Car className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Drivers</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {activeDrivers}/{totalDrivers}
-                    </p>
-                  </div>
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Maintenance</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {pendingMaintenance}
-                    </p>
-                  </div>
-                  <Wrench className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Fuel Logs</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {totalFuelLogs}
-                    </p>
-                  </div>
-                  <Fuel className="h-5 w-5 text-muted-foreground" />
-                </div>
+        {/* Summary Sections */}
+        <div className="space-y-6">
+          {summarySections.map((section) => (
+            <div key={section.title}>
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">
+                {section.title}
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {section.cards.map((card) => (
+                  <SummaryCard
+                    key={`${section.title}-${card.title}`}
+                    {...card}
+                  />
+                ))}
               </div>
             </div>
-          </div>
-
-          {/* Financial & Operations */}
-          <div>
-            <h2 className="text-sm font-medium text-muted-foreground mb-3">
-              Financial & Operations
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Invoices</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {totalInvoices}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {outstandingInvoices} outstanding
-                    </p>
-                  </div>
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Quotations</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {totalQuotations}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {pendingQuotations} pending
-                    </p>
-                  </div>
-                  <DollarSign className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Trips</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {totalTrips}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {completedTrips} completed
-                    </p>
-                  </div>
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Clients</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {totalClients}
-                    </p>
-                  </div>
-                  <Building2 className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Security, Leasing & Inventory */}
-          <div>
-            <h2 className="text-sm font-medium text-muted-foreground mb-3">
-              Security, Leasing & Inventory
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Security Guards</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {activeGuards}/{totalGuards}
-                    </p>
-                  </div>
-                  <Shield className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Incidents</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {incidentReports?.length || 0}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {criticalIncidents} critical
-                    </p>
-                  </div>
-                  <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Leases</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {activeLeases}/{totalLeases}
-                    </p>
-                  </div>
-                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Spare Parts</p>
-                    <p className="text-2xl font-semibold text-foreground">
-                      {totalParts}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {lowStockParts} low stock
-                    </p>
-                  </div>
-                  <Package className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-12">
           <section className="lg:col-span-8 space-y-6">
-            <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <div className="bg-card border border-border p-4">
                 <h3 className="text-sm font-medium text-foreground mb-4">
                   Fuel Consumption
                 </h3>
-                <div className="h-[300px] w-full">
-                  <LazyWrapper fallback={<ChartSkeleton height="h-[300px]" />}>
+                <div className="h-[280px] w-full">
+                  <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
                     <FuelConsumptionChart
                       data={chartData?.fuelConsumptionData || []}
                       compact
@@ -734,33 +798,74 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="bg-card border border-border p-4">
-                  <h3 className="text-sm font-medium text-foreground mb-4">
-                    Maintenance Costs
-                  </h3>
-                  <div className="h-[250px] w-full">
-                    <LazyWrapper
-                      fallback={<ChartSkeleton height="h-[250px]" />}
-                    >
-                      <MaintenanceCostsChart
-                        data={chartData?.maintenanceCostsData || []}
-                        compact
-                      />
-                    </LazyWrapper>
-                  </div>
+              <div className="bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground mb-4">
+                  Financial Overview
+                </h3>
+                <div className="h-[280px] w-full">
+                  <LazyWrapper fallback={<ChartSkeleton height="h-[280px]" />}>
+                    <FinancialOverviewChart data={financialOverviewData} />
+                  </LazyWrapper>
                 </div>
+              </div>
+            </div>
 
-                <div className="bg-card border border-border p-4">
-                  <h3 className="text-sm font-medium text-foreground mb-4">
-                    Fleet Utilization
-                  </h3>
-                  <div className="h-[250px] w-full">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground mb-4">
+                  Maintenance Costs
+                </h3>
+                <div className="h-[250px] w-full">
+                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                    <MaintenanceCostsChart
+                      data={chartData?.maintenanceCostsData || []}
+                      compact
+                    />
+                  </LazyWrapper>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground mb-4">
+                  Fleet Utilization
+                </h3>
+                <div className="h-[250px] w-full">
+                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
                     <PerformanceMetricsChart
                       data={performanceMetrics}
                       compact
                     />
-                  </div>
+                  </LazyWrapper>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground mb-4">
+                  Fleet Distribution
+                </h3>
+                <div className="h-[250px] w-full">
+                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                    <FleetDistributionChart
+                      data={chartData?.fleetDistributionData || []}
+                      compact
+                    />
+                  </LazyWrapper>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground mb-4">
+                  Driver Status
+                </h3>
+                <div className="h-[250px] w-full">
+                  <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                    <DriverStatusChart
+                      data={driverStatusChartData}
+                      compact
+                    />
+                  </LazyWrapper>
                 </div>
               </div>
             </div>
