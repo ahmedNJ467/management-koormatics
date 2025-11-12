@@ -10,12 +10,12 @@ export const assignDriverToTrip = async (tripId: string, driverId: string) => {
     .from("trip_assignments")
     .upsert(
       [
-        {
-          trip_id: tripId,
-          driver_id: driverId,
-          assigned_at: new Date().toISOString(),
+      {
+        trip_id: tripId,
+        driver_id: driverId,
+        assigned_at: new Date().toISOString(),
           status: "assigned",
-        },
+      },
       ] as any,
       {
         onConflict: "trip_id,driver_id",
@@ -80,13 +80,13 @@ export const handleAssignDriver = async (
       .from("trip_assignments")
       .upsert(
         [
-          {
-            trip_id: tripToAssign.id,
-            driver_id: assignDriver,
-            assigned_at: new Date().toISOString(),
+      {
+        trip_id: tripToAssign.id,
+        driver_id: assignDriver,
+        assigned_at: new Date().toISOString(),
             status: "assigned",
-            notes: assignNote || null,
-          },
+        notes: assignNote || null,
+      },
         ] as any,
         {
           onConflict: "trip_id,driver_id",

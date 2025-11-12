@@ -15,7 +15,20 @@ import {
 } from "@/components/ui/loading-skeleton";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 import { Button } from "@/components/ui/button";
-import { Car, Users, Wrench, Fuel } from "lucide-react";
+import {
+  Car,
+  Users,
+  Wrench,
+  Fuel,
+  FileText,
+  DollarSign,
+  Calendar,
+  Building2,
+  Shield,
+  AlertTriangle,
+  Package,
+  TrendingUp,
+} from "lucide-react";
 
 // Dynamically import charts to avoid SSR layout/measurement issues
 
@@ -110,8 +123,137 @@ export default function Dashboard() {
     refetchOnWindowFocus: false,
   });
 
+  // Financial Department
+  const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
+    queryKey: ["invoices"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("id, status, amount, created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: quotations = [], isLoading: quotationsLoading } = useQuery({
+    queryKey: ["quotations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("quotations")
+        .select("id, status, total_amount, created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Operations Department
+  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+    queryKey: ["trips"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trips")
+        .select("id, status, amount, date, created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Clients Department
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Security Department
+  const { data: securityGuards = [], isLoading: guardsLoading } = useQuery({
+    queryKey: ["security_guards"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("security_guards")
+        .select("id, status");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: incidentReports = [], isLoading: incidentsLoading } = useQuery({
+    queryKey: ["vehicle-incident-reports"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicle_incident_reports")
+        .select("id, status, severity");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Leasing Department
+  const { data: leases = [], isLoading: leasesLoading } = useQuery({
+    queryKey: ["vehicle-leases"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicle_leases")
+        .select("id, lease_status, monthly_payment");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Inventory Department
+  const { data: spareParts = [], isLoading: sparePartsLoading } = useQuery({
+    queryKey: ["spare-parts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("spare_parts")
+        .select("id, quantity, min_stock_level");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
   const loading =
-    vehiclesLoading || driversLoading || fuelLogsLoading || maintenanceLoading;
+    vehiclesLoading ||
+    driversLoading ||
+    fuelLogsLoading ||
+    maintenanceLoading ||
+    invoicesLoading ||
+    quotationsLoading ||
+    tripsLoading ||
+    clientsLoading ||
+    guardsLoading ||
+    incidentsLoading ||
+    leasesLoading ||
+    sparePartsLoading;
 
   const chartData = useDashboardChartsData(
     vehicles,
@@ -185,6 +327,7 @@ export default function Dashboard() {
       unsubscribes.push(
         realtimeManager.subscribeToTable("trips", async (payload) => {
           queryClient.invalidateQueries({ queryKey: ["contract-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["trips"] });
 
           if (
             payload.new &&
@@ -216,6 +359,53 @@ export default function Dashboard() {
           setRecentActivities(activities);
         })
       );
+
+      // Financial Department subscriptions
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("invoices", async () => {
+          queryClient.invalidateQueries({ queryKey: ["invoices"] });
+        })
+      );
+
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("quotations", async () => {
+          queryClient.invalidateQueries({ queryKey: ["quotations"] });
+        })
+      );
+
+      // Clients Department subscriptions
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("clients", async () => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        })
+      );
+
+      // Security Department subscriptions
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("security_guards", async () => {
+          queryClient.invalidateQueries({ queryKey: ["security_guards"] });
+        })
+      );
+
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("vehicle_incident_reports", async () => {
+          queryClient.invalidateQueries({ queryKey: ["vehicle-incident-reports"] });
+        })
+      );
+
+      // Leasing Department subscriptions
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("vehicle_leases", async () => {
+          queryClient.invalidateQueries({ queryKey: ["vehicle-leases"] });
+        })
+      );
+
+      // Inventory Department subscriptions
+      unsubscribes.push(
+        realtimeManager.subscribeToTable("spare_parts", async () => {
+          queryClient.invalidateQueries({ queryKey: ["spare-parts"] });
+        })
+      );
     }, 500);
 
     return () => {
@@ -232,7 +422,7 @@ export default function Dashboard() {
     };
   }, [markRenderStart, markRenderEnd]);
 
-  // Calculate key metrics
+  // Calculate key metrics - Fleet Management
   const totalVehicles = vehicles?.length || 0;
   const activeDrivers =
     drivers?.filter((d) => d.status === "active")?.length || 0;
@@ -240,6 +430,45 @@ export default function Dashboard() {
   const pendingMaintenance =
     maintenance?.filter((m) => m.status === "scheduled")?.length || 0;
   const totalFuelLogs = fuelLogs?.length || 0;
+
+  // Financial Department
+  const totalInvoices = invoices?.length || 0;
+  const paidInvoices =
+    invoices?.filter((i) => i.status === "paid")?.length || 0;
+  const outstandingInvoices =
+    invoices?.filter((i) => i.status === "sent" || i.status === "overdue")
+      ?.length || 0;
+  const totalQuotations = quotations?.length || 0;
+  const pendingQuotations =
+    quotations?.filter((q) => q.status === "draft" || q.status === "sent")
+      ?.length || 0;
+
+  // Operations Department
+  const totalTrips = trips?.length || 0;
+  const completedTrips = trips?.filter((t) => t.status === "completed")?.length || 0;
+  const scheduledTrips = trips?.filter((t) => t.status === "scheduled")?.length || 0;
+
+  // Clients Department
+  const totalClients = clients?.length || 0;
+
+  // Security Department
+  const activeGuards =
+    securityGuards?.filter((g) => g.status === "active")?.length || 0;
+  const totalGuards = securityGuards?.length || 0;
+  const criticalIncidents =
+    incidentReports?.filter((i) => i.severity === "critical")?.length || 0;
+
+  // Leasing Department
+  const activeLeases =
+    leases?.filter((l) => l.lease_status === "active")?.length || 0;
+  const totalLeases = leases?.length || 0;
+
+  // Inventory Department
+  const lowStockParts =
+    spareParts?.filter(
+      (p) => p.quantity <= (p.min_stock_level || 0)
+    )?.length || 0;
+  const totalParts = spareParts?.length || 0;
 
   // Calculate meaningful performance metrics
   // Maintenance metrics are available in chartData if needed
@@ -304,53 +533,188 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Key Metrics Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-card border border-border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Vehicles</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {totalVehicles}
-                </p>
+        {/* Key Metrics Grid - All Departments */}
+        <div className="space-y-4">
+          {/* Fleet Management */}
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground mb-3">
+              Fleet Management
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Vehicles</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {totalVehicles}
+                    </p>
+                  </div>
+                  <Car className="h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
-              <Car className="h-5 w-5 text-muted-foreground" />
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Drivers</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {activeDrivers}/{totalDrivers}
+                    </p>
+                  </div>
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Maintenance</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {pendingMaintenance}
+                    </p>
+                  </div>
+                  <Wrench className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Fuel Logs</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {totalFuelLogs}
+                    </p>
+                  </div>
+                  <Fuel className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-card border border-border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Drivers</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {activeDrivers}/{totalDrivers}
-                </p>
+          {/* Financial & Operations */}
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground mb-3">
+              Financial & Operations
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Invoices</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {totalInvoices}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {outstandingInvoices} outstanding
+                    </p>
+                  </div>
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
-              <Users className="h-5 w-5 text-muted-foreground" />
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Quotations</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {totalQuotations}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {pendingQuotations} pending
+                    </p>
+                  </div>
+                  <DollarSign className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Trips</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {totalTrips}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {completedTrips} completed
+                    </p>
+                  </div>
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Clients</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {totalClients}
+                    </p>
+                  </div>
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-card border border-border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Maintenance</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {pendingMaintenance}
-                </p>
+          {/* Security, Leasing & Inventory */}
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground mb-3">
+              Security, Leasing & Inventory
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Security Guards</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {activeGuards}/{totalGuards}
+                    </p>
+                  </div>
+                  <Shield className="h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
-              <Wrench className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
 
-          <div className="bg-card border border-border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Fuel Logs</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {totalFuelLogs}
-                </p>
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Incidents</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {incidentReports?.length || 0}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {criticalIncidents} critical
+                    </p>
+                  </div>
+                  <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
-              <Fuel className="h-5 w-5 text-muted-foreground" />
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active Leases</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {activeLeases}/{totalLeases}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Spare Parts</p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {totalParts}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {lowStockParts} low stock
+                    </p>
+                  </div>
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
             </div>
           </div>
         </div>

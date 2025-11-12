@@ -621,57 +621,57 @@ export default function SecurityEscorts() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Full Name *</label>
-                  <Input
+              <Input
                     placeholder="Enter full name"
-                    value={gName}
-                    onChange={(e) => setGName(e.target.value)}
-                  />
+                value={gName}
+                onChange={(e) => setGName(e.target.value)}
+              />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Phone</label>
-                  <Input
+              <Input
                     placeholder="Enter phone number"
-                    value={gPhone}
-                    onChange={(e) => setGPhone(e.target.value)}
-                  />
+                value={gPhone}
+                onChange={(e) => setGPhone(e.target.value)}
+              />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">ID/Badge Number</label>
-                  <Input
+              <Input
                     placeholder="Enter ID or badge number"
-                    value={gIdNo}
-                    onChange={(e) => setGIdNo(e.target.value)}
-                  />
+                value={gIdNo}
+                onChange={(e) => setGIdNo(e.target.value)}
+              />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Rank/Role</label>
-                  <Input
+              <Input
                     placeholder="Enter rank or role"
-                    value={gRank}
-                    onChange={(e) => setGRank(e.target.value)}
-                  />
+                value={gRank}
+                onChange={(e) => setGRank(e.target.value)}
+              />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Status</label>
-                  <Select value={gStatus} onValueChange={setGStatus}>
+              <Select value={gStatus} onValueChange={setGStatus}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="leave">On Leave</SelectItem>
-                    </SelectContent>
-                  </Select>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="leave">On Leave</SelectItem>
+                </SelectContent>
+              </Select>
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Notes</label>
-                <Input
+              <Input
                   placeholder="Enter any additional notes"
-                  value={gNotes}
-                  onChange={(e) => setGNotes(e.target.value)}
-                />
+                value={gNotes}
+                onChange={(e) => setGNotes(e.target.value)}
+              />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t">
@@ -732,52 +732,52 @@ export default function SecurityEscorts() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Team Name *</label>
-                  <Input
+              <Input
                     placeholder="Enter team name"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                  />
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+              />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Vehicle *</label>
-                  <Select value={teamVehicleId} onValueChange={setTeamVehicleId}>
+              <Select value={teamVehicleId} onValueChange={setTeamVehicleId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select vehicle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(availableVehicles || []).map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          {v.registration || `${v.make || ""} ${v.model || ""}`}
-                        </SelectItem>
-                      ))}
-                      {availableVehicles.length === 0 && (
+                  <SelectValue placeholder="Select vehicle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(availableVehicles || []).map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.registration || `${v.make || ""} ${v.model || ""}`}
+                    </SelectItem>
+                  ))}
+                  {availableVehicles.length === 0 && (
                         <div className="px-2 py-1 text-sm text-muted-foreground">
-                          No available vehicles
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
+                      No available vehicles
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Guards</label>
                 <div className="border rounded-lg p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
                   <div className="flex flex-wrap gap-3">
-                    {(guardsQuery.data || []).map((g) => (
-                      <button
-                        key={g.id}
+                {(guardsQuery.data || []).map((g) => (
+                  <button
+                    key={g.id}
                         type="button"
-                        onClick={() => toggleGuard(g.id)}
+                    onClick={() => toggleGuard(g.id)}
                         className={`px-4 py-2 text-sm border rounded-lg transition-colors ${
-                          selectedIds.includes(g.id)
+                      selectedIds.includes(g.id)
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-background hover:bg-muted border-border"
-                        }`}
-                      >
-                        {g.name} {g.rank ? `(${g.rank})` : ""}
-                      </button>
-                    ))}
-                  </div>
+                    }`}
+                  >
+                    {g.name} {g.rank ? `(${g.rank})` : ""}
+                  </button>
+                ))}
+              </div>
                   {guardsQuery.data?.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No guards available. Please add guards first.

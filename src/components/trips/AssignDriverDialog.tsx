@@ -203,12 +203,12 @@ export function AssignDriverDialog({
         .from("trip_assignments")
         .upsert(
           [
-            {
-              trip_id: tripToAssign.id,
-              driver_id: selectedDriver,
-              notes: assignmentNote,
+          {
+            trip_id: tripToAssign.id,
+            driver_id: selectedDriver,
+            notes: assignmentNote,
               status: "assigned",
-            },
+          },
           ] as any,
           {
             onConflict: "trip_id,driver_id",
