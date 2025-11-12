@@ -164,21 +164,36 @@ export function TripForm({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="client_id">Client</Label>
-            <Select
-              defaultValue={editTrip?.client_id}
-              onValueChange={(value) => setValue("client_id", value)}
-            >
-              <SelectTrigger id="client_id">
-                <SelectValue placeholder="Select a client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name} {client.type && `(${client.type})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="client_id"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || editTrip?.client_id || ""}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setSelectedClient(value);
+                    setSelectedClientType(
+                      getClientType(value) as
+                        | "organization"
+                        | "individual"
+                        | undefined
+                    );
+                  }}
+                >
+                  <SelectTrigger id="client_id">
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name} {client.type && `(${client.type})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-2">
