@@ -14,7 +14,6 @@ import {
   ChartSkeleton,
 } from "@/components/ui/loading-skeleton";
 import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
-import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 import {
   Car,
@@ -1341,16 +1340,15 @@ export default function Dashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="grid gap-6 lg:grid-cols-12">
-          <section className="lg:col-span-8 space-y-6">
+        <div className="space-y-6">
+          <section className="space-y-6">
             {isManagementDashboard && renderManagementCharts()}
             {isFleetDashboard && renderFleetOrOperationsCharts()}
             {isOperationsDashboard && renderFleetOrOperationsCharts()}
             {isFinanceDashboard && renderFinanceCharts()}
           </section>
 
-          {/* Right Sidebar */}
-          <aside className="lg:col-span-4 space-y-6">
+          {!isFleetDashboard && (
             <div className="bg-card border border-border p-4">
               <h3 className="text-sm font-medium text-foreground mb-4">
                 Recent Activity
@@ -1364,36 +1362,7 @@ export default function Dashboard() {
                 </LazyWrapper>
               </div>
             </div>
-
-            <div className="bg-card border border-border p-4">
-              <h3 className="text-sm font-medium text-foreground mb-4">
-                Quick Actions
-              </h3>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-sm"
-                  size="sm"
-                >
-                  Add Vehicle
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-sm"
-                  size="sm"
-                >
-                  Add Driver
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-sm"
-                  size="sm"
-                >
-                  Schedule Maintenance
-                </Button>
-              </div>
-            </div>
-          </aside>
+          )}
         </div>
       </div>
     </div>

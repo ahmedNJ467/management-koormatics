@@ -19,7 +19,7 @@ interface LayoutProps {
 
 const Layout = memo(function Layout({ children }: LayoutProps) {
   const { isAllowed, loading: _loading } = useTenantScope();
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Start with sidebar open by default
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false); // Add mounted state for hydration
   const isMobile = useIsMobile();
@@ -39,30 +39,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     }
   }, []);
 
-  // Load sidebar state from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedState = localStorage.getItem("koormatics-sidebar-open");
-      if (savedState !== null) {
-        const parsedState = JSON.parse(savedState);
-        setSidebarOpen(parsedState);
-      }
-    } catch (error) {
-      console.warn("Failed to load sidebar state from localStorage:", error);
-    }
-  }, []);
-
-  // Save sidebar state to localStorage when it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "koormatics-sidebar-open",
-        JSON.stringify(sidebarOpen)
-      );
-    } catch (error) {
-      console.warn("Failed to save sidebar state to localStorage:", error);
-    }
-  }, []);
+  // Sidebar is permanently closed per requirements
 
   // Check authentication status
   useEffect(() => {
@@ -173,20 +150,12 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
 
   // Set sidebar state based on device type
   useEffect(() => {
-    if (isMobile) {
-      setSidebarOpen(false);
-    } else {
-      // Only auto-open on desktop if no saved state exists
-      const savedState = localStorage.getItem("koormatics-sidebar-open");
-      if (savedState === null) {
-        setSidebarOpen(true);
-      }
-    }
-  }, []);
+    setSidebarOpen(false);
+  }, [isMobile]);
 
   // Handle sidebar toggle with useCallback to prevent unnecessary re-renders
   const handleToggleSidebar = useCallback(() => {
-    setSidebarOpen((prev) => !prev);
+    setSidebarOpen(false);
   }, []);
 
   // Add keyboard shortcut for sidebar toggle
