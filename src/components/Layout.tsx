@@ -155,7 +155,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
 
   // Handle sidebar toggle with useCallback to prevent unnecessary re-renders
   const handleToggleSidebar = useCallback(() => {
-    setSidebarOpen(false);
+    setSidebarOpen((prev) => !prev);
   }, []);
 
   // Add keyboard shortcut for sidebar toggle
