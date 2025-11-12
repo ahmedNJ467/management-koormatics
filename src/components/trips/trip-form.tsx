@@ -63,7 +63,11 @@ export function TripForm({
   >(undefined);
   const [serviceType, setServiceType] = useState("airport_pickup");
 
-  const methods = useForm();
+  const methods = useForm<Record<string, any>>({
+    defaultValues: {
+      service_type: "airport_pickup",
+    },
+  });
   const { register, watch, setValue, reset, control } = methods;
 
   const isRecurring = watch("is_recurring");
@@ -220,12 +224,15 @@ export function TripForm({
             <div className="space-y-2">
               <Label htmlFor="service_type">Service Type</Label>
               <Select
-                defaultValue={
-                  editTrip?.type
+                value={
+                  watchServiceType ||
+                  (editTrip?.type
                     ? reverseServiceTypeMap[editTrip.type] || editTrip.type
-                    : "airport_pickup"
+                    : "airport_pickup")
                 }
-                onValueChange={(value) => setValue("service_type", value)}
+                onValueChange={(value) =>
+                  setValue("service_type", value, { shouldDirty: true })
+                }
               >
                 <SelectTrigger id="service_type">
                   <SelectValue placeholder="Select service type" />
