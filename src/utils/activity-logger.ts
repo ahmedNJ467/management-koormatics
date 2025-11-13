@@ -4,7 +4,8 @@ import { checkSupabaseConnection } from "./supabase-helpers";
 
 // Feature flag to disable activity logging if database issues persist
 // Set to false to completely disable database activity logging
-const ENABLE_ACTIVITY_LOGGING = false;
+const ENABLE_ACTIVITY_LOGGING =
+  (process.env.NEXT_PUBLIC_ENABLE_ACTIVITY_LOGGING ?? "true") !== "false";
 
 type ActivityType =
   | "trip"

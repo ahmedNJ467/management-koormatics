@@ -1,6 +1,51 @@
 import { useMemo } from "react";
 import { safeParseDate, getMonthName, isDateInMonth } from "@/utils/date-utils";
 
+const FLEET_COLOR_PALETTE = [
+  "#10B981",
+  "#3B82F6",
+  "#8B5CF6",
+  "#F97316",
+  "#EF4444",
+  "#EC4899",
+  "#14B8A6",
+  "#6366F1",
+];
+
+const normalizeVehicleType = (value: unknown): string => {
+  if (value === null || value === undefined) return "unknown";
+  const normalized = value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+  return normalized.length > 0 ? normalized : "unknown";
+};
+
+const getVehicleTypeLabel = (type: string): string => {
+  const labelMap: Record<string, string> = {
+    soft_skin: "Soft Skin",
+    armoured: "Armoured",
+    sedan: "Sedan",
+    suv: "SUV",
+    pickup: "Pickup",
+    truck: "Truck",
+    van: "Van",
+    bus: "Bus",
+    unknown: "Unspecified",
+  };
+
+  if (labelMap[type]) {
+    return labelMap[type];
+  }
+
+  return type
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ") || "Unspecified";
+};
+
 interface ChartDataProps {
   monthlyData: any[];
   fuelConsumptionData: any[];
@@ -106,28 +151,29 @@ export function useDashboardChartsData(
     const fleetDistributionData =
       vehicles.length > 0
         ? (() => {
-            const vehicleTypes = Array.from(
-              new Set(
-                vehicles
-                  .map((v) => v.type || v.vehicle_type || "Unknown")
-                  .filter(Boolean)
-              )
+            const typeCounts = vehicles.reduce(
+              (acc, vehicle) => {
+                const type = normalizeVehicleType(
+                  (vehicle as any)?.type ?? (vehicle as any)?.vehicle_type
+                );
+                acc.set(type, (acc.get(type) ?? 0) + 1);
+                return acc;
+              },
+              new Map<string, number>()
             );
-            const colors = [
-              "#10B981",
-              "#3B82F6",
-              "#8B5CF6",
-              "#F97316",
-              "#EF4444",
-              "#EC4899",
-            ];
 
-            return vehicleTypes.map((type, index) => ({
-              name: type,
-              value: vehicles.filter((v) => (v.type || v.vehicle_type) === type)
-                .length,
-              color: colors[index % colors.length],
-            }));
+            const entries: [string, number][] = Array.from(
+              typeCounts.entries()
+            );
+
+            return entries
+              .map(([type, count], index) => ({
+                name: getVehicleTypeLabel(type),
+                value: count,
+                color: FLEET_COLOR_PALETTE[index % FLEET_COLOR_PALETTE.length],
+              }))
+              .filter((item) => item.value > 0)
+              .sort((a, b) => b.value - a.value);
           })()
         : [];
 

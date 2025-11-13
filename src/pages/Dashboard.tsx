@@ -111,6 +111,7 @@ export default function Dashboard() {
   const [recentActivities, setRecentActivities] = useState<ActivityItemProps[]>(
     []
   );
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   const isManagementDashboard = domain === "management";
   const isFleetDashboard = domain === "fleet";
@@ -379,6 +380,136 @@ export default function Dashboard() {
     fuelLogs
   );
 
+  const fallbackActivities = useMemo<ActivityItemProps[]>(() => {
+    const items: ActivityItemProps[] = [];
+
+    const toIsoString = (value: unknown): string | null => {
+      if (!value) return null;
+      const date = new Date(value as string);
+      if (Number.isNaN(date.getTime())) {
+        return null;
+      }
+      return date.toISOString();
+    };
+
+    const titleCase = (value: string) =>
+      value
+        .split(/[\s_]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+
+    (vehicles as any[]).forEach((vehicle) => {
+      const timestamp = toIsoString(vehicle?.created_at);
+      if (!timestamp) return;
+      const details = [vehicle?.make, vehicle?.model]
+        .filter(Boolean)
+        .join(" ");
+      items.push({
+        id: `vehicle-${vehicle?.id ?? timestamp}`,
+        title: details ? `Vehicle added: ${details}` : "Vehicle added",
+        timestamp,
+        type: "vehicle",
+        icon: "vehicle",
+        related_id: vehicle?.id?.toString(),
+      });
+    });
+
+    (drivers as any[]).forEach((driver) => {
+      const timestamp = toIsoString(driver?.created_at);
+      if (!timestamp) return;
+      items.push({
+        id: `driver-${driver?.id ?? timestamp}`,
+        title: driver?.name
+          ? `Driver onboarded: ${driver.name}`
+          : "Driver onboarded",
+        timestamp,
+        type: "driver",
+        icon: "driver",
+        related_id: driver?.id?.toString(),
+      });
+    });
+
+    (maintenance as any[]).forEach((task) => {
+      const timestamp =
+        toIsoString(task?.updated_at) ||
+        toIsoString(task?.created_at) ||
+        toIsoString(task?.date);
+      if (!timestamp) return;
+      items.push({
+        id: `maintenance-${task?.id ?? timestamp}`,
+        title: task?.description
+          ? `Maintenance: ${task.description}`
+          : "Maintenance task recorded",
+        timestamp,
+        type: "maintenance",
+        icon: "maintenance",
+        related_id: task?.id?.toString(),
+      });
+    });
+
+    (fuelLogs as any[]).forEach((log) => {
+      const timestamp = toIsoString(log?.created_at) || toIsoString(log?.date);
+      if (!timestamp) return;
+      const fuelType = log?.fuel_type
+        ? titleCase(String(log.fuel_type))
+        : "Fuel";
+      items.push({
+        id: `fuel-${log?.id ?? timestamp}`,
+        title: `${fuelType} log recorded`,
+        timestamp,
+        type: "fuel",
+        icon: "fuel",
+        related_id: log?.id?.toString(),
+      });
+    });
+
+    (invoices as any[]).forEach((invoice) => {
+      const timestamp =
+        toIsoString(invoice?.updated_at) ||
+        toIsoString(invoice?.created_at) ||
+        toIsoString(invoice?.date);
+      if (!timestamp) return;
+      const statusLabel = invoice?.status
+        ? titleCase(String(invoice.status))
+        : "Updated";
+      items.push({
+        id: `invoice-${invoice?.id ?? timestamp}`,
+        title: `Invoice ${statusLabel}`,
+        timestamp,
+        type: "contract",
+        icon: "contract",
+        related_id: invoice?.id?.toString(),
+      });
+    });
+
+    (quotations as any[]).forEach((quote) => {
+      const timestamp =
+        toIsoString(quote?.updated_at) ||
+        toIsoString(quote?.created_at) ||
+        toIsoString(quote?.date);
+      if (!timestamp) return;
+      const statusLabel = quote?.status
+        ? titleCase(String(quote.status))
+        : "Updated";
+      items.push({
+        id: `quotation-${quote?.id ?? timestamp}`,
+        title: `Quotation ${statusLabel}`,
+        timestamp,
+        type: "contract",
+        icon: "contract",
+        related_id: quote?.id?.toString(),
+      });
+    });
+
+    return items
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )
+      .slice(0, 5);
+  }, [vehicles, drivers, maintenance, fuelLogs, invoices, quotations]);
+
   // Ensure component is mounted on client side to prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
@@ -386,23 +517,40 @@ export default function Dashboard() {
 
   // Optimized activities loading
   useEffect(() => {
+    let isMounted = true;
+
     const loadActivities = async () => {
       try {
+        setActivitiesLoading(true);
         const activities = await getActivities(5);
-        setRecentActivities(activities);
+        if (!isMounted) return;
+        setRecentActivities(
+          activities.length > 0 ? activities : fallbackActivities
+        );
       } catch (error) {
         console.error("Error loading activities:", error);
+        if (isMounted) {
+          setRecentActivities(fallbackActivities);
+        }
+      } finally {
+        if (isMounted) {
+          setActivitiesLoading(false);
+        }
       }
     };
 
     loadActivities();
     const intervalId = setInterval(loadActivities, 60000);
 
-    return () => clearInterval(intervalId);
-  }, []);
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [fallbackActivities]);
 
   // Optimized realtime subscriptions with debouncing
   useEffect(() => {
+    let isMounted = true;
     // Always call useEffect, but conditionally execute logic inside
     if (loading) {
       return;
@@ -472,8 +620,24 @@ export default function Dashboard() {
             }
           }
 
-          const activities = await getActivities(5);
-          setRecentActivities(activities);
+          try {
+            if (!isMounted) return;
+            setActivitiesLoading(true);
+            const activities = await getActivities(5);
+            if (!isMounted) return;
+            setRecentActivities(
+              activities.length > 0 ? activities : fallbackActivities
+            );
+          } catch (error) {
+            console.error("Error refreshing activities:", error);
+            if (isMounted) {
+              setRecentActivities(fallbackActivities);
+            }
+          } finally {
+            if (isMounted) {
+              setActivitiesLoading(false);
+            }
+          }
         })
       );
 
@@ -526,10 +690,11 @@ export default function Dashboard() {
     }, 500);
 
     return () => {
+      isMounted = false;
       clearTimeout(setupTimeout);
       unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
-  }, [queryClient, loading]);
+  }, [queryClient, loading, fallbackActivities]);
 
   // Performance monitoring - consolidated into single useEffect
   useEffect(() => {
@@ -1357,7 +1522,7 @@ export default function Dashboard() {
                 <LazyWrapper>
                   <LazyRecentActivity
                     activities={recentActivities}
-                    isLoading={false}
+                    isLoading={activitiesLoading}
                   />
                 </LazyWrapper>
               </div>
