@@ -97,11 +97,26 @@ export default function Vehicles() {
           ? rawStatus
           : "active";
 
+        const fallbackId = sanitizeText(v.id) || crypto.randomUUID();
+        const registration = sanitizeText(
+          v.registration || v.plate_number || v.license_plate
+        );
+
+        const make = sanitizeText(
+          v.make || v.brand || v.manufacturer || v.vehicle_make || v.name
+        );
+        const model = sanitizeText(
+          v.model || v.series || v.variant || v.trim || v.vehicle_model
+        );
+
+        const displayMake = make || (registration ? `Vehicle ${registration}` : "Vehicle");
+        const displayModel = model || (make ? "" : fallbackId.slice(0, 6).toUpperCase());
+
         return {
-          id: sanitizeText(v.id) || crypto.randomUUID(),
-          make: sanitizeText(v.make),
-          model: sanitizeText(v.model),
-          registration: sanitizeText(v.registration),
+          id: fallbackId,
+          make: displayMake,
+          model: displayModel,
+          registration,
           type: normalizedType,
           status: normalizedStatus,
           year:
