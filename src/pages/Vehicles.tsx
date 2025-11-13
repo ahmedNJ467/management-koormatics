@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Vehicle } from "@/lib/types";
@@ -24,10 +24,6 @@ export default function Vehicles() {
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [currentPage, setCurrentPage] = useState(1);
   const vehiclesPerPage = 20;
-
-  const initialVehiclesRef = useRef<Vehicle[] | undefined>(
-    queryClient.getQueryData<Vehicle[]>(["vehicles"])
-  );
 
   const {
     data: vehicles = [],
@@ -157,13 +153,11 @@ export default function Vehicles() {
 
       return sanitizedVehicles as Vehicle[];
     },
-    initialData: initialVehiclesRef.current,
-    placeholderData: () => initialVehiclesRef.current ?? [],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 60 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: !initialVehiclesRef.current,
-    refetchOnReconnect: false,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
