@@ -26,9 +26,17 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
   const escortVehicles = escortVehicleIds
     .map((id) => vehicles.find((vehicle) => vehicle.id === id))
     .filter(Boolean);
+  const requiredCount = Math.max(trip.escort_count || 0, 0);
+  const assignedCount = escortVehicles.length;
+  const computedStatus =
+    assignedCount >= requiredCount && requiredCount > 0
+      ? "fully_assigned"
+      : assignedCount > 0
+      ? "partially_assigned"
+      : trip.escort_status || "not_assigned";
 
   const getStatusBadge = () => {
-    switch (trip.escort_status) {
+    switch (computedStatus) {
       case "fully_assigned":
         return (
           <Badge
@@ -41,7 +49,10 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
         );
       case "partially_assigned":
         return (
-          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-300">
+          <Badge
+            variant="outline"
+            className="border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/15 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-300"
+          >
             <Clock className="h-3 w-3 mr-1" />
             Partially Assigned
           </Badge>
@@ -51,7 +62,7 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
         return (
           <Badge
             variant="destructive"
-            className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive border border-destructive/30"
+            className="border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15 dark:border-destructive/40 dark:bg-destructive/20 dark:hover:bg-destructive/25"
           >
             <X className="h-3 w-3 mr-1" />
             Not Assigned
@@ -69,7 +80,7 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
             <span>Security Escort Required</span>
             <Badge
               variant="destructive"
-              className="ml-2 text-xs bg-destructive/15 text-destructive dark:bg-destructive/25 dark:text-destructive"
+              className="ml-2 text-xs border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20 dark:border-destructive/40 dark:bg-destructive/25 dark:hover:bg-destructive/30"
             >
               <AlertTriangle className="h-3 w-3 mr-1" />
               High Security
@@ -89,8 +100,8 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
               variant="outline"
               className="border-destructive/30 bg-destructive/5 text-foreground dark:border-destructive/40 dark:bg-destructive/15"
             >
-              {trip.escort_count || 1} vehicle
-              {(trip.escort_count || 1) > 1 ? "s" : ""}
+              {requiredCount || 1} vehicle
+              {(requiredCount || 1) > 1 ? "s" : ""}
             </Badge>
           </div>
 

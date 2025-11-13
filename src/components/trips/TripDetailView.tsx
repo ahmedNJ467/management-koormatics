@@ -119,7 +119,7 @@ export function TripDetailView({
           {isOrganizationTrip && (
             <Badge
               variant="outline"
-              className="bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20"
+              className="border-secondary/20 bg-secondary/10 text-secondary-foreground hover:bg-secondary/20"
             >
               Organization
             </Badge>
