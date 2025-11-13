@@ -41,7 +41,7 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
         return (
           <Badge
             variant="outline"
-            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300"
+            className="border-emerald-500/40 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300"
           >
             <CheckCircle className="h-3 w-3 mr-1" />
             Fully Assigned
