@@ -25,7 +25,7 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
         alt="Koormatics Logo"
         loading="eager"
         decoding="sync"
-        fetchpriority="high"
+        fetchPriority="high"
         className="h-full w-auto object-contain"
         draggable={false}
       />
