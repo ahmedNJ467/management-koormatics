@@ -39,9 +39,7 @@ export default function Vehicles() {
     queryFn: async () => {
       const primaryResponse = (await supabase
         .from("vehicles")
-        .select(
-          "id, make, model, registration, status, type, vehicle_type, year, color, vin, insurance_expiry, notes, created_at, updated_at, images"
-        )
+        .select("*")
         .order("created_at", { ascending: false })) as {
         data: any[] | null;
         error: any;
@@ -52,34 +50,7 @@ export default function Vehicles() {
 
       let vehiclesResult = vehiclesData ?? [];
 
-      if (vehiclesError && (vehiclesError as any)?.code === "42703") {
-        console.warn(
-          "vehicles table missing vehicle_type column, falling back to legacy schema"
-        );
-        const fallbackResponse = (await supabase
-          .from("vehicles")
-          .select(
-            "id, make, model, registration, status, type, year, color, vin, insurance_expiry, notes, created_at, updated_at, images"
-          )
-          .order("created_at", { ascending: false })) as {
-          data: any[] | null;
-          error: any;
-        };
-
-        const fallbackData = fallbackResponse.data;
-        const fallbackError = fallbackResponse.error;
-
-        if (fallbackError) {
-          toast({
-            title: "Error fetching vehicles",
-            description: fallbackError.message,
-            variant: "destructive",
-          });
-          throw fallbackError;
-        }
-
-        vehiclesResult = fallbackData ?? [];
-      } else if (vehiclesError) {
+      if (vehiclesError) {
         toast({
           title: "Error fetching vehicles",
           description: vehiclesError.message,
@@ -95,7 +66,7 @@ export default function Vehicles() {
         model: v.model || "",
         registration: v.registration || "",
         type: v.type || v.vehicle_type || "",
-        status: v.status || "active",
+        status: v.status || "unknown",
         year: v.year ?? null,
         color: v.color || "",
         vin: v.vin || "",
