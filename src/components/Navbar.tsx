@@ -28,13 +28,15 @@ interface NavbarProps {
   sidebarOpen: boolean;
 }
 
+let navbarMountedRef = false;
+
 const Navbar = memo(function Navbar({
   onToggleSidebar,
   sidebarOpen,
 }: NavbarProps) {
   const { profile } = useProfile();
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(() => navbarMountedRef);
   const router = useRouter();
   const { toast } = useToast();
   const { domain } = useTenantScope();
@@ -76,7 +78,10 @@ const Navbar = memo(function Navbar({
   }, [canSeeDashboard, dashboardPathByDomain, firstAllowedPath]);
 
   useEffect(() => {
-    setMounted(true);
+    if (!navbarMountedRef) {
+      navbarMountedRef = true;
+      setMounted(true);
+    }
   }, []);
 
   const handleProfileClick = useCallback(() => {
