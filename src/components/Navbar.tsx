@@ -106,14 +106,21 @@ const Navbar = memo(function Navbar({
 
   useEffect(() => {
     if (profile?.profile_image_url) {
-      if (profile.profile_image_url !== avatarSrc) {
+      if (cachedAvatarSrc !== profile.profile_image_url) {
         cachedAvatarSrc = profile.profile_image_url;
-        setAvatarSrc(profile.profile_image_url);
       }
-    } else if (!profile?.profile_image_url && cachedAvatarSrc && !avatarSrc) {
-      setAvatarSrc(cachedAvatarSrc);
+      setAvatarSrc((previous) =>
+        previous === profile.profile_image_url
+          ? previous
+          : profile.profile_image_url
+      );
+    } else {
+      if (cachedAvatarSrc !== null) {
+        cachedAvatarSrc = null;
+      }
+      setAvatarSrc((previous) => (previous === null ? previous : null));
     }
-  }, [profile?.profile_image_url, avatarSrc]);
+  }, [profile?.profile_image_url]);
 
   useEffect(() => {
     if (profile?.name) {

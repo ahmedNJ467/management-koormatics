@@ -1,5 +1,5 @@
 import Image from "next/image";
-import React, { useMemo } from "react";
+import React, { useEffect } from "react";
 
 interface KoormaticsLogoProps {
   className?: string;
@@ -21,10 +21,12 @@ export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
 }) => {
   const sizing = sizeMap[size] ?? sizeMap.md;
 
-  const priority = useMemo(() => {
-    if (logoLoadedOnce) return false;
-    logoLoadedOnce = true;
-    return true;
+  const priority = !logoLoadedOnce;
+
+  useEffect(() => {
+    if (!logoLoadedOnce) {
+      logoLoadedOnce = true;
+    }
   }, []);
 
   return (

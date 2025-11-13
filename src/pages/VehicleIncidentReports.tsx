@@ -389,7 +389,18 @@ export default function VehicleIncidentReports() {
             name: r.name ?? undefined,
           }));
         }
-      } catch {}
+      } catch (imageError) {
+        console.error(
+          "Failed to load incident report photos:",
+          imageError
+        );
+        toast({
+          title: "Some photos were skipped",
+          description:
+            "We couldn’t include all incident images in the PDF export. Please try again or reload the page.",
+          variant: "destructive",
+        });
+      }
       await generateIncidentReportPdf(exportData, {
         logoUrl: window.location.origin + "/images/Koormatics-logo.png",
       });

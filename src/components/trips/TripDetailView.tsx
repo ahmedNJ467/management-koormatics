@@ -88,10 +88,6 @@ export function TripDetailView({
     Array.isArray(viewTrip.passengers) &&
     viewTrip.passengers.length > 0;
 
-  console.log("Trip in TripDetailView:", viewTrip);
-  console.log("Is organization trip:", isOrganizationTrip);
-  console.log("Passengers:", viewTrip.passengers);
-
   return (
     <div className="w-full">
       <div className="bg-gradient-to-r from-muted/50 to-muted/30 dark:from-muted/70 dark:to-muted/50 p-6 rounded-lg mb-6 border border-border">
