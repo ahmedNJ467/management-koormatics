@@ -287,8 +287,15 @@ export function AssignResourcesDialog({
         <DialogHeader>
           <DialogTitle>Assign Resources</DialogTitle>
           <DialogDescription>
-            Trip {trip.id.substring(0, 8).toUpperCase()} • {trip.date}{" "}
+            Trip {trip.id.substring(0, 8).toUpperCase()} • {trip.date} {" "}
             {trip.time}
+            {(trip.soft_skin_count || 0) + (trip.armoured_count || 0) === 0 &&
+              trip.has_security_escort && (
+                <span className="block mt-2 text-sm text-muted-foreground">
+                  This trip only requires security escort support. Assign
+                  escorts in the section below.
+                </span>
+              )}
           </DialogDescription>
         </DialogHeader>
 
@@ -299,6 +306,8 @@ export function AssignResourcesDialog({
             {requirements.length === 0 && (
               <div className="text-sm text-muted-foreground">
                 No specific vehicle types requested.
+                {trip.has_security_escort &&
+                  " Security escort will still be coordinated below."}
               </div>
             )}
             {requirements.map((type, idx) => {

@@ -179,8 +179,8 @@ export const handleSaveTrip = async (
       baseUpdate.escort_count = hasSecurityEscort
         ? Math.max(1, escortCount || 1)
         : (null as any);
-      if (softSkinCount) baseUpdate.soft_skin_count = softSkinCount;
-      if (armouredCount) baseUpdate.armoured_count = armouredCount;
+      baseUpdate.soft_skin_count = softSkinCount;
+      baseUpdate.armoured_count = armouredCount;
       if (stops.length > 0) baseUpdate.stops = stops;
 
       const { error } = await supabase
@@ -295,8 +295,8 @@ export const handleSaveTrip = async (
       tripData.escort_count = hasSecurityEscort
         ? Math.max(1, escortCount || 1)
         : (null as any);
-      if (softSkinCount) tripData.soft_skin_count = softSkinCount;
-      if (armouredCount) tripData.armoured_count = armouredCount;
+      tripData.soft_skin_count = softSkinCount;
+      tripData.armoured_count = armouredCount;
       if (stops.length > 0) tripData.stops = stops;
 
       const { data, error } = await supabase

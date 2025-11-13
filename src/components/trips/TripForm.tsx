@@ -20,6 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -56,6 +58,10 @@ export function TripForm({
   );
   const [hasSecurityEscort, setHasSecurityEscort] = useState<boolean>(false);
   const [escortCount, setEscortCount] = useState<number>(1);
+  const [softSkinEnabled, setSoftSkinEnabled] = useState(false);
+  const [armouredEnabled, setArmouredEnabled] = useState(false);
+  const [softSkinCount, setSoftSkinCount] = useState<string>("0");
+  const [armouredCount, setArmouredCount] = useState<string>("0");
 
   useEffect(() => {
     if (editTrip) {
@@ -69,6 +75,13 @@ export function TripForm({
 
       const clientType = editTrip.client_type || "individual";
       setSelectedClientType(clientType);
+
+      const softCount = Number(editTrip.soft_skin_count || 0);
+      const armoured = Number(editTrip.armoured_count || 0);
+      setSoftSkinEnabled(softCount > 0);
+      setArmouredEnabled(armoured > 0);
+      setSoftSkinCount(softCount > 0 ? softCount.toString() : "1");
+      setArmouredCount(armoured > 0 ? armoured.toString() : "1");
 
       if (clientType === "organization") {
         // Get passengers from both dedicated passengers array and notes
@@ -99,6 +112,10 @@ export function TripForm({
       setPassengers([""]);
       setHasSecurityEscort(false);
       setEscortCount(1);
+      setSoftSkinEnabled(false);
+      setArmouredEnabled(false);
+      setSoftSkinCount("0");
+      setArmouredCount("0");
     }
   }, [editTrip]);
 
@@ -200,24 +217,82 @@ export function TripForm({
             <h3 className="font-medium">Vehicle Requirements</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="soft_skin_count">Soft Skin Vehicles</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="soft_skin_count" className="mb-0">
+                    Soft Skin Vehicles
+                  </Label>
+                  <Switch
+                    checked={softSkinEnabled}
+                    onCheckedChange={(checked) => {
+                      setSoftSkinEnabled(checked);
+                      if (checked) {
+                        setSoftSkinCount((prev) =>
+                          prev === "0" || prev === ""
+                            ? "1"
+                            : prev
+                        );
+                      } else {
+                        setSoftSkinCount("0");
+                      }
+                    }}
+                    aria-label="Toggle soft skin vehicle requirement"
+                  />
+                </div>
                 <Input
                   id="soft_skin_count"
-                  name="soft_skin_count"
+                  name={softSkinEnabled ? "soft_skin_count" : undefined}
                   type="number"
-                  min="0"
-                  defaultValue={editTrip?.soft_skin_count ?? 0}
+                  min={softSkinEnabled ? 1 : 0}
+                  value={softSkinEnabled ? softSkinCount : "0"}
+                  onChange={(event) => {
+                    const numeric = event.target.value.replace(/[^0-9]/g, "");
+                    setSoftSkinCount(numeric);
+                  }}
+                  disabled={!softSkinEnabled}
+                  className={!softSkinEnabled ? "opacity-60" : undefined}
                 />
+                {!softSkinEnabled && (
+                  <input type="hidden" name="soft_skin_count" value="0" />
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="armoured_count">Armoured Vehicles</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="armoured_count" className="mb-0">
+                    Armoured Vehicles
+                  </Label>
+                  <Switch
+                    checked={armouredEnabled}
+                    onCheckedChange={(checked) => {
+                      setArmouredEnabled(checked);
+                      if (checked) {
+                        setArmouredCount((prev) =>
+                          prev === "0" || prev === ""
+                            ? "1"
+                            : prev
+                        );
+                      } else {
+                        setArmouredCount("0");
+                      }
+                    }}
+                    aria-label="Toggle armoured vehicle requirement"
+                  />
+                </div>
                 <Input
                   id="armoured_count"
-                  name="armoured_count"
+                  name={armouredEnabled ? "armoured_count" : undefined}
                   type="number"
-                  min="0"
-                  defaultValue={editTrip?.armoured_count ?? 0}
+                  min={armouredEnabled ? 1 : 0}
+                  value={armouredEnabled ? armouredCount : "0"}
+                  onChange={(event) => {
+                    const numeric = event.target.value.replace(/[^0-9]/g, "");
+                    setArmouredCount(numeric);
+                  }}
+                  disabled={!armouredEnabled}
+                  className={!armouredEnabled ? "opacity-60" : undefined}
                 />
+                {!armouredEnabled && (
+                  <input type="hidden" name="armoured_count" value="0" />
+                )}
               </div>
             </div>
           </div>

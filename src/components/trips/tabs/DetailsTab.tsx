@@ -17,6 +17,8 @@ import {
   Navigation,
   Users,
   UserCheck,
+  Car,
+  Shield,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,6 +48,8 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
   // Check if we have passengers to display
   const hasPassengers =
     viewTrip.client_type === "organization" && allPassengers.length > 0;
+  const softSkinRequested = (viewTrip.soft_skin_count ?? 0) > 0;
+  const armouredRequested = (viewTrip.armoured_count ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -172,7 +176,33 @@ export function DetailsTab({ viewTrip }: DetailsTabProps) {
               </div>
             )}
 
-            {/* Amount removed per request */}
+            <div className="flex items-start gap-3">
+              <Car className="h-5 w-5 mt-0.5 text-primary" />
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  Soft Skin Vehicles
+                </div>
+                <div className="text-foreground">
+                  {softSkinRequested
+                    ? `${viewTrip.soft_skin_count} required`
+                    : "Not requested"}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Shield className="h-5 w-5 mt-0.5 text-primary" />
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  Armoured Vehicles
+                </div>
+                <div className="text-foreground">
+                  {armouredRequested
+                    ? `${viewTrip.armoured_count} required`
+                    : "Not requested"}
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

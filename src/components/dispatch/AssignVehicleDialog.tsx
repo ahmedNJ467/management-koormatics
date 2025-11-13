@@ -301,6 +301,12 @@ export function AssignVehicleDialog({
                 <li>No specific vehicle types requested.</li>
               )}
             </ul>
+            {trip?.has_security_escort && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                A security escort is still required for this trip. Coordinate
+                escort teams separately in the security assignment dialog.
+              </p>
+            )}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

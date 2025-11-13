@@ -49,6 +49,16 @@ export function useProfile() {
     try {
       setLoading(true);
 
+      // Ensure we have a valid authenticated session before querying
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        console.warn("Attempted to load profile without an active session");
+        return;
+      }
+
       // Try to load from Supabase profiles table first
       const { data: profileData, error } = await supabase
         .from("profiles")
@@ -131,6 +141,25 @@ export function useProfile() {
     if (!user) return false;
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw Object.assign(new Error("No active session"), {
+          code: "AUTH_NO_SESSION",
+          status: 401,
+        });
+      }
+
+      const notificationPreferences =
+        profileData.notification_preferences ?? {
+          email_notifications: true,
+          push_notifications: true,
+          sms_notifications: false,
+          marketing_emails: false,
+        };
+
       const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         email: profileData.email,
@@ -139,15 +168,23 @@ export function useProfile() {
         address: profileData.address,
         company: profileData.company,
         profile_image_url: profileData.profile_image_url,
-        notification_preferences: profileData.notification_preferences,
-        two_factor_enabled: profileData.two_factor_enabled,
+        notification_preferences: notificationPreferences,
+        two_factor_enabled:
+          profileData.two_factor_enabled ?? profile?.two_factor_enabled ?? false,
         updated_at: new Date().toISOString(),
       });
 
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error("Error saving profile to database:", error);
+      console.error("Error saving profile to database:", {
+        error,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        code: (error as any)?.code,
+        status: (error as any)?.status,
+      });
       throw error;
     }
   };
@@ -167,7 +204,14 @@ export function useProfile() {
 
       return true;
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error("Error saving profile:", {
+        error,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        code: (error as any)?.code,
+        status: (error as any)?.status,
+      });
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",
@@ -200,7 +244,14 @@ export function useProfile() {
 
       return data.publicUrl;
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("Error uploading image:", {
+        error,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        code: (error as any)?.code,
+        status: (error as any)?.status,
+      });
       // Fallback to base64 for demo purposes
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -232,7 +283,14 @@ export function useProfile() {
 
       return true;
     } catch (error) {
-      console.error("Error changing password:", error);
+      console.error("Error changing password:", {
+        error,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        code: (error as any)?.code,
+        status: (error as any)?.status,
+      });
       toast({
         title: "Error",
         description:
@@ -259,7 +317,14 @@ export function useProfile() {
       };
       return await saveProfile(updatedProfile);
     } catch (error) {
-      console.error("Error updating notification preferences:", error);
+      console.error("Error updating notification preferences:", {
+        error,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        code: (error as any)?.code,
+        status: (error as any)?.status,
+      });
       return false;
     }
   };
@@ -271,7 +336,14 @@ export function useProfile() {
       const updatedProfile = { ...profile, two_factor_enabled: enabled };
       return await saveProfile(updatedProfile);
     } catch (error) {
-      console.error("Error toggling two-factor authentication:", error);
+      console.error("Error toggling two-factor authentication:", {
+        error,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        code: (error as any)?.code,
+        status: (error as any)?.status,
+      });
       return false;
     }
   };
