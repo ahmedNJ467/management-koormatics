@@ -129,11 +129,26 @@ export default function Dashboard() {
   const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
+      const primarySelect =
+        "id, make, model, registration, status, type, vehicle_type, created_at, updated_at";
+      const fallbackSelect =
+        "id, make, model, registration, status, type, created_at, updated_at";
+
       const { data, error } = await supabase
         .from("vehicles")
-        .select(
-          "id, make, model, registration, status, type, vehicle_type, created_at"
+        .select(primarySelect);
+
+      if (error && (error as any)?.code === "42703") {
+        console.warn(
+          "vehicles table missing vehicle_type column, using fallback selection"
         );
+        const fallback = await supabase
+          .from("vehicles")
+          .select(fallbackSelect);
+        if (fallback.error) throw fallback.error;
+        return fallback.data || [];
+      }
+
       if (error) throw error;
       return data || [];
     },

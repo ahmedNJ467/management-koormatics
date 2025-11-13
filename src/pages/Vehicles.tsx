@@ -37,14 +37,49 @@ export default function Vehicles() {
   } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
-      const { data: vehiclesData, error: vehiclesError } = await supabase
+      const primaryResponse = (await supabase
         .from("vehicles")
         .select(
-          "id, make, model, registration, type, status, year, color, vin, insurance_expiry, notes, created_at, updated_at, images"
+          "id, make, model, registration, status, type, vehicle_type, year, color, vin, insurance_expiry, notes, created_at, updated_at, images"
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })) as {
+        data: any[] | null;
+        error: any;
+      };
 
-      if (vehiclesError) {
+      const vehiclesData = primaryResponse.data;
+      const vehiclesError = primaryResponse.error;
+
+      let vehiclesResult = vehiclesData ?? [];
+
+      if (vehiclesError && (vehiclesError as any)?.code === "42703") {
+        console.warn(
+          "vehicles table missing vehicle_type column, falling back to legacy schema"
+        );
+        const fallbackResponse = (await supabase
+          .from("vehicles")
+          .select(
+            "id, make, model, registration, status, type, year, color, vin, insurance_expiry, notes, created_at, updated_at, images"
+          )
+          .order("created_at", { ascending: false })) as {
+          data: any[] | null;
+          error: any;
+        };
+
+        const fallbackData = fallbackResponse.data;
+        const fallbackError = fallbackResponse.error;
+
+        if (fallbackError) {
+          toast({
+            title: "Error fetching vehicles",
+            description: fallbackError.message,
+            variant: "destructive",
+          });
+          throw fallbackError;
+        }
+
+        vehiclesResult = fallbackData ?? [];
+      } else if (vehiclesError) {
         toast({
           title: "Error fetching vehicles",
           description: vehiclesError.message,
@@ -53,15 +88,13 @@ export default function Vehicles() {
         throw vehiclesError;
       }
 
-      if (!vehiclesData) return [];
-
       // Optimize data transformation - only set defaults where needed
-      const sanitizedVehicles = vehiclesData.map((v: any) => ({
+      const sanitizedVehicles = vehiclesResult.map((v: any) => ({
         id: v.id || "",
         make: v.make || "",
         model: v.model || "",
         registration: v.registration || "",
-        type: v.type || "",
+        type: v.type || v.vehicle_type || "",
         status: v.status || "active",
         year: v.year ?? null,
         color: v.color || "",
