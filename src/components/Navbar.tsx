@@ -29,6 +29,20 @@ interface NavbarProps {
 }
 
 let navbarMountedRef = false;
+let cachedAvatarSrc: string | null = null;
+let cachedAvatarInitials = "AD";
+
+const getInitials = (name?: string | null) => {
+  if (!name) return cachedAvatarInitials;
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+  return initials || cachedAvatarInitials;
+};
 
 const Navbar = memo(function Navbar({
   onToggleSidebar,
@@ -43,6 +57,12 @@ const Navbar = memo(function Navbar({
   const { hasRole } = useRole();
   const { data: pages = [] } = usePageAccess();
   const { signOut } = useAuth();
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(
+    () => cachedAvatarSrc
+  );
+  const [avatarInitials, setAvatarInitials] = useState<string>(
+    () => cachedAvatarInitials
+  );
 
   const isPageAllowed = useCallback(
     (href: string) => {
@@ -83,6 +103,27 @@ const Navbar = memo(function Navbar({
       setMounted(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (profile?.profile_image_url) {
+      if (profile.profile_image_url !== avatarSrc) {
+        cachedAvatarSrc = profile.profile_image_url;
+        setAvatarSrc(profile.profile_image_url);
+      }
+    } else if (!profile?.profile_image_url && cachedAvatarSrc && !avatarSrc) {
+      setAvatarSrc(cachedAvatarSrc);
+    }
+  }, [profile?.profile_image_url, avatarSrc]);
+
+  useEffect(() => {
+    if (profile?.name) {
+      const initials = getInitials(profile.name);
+      cachedAvatarInitials = initials;
+      setAvatarInitials(initials);
+    } else if (!profile?.name && cachedAvatarInitials && avatarInitials !== cachedAvatarInitials) {
+      setAvatarInitials(cachedAvatarInitials);
+    }
+  }, [profile?.name, avatarInitials]);
 
   const handleProfileClick = useCallback(() => {
     router.push("/profile");
@@ -162,16 +203,11 @@ const Navbar = memo(function Navbar({
                 className="relative h-9 w-9 rounded-full hover:bg-muted/50 p-0"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={profile?.profile_image_url || "/placeholder.svg"}
-                    alt="Profile"
-                  />
+                  {avatarSrc ? (
+                    <AvatarImage src={avatarSrc} alt="Profile" />
+                  ) : null}
                   <AvatarFallback className="text-xs">
-                    {profile?.name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase() || "AD"}
+                    {avatarInitials}
                   </AvatarFallback>
                 </Avatar>
               </Button>
