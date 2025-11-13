@@ -9,7 +9,6 @@ export const FinancialOverviewChart = ({ data = [] }: FinancialOverviewChartProp
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="month" className="text-muted-foreground text-xs" />
         <YAxis className="text-muted-foreground text-xs" />
         <Tooltip 
