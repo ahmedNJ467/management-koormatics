@@ -60,22 +60,61 @@ export default function Vehicles() {
       }
 
       // Optimize data transformation - only set defaults where needed
-      const sanitizedVehicles = vehiclesResult.map((v: any) => ({
-        id: v.id || "",
-        make: v.make || "",
-        model: v.model || "",
-        registration: v.registration || "",
-        type: v.type || v.vehicle_type || "",
-        status: v.status || "unknown",
-        year: v.year ?? null,
-        color: v.color || "",
-        vin: v.vin || "",
-        insurance_expiry: v.insurance_expiry ?? null,
-        notes: v.notes || "",
-        created_at: v.created_at || new Date().toISOString(),
-        updated_at: v.updated_at || new Date().toISOString(),
-        images: Array.isArray(v.images) ? v.images : [],
-      }));
+      const allowedStatuses = new Set([
+        "active",
+        "in_service",
+        "inactive",
+        "maintenance",
+      ]);
+      const allowedTypes = new Set([
+        "armoured",
+        "soft_skin",
+        "sedan",
+        "suv",
+        "pickup",
+        "truck",
+        "van",
+        "bus",
+        "other",
+      ]);
+
+      const sanitizeText = (value: unknown): string => {
+        if (!value) return "";
+        try {
+          return String(value).trim();
+        } catch (error) {
+          console.warn("Failed to sanitize text:", value, error);
+          return "";
+        }
+      };
+
+      const sanitizedVehicles = vehiclesResult.map((v: any) => {
+        const rawType = sanitizeText(v.type || v.vehicle_type).toLowerCase();
+        const normalizedType = allowedTypes.has(rawType) ? rawType : "";
+
+        const rawStatus = sanitizeText(v.status).toLowerCase();
+        const normalizedStatus = allowedStatuses.has(rawStatus)
+          ? rawStatus
+          : "active";
+
+        return {
+          id: sanitizeText(v.id) || crypto.randomUUID(),
+          make: sanitizeText(v.make),
+          model: sanitizeText(v.model),
+          registration: sanitizeText(v.registration),
+          type: normalizedType,
+          status: normalizedStatus,
+          year:
+            typeof v.year === "number" ? v.year : Number.parseInt(v.year) || null,
+          color: sanitizeText(v.color),
+          vin: sanitizeText(v.vin),
+          insurance_expiry: v.insurance_expiry ?? null,
+          notes: sanitizeText(v.notes),
+          created_at: v.created_at || new Date().toISOString(),
+          updated_at: v.updated_at || new Date().toISOString(),
+          images: Array.isArray(v.images) ? v.images : [],
+        } as Vehicle;
+      });
 
       return sanitizedVehicles as Vehicle[];
     },
