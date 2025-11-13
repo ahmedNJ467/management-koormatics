@@ -2,6 +2,7 @@ import { Client, Driver, Vehicle } from "@/lib/types";
 import { DisplayTrip } from "@/lib/types/trip";
 
 export type UIServiceType =
+  | ""
   | "airport_pickup"
   | "airport_dropoff"
   | "one_way"

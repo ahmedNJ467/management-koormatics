@@ -39,8 +39,7 @@ export function TripForm({
   onClose,
   onSubmit,
 }: TripFormProps) {
-  const [serviceType, setServiceType] =
-    useState<UIServiceType>("airport_pickup");
+  const [serviceType, setServiceType] = useState<UIServiceType>("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">(
     "weekly"
@@ -94,7 +93,7 @@ export function TripForm({
       setHasSecurityEscort(editTrip.has_security_escort || false);
       setEscortCount(editTrip.escort_count || 1);
     } else {
-      setServiceType("airport_pickup");
+      setServiceType("");
       setSelectedClientId("");
       setSelectedClientType("");
       setPassengers([""]);
