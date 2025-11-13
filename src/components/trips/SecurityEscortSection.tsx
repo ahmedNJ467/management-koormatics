@@ -31,17 +31,17 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
     switch (trip.escort_status) {
       case "fully_assigned":
         return (
-          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+          <Badge
+            variant="outline"
+            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300"
+          >
             <CheckCircle className="h-3 w-3 mr-1" />
             Fully Assigned
           </Badge>
         );
       case "partially_assigned":
         return (
-          <Badge
-            variant="secondary"
-            className="bg-yellow-600 hover:bg-yellow-700 text-white"
-          >
+          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-300">
             <Clock className="h-3 w-3 mr-1" />
             Partially Assigned
           </Badge>
@@ -49,7 +49,10 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
       case "not_assigned":
       default:
         return (
-          <Badge variant="destructive">
+          <Badge
+            variant="destructive"
+            className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive border border-destructive/30"
+          >
             <X className="h-3 w-3 mr-1" />
             Not Assigned
           </Badge>
@@ -58,13 +61,16 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
   };
 
   return (
-    <Card className="border-red-600/50 dark:border-red-500/50 overflow-hidden shadow-md bg-red-950/20">
-      <CardHeader className="pb-2 bg-red-950/40 border-b border-red-600/50">
-        <CardTitle className="text-md flex items-center justify-between text-red-100">
-          <div className="flex items-center">
-            <Shield className="h-4 w-4 mr-2 text-red-400" />
-            Security Escort Required
-            <Badge variant="destructive" className="ml-2 text-xs">
+    <Card className="overflow-hidden border border-destructive/20 bg-card dark:border-destructive/30 dark:bg-card/80">
+      <CardHeader className="pb-2 border-b border-destructive/20 bg-destructive/5 dark:border-destructive/30 dark:bg-destructive/15">
+        <CardTitle className="text-md flex items-center justify-between text-foreground">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-destructive" />
+            <span>Security Escort Required</span>
+            <Badge
+              variant="destructive"
+              className="ml-2 text-xs bg-destructive/15 text-destructive dark:bg-destructive/25 dark:text-destructive"
+            >
               <AlertTriangle className="h-3 w-3 mr-1" />
               High Security
             </Badge>
@@ -76,10 +82,13 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
         <div className="space-y-4">
           {/* Escort Requirements */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-red-100">
+            <span className="text-sm font-medium text-foreground">
               Escort Vehicles Required:
             </span>
-            <Badge variant="outline" className="border-red-600 text-red-200">
+            <Badge
+              variant="outline"
+              className="border-destructive/30 bg-destructive/5 text-foreground dark:border-destructive/40 dark:bg-destructive/15"
+            >
               {trip.escort_count || 1} vehicle
               {(trip.escort_count || 1) > 1 ? "s" : ""}
             </Badge>
@@ -88,17 +97,17 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
           {/* Assigned Escorts */}
           {escortVehicles.length > 0 && (
             <div className="space-y-2">
-              <span className="text-sm font-medium text-red-100">
+              <span className="text-sm font-medium text-foreground">
                 Assigned Escort Vehicles:
               </span>
               <div className="space-y-2">
                 {escortVehicles.map((vehicle, index) => (
                   <div
                     key={vehicle?.id || index}
-                    className="flex items-center gap-2 p-2 bg-red-950/60 rounded border border-red-600/30"
+                    className="flex items-center gap-2 rounded border border-destructive/20 bg-muted/60 p-2 dark:border-destructive/30 dark:bg-muted/50"
                   >
-                    <Car className="h-4 w-4 text-red-400" />
-                    <span className="text-sm text-red-100">
+                    <Car className="h-4 w-4 text-destructive" />
+                    <span className="text-sm text-foreground">
                       Escort {index + 1}: {vehicle?.make} {vehicle?.model} (
                       {vehicle?.registration})
                     </span>
@@ -120,7 +129,7 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
 
           {/* Assignment Status */}
           {trip.escort_assigned_at && (
-            <div className="text-xs text-red-300 flex items-center gap-1">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               Escorts assigned on{" "}
               {new Date(trip.escort_assigned_at).toLocaleDateString()} at{" "}
@@ -129,8 +138,8 @@ export function SecurityEscortSection({ trip }: SecurityEscortSectionProps) {
           )}
 
           {/* Warning Message */}
-          <div className="text-red-600 dark:text-red-400 text-xs p-2 bg-red-950/40 rounded border border-red-600/30">
-            <AlertTriangle className="h-3 w-3 inline mr-1" />
+          <div className="rounded border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive dark:border-destructive/40 dark:bg-destructive/20">
+            <AlertTriangle className="mr-1 inline h-3 w-3" />
             Escort vehicles must be assigned and coordinated before trip
             departure for security protocols.
           </div>
