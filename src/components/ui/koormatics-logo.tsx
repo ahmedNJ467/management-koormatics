@@ -1,5 +1,4 @@
-import Image from "next/image";
-import React, { useEffect } from "react";
+import React from "react";
 
 interface KoormaticsLogoProps {
   className?: string;
@@ -7,38 +6,28 @@ interface KoormaticsLogoProps {
 }
 
 const sizeMap = {
-  sm: { wrapper: "h-8", width: 104, height: 32 },
-  md: { wrapper: "h-12", width: 156, height: 48 },
-  lg: { wrapper: "h-16", width: 208, height: 64 },
-  xl: { wrapper: "h-20", width: 260, height: 80 },
+  sm: "h-8",
+  md: "h-12",
+  lg: "h-16",
+  xl: "h-20",
 } as const;
-
-let logoLoadedOnce = false;
 
 export const KoormaticsLogo: React.FC<KoormaticsLogoProps> = ({
   className = "",
   size = "md",
 }) => {
-  const sizing = sizeMap[size] ?? sizeMap.md;
-
-  const priority = !logoLoadedOnce;
-
-  useEffect(() => {
-    if (!logoLoadedOnce) {
-      logoLoadedOnce = true;
-    }
-  }, []);
+  const wrapperClass = sizeMap[size] ?? sizeMap.md;
 
   return (
-    <div className={`${sizing.wrapper} ${className}`}>
-      <Image
-        src="/koormatics-logo.jpg"
+    <div className={`${wrapperClass} ${className}`}>
+      <img
+        src="/koormatics-logo.png"
         alt="Koormatics Logo"
-        width={sizing.width}
-        height={sizing.height}
-        priority={priority}
-        fetchPriority="high"
+        loading="eager"
+        decoding="sync"
+        fetchpriority="high"
         className="h-full w-auto object-contain"
+        draggable={false}
       />
     </div>
   );
