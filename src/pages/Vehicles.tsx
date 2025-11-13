@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Vehicle } from "@/lib/types";
@@ -25,12 +25,15 @@ export default function Vehicles() {
   const [currentPage, setCurrentPage] = useState(1);
   const vehiclesPerPage = 20;
 
+  const initialVehiclesRef = useRef<Vehicle[] | undefined>(
+    queryClient.getQueryData<Vehicle[]>(["vehicles"])
+  );
+
   const {
-    data: vehicles,
+    data: vehicles = [],
     isLoading,
     error,
     isFetching,
-    refetch,
   } = useQuery({
     queryKey: ["vehicles"],
     queryFn: async () => {
@@ -72,27 +75,16 @@ export default function Vehicles() {
 
       return sanitizedVehicles as Vehicle[];
     },
-    staleTime: 0, // Always consider data stale to force refetch on mount
-    gcTime: 60 * 60 * 1000, // 1 hour - keep in cache longer
-    refetchOnWindowFocus: true, // Refetch when window gets focus to get latest data
-    refetchOnMount: true, // Force refetch on mount regardless of stale time
-    refetchOnReconnect: true, // Refetch when network reconnects
-    retry: 2, // Retry failed requests
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    initialData: initialVehiclesRef.current,
+    placeholderData: () => initialVehiclesRef.current ?? [],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: !initialVehiclesRef.current,
+    refetchOnReconnect: false,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
-
-  // Force initial fetch on mount - ensure data loads immediately
-  useEffect(() => {
-    // Always refetch on mount to ensure fresh data
-    // This bypasses any cache issues or default QueryClient settings
-    const timer = setTimeout(() => {
-      if (!isFetching && !isLoading) {
-        refetch();
-      }
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []); // Only run on mount
 
   // Filter vehicles based on search and filters
   const filteredVehicles = useMemo(() => {
@@ -222,6 +214,11 @@ export default function Vehicles() {
               <h1 className="text-2xl font-semibold text-foreground">
                 Vehicles
               </h1>
+              {isFetching && vehicles.length > 0 && (
+                <span className="text-xs text-muted-foreground animate-pulse">
+                  Refreshing data…
+                </span>
+              )}
             </div>
             <Button
               variant="outline"
@@ -253,14 +250,14 @@ export default function Vehicles() {
         {/* Content */}
         {error ? (
           <VehiclesError />
-        ) : (isLoading || isFetching) && !vehicles ? (
+        ) : (!vehicles.length && isLoading) ? (
           <VehiclesLoading />
         ) : vehicles && vehicles.length > 0 ? (
           viewMode === "table" ? (
             <VehicleTable
               vehicles={paginatedVehicles}
               onVehicleClick={handleVehicleClick}
-              isLoading={isFetching && vehicles.length > 0}
+              isLoading={isLoading && vehicles.length === 0}
             />
           ) : (
             <VehicleCards
