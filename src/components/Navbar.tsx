@@ -125,25 +125,6 @@ const Navbar = memo(function Navbar({
     }
   }, [router, toast, signOut]);
 
-  // Render a placeholder on initial mount to avoid theme flash
-  if (!mounted) {
-    return (
-      <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
-            <div className="h-8 w-32 bg-muted rounded-md animate-pulse" />
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 bg-muted rounded-lg animate-pulse" />
-            <div className="h-9 w-9 bg-muted rounded-lg animate-pulse" />
-            <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
-          </div>
-        </div>
-      </header>
-    );
-  }
-
   return (
     <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-6">
