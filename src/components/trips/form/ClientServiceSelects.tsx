@@ -33,7 +33,7 @@ export function ClientServiceSelects({
         <Label htmlFor="client_id">Client</Label>
         <Select
           name="client_id"
-          value={selectedClientId || editTrip?.client_id}
+          value={selectedClientId ?? editTrip?.client_id ?? ""}
           onValueChange={handleClientChange}
           required
         >
@@ -54,7 +54,7 @@ export function ClientServiceSelects({
         <Label htmlFor="service_type">Service Type</Label>
         <Select
           name="service_type"
-          value={serviceType}
+          value={serviceType || ""}
           onValueChange={(value: string) =>
             setServiceType(value as UIServiceType)
           }
