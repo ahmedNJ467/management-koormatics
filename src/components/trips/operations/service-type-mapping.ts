@@ -8,6 +8,7 @@ export const serviceTypeMap: Record<string, TripType> = {
   round_trip: "round_trip",
   one_way: "one_way_transfer",
   full_day_hire: "full_day",
+  half_day: "half_day",
   hourly: "hourly" as any,
   multi_day: "multi_day" as any,
   other: "other" as any,
@@ -21,6 +22,7 @@ export const mapTripTypeToDbServiceType = (type: TripType): DbServiceType => {
     case "round_trip":
     case "one_way_transfer":
     case "full_day":
+    case "half_day":
       return type as DbServiceType;
     case "hourly" as any:
     case "multi_day" as any:
