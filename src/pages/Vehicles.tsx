@@ -48,6 +48,10 @@ export default function Vehicles() {
       const vehiclesData = primaryResponse.data;
       const vehiclesError = primaryResponse.error;
 
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("Vehicles raw data", vehiclesData);
+      }
+
       let vehiclesResult = vehiclesData ?? [];
 
       if (vehiclesError) {
@@ -109,10 +113,24 @@ export default function Vehicles() {
           v.model || v.series || v.variant || v.trim || v.vehicle_model
         );
 
-        const displayMake = make || (registration ? `Vehicle ${registration}` : "Vehicle");
-        const displayModel = model || (make ? "" : fallbackId.slice(0, 6).toUpperCase());
+        const readableType = normalizedType
+          ? normalizedType.replace(/_/g, " ")
+          : "";
 
-        return {
+        const displayMake =
+          make ||
+          readableType ||
+          (registration ? `Vehicle ${registration}` : `Vehicle ${fallbackId.slice(0, 4).toUpperCase()}`);
+
+        const displayModel =
+          model ||
+          (registration
+            ? registration.toUpperCase()
+            : readableType
+            ? readableType
+            : fallbackId.slice(4, 10).toUpperCase());
+
+        const vehicleRecord = {
           id: fallbackId,
           make: displayMake,
           model: displayModel,
@@ -129,6 +147,12 @@ export default function Vehicles() {
           updated_at: v.updated_at || new Date().toISOString(),
           images: Array.isArray(v.images) ? v.images : [],
         } as Vehicle;
+
+        if (process.env.NODE_ENV !== "production") {
+          console.debug("Sanitized vehicle", vehicleRecord);
+        }
+
+        return vehicleRecord;
       });
 
       return sanitizedVehicles as Vehicle[];
