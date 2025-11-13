@@ -131,7 +131,9 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, make, model, registration, status, created_at");
+        .select(
+          "id, make, model, registration, status, type, vehicle_type, created_at"
+        );
       if (error) throw error;
       return data || [];
     },

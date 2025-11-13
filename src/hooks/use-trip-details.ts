@@ -14,14 +14,32 @@ export function useTripDetails(viewTrip: DisplayTrip | null) {
     queryFn: async () => {
       if (!viewTrip) return [];
 
-      const { data, error } = await supabase
-        .from("trip_messages")
-        .select("*")
-        .eq("trip_id", viewTrip.id)
-        .order("timestamp", { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from("trip_messages")
+          .select("*")
+          .eq("trip_id", viewTrip.id)
+          .order("timestamp", { ascending: true });
 
-      if (error) throw error;
-      return data as TripMessageData[];
+        if (error) {
+          console.warn("Trip messages fetch error", {
+            tripId: viewTrip.id,
+            message: (error as any)?.message,
+            details: (error as any)?.details,
+            hint: (error as any)?.hint,
+            code: (error as any)?.code,
+          });
+          return [];
+        }
+
+        return (data as TripMessageData[]) || [];
+      } catch (err) {
+        console.error("Unexpected trip messages fetch error", {
+          tripId: viewTrip.id,
+          error: err,
+        });
+        return [];
+      }
     },
     enabled: !!viewTrip,
   });
@@ -32,24 +50,65 @@ export function useTripDetails(viewTrip: DisplayTrip | null) {
     queryFn: async () => {
       if (!viewTrip) return [];
 
-      const { data, error } = await supabase
-        .from("trip_assignments")
-        .select(
+      const mapAssignments = (rows: any[] = []) =>
+        rows.map((assignment) => ({
+          ...assignment,
+          driver_name: assignment.drivers?.name,
+          driver_avatar: assignment.drivers?.avatar_url,
+        })) as TripAssignmentData[];
+
+      const fetchFallbackAssignments = async () => {
+        const { data, error } = await supabase
+          .from("trip_assignments")
+          .select("*")
+          .eq("trip_id", viewTrip.id)
+          .order("assigned_at", { ascending: false });
+
+        if (error) {
+          console.error("Trip assignments fallback fetch error", {
+            tripId: viewTrip.id,
+            message: (error as any)?.message,
+            details: (error as any)?.details,
+            hint: (error as any)?.hint,
+            code: (error as any)?.code,
+          });
+          return [] as TripAssignmentData[];
+        }
+
+        return mapAssignments(data);
+      };
+
+      try {
+        const { data, error } = await supabase
+          .from("trip_assignments")
+          .select(
+            `
+            *,
+            drivers:driver_id(name, avatar_url)
           `
-          *,
-          drivers:driver_id(name, avatar_url)
-        `
-        )
-        .eq("trip_id", viewTrip.id)
-        .order("assigned_at", { ascending: false });
+          )
+          .eq("trip_id", viewTrip.id)
+          .order("assigned_at", { ascending: false });
 
-      if (error) throw error;
+        if (error) {
+          console.warn("Trip assignments fetch error", {
+            tripId: viewTrip.id,
+            message: (error as any)?.message,
+            details: (error as any)?.details,
+            hint: (error as any)?.hint,
+            code: (error as any)?.code,
+          });
+          return await fetchFallbackAssignments();
+        }
 
-      return data.map((assignment) => ({
-        ...assignment,
-        driver_name: assignment.drivers?.name,
-        driver_avatar: assignment.drivers?.avatar_url,
-      })) as TripAssignmentData[];
+        return mapAssignments(data);
+      } catch (err) {
+        console.error("Unexpected trip assignments fetch error", {
+          tripId: viewTrip.id,
+          error: err,
+        });
+        return await fetchFallbackAssignments();
+      }
     },
     enabled: !!viewTrip,
   });
