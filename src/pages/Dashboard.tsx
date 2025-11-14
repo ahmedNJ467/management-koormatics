@@ -623,7 +623,7 @@ export default function Dashboard() {
           try {
             if (!isMounted) return;
             setActivitiesLoading(true);
-            const activities = await getActivities(5);
+          const activities = await getActivities(5);
             if (!isMounted) return;
             setRecentActivities(
               activities.length > 0 ? activities : fallbackActivities
@@ -1373,10 +1373,10 @@ export default function Dashboard() {
 
   const renderFinanceCharts = () => (
     <>
-      <div className="bg-card border border-border p-4">
-        <h3 className="text-sm font-medium text-foreground mb-4">
+            <div className="bg-card border border-border p-4">
+              <h3 className="text-sm font-medium text-foreground mb-4">
           Financial Overview
-        </h3>
+              </h3>
         <div className="h-[320px] w-full">
           <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
             <FinancialOverviewChart data={financialOverviewData} />
@@ -1394,15 +1394,15 @@ export default function Dashboard() {
               <MaintenanceCostsChart
                 data={chartData?.maintenanceCostsData || []}
                 compact
-              />
-            </LazyWrapper>
-          </div>
-        </div>
+                  />
+                </LazyWrapper>
+              </div>
+            </div>
 
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
+            <div className="bg-card border border-border p-4">
+              <h3 className="text-sm font-medium text-foreground mb-4">
             Fuel Consumption
-          </h3>
+              </h3>
           <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
               <FuelConsumptionChart
@@ -1410,9 +1410,9 @@ export default function Dashboard() {
                 compact
               />
             </LazyWrapper>
-          </div>
+              </div>
+            </div>
         </div>
-      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="bg-card border border-border p-4">
@@ -1423,8 +1423,8 @@ export default function Dashboard() {
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
               <PerformanceMetricsChart data={performanceMetrics} compact />
             </LazyWrapper>
-          </div>
-        </div>
+      </div>
+    </div>
 
         <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">

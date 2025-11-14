@@ -15,11 +15,11 @@ export function useTripDetails(viewTrip: DisplayTrip | null) {
       if (!viewTrip) return [];
 
       try {
-        const { data, error } = await supabase
-          .from("trip_messages")
-          .select("*")
-          .eq("trip_id", viewTrip.id)
-          .order("timestamp", { ascending: true });
+      const { data, error } = await supabase
+        .from("trip_messages")
+        .select("*")
+        .eq("trip_id", viewTrip.id)
+        .order("timestamp", { ascending: true });
 
         if (error) {
           console.warn("Trip messages fetch error", {
@@ -79,16 +79,16 @@ export function useTripDetails(viewTrip: DisplayTrip | null) {
       };
 
       try {
-        const { data, error } = await supabase
-          .from("trip_assignments")
-          .select(
-            `
-            *,
-            drivers:driver_id(name, avatar_url)
+      const { data, error } = await supabase
+        .from("trip_assignments")
+        .select(
           `
-          )
-          .eq("trip_id", viewTrip.id)
-          .order("assigned_at", { ascending: false });
+          *,
+          drivers:driver_id(name, avatar_url)
+        `
+        )
+        .eq("trip_id", viewTrip.id)
+        .order("assigned_at", { ascending: false });
 
         if (error) {
           console.warn("Trip assignments fetch error", {

@@ -169,11 +169,14 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
 
   // Function to check if user has access to a specific page
   const hasAccess = useCallback(
-    (href: string) => {
+    (href?: string | null) => {
+      if (!href) return false;
       if (isLoading) return false;
       if (pages.includes("*")) return true;
 
       const pageId = href.startsWith("/") ? href.slice(1) : href;
+      if (!pageId) return false;
+
       const firstSegment = pageId.split("/")[0] || pageId;
 
       return pages.includes(pageId) || pages.includes(firstSegment);

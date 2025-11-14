@@ -65,11 +65,21 @@ const Navbar = memo(function Navbar({
   );
 
   const isPageAllowed = useCallback(
-    (href: string) => {
+    (href?: string | null) => {
+      if (!href) return false;
       if (pages.includes("*")) return true;
-      const id = href.startsWith("/") ? href.slice(1) : href;
-      const first = id.split("/")[0] || id;
-      return pages.includes(id) || pages.includes(first);
+
+      const normalized =
+        typeof href === "string"
+          ? href.startsWith("/")
+            ? href.slice(1)
+            : href
+          : "";
+
+      if (!normalized) return false;
+
+      const firstSegment = normalized.split("/")[0] || normalized;
+      return pages.includes(normalized) || pages.includes(firstSegment);
     },
     [pages]
   );
@@ -100,7 +110,7 @@ const Navbar = memo(function Navbar({
   useEffect(() => {
     if (!navbarMountedRef) {
       navbarMountedRef = true;
-      setMounted(true);
+    setMounted(true);
     }
   }, []);
 

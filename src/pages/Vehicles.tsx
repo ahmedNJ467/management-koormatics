@@ -137,11 +137,11 @@ export default function Vehicles() {
             typeof v.year === "number" ? v.year : Number.parseInt(v.year) || null,
           color: sanitizeText(v.color),
           vin: sanitizeText(v.vin),
-          insurance_expiry: v.insurance_expiry ?? null,
+        insurance_expiry: v.insurance_expiry ?? null,
           notes: sanitizeText(v.notes),
-          created_at: v.created_at || new Date().toISOString(),
-          updated_at: v.updated_at || new Date().toISOString(),
-          images: Array.isArray(v.images) ? v.images : [],
+        created_at: v.created_at || new Date().toISOString(),
+        updated_at: v.updated_at || new Date().toISOString(),
+        images: Array.isArray(v.images) ? v.images : [],
         } as Vehicle;
 
         if (process.env.NODE_ENV !== "production") {

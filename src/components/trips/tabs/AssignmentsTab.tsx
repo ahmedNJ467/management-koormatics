@@ -30,22 +30,22 @@ interface AssignmentsTabProps {
   setAssignOpen: (open: boolean) => void;
 }
 
-export function AssignmentsTab({
-  viewTrip,
-  assignments,
+export function AssignmentsTab({ 
+  viewTrip, 
+  assignments, 
   drivers,
   setTripToAssign,
   setAssignOpen,
 }: AssignmentsTabProps) {
   const hasAssignments = assignments && assignments.length > 0;
   const assignmentStatuses = {
-    pending: {
+    pending: { 
       icon: <Clock className="h-4 w-4 text-amber-500 dark:text-amber-300" />,
       label: "Pending",
       className:
         "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-300",
     },
-    accepted: {
+    accepted: { 
       icon: (
         <CheckCircle className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
       ),
@@ -53,7 +53,7 @@ export function AssignmentsTab({
       className:
         "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300",
     },
-    rejected: {
+    rejected: { 
       icon: <XCircle className="h-4 w-4 text-destructive" />,
       label: "Rejected",
       className:
@@ -74,9 +74,9 @@ export function AssignmentsTab({
           <p className="mb-2 text-muted-foreground">
             No driver assigned to this trip
           </p>
-          <Button
-            onClick={handleAssignDriver}
-            variant="outline"
+          <Button 
+            onClick={handleAssignDriver} 
+            variant="outline" 
             className="mt-2 border-border bg-transparent text-foreground hover:bg-muted/80"
           >
             <User className="mr-2 h-4 w-4" />
@@ -105,9 +105,9 @@ export function AssignmentsTab({
             </p>
           )}
         </div>
-        <Button
-          onClick={handleAssignDriver}
-          variant="outline"
+        <Button 
+          onClick={handleAssignDriver} 
+          variant="outline" 
           size="sm"
           className="border-border bg-transparent text-foreground hover:bg-muted/80"
         >
@@ -208,8 +208,8 @@ export function AssignmentsTab({
                       <span className="font-medium text-foreground">
                         {assignment.driver_name || "Unknown Driver"}
                       </span>
-                      <Badge
-                        variant="outline"
+                      <Badge 
+                        variant="outline" 
                         className={`flex items-center gap-1 text-xs ${assignmentStatuses[assignment.status].className}`}
                       >
                         {assignmentStatuses[assignment.status].icon}
