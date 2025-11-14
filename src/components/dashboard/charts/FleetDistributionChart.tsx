@@ -39,17 +39,10 @@ export function FleetDistributionChart({
   data = [],
   compact = false,
 }: FleetDistributionChartProps) {
-  if (!data || data.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <div className="text-center">
-          <p className="text-sm">No fleet data available</p>
-        </div>
-      </div>
-    );
-  }
-
   const chartData = useMemo(() => {
+    if (!data || data.length === 0) {
+      return [];
+    }
     return data.map((entry, index) => ({
       ...entry,
       key: slugify(entry.name, `segment-${index}`),
@@ -58,6 +51,9 @@ export function FleetDistributionChart({
   }, [data]);
 
   const chartConfig = useMemo<ChartConfig>(() => {
+    if (chartData.length === 0) {
+      return {};
+    }
     return chartData.reduce((acc, entry) => {
       acc[entry.key] = {
         label: entry.name,
@@ -66,6 +62,16 @@ export function FleetDistributionChart({
       return acc;
     }, {} as ChartConfig);
   }, [chartData]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm">No fleet data available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ChartContainer
