@@ -203,7 +203,7 @@ const Navbar = memo(function Navbar({
             href={homePath()}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <KoormaticsLogo size="sm" />
+            <KoormaticsLogo size="sm" sticky />
             <span className="text-sm font-medium text-muted-foreground">
               {domain}
             </span>
