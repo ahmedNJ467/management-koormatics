@@ -17,6 +17,24 @@ export function VehicleDetailsFields({ form }: VehicleDetailsFieldsProps) {
     <>
       <FormField
         control={form.control}
+        name="location"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Location</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="e.g. Nairobi Yard A"
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="color"
         render={({ field }) => (
           <FormItem>

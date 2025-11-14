@@ -142,6 +142,8 @@ export default function Vehicles() {
         created_at: v.created_at || new Date().toISOString(),
         updated_at: v.updated_at || new Date().toISOString(),
         images: Array.isArray(v.images) ? v.images : [],
+          location: sanitizeText(v.location),
+          assigned_driver_id: sanitizeText(v.assigned_driver_id) || null,
         } as Vehicle;
 
         if (process.env.NODE_ENV !== "production") {

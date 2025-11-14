@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import { Form } from "@/components/ui/form";
 import { Vehicle } from "@/lib/types";
 import { VehicleTypeField } from "./vehicle-type-field";
@@ -9,7 +10,8 @@ import { VehicleNotesField } from "./vehicle-notes-field";
 import { VehicleImagesField } from "./vehicle-images-field";
 import { VehicleFormActions } from "./vehicle-form-actions";
 import { VehicleFuelTypeField } from "./vehicle-fuel-type-field";
-import { Separator } from "@/components/ui/separator";
+import { VehicleDriverField } from "./vehicle-driver-field";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
@@ -49,7 +51,26 @@ export function VehicleForm({
         ? new Date(vehicle.insurance_expiry).toISOString().split("T")[0]
         : undefined,
       notes: vehicle?.notes || "",
+      location: vehicle?.location || "",
+      assigned_driver_id: vehicle?.assigned_driver_id || "",
     },
+  });
+
+  type DriverOption = { id: string; name: string; status?: string | null };
+
+  const { data: driverOptions = [], isLoading: driversLoading } = useQuery<
+    DriverOption[]
+  >({
+    queryKey: ["vehicle-form-drivers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, name, status")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   return (
@@ -90,7 +111,14 @@ export function VehicleForm({
           <h3 className="text-lg font-semibold mb-2">Status & Notes</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <VehicleStatusField form={form} />
-            <VehicleNotesField form={form} />
+            <VehicleDriverField
+              form={form}
+              drivers={driverOptions}
+              isLoading={driversLoading}
+            />
+            <div className="md:col-span-2">
+              <VehicleNotesField form={form} />
+            </div>
           </div>
         </div>
         

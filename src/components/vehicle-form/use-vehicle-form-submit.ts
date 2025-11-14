@@ -55,6 +55,8 @@ export function useVehicleFormSubmit(
         vin: data.vin || null,
         insurance_expiry: data.insurance_expiry || null,
         notes: data.notes || null,
+        location: data.location?.trim() ? data.location.trim() : null,
+        assigned_driver_id: data.assigned_driver_id || null,
       };
 
       // Only include fuel_type if the column exists and has a value

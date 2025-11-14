@@ -22,4 +22,6 @@ export interface Vehicle {
   is_escort_assigned?: boolean;
   escort_trip_id?: string;
   escort_assigned_at?: string;
+  location?: string | null;
+  assigned_driver_id?: string | null;
 }
