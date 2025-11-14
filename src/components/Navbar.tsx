@@ -105,14 +105,19 @@ const Navbar = memo(function Navbar({
   }, []);
 
   useEffect(() => {
-    if (profile?.profile_image_url) {
-      if (cachedAvatarSrc !== profile.profile_image_url) {
-        cachedAvatarSrc = profile.profile_image_url;
+    if (!profile) {
+      // Keep showing the previously cached avatar while profile reloads
+      return;
+    }
+
+    const imageUrl = profile.profile_image_url;
+
+    if (imageUrl) {
+      if (cachedAvatarSrc !== imageUrl) {
+        cachedAvatarSrc = imageUrl;
       }
       setAvatarSrc((previous) =>
-        previous === profile.profile_image_url
-          ? previous
-          : profile.profile_image_url
+        previous === imageUrl ? previous : imageUrl
       );
     } else {
       if (cachedAvatarSrc !== null) {
@@ -120,17 +125,24 @@ const Navbar = memo(function Navbar({
       }
       setAvatarSrc((previous) => (previous === null ? previous : null));
     }
-  }, [profile?.profile_image_url]);
+  }, [profile]);
 
   useEffect(() => {
-    if (profile?.name) {
+    if (!profile) {
+      return;
+    }
+
+    if (profile.name) {
       const initials = getInitials(profile.name);
       cachedAvatarInitials = initials;
       setAvatarInitials(initials);
-    } else if (!profile?.name && cachedAvatarInitials && avatarInitials !== cachedAvatarInitials) {
+    } else if (
+      cachedAvatarInitials &&
+      avatarInitials !== cachedAvatarInitials
+    ) {
       setAvatarInitials(cachedAvatarInitials);
     }
-  }, [profile?.name, avatarInitials]);
+  }, [profile, avatarInitials]);
 
   const handleProfileClick = useCallback(() => {
     router.push("/profile");
