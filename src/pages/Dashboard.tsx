@@ -850,18 +850,18 @@ export default function Dashboard() {
   // Calculate meaningful performance metrics
   // Maintenance metrics are available in chartData if needed
 
-  // Calculate fleet utilization - vehicles with active drivers vs total vehicles
-  const fleetUtilization =
+  // Calculate driver coverage - active drivers vs total fleet
+  const driverCoverage =
     totalVehicles > 0 ? Math.round((activeDrivers / totalVehicles) * 100) : 0;
 
   const performanceMetrics = [
     {
-      name: "Fleet Utilization",
-      value: fleetUtilization,
+      name: "Driver Coverage",
+      value: driverCoverage,
       color:
-        fleetUtilization >= 80
+        driverCoverage >= 80
           ? "#10b981"
-          : fleetUtilization >= 60
+          : driverCoverage >= 60
           ? "#f59e0b"
           : "#ef4444",
     },
@@ -910,7 +910,7 @@ export default function Dashboard() {
               {
                 title: "Vehicles",
                 value: totalVehicles,
-                subtitle: `${fleetUtilization}% utilization`,
+                subtitle: `${driverCoverage}% driver coverage`,
                 icon: Car,
               },
               {
@@ -1001,7 +1001,7 @@ export default function Dashboard() {
               {
                 title: "Vehicles",
                 value: totalVehicles,
-                subtitle: `${fleetUtilization}% utilization`,
+                subtitle: `${driverCoverage}% driver coverage`,
                 icon: Car,
               },
               {
@@ -1179,7 +1179,7 @@ export default function Dashboard() {
       isOperationsDashboard,
       isFinanceDashboard,
       totalVehicles,
-      fleetUtilization,
+      driverCoverage,
       totalDrivers,
       activeDrivers,
       pendingMaintenance,
@@ -1260,7 +1260,7 @@ export default function Dashboard() {
 
           <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
-            Fleet Utilization
+            Driver Coverage
           </h3>
           <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
@@ -1332,7 +1332,7 @@ export default function Dashboard() {
 
                 <div className="bg-card border border-border p-4">
                   <h3 className="text-sm font-medium text-foreground mb-4">
-                    Fleet Utilization
+                    Driver Coverage
                   </h3>
                   <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
@@ -1417,7 +1417,7 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2">
         <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
-            Fleet Utilization
+            Driver Coverage
           </h3>
           <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
