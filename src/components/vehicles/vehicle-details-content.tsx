@@ -19,6 +19,8 @@ import {
   Fuel,
 } from "lucide-react";
 import { Vehicle } from "@/lib/types";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VehicleDetailsContentProps {
   selectedVehicle: Vehicle;
@@ -40,6 +42,25 @@ export const VehicleDetailsContent = memo(
     setViewMode,
     setShowDeleteConfirm,
   }: VehicleDetailsContentProps) => {
+    const { data: assignedDriver } = useQuery({
+      queryKey: ["vehicle-driver", selectedVehicle.assigned_driver_id],
+      enabled: !!selectedVehicle.assigned_driver_id,
+      queryFn: async () => {
+        if (!selectedVehicle.assigned_driver_id) return null;
+        const { data, error } = await supabase
+          .from("drivers")
+          .select("id, name, status, contact")
+          .eq("id", selectedVehicle.assigned_driver_id as any)
+          .maybeSingle();
+        if (error) {
+          console.warn("Failed to load assigned driver", error);
+          return null;
+        }
+        return data;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+
     const hasMultipleImages =
       selectedVehicle.images && selectedVehicle.images.length > 1;
     const currentImage = selectedVehicle.images?.[currentImageIndex]?.url;
@@ -307,6 +328,36 @@ export const VehicleDetailsContent = memo(
                 <p className="text-sm font-mono font-medium">
                   {selectedVehicle.vin || "N/A"}
                 </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Location
+                </label>
+                <p className="text-sm font-medium">
+                  {selectedVehicle.location || "Not specified"}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Assigned Driver
+                </label>
+                {selectedVehicle.assigned_driver_id ? (
+                  <div className="text-sm font-medium">
+                    <p>
+                      {assignedDriver?.name || "Loading..."}
+                      {assignedDriver?.status
+                        ? ` (${assignedDriver.status})`
+                        : ""}
+                    </p>
+                    {assignedDriver?.contact && (
+                      <p className="text-xs text-muted-foreground">
+                        {assignedDriver.contact}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Unassigned</p>
+                )}
               </div>
             </CardContent>
           </Card>
