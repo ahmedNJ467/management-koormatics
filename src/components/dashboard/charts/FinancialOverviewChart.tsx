@@ -1,54 +1,105 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartConfig,
+} from "@/components/ui/chart";
 
 interface FinancialOverviewChartProps {
-  data?: any[];
+  data?: Array<{
+    month: string;
+    revenue: number;
+    costs: number;
+    profit: number;
+  }>;
 }
 
-export const FinancialOverviewChart = ({ data = [] }: FinancialOverviewChartProps) => {
+const chartConfig: ChartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "hsl(var(--chart-1))",
+  },
+  costs: {
+    label: "Costs",
+    color: "hsl(var(--chart-2))",
+  },
+  profit: {
+    label: "Profit",
+    color: "hsl(var(--chart-3))",
+  },
+};
+
+export const FinancialOverviewChart = ({
+  data = [],
+}: FinancialOverviewChartProps) => {
+  if (!data.length) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <p className="text-sm">No financial data available</p>
+      </div>
+    );
+  }
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data}>
-        <XAxis dataKey="month" className="text-muted-foreground text-xs" />
-        <YAxis className="text-muted-foreground text-xs" />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'hsl(var(--background))',
-            borderColor: 'hsl(var(--border))',
-            borderRadius: '6px',
-            fontSize: '0.875rem'
-          }}
-          labelStyle={{ fontWeight: 'bold' }}
-          formatter={(value) => [`$${value}`, '']}
+    <ChartContainer config={chartConfig} className="min-h-[320px] w-full">
+      <LineChart data={data} margin={{ top: 12, right: 12, left: 12, bottom: 12 }}>
+        <CartesianGrid strokeDasharray="4 4" className="stroke-muted" />
+        <XAxis
+          dataKey="month"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
         />
-        <Line 
-          type="monotone" 
-          dataKey="revenue" 
-          stroke="#10B981" 
-          name="Revenue"
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
+        />
+        <ChartTooltip
+          content={<ChartTooltipContent />}
+          formatter={(value: number, name) => [
+            `$${value.toLocaleString()}`,
+            chartConfig[name as keyof typeof chartConfig]?.label ?? name,
+          ]}
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Line
+          type="monotone"
+          dataKey="revenue"
+          stroke="var(--color-revenue)"
           strokeWidth={2}
           dot={{ r: 4, strokeWidth: 2 }}
           activeDot={{ r: 6, strokeWidth: 2 }}
         />
-        <Line 
-          type="monotone" 
-          dataKey="costs" 
-          stroke="#EF4444" 
-          name="Costs"
+        <Line
+          type="monotone"
+          dataKey="costs"
+          stroke="var(--color-costs)"
           strokeWidth={2}
           dot={{ r: 4, strokeWidth: 2 }}
           activeDot={{ r: 6, strokeWidth: 2 }}
         />
-        <Line 
-          type="monotone" 
-          dataKey="profit" 
-          stroke="#3B82F6" 
-          name="Profit"
+        <Line
+          type="monotone"
+          dataKey="profit"
+          stroke="var(--color-profit)"
           strokeWidth={2}
           dot={{ r: 4, strokeWidth: 2 }}
           activeDot={{ r: 6, strokeWidth: 2 }}
         />
       </LineChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 };

@@ -1,15 +1,18 @@
 "use client";
 
-import React from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartConfig,
+} from "@/components/ui/chart";
 
 interface MaintenanceCostData {
   month: string;
@@ -21,13 +24,17 @@ interface MaintenanceCostsChartProps {
   compact?: boolean;
 }
 
+const chartConfig: ChartConfig = {
+  cost: {
+    label: "Maintenance Cost",
+    color: "hsl(var(--chart-3))",
+  },
+};
+
 export function MaintenanceCostsChart({
   data = [],
   compact = false,
 }: MaintenanceCostsChartProps) {
-  const height = compact ? 250 : 300;
-
-  // Show no data state if no data available
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -39,37 +46,37 @@ export function MaintenanceCostsChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        data={data}
-        margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-      >
+    <ChartContainer
+      config={chartConfig}
+      className={`w-full ${compact ? "min-h-[220px]" : "min-h-[300px]"}`}
+    >
+      <BarChart data={data} margin={{ top: 12, right: 12, left: 6, bottom: 12 }}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis
           dataKey="month"
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
         />
         <YAxis
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
           domain={["dataMin", "dataMax"]}
         />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
+        <ChartTooltip
+          content={<ChartTooltipContent />}
           formatter={(value: number) => [`$${value.toLocaleString()}`, "Cost"]}
         />
         <Bar
           dataKey="cost"
-          fill="#3b82f6"
           name="Maintenance Cost"
-          radius={[4, 4, 0, 0]}
+          fill="var(--color-cost)"
+          radius={[6, 6, 0, 0]}
         />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }

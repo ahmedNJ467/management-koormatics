@@ -1,15 +1,18 @@
 "use client";
 
-import React from "react";
 import {
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartConfig,
+} from "@/components/ui/chart";
 
 interface FuelConsumptionData {
   date: string;
@@ -22,13 +25,21 @@ interface FuelConsumptionChartProps {
   compact?: boolean;
 }
 
+const chartConfig: ChartConfig = {
+  consumption: {
+    label: "Consumption (L)",
+    color: "hsl(var(--chart-1))",
+  },
+  efficiency: {
+    label: "Efficiency (km/L)",
+    color: "hsl(var(--chart-2))",
+  },
+};
+
 export function FuelConsumptionChart({
   data = [],
   compact = false,
 }: FuelConsumptionChartProps) {
-  const height = compact ? 300 : 350;
-
-  // Show no data state if no data available
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -40,54 +51,51 @@ export function FuelConsumptionChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <LineChart
-        data={data}
-        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-      >
+    <ChartContainer
+      config={chartConfig}
+      className={`w-full ${compact ? "min-h-[260px]" : "min-h-[340px]"}`}
+    >
+      <LineChart data={data} margin={{ top: 12, right: 12, left: 12, bottom: 12 }}>
+        <CartesianGrid strokeDasharray="4 4" className="stroke-muted" />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
-          tickLine={{ stroke: "#e2e8f0" }}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
         />
         <YAxis
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
-          tickLine={{ stroke: "#e2e8f0" }}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
         />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
-          labelFormatter={(value) => value}
-          formatter={(value: number, name: string) => [
-            name === "consumption" ? `${value}L` : `${value} km/L`,
-            name === "consumption" ? "Consumption" : "Efficiency",
+        <ChartTooltip
+          content={<ChartTooltipContent />}
+          formatter={(value: number, name) => [
+            name === "consumption"
+              ? `${value.toLocaleString()} L`
+              : `${value.toLocaleString()} km/L`,
+            chartConfig[name as keyof typeof chartConfig]?.label ?? name,
           ]}
         />
         <Line
           type="monotone"
           dataKey="consumption"
-          stroke="#3b82f6"
+          stroke="var(--color-consumption)"
           strokeWidth={2}
-          name="consumption"
-          dot={{ fill: "#3b82f6", strokeWidth: 2, r: 3 }}
-          activeDot={{ r: 5, stroke: "#3b82f6", strokeWidth: 2, fill: "white" }}
+          dot={false}
+          activeDot={{ r: 5, strokeWidth: 2 }}
         />
         <Line
           type="monotone"
           dataKey="efficiency"
-          stroke="#10b981"
+          stroke="var(--color-efficiency)"
           strokeWidth={2}
-          name="efficiency"
-          dot={{ fill: "#10b981", strokeWidth: 2, r: 3 }}
-          activeDot={{ r: 5, stroke: "#10b981", strokeWidth: 2, fill: "white" }}
+          dot={false}
+          activeDot={{ r: 5, strokeWidth: 2 }}
         />
       </LineChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }

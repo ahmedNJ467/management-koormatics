@@ -1,15 +1,18 @@
 "use client";
 
-import React from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartConfig,
+} from "@/components/ui/chart";
 
 interface DriverStatusData {
   status: string;
@@ -21,13 +24,17 @@ interface DriverStatusChartProps {
   compact?: boolean;
 }
 
+const chartConfig: ChartConfig = {
+  count: {
+    label: "Drivers",
+    color: "hsl(var(--chart-2))",
+  },
+};
+
 export function DriverStatusChart({
   data = [],
   compact = false,
 }: DriverStatusChartProps) {
-  const height = compact ? 250 : 300;
-
-  // Show no data state if no data available
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -39,36 +46,33 @@ export function DriverStatusChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart
-        data={data}
-        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-      >
+    <ChartContainer
+      config={chartConfig}
+      className={`w-full ${compact ? "min-h-[220px]" : "min-h-[300px]"}`}
+    >
+      <BarChart data={data} margin={{ top: 12, right: 12, left: 6, bottom: 12 }}>
+        <CartesianGrid vertical={false} strokeDasharray="4 4" />
         <XAxis
           dataKey="status"
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
         />
         <YAxis
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
         />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
-        />
+        <ChartTooltip content={<ChartTooltipContent />} />
         <Bar
           dataKey="count"
-          fill="#10b981"
-          radius={[4, 4, 0, 0]}
-          stroke="#ffffff"
-          strokeWidth={2}
+          fill="var(--color-count)"
+          radius={[6, 6, 0, 0]}
+          name="Drivers"
         />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }

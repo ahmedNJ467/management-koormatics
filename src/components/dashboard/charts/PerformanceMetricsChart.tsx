@@ -1,16 +1,16 @@
 "use client";
 
-import React from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
 } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartConfig,
+} from "@/components/ui/chart";
 
 interface PerformanceMetric {
   name: string;
@@ -23,14 +23,15 @@ interface PerformanceMetricsChartProps {
   compact?: boolean;
 }
 
+const DEFAULT_COLOR = "hsl(var(--chart-1))";
+
 export function PerformanceMetricsChart({
   data = [],
   compact = false,
 }: PerformanceMetricsChartProps) {
-  const height = compact ? 250 : 300;
+  const metric = data[0];
 
-  // Show no data state if no data available
-  if (!data || data.length === 0) {
+  if (!metric) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <div className="text-center">
@@ -40,35 +41,60 @@ export function PerformanceMetricsChart({
     );
   }
 
-  return (
-    <div className="h-full flex flex-col items-center justify-center">
-      <div className="text-center mb-4">
-        <div
-          className="text-4xl font-bold"
-          style={{ color: data[0]?.color || "#10b981" }}
-        >
-          {data[0]?.value || 0}%
-        </div>
-        <div className="text-sm text-muted-foreground mt-2">
-          {data[0]?.name || "Utilization"}
-        </div>
-      </div>
+  const value = Math.max(0, Math.min(100, Math.round(metric.value)));
+  const chartData = [
+    {
+      name: metric.name || "Metric",
+      value,
+      fill: metric.color || DEFAULT_COLOR,
+    },
+  ];
 
-      <div className="w-full max-w-xs">
-        <div className="bg-gray-200 rounded-full h-3">
-          <div
-            className="h-3 rounded-full transition-all duration-500"
-            style={{
-              width: `${data[0]?.value || 0}%`,
-              backgroundColor: data[0]?.color || "#10b981",
-            }}
+  const chartConfig: ChartConfig = {
+    performance: {
+      label: metric.name || "Metric",
+      color: metric.color || DEFAULT_COLOR,
+    },
+  };
+
+  return (
+    <div className="relative flex w-full justify-center">
+      <ChartContainer
+        config={chartConfig}
+        className={`w-full max-w-sm ${
+          compact ? "h-[220px]" : "h-[260px]"
+        }`}
+      >
+        <RadialBarChart
+          data={chartData}
+          innerRadius={compact ? 60 : 70}
+          outerRadius={compact ? 90 : 110}
+          startAngle={90}
+          endAngle={-270}
+        >
+          <PolarAngleAxis
+            type="number"
+            domain={[0, 100]}
+            tick={false}
+            axisLine={false}
           />
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-2">
-          <span>0%</span>
-          <span>50%</span>
-          <span>100%</span>
-        </div>
+          <RadialBar
+            dataKey="value"
+            background
+            cornerRadius={12}
+            fill="var(--color-performance)"
+          />
+          <ChartTooltip
+            content={<ChartTooltipContent />}
+            formatter={(val: number) => [`${val}%`, metric.name]}
+          />
+        </RadialBarChart>
+      </ChartContainer>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="text-3xl font-semibold">{value}%</span>
+        <span className="text-sm text-muted-foreground">
+          {metric.name || "Metric"}
+        </span>
       </div>
     </div>
   );

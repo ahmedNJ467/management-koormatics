@@ -1,19 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
+import { PieChart, Pie, Cell } from "recharts";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from "recharts";
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartConfig,
+} from "@/components/ui/chart";
 
 interface FleetData {
   name: string;
   value: number;
-  color: string;
+  color?: string;
 }
 
 interface FleetDistributionChartProps {
@@ -21,13 +22,23 @@ interface FleetDistributionChartProps {
   compact?: boolean;
 }
 
+const DEFAULT_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
+
+const slugify = (value: string, fallback: string) =>
+  value
+    ? value.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    : fallback;
+
 export function FleetDistributionChart({
   data = [],
   compact = false,
 }: FleetDistributionChartProps) {
-  const height = compact ? 250 : 300;
-
-  // Show no data state if no data available
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -38,44 +49,51 @@ export function FleetDistributionChart({
     );
   }
 
+  const chartData = useMemo(() => {
+    return data.map((entry, index) => ({
+      ...entry,
+      key: slugify(entry.name, `segment-${index}`),
+      fill: entry.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
+    }));
+  }, [data]);
+
+  const chartConfig = useMemo<ChartConfig>(() => {
+    return chartData.reduce((acc, entry) => {
+      acc[entry.key] = {
+        label: entry.name,
+        color: entry.fill,
+      };
+      return acc;
+    }, {} as ChartConfig);
+  }, [chartData]);
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ChartContainer
+      config={chartConfig}
+      className={`w-full ${compact ? "min-h-[240px]" : "min-h-[320px]"}`}
+    >
       <PieChart>
         <Pie
-          data={data}
+          data={chartData}
+          dataKey="value"
+          nameKey="name"
+          innerRadius={compact ? 40 : 60}
+          outerRadius={compact ? 75 : 95}
+          paddingAngle={2}
+          strokeWidth={2}
           cx="50%"
           cy="50%"
-          labelLine={false}
-          label={({ name, percent }) =>
-            `${name} ${(percent * 100).toFixed(0)}%`
-          }
-          outerRadius={compact ? 60 : 80}
-          fill="#3b82f6"
-          dataKey="value"
-          stroke="#ffffff"
-          strokeWidth={2}
         >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
+          {chartData.map((entry) => (
+            <Cell key={entry.key} fill={`var(--color-${entry.key})`} />
           ))}
         </Pie>
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
+        <ChartTooltip
+          content={<ChartTooltipContent nameKey="name" />}
+          formatter={(value: number) => [`${value}`, "Vehicles"]}
         />
-        <Legend
-          verticalAlign="bottom"
-          height={36}
-          wrapperStyle={{
-            fontSize: "12px",
-            color: "#64748b",
-          }}
-        />
+        <ChartLegend content={<ChartLegendContent nameKey="name" />} />
       </PieChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }
