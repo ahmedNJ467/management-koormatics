@@ -1352,12 +1352,19 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <LazyWrapper fallback={<ChartSkeleton height="h-[300px]" />}>
-          <FleetDistributionChart
-            data={chartData?.fleetDistributionData || []}
-          />
-        </LazyWrapper>
-        
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fleet Distribution
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <FleetDistributionChart
+                data={chartData?.fleetDistributionData || []}
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+
         <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Driver Availability

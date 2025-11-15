@@ -117,7 +117,7 @@ export function VehicleForm({
               isLoading={driversLoading}
             />
             <div className="md:col-span-2">
-              <VehicleNotesField form={form} />
+            <VehicleNotesField form={form} />
             </div>
           </div>
         </div>
