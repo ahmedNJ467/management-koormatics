@@ -28,39 +28,46 @@ interface DriverStatusChartProps {
 }
 
 const COLOR_KEYS = ["chrome", "safari", "firefox", "edge", "other"];
+const COLOR_TOKENS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 
 export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
   const chartData = React.useMemo(() => {
     return data.map((entry, index) => {
-      const key = COLOR_KEYS[index % COLOR_KEYS.length];
+      const colorKey = COLOR_KEYS[index % COLOR_KEYS.length];
       return {
-        status: entry.status || `Status ${index + 1}`,
-        colorKey: key,
-        drivers: entry.count ?? 0,
-        fill: `var(--color-${key})`,
+        browser: entry.status || `Status ${index + 1}`,
+        visitors: entry.count ?? 0,
+        fill: `var(--color-${colorKey})`,
+        colorKey,
       };
     });
   }, [data]);
 
   const chartConfig = React.useMemo(() => {
-    const baseConfig: ChartConfig = {
-      drivers: {
-        label: "Drivers",
+    return chartData.reduce<ChartConfig>(
+      (acc, entry, index) => {
+        acc[entry.colorKey] = {
+          label: entry.browser,
+          color: COLOR_TOKENS[index % COLOR_TOKENS.length],
+        };
+        return acc;
       },
-    };
-
-    chartData.forEach((entry, index) => {
-      baseConfig[entry.colorKey] = {
-        label: entry.status,
-        color: `var(--chart-${(index % COLOR_KEYS.length) + 1})`,
-      };
-    });
-
-    return baseConfig;
+      {
+        visitors: {
+          label: "Drivers",
+        },
+      } as ChartConfig
+    );
   }, [chartData]);
 
   const totalDrivers = React.useMemo(
-    () => chartData.reduce((acc, curr) => acc + curr.drivers, 0),
+    () => chartData.reduce((acc, curr) => acc + curr.visitors, 0),
     [chartData]
   );
 
@@ -81,13 +88,7 @@ export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie
-                data={chartData}
-                dataKey="drivers"
-                nameKey="colorKey"
-                innerRadius={60}
-                strokeWidth={5}
-              >
+              <Pie data={chartData} dataKey="visitors" nameKey="browser" innerRadius={60} strokeWidth={5}>
                 <Label
                   content={({ viewBox }) => {
                     if (viewBox && "cx" in viewBox && "cy" in viewBox) {
