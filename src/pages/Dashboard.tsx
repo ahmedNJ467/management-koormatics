@@ -1287,16 +1287,9 @@ export default function Dashboard() {
           />
         </LazyWrapper>
 
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
-            Driver Status
-          </h3>
-          <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <DriverStatusChart data={driverStatusChartData} compact />
-            </LazyWrapper>
-          </div>
-        </div>
+        <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+          <DriverStatusChart data={driverStatusChartData} />
+        </LazyWrapper>
       </div>
     </>
   );
@@ -1351,16 +1344,9 @@ export default function Dashboard() {
           />
         </LazyWrapper>
 
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
-            Driver Status
-          </h3>
-          <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <DriverStatusChart data={driverStatusChartData} compact />
-            </LazyWrapper>
-              </div>
-            </div>
+        <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+          <DriverStatusChart data={driverStatusChartData} />
+        </LazyWrapper>
       </div>
     </>
   );
@@ -1426,7 +1412,7 @@ export default function Dashboard() {
           </h3>
           <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <DriverStatusChart data={driverStatusChartData} compact />
+              <DriverStatusChart data={driverStatusChartData} />
             </LazyWrapper>
           </div>
         </div>

@@ -1,15 +1,22 @@
 "use client";
 
-import React from "react";
+import * as React from "react";
+import { TrendingUp } from "lucide-react";
+import { Label, Pie, PieChart } from "recharts";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface DriverStatusData {
   status: string;
@@ -18,57 +25,159 @@ interface DriverStatusData {
 
 interface DriverStatusChartProps {
   data?: DriverStatusData[];
-  compact?: boolean;
 }
 
-export function DriverStatusChart({
-  data = [],
-  compact = false,
-}: DriverStatusChartProps) {
-  const height = compact ? 250 : 300;
+const STATUS_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
+];
 
-  // Show no data state if no data available
-  if (!data || data.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <div className="text-center">
-          <p className="text-sm">No driver data available</p>
-        </div>
-      </div>
+const slugify = (value: string, fallback: string) => {
+  const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug || fallback;
+};
+
+export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
+  const normalizedData = React.useMemo(() => {
+    return data.map((entry, index) => {
+      const statusLabel = entry.status || `Status ${index + 1}`;
+      const statusKey = slugify(statusLabel, `status-${index}`);
+      const colorToken = STATUS_COLORS[index % STATUS_COLORS.length];
+
+      return {
+        statusLabel,
+        statusKey,
+        drivers: entry.count ?? 0,
+        fill: `var(--color-${statusKey})`,
+        colorToken,
+      };
+    });
+  }, [data]);
+
+  const chartConfig = React.useMemo(() => {
+    return normalizedData.reduce<ChartConfig>(
+      (acc, entry) => {
+        acc[entry.statusKey] = {
+          label: entry.statusLabel,
+          color: entry.colorToken,
+        };
+        return acc;
+      },
+      {
+        drivers: {
+          label: "Drivers",
+        },
+      } as ChartConfig
     );
-  }
+  }, [normalizedData]);
+
+  const totalDrivers = React.useMemo(
+    () => normalizedData.reduce((acc, curr) => acc + curr.drivers, 0),
+    [normalizedData]
+  );
+
+  const topStatus = React.useMemo(() => {
+    if (!normalizedData.length) return null;
+    return normalizedData.reduce((top, entry) =>
+      entry.drivers > (top?.drivers ?? -1) ? entry : top
+    );
+  }, [normalizedData]);
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart
-        data={data}
-        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-      >
-        <XAxis
-          dataKey="status"
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
-        />
-        <YAxis
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
-        />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
-        />
-        <Bar
-          dataKey="count"
-          fill="#10b981"
-          radius={[4, 4, 0, 0]}
-          stroke="#ffffff"
-          strokeWidth={2}
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    <Card className="flex flex-col">
+      <CardHeader className="items-center pb-0">
+        <CardTitle>Driver Availability</CardTitle>
+        <CardDescription>Current driver status mix</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 pb-0">
+        {normalizedData.length ? (
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square max-h-[250px]"
+          >
+            <PieChart>
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
+              />
+              <Pie
+                data={normalizedData}
+                dataKey="drivers"
+                nameKey="statusKey"
+                innerRadius={60}
+                strokeWidth={5}
+              >
+                <Label
+                  content={({ viewBox }) => {
+                    if (
+                      viewBox &&
+                      "cx" in viewBox &&
+                      "cy" in viewBox &&
+                      totalDrivers !== undefined
+                    ) {
+                      return (
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground text-3xl font-bold"
+                          >
+                            {totalDrivers.toLocaleString()}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) + 24}
+                            className="fill-muted-foreground"
+                          >
+                            Drivers
+                          </tspan>
+                        </text>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+        ) : (
+          <div className="flex h-[250px] items-center justify-center text-muted-foreground">
+            No driver data available
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex-col gap-2 text-sm">
+        {normalizedData.length ? (
+          <>
+            <div className="flex items-center gap-2 leading-none font-medium">
+              {topStatus
+                ? `${topStatus.statusLabel} leads with ${
+                    totalDrivers > 0
+                      ? ((topStatus.drivers / totalDrivers) * 100).toFixed(1)
+                      : 0
+                  }% of drivers`
+                : "Driver distribution updated"}
+              <TrendingUp className="h-4 w-4" />
+            </div>
+            <div className="text-muted-foreground leading-none">
+              Tracking availability in real time
+            </div>
+          </>
+        ) : (
+          <div className="text-muted-foreground leading-none">
+            Waiting for driver status updates
+          </div>
+        )}
+      </CardFooter>
+    </Card>
   );
 }
