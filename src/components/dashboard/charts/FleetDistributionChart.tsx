@@ -29,7 +29,7 @@ export function FleetDistributionChart({ data = [] }: FleetDistributionChartProp
       data.map((entry, index) => ({
         label: entry.name || `Type ${index + 1}`,
         value: entry.value ?? 0,
-        fill: entry.color || PALETTE[index % PALETTE.length],
+        fill: PALETTE[index % PALETTE.length],
         id: `fleet-${index}`,
       })),
     [data]
