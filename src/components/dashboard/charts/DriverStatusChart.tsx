@@ -27,65 +27,42 @@ interface DriverStatusChartProps {
   data?: DriverStatusData[];
 }
 
-const STATUS_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-  "var(--chart-6)",
-];
-
-const slugify = (value: string, fallback: string) => {
-  const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return slug || fallback;
-};
+const COLOR_KEYS = ["chrome", "safari", "firefox", "edge", "other"];
 
 export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
-  const normalizedData = React.useMemo(() => {
+  const chartData = React.useMemo(() => {
     return data.map((entry, index) => {
-      const statusLabel = entry.status || `Status ${index + 1}`;
-      const statusKey = slugify(statusLabel, `status-${index}`);
-      const colorToken = STATUS_COLORS[index % STATUS_COLORS.length];
-
+      const key = COLOR_KEYS[index % COLOR_KEYS.length];
       return {
-        statusLabel,
-        statusKey,
+        status: entry.status || `Status ${index + 1}`,
+        colorKey: key,
         drivers: entry.count ?? 0,
-        fill: `var(--color-${statusKey})`,
-        colorToken,
+        fill: `var(--color-${key})`,
       };
     });
   }, [data]);
 
   const chartConfig = React.useMemo(() => {
-    return normalizedData.reduce<ChartConfig>(
-      (acc, entry) => {
-        acc[entry.statusKey] = {
-          label: entry.statusLabel,
-          color: entry.colorToken,
-        };
-        return acc;
+    const baseConfig: ChartConfig = {
+      drivers: {
+        label: "Drivers",
       },
-      {
-        drivers: {
-          label: "Drivers",
-        },
-      } as ChartConfig
-    );
-  }, [normalizedData]);
+    };
+
+    chartData.forEach((entry, index) => {
+      baseConfig[entry.colorKey] = {
+        label: entry.status,
+        color: `var(--chart-${(index % COLOR_KEYS.length) + 1})`,
+      };
+    });
+
+    return baseConfig;
+  }, [chartData]);
 
   const totalDrivers = React.useMemo(
-    () => normalizedData.reduce((acc, curr) => acc + curr.drivers, 0),
-    [normalizedData]
+    () => chartData.reduce((acc, curr) => acc + curr.drivers, 0),
+    [chartData]
   );
-
-  const topStatus = React.useMemo(() => {
-    if (!normalizedData.length) return null;
-    return normalizedData.reduce((top, entry) =>
-      entry.drivers > (top?.drivers ?? -1) ? entry : top
-    );
-  }, [normalizedData]);
 
   return (
     <Card className="flex flex-col">
@@ -94,7 +71,7 @@ export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
         <CardDescription>Current driver status mix</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        {normalizedData.length ? (
+        {chartData.length ? (
           <ChartContainer
             config={chartConfig}
             className="mx-auto aspect-square max-h-[250px]"
@@ -105,20 +82,15 @@ export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
                 content={<ChartTooltipContent hideLabel />}
               />
               <Pie
-                data={normalizedData}
+                data={chartData}
                 dataKey="drivers"
-                nameKey="statusKey"
+                nameKey="colorKey"
                 innerRadius={60}
                 strokeWidth={5}
               >
                 <Label
                   content={({ viewBox }) => {
-                    if (
-                      viewBox &&
-                      "cx" in viewBox &&
-                      "cy" in viewBox &&
-                      totalDrivers !== undefined
-                    ) {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                       return (
                         <text
                           x={viewBox.cx}
@@ -156,27 +128,12 @@ export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
         )}
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        {normalizedData.length ? (
-          <>
-            <div className="flex items-center gap-2 leading-none font-medium">
-              {topStatus
-                ? `${topStatus.statusLabel} leads with ${
-                    totalDrivers > 0
-                      ? ((topStatus.drivers / totalDrivers) * 100).toFixed(1)
-                      : 0
-                  }% of drivers`
-                : "Driver distribution updated"}
-              <TrendingUp className="h-4 w-4" />
-            </div>
-            <div className="text-muted-foreground leading-none">
-              Tracking availability in real time
-            </div>
-          </>
-        ) : (
-          <div className="text-muted-foreground leading-none">
-            Waiting for driver status updates
-          </div>
-        )}
+        <div className="flex items-center gap-2 leading-none font-medium">
+          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+        </div>
+        <div className="text-muted-foreground leading-none">
+          Showing driver availability for the latest period
+        </div>
       </CardFooter>
     </Card>
   );
