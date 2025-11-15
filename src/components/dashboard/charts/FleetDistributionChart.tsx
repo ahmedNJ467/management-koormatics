@@ -79,7 +79,7 @@ export function FleetDistributionChart({ data = [] }: FleetDistributionChartProp
         />
         <ChartLegend
           content={<ChartLegendContent nameKey="label" />}
-          className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
+          className="-translate-y-2 flex-wrap gap-2 text-sm *:basis-1/3 *:justify-center"
         />
       </PieChart>
     </ChartContainer>
