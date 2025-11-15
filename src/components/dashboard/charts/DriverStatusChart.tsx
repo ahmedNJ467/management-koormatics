@@ -1,19 +1,15 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import React from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface DriverStatusData {
   status: string;
@@ -25,60 +21,54 @@ interface DriverStatusChartProps {
   compact?: boolean;
 }
 
-const chartConfig = {
-  count: {
-    label: "Drivers",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig;
-
 export function DriverStatusChart({
   data = [],
   compact = false,
 }: DriverStatusChartProps) {
-  const chartHeight = compact ? "h-[220px]" : "h-[300px]";
+  const height = compact ? 250 : 300;
 
-  if (!data.length) {
+  // Show no data state if no data available
+  if (!data || data.length === 0) {
     return (
-      <Card>
-        <CardHeader className="items-start pb-0">
-          <CardTitle>Driver Status</CardTitle>
-          <CardDescription>No driver data available</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Add driver assignments to see this chart.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm">No driver data available</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="items-start pb-0">
-        <CardTitle>Driver Status</CardTitle>
-        <CardDescription>Drivers by availability</CardDescription>
-      </CardHeader>
-      <CardContent className="pl-2">
-        <ChartContainer
-          config={chartConfig}
-          className={`${chartHeight} w-full`}
-        >
-          <BarChart data={data}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="status"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={10}
-              className="text-xs"
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="count" fill="var(--color-count)" radius={4} />
-          </BarChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart
+        data={data}
+        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+      >
+        <XAxis
+          dataKey="status"
+          tick={{ fontSize: 12, fill: "#64748b" }}
+          axisLine={{ stroke: "#e2e8f0" }}
+        />
+        <YAxis
+          tick={{ fontSize: 12, fill: "#64748b" }}
+          axisLine={{ stroke: "#e2e8f0" }}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "white",
+            border: "1px solid #e2e8f0",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          }}
+        />
+        <Bar
+          dataKey="count"
+          fill="#10b981"
+          radius={[4, 4, 0, 0]}
+          stroke="#ffffff"
+          strokeWidth={2}
+        />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }

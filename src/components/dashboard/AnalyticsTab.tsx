@@ -103,11 +103,24 @@ export const AnalyticsTab = ({ isLoading = false }: AnalyticsTabProps) => {
           <FleetDistributionChart data={chartData.fleetDistributionData} />
         )}
         
-        {isLoading || loading ? (
-          renderContent
-        ) : (
-          <DriverStatusChart data={chartData.driverStatusData} />
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Users className="h-4 w-4 mr-2" />
+              Driver Status
+            </CardTitle>
+            <CardDescription>
+              Driver availability
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {isLoading || loading ? renderContent : (
+                <DriverStatusChart data={chartData.driverStatusData} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

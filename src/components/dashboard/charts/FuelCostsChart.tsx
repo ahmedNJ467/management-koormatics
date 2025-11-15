@@ -1,79 +1,30 @@
 
-"use client";
-
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface FuelCostsChartProps {
-  data?: Array<{ month: string; diesel: number; petrol: number }>;
+  data?: any[];
 }
 
-const chartConfig = {
-  diesel: {
-    label: "Diesel",
-    color: "hsl(var(--chart-2))",
-  },
-  petrol: {
-    label: "Petrol",
-    color: "hsl(var(--chart-3))",
-  },
-} satisfies ChartConfig;
-
 export const FuelCostsChart = ({ data = [] }: FuelCostsChartProps) => {
-  if (!data.length) {
-    return (
-      <Card>
-        <CardHeader className="items-start pb-0">
-          <CardTitle>Fuel Costs</CardTitle>
-          <CardDescription>No fuel cost data available</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Add fuel expense records to see this chart.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardHeader className="items-start pb-0">
-        <CardTitle>Fuel Costs</CardTitle>
-        <CardDescription>Monthly diesel vs petrol spend</CardDescription>
-      </CardHeader>
-      <CardContent className="pl-2">
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart data={data}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={10}
-              className="text-xs"
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Bar dataKey="diesel" fill="var(--color-diesel)" radius={4} />
-            <Bar dataKey="petrol" fill="var(--color-petrol)" radius={4} />
-          </BarChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis dataKey="month" className="text-muted-foreground text-xs" />
+        <YAxis className="text-muted-foreground text-xs" />
+        <Tooltip 
+          contentStyle={{ 
+            backgroundColor: 'hsl(var(--background))',
+            borderColor: 'hsl(var(--border))',
+            borderRadius: '6px',
+            fontSize: '0.875rem'
+          }}
+          formatter={(value) => [`$${value}`, '']}
+        />
+        <Legend />
+        <Bar dataKey="diesel" name="Diesel" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="petrol" name="Petrol" fill="#10B981" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
   );
 };
