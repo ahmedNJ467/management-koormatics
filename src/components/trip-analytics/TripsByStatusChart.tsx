@@ -1,6 +1,14 @@
 
 import { DisplayTrip } from "@/lib/types/trip";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell } from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface TripsByStatusChartProps {
   trips: DisplayTrip[];
@@ -29,34 +37,61 @@ export function TripsByStatusChart({ trips }: TripsByStatusChartProps) {
     'Unknown': '#6b7280', // gray
   };
 
+  const pieData = chartData.map((entry) => ({
+    ...entry,
+    fill: COLORS[entry.name as keyof typeof COLORS] || "#6b7280",
+  }));
+
+  const chartConfig = pieData.reduce<ChartConfig>(
+    (acc, entry) => {
+      acc[entry.name] = {
+        label: entry.name,
+        color: entry.fill,
+      };
+      return acc;
+    },
+    {
+      value: {
+        label: "Trips",
+      },
+    } as ChartConfig
+  );
+
   return (
-    <div className="w-full h-[300px]">
-      {chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full">
+      {pieData.length > 0 ? (
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto aspect-square max-h-[320px] w-full"
+        >
           <PieChart>
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent nameKey="name" />}
+            />
             <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              outerRadius={80}
-              fill="#8884d8"
+              data={pieData}
               dataKey="value"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              nameKey="name"
+              innerRadius={50}
+              outerRadius={110}
+              labelLine={false}
+              label={({ name, percent }) =>
+                `${name} ${(percent * 100).toFixed(0)}%`
+              }
             >
-              {chartData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={COLORS[entry.name as keyof typeof COLORS] || '#6b7280'} 
-                />
+              {pieData.map((entry) => (
+                <Cell key={entry.name} fill={entry.fill} />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => [`${value} trips`, 'Count']} />
-            <Legend />
+            <ChartLegend
+              content={<ChartLegendContent nameKey="name" />}
+              className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
+            />
           </PieChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       ) : (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center h-[300px]">
           <p className="text-muted-foreground">No trip status data available</p>
         </div>
       )}

@@ -31,6 +31,14 @@ import {
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface VehiclesTabProps {
   vehicleCosts: VehicleCostData[];
@@ -107,6 +115,26 @@ export const VehiclesTab = ({ vehicleCosts }: VehiclesTabProps) => {
     });
   }
 
+  const pieChartData = pieData.map((entry, index) => ({
+    ...entry,
+    fill: COLORS[index % COLORS.length],
+  }));
+
+  const costChartConfig = pieChartData.reduce<ChartConfig>(
+    (acc, entry) => {
+      acc[entry.name] = {
+        label: entry.name,
+        color: entry.fill,
+      };
+      return acc;
+    },
+    {
+      value: {
+        label: "Cost",
+      },
+    } as ChartConfig
+  );
+
   return (
     <TabsContent value="vehicles" className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -156,40 +184,45 @@ export const VehiclesTab = ({ vehicleCosts }: VehiclesTabProps) => {
           </CardHeader>
           <CardContent className="h-[500px] w-full">
             {totalCost > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartContainer
+                config={costChartConfig}
+                className="mx-auto aspect-square max-h-[420px] w-full"
+              >
                 <PieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={
+                      <ChartTooltipContent
+                        nameKey="name"
+                        formatter={(value) =>
+                          typeof value === "number"
+                            ? `$${value.toFixed(2)}`
+                            : value ?? ""
+                        }
+                      />
+                    }
+                  />
                   <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    outerRadius={150}
-                    fill="#8884d8"
+                    data={pieChartData}
                     dataKey="value"
+                    nameKey="name"
+                    innerRadius={80}
+                    outerRadius={140}
+                    labelLine={false}
                     label={({ name, percent }) =>
-                      `${name} (${(percent * 100).toFixed(1)}%)`
+                      `${name} ${(percent * 100).toFixed(1)}%`
                     }
                   >
-                    {pieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                    {pieChartData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(value: number) => [
-                      `$${value.toFixed(2)}`,
-                      undefined,
-                    ]}
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      borderColor: "hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
+                  <ChartLegend
+                    content={<ChartLegendContent nameKey="name" />}
+                    className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
                   />
                 </PieChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             ) : (
               <div className="flex items-center justify-center h-full">
                 <AlertCircle className="h-8 w-8 mr-2 text-muted-foreground" />

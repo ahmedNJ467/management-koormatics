@@ -41,6 +41,14 @@ import {
   Cell,
 } from "recharts";
 import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
   calculateOnTimePerformance,
   calculateTripDuration,
   calculateEfficiencyScore,
@@ -243,6 +251,23 @@ export function DriverAnalytics({
     { name: "Inactive", value: inactiveDrivers, color: "#ef4444" },
   ];
 
+  const statusChartConfig = statusData.reduce<ChartConfig>(
+    (acc, entry) => {
+      acc[entry.name] = {
+        label: entry.name,
+        color: entry.color,
+      };
+      return acc;
+    },
+    {
+      value: {
+        label: "Drivers",
+      },
+    } as ChartConfig
+  );
+
+  const hasStatusData = statusData.some((status) => status.value > 0);
+
   // Monthly performance data
   const monthlyData = [
     { month: "Jan", trips: 0, completion: 0 },
@@ -381,27 +406,41 @@ export function DriverAnalytics({
             <CardDescription>Current driver availability</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+            {hasStatusData ? (
+              <ChartContainer
+                config={statusChartConfig}
+                className="mx-auto aspect-square max-h-[320px] w-full"
+              >
                 <PieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent nameKey="name" />}
+                  />
                   <Pie
                     data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
                     dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    labelLine={false}
                     label={({ name, value }) => `${name}: ${value}`}
                   >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {statusData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <ChartLegend
+                    content={<ChartLegendContent nameKey="name" />}
+                    className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
+                  />
                 </PieChart>
-              </ResponsiveContainer>
-            </div>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-[300px] items-center justify-center text-muted-foreground">
+                No driver status data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
