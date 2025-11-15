@@ -97,16 +97,43 @@ export const AnalyticsTab = ({ isLoading = false }: AnalyticsTabProps) => {
       </Card>
       
       <div className="grid gap-6 md:grid-cols-2">
-        {isLoading || loading ? (
-          renderContent
-        ) : (
-          <FleetDistributionChart data={chartData.fleetDistributionData} />
-        )}
-        {isLoading || loading ? (
-          renderContent
-        ) : (
-          <DriverStatusChart data={chartData.driverStatusData} />
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <PieChart className="h-4 w-4 mr-2" />
+              Fleet Distribution
+            </CardTitle>
+            <CardDescription>Vehicle mix by type</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {isLoading || loading ? (
+                renderContent
+              ) : (
+                <FleetDistributionChart data={chartData.fleetDistributionData} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Users className="h-4 w-4 mr-2" />
+              Driver Availability
+            </CardTitle>
+            <CardDescription>Current driver status mix</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {isLoading || loading ? (
+                renderContent
+              ) : (
+                <DriverStatusChart data={chartData.driverStatusData} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
