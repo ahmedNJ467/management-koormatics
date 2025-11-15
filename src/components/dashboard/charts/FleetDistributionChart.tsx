@@ -73,7 +73,7 @@ export function FleetDistributionChart({ data = [] }: FleetDistributionChartProp
         <Pie
           data={chartData}
           dataKey="value"
-          nameKey="id"
+          nameKey="label"
           strokeWidth={2}
           fill="#1D4ED8"
         />
