@@ -1,14 +1,7 @@
 
 import { DisplayTrip } from "@/lib/types/trip";
-import { PieChart, Pie, Cell } from "recharts";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { PieLegendCard } from "@/components/charts/PieLegendCard";
+import { ChartConfig } from "@/components/ui/chart";
 
 interface TripsByStatusChartProps {
   trips: DisplayTrip[];
@@ -58,44 +51,13 @@ export function TripsByStatusChart({ trips }: TripsByStatusChartProps) {
   );
 
   return (
-    <div className="w-full">
-      {pieData.length > 0 ? (
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[320px] w-full"
-        >
-          <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent nameKey="name" />}
-            />
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={50}
-              outerRadius={110}
-              labelLine={false}
-              label={({ name, percent }) =>
-                `${name} ${(percent * 100).toFixed(0)}%`
-              }
-            >
-              {pieData.map((entry) => (
-                <Cell key={entry.name} fill={entry.fill} />
-              ))}
-            </Pie>
-            <ChartLegend
-              content={<ChartLegendContent nameKey="name" />}
-              className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
-            />
-          </PieChart>
-        </ChartContainer>
-      ) : (
-        <div className="flex items-center justify-center h-[300px]">
-          <p className="text-muted-foreground">No trip status data available</p>
-        </div>
-      )}
-    </div>
+    <PieLegendCard
+      title="Trips by Status"
+      description="Distribution of trips by current status"
+      data={pieData}
+      config={chartConfig}
+      emptyMessage="No trip status data available"
+    />
   );
 }
 

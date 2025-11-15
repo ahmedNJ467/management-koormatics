@@ -36,18 +36,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { PieLegendCard } from "@/components/charts/PieLegendCard";
+import { ChartConfig } from "@/components/ui/chart";
 import {
   calculateOnTimePerformance,
   calculateTripDuration,
@@ -246,16 +237,16 @@ export function DriverAnalytics({
 
   // Status distribution data for pie chart
   const statusData = [
-    { name: "Active", value: activeDrivers, color: "#10b981" },
-    { name: "On Leave", value: onLeaveDrivers, color: "#f59e0b" },
-    { name: "Inactive", value: inactiveDrivers, color: "#ef4444" },
+    { name: "Active", value: activeDrivers, fill: "#10b981" },
+    { name: "On Leave", value: onLeaveDrivers, fill: "#f59e0b" },
+    { name: "Inactive", value: inactiveDrivers, fill: "#ef4444" },
   ];
 
   const statusChartConfig = statusData.reduce<ChartConfig>(
     (acc, entry) => {
       acc[entry.name] = {
         label: entry.name,
-        color: entry.color,
+        color: entry.fill,
       };
       return acc;
     },
@@ -400,49 +391,13 @@ export function DriverAnalytics({
       {/* Charts Row */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Driver Status Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Driver Status Distribution</CardTitle>
-            <CardDescription>Current driver availability</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {hasStatusData ? (
-              <ChartContainer
-                config={statusChartConfig}
-                className="mx-auto aspect-square max-h-[320px] w-full"
-              >
-                <PieChart>
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent nameKey="name" />}
-                  />
-                  <Pie
-                    data={statusData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {statusData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <ChartLegend
-                    content={<ChartLegendContent nameKey="name" />}
-                    className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
-                  />
-                </PieChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-                No driver status data available
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <PieLegendCard
+          title="Driver Status Distribution"
+          description="Current driver availability"
+          data={statusData}
+          config={statusChartConfig}
+          emptyMessage="No driver status data available"
+        />
 
         {/* Monthly Performance */}
         <Card>

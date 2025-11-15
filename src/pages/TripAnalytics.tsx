@@ -72,15 +72,7 @@ export default function TripAnalytics() {
         
         <TabsContent value="overview" className="space-y-6 pt-4">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Trips by Status</CardTitle>
-                <CardDescription>Distribution of trips by their current status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TripsByStatusChart trips={trips} />
-              </CardContent>
-            </Card>
+            <TripsByStatusChart trips={trips} />
             
             <Card>
               <CardHeader className="pb-2">

@@ -15,9 +15,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import { VehicleCostData } from "@/lib/types/cost-analytics";
 import { COLORS } from "@/lib/types/cost-analytics";
@@ -31,14 +28,8 @@ import {
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { PieLegendCard } from "@/components/charts/PieLegendCard";
+import { ChartConfig } from "@/components/ui/chart";
 
 interface VehiclesTabProps {
   vehicleCosts: VehicleCostData[];
@@ -175,64 +166,14 @@ export const VehiclesTab = ({ vehicleCosts }: VehiclesTabProps) => {
         </Card>
 
         {/* Distribution Pie Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Cost Distribution</CardTitle>
-            <CardDescription>
-              Percentage of total fleet costs by vehicle
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[500px] w-full">
-            {totalCost > 0 ? (
-              <ChartContainer
-                config={costChartConfig}
-                className="mx-auto aspect-square max-h-[420px] w-full"
-              >
-                <PieChart>
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        nameKey="name"
-                        formatter={(value) =>
-                          typeof value === "number"
-                            ? `$${value.toFixed(2)}`
-                            : value ?? ""
-                        }
-                      />
-                    }
-                  />
-                  <Pie
-                    data={pieChartData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={80}
-                    outerRadius={140}
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(1)}%`
-                    }
-                  >
-                    {pieChartData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <ChartLegend
-                    content={<ChartLegendContent nameKey="name" />}
-                    className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
-                  />
-                </PieChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <AlertCircle className="h-8 w-8 mr-2 text-muted-foreground" />
-                <span className="text-muted-foreground">
-                  No cost data available
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <PieLegendCard
+          title="Cost Distribution"
+          description="Percentage of total fleet costs by vehicle"
+          data={totalCost > 0 ? pieChartData : []}
+          config={costChartConfig}
+          emptyMessage="No cost data available"
+          chartClassName="max-h-[420px]"
+        />
       </div>
 
       {/* Ranking Table */}

@@ -1,15 +1,7 @@
 "use client";
 
-import React from "react";
-import { PieChart, Pie, Cell } from "recharts";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { PieLegendCard } from "@/components/charts/PieLegendCard";
+import { ChartConfig } from "@/components/ui/chart";
 
 interface FleetData {
   name: string;
@@ -19,14 +11,11 @@ interface FleetData {
 
 interface FleetDistributionChartProps {
   data?: FleetData[];
-  compact?: boolean;
 }
 
 export function FleetDistributionChart({
   data = [],
-  compact = false,
 }: FleetDistributionChartProps) {
-  const heightClass = compact ? "max-h-[240px]" : "max-h-[320px]";
   const defaultColors = [
     "var(--chart-1)",
     "var(--chart-2)",
@@ -55,48 +44,14 @@ export function FleetDistributionChart({
     } as ChartConfig
   );
 
-  // Show no data state if no data available
-  if (!chartData || chartData.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <div className="text-center">
-          <p className="text-sm">No fleet data available</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <ChartContainer
+    <PieLegendCard
+      title="Fleet Distribution"
+      description="Vehicle mix by type"
+      data={chartData}
       config={chartConfig}
-      className={`mx-auto aspect-square ${heightClass} w-full`}
-    >
-      <PieChart>
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent nameKey="name" />}
-        />
-        <Pie
-          data={chartData}
-          dataKey="value"
-          nameKey="name"
-          innerRadius={compact ? 40 : 60}
-          outerRadius={compact ? 80 : 110}
-          labelLine={false}
-          strokeWidth={2}
-          label={({ name, percent }) =>
-            `${name} ${(percent * 100).toFixed(0)}%`
-          }
-        >
-          {chartData.map((entry) => (
-            <Cell key={entry.name} fill={entry.fill} />
-          ))}
-        </Pie>
-        <ChartLegend
-          content={<ChartLegendContent nameKey="name" />}
-          className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
-        />
-      </PieChart>
-    </ChartContainer>
+      emptyMessage="No fleet data available"
+      chartClassName="max-h-[300px]"
+    />
   );
 }
