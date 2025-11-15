@@ -1,15 +1,19 @@
 "use client";
 
-import React from "react";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface MaintenanceCostData {
   month: string;
@@ -21,55 +25,64 @@ interface MaintenanceCostsChartProps {
   compact?: boolean;
 }
 
+const chartConfig = {
+  cost: {
+    label: "Maintenance Cost",
+    color: "hsl(var(--chart-1))",
+  },
+} satisfies ChartConfig;
+
 export function MaintenanceCostsChart({
   data = [],
   compact = false,
 }: MaintenanceCostsChartProps) {
-  const height = compact ? 250 : 300;
+  const chartData = data.map((item) => ({
+    month: item.month,
+    cost: item.cost,
+  }));
+  const chartHeight = compact ? "h-[220px]" : "h-[300px]";
 
-  // Show no data state if no data available
-  if (!data || data.length === 0) {
+  if (!chartData.length) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <div className="text-center">
-          <p className="text-sm">No maintenance data available</p>
-        </div>
-      </div>
+      <Card>
+        <CardHeader className="items-start pb-0">
+          <CardTitle>Maintenance Costs</CardTitle>
+          <CardDescription>No maintenance data available</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Add maintenance records to see this chart.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        data={data}
-        margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-      >
-        <XAxis
-          dataKey="month"
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
-        />
-        <YAxis
-          tick={{ fontSize: 12, fill: "#64748b" }}
-          axisLine={{ stroke: "#e2e8f0" }}
-          domain={["dataMin", "dataMax"]}
-        />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
-          formatter={(value: number) => [`$${value.toLocaleString()}`, "Cost"]}
-        />
-        <Bar
-          dataKey="cost"
-          fill="#3b82f6"
-          name="Maintenance Cost"
-          radius={[4, 4, 0, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    <Card>
+      <CardHeader className="items-start pb-0">
+        <CardTitle>Maintenance Costs</CardTitle>
+        <CardDescription>Monthly maintenance spend</CardDescription>
+      </CardHeader>
+      <CardContent className="pl-2">
+        <ChartContainer
+          config={chartConfig}
+          className={`${chartHeight} w-full`}
+        >
+          <BarChart data={chartData}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="month"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={10}
+              className="text-xs"
+            />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="cost" fill="var(--color-cost)" radius={4} />
+          </BarChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   );
 }

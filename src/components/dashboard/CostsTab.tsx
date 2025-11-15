@@ -142,43 +142,17 @@ export const CostsTab = ({ costsBreakdown, isLoading = false }: CostsTabProps) =
       </div>
       
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart className="h-4 w-4 mr-2" />
-              Maintenance Costs Trend
-            </CardTitle>
-            <CardDescription>
-              Monthly maintenance costs
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              {isLoading || loading ? renderSkeletonContent() : (
-                <MaintenanceCostsChart data={chartData.maintenanceCostData} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart className="h-4 w-4 mr-2" />
-              Fuel Costs Trend
-            </CardTitle>
-            <CardDescription>
-              Monthly fuel costs
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              {isLoading || loading ? renderSkeletonContent() : (
-                <FuelCostsChart data={chartData.fuelCostData} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {isLoading || loading ? (
+          renderSkeletonContent()
+        ) : (
+          <MaintenanceCostsChart data={chartData.maintenanceCostData} />
+        )}
+
+        {isLoading || loading ? (
+          renderSkeletonContent()
+        ) : (
+          <FuelCostsChart data={chartData.fuelCostData} />
+        )}
       </div>
     </div>
   );
