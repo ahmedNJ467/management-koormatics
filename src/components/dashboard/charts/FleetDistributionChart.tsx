@@ -3,6 +3,13 @@
 import * as React from "react";
 import { Pie, PieChart } from "recharts";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   ChartConfig,
   ChartContainer,
   ChartLegend,
@@ -52,36 +59,32 @@ export function FleetDistributionChart({ data = [] }: FleetDistributionChartProp
     [chartData]
   );
 
-  if (!chartData.length) {
-    return (
-      <div className="flex h-[250px] items-center justify-center text-muted-foreground">
-        No fleet data available
-      </div>
-    );
-  }
-
   return (
-    <ChartContainer
-      config={chartConfig}
-      className="mx-auto aspect-square max-h-[250px]"
-    >
-      <PieChart>
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent hideLabel />}
-        />
-        <Pie
-          data={chartData}
-          dataKey="value"
-          nameKey="label"
-          strokeWidth={2}
-          fill="#1D4ED8"
-        />
-        <ChartLegend
-          content={<ChartLegendContent nameKey="label" />}
-          className="-translate-y-2 flex-wrap gap-2 text-sm *:basis-1/3 *:justify-center"
-        />
-      </PieChart>
-    </ChartContainer>
+    <Card className="flex flex-col">
+      <CardHeader className="items-center pb-0">
+        <CardTitle>Fleet Distribution</CardTitle>
+        <CardDescription>Vehicle mix by type</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 pb-0">
+        {chartData.length ? (
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square max-h-[300px]"
+          >
+            <PieChart>
+              <Pie data={chartData} dataKey="value" nameKey="label" strokeWidth={2} />
+              <ChartLegend
+                content={<ChartLegendContent nameKey="label" />}
+                className="-translate-y-2 flex-wrap gap-2 *:basis-1/3 *:justify-center"
+              />
+            </PieChart>
+          </ChartContainer>
+        ) : (
+          <div className="flex h-[240px] items-center justify-center text-muted-foreground">
+            No fleet data available
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
