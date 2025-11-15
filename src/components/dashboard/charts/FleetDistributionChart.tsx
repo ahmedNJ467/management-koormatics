@@ -13,11 +13,19 @@ interface FleetDistributionChartProps {
   data?: FleetData[];
 }
 
+const FLEET_COLORS = ["#1D4ED8", "#60A5FA"];
+
 export function FleetDistributionChart({ data = [] }: FleetDistributionChartProps) {
-  const chartConfig = data.reduce<ChartConfig>(
+  const chartData = data.map((entry, index) => ({
+    ...entry,
+    fill: entry.color || FLEET_COLORS[index % FLEET_COLORS.length],
+  }));
+
+  const chartConfig = chartData.reduce<ChartConfig>(
     (acc, entry) => {
       acc[entry.name] = {
         label: entry.name,
+        color: entry.fill,
       };
       return acc;
     },
@@ -32,7 +40,7 @@ export function FleetDistributionChart({ data = [] }: FleetDistributionChartProp
     <PieLegendCard
       title="Fleet Distribution"
       description="Vehicle mix by type"
-      data={data}
+      data={chartData}
       config={chartConfig}
       emptyMessage="No fleet data available"
       chartClassName="max-h-[300px]"

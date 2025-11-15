@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { TrendingUp } from "lucide-react";
 import { Label, Pie, PieChart } from "recharts";
 import {
   Card,
@@ -27,40 +26,41 @@ interface DriverStatusChartProps {
   data?: DriverStatusData[];
 }
 
-const DEFAULT_COLORS = ["#1D4ED8", "#60A5FA"];
+const PALETTE = ["#1D4ED8", "#60A5FA"];
 
 export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
-  const chartData = React.useMemo(() => {
-    return data.map((entry, index) => {
-      const fill = DEFAULT_COLORS[index % DEFAULT_COLORS.length];
-      return {
-        status: entry.status || `Status ${index + 1}`,
+  const chartData = React.useMemo(
+    () =>
+      data.map((entry, idx) => ({
+        id: `driver-status-${idx}`,
+        label: entry.status || `Status ${idx + 1}`,
         drivers: entry.count ?? 0,
-        fill,
-        key: `segment-${index}`,
-      };
-    });
-  }, [data]);
+        fill: PALETTE[idx % PALETTE.length],
+      })),
+    [data]
+  );
 
-  const chartConfig = React.useMemo(() => {
-    return chartData.reduce<ChartConfig>(
-      (acc, entry) => {
-        acc[entry.key] = {
-          label: entry.status,
-          color: entry.fill,
-        };
-        return acc;
-      },
-      {
-        drivers: {
-          label: "Drivers",
-        },
-      } as ChartConfig
-    );
-  }, [chartData]);
+  const chartConfig = React.useMemo(
+    () =>
+      chartData.reduce<ChartConfig>(
+        (config, slice) => ({
+          ...config,
+          [slice.id]: {
+            label: slice.label,
+            color: slice.fill,
+          },
+        }),
+        {
+          drivers: {
+            label: "Drivers",
+          },
+        } as ChartConfig
+      ),
+    [chartData]
+  );
 
   const totalDrivers = React.useMemo(
-    () => chartData.reduce((acc, curr) => acc + curr.drivers, 0),
+    () => chartData.reduce((sum, slice) => sum + slice.drivers, 0),
     [chartData]
   );
 
@@ -84,7 +84,7 @@ export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
               <Pie
                 data={chartData}
                 dataKey="drivers"
-                nameKey="key"
+                nameKey="id"
                 innerRadius={60}
                 strokeWidth={5}
               >
@@ -127,14 +127,10 @@ export function DriverStatusChart({ data = [] }: DriverStatusChartProps) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 leading-none font-medium">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-        </div>
-        <div className="text-muted-foreground leading-none">
-          Showing driver availability for the latest period
-        </div>
+      <CardFooter className="text-sm text-muted-foreground">
+        Two-tone driver availability snapshot
       </CardFooter>
     </Card>
   );
 }
+
