@@ -16,6 +16,16 @@ import {
 } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 
+const DEFAULT_PIE_COLORS = [
+  "#C7D2FE",
+  "#A5B4FC",
+  "#93C5FD",
+  "#60A5FA",
+  "#3B82F6",
+  "#2563EB",
+  "#1D4ED8",
+];
+
 interface PieLegendCardProps {
   title: string;
   description?: string;
@@ -38,6 +48,12 @@ export function PieLegendCard({
   chartClassName,
 }: PieLegendCardProps) {
   const hasData = data && data.length > 0;
+  const normalizedData = hasData
+    ? data.map((entry, index) => ({
+        ...entry,
+        fill: DEFAULT_PIE_COLORS[index % DEFAULT_PIE_COLORS.length],
+      }))
+    : [];
 
   return (
     <Card className="flex flex-col">
@@ -52,7 +68,7 @@ export function PieLegendCard({
             className={cn("mx-auto aspect-square max-h-[300px]", chartClassName)}
           >
             <PieChart>
-              <Pie data={data} dataKey={valueKey} nameKey={nameKey} />
+              <Pie data={normalizedData} dataKey={valueKey} nameKey={nameKey} />
               <ChartLegend
                 content={<ChartLegendContent nameKey={nameKey} />}
                 className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"

@@ -21,25 +21,10 @@ export function TripsByStatusChart({ trips }: TripsByStatusChartProps) {
     value
   }));
   
-  // Colors for different statuses
-  const COLORS = {
-    'Completed': '#10b981', // green
-    'Scheduled': '#3b82f6', // blue
-    'In Progress': '#f59e0b', // amber
-    'Cancelled': '#ef4444', // red
-    'Unknown': '#6b7280', // gray
-  };
-
-  const pieData = chartData.map((entry) => ({
-    ...entry,
-    fill: COLORS[entry.name as keyof typeof COLORS] || "#6b7280",
-  }));
-
-  const chartConfig = pieData.reduce<ChartConfig>(
+  const chartConfig = chartData.reduce<ChartConfig>(
     (acc, entry) => {
       acc[entry.name] = {
         label: entry.name,
-        color: entry.fill,
       };
       return acc;
     },
@@ -54,7 +39,7 @@ export function TripsByStatusChart({ trips }: TripsByStatusChartProps) {
     <PieLegendCard
       title="Trips by Status"
       description="Distribution of trips by current status"
-      data={pieData}
+      data={chartData}
       config={chartConfig}
       emptyMessage="No trip status data available"
     />

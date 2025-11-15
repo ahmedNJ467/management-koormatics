@@ -237,16 +237,15 @@ export function DriverAnalytics({
 
   // Status distribution data for pie chart
   const statusData = [
-    { name: "Active", value: activeDrivers, fill: "#10b981" },
-    { name: "On Leave", value: onLeaveDrivers, fill: "#f59e0b" },
-    { name: "Inactive", value: inactiveDrivers, fill: "#ef4444" },
+    { name: "Active", value: activeDrivers },
+    { name: "On Leave", value: onLeaveDrivers },
+    { name: "Inactive", value: inactiveDrivers },
   ];
 
   const statusChartConfig = statusData.reduce<ChartConfig>(
     (acc, entry) => {
       acc[entry.name] = {
         label: entry.name,
-        color: entry.fill,
       };
       return acc;
     },

@@ -1,5 +1,5 @@
 import { TabsContent } from "@/components/ui/tabs";
-import { CategoryData, COLORS } from "@/lib/types/cost-analytics";
+import { CategoryData } from "@/lib/types/cost-analytics";
 import { PieLegendCard } from "@/components/charts/PieLegendCard";
 import { ChartConfig } from "@/components/ui/chart";
 
@@ -8,18 +8,13 @@ interface CategoriesTabProps {
   fuelTypes: CategoryData[];
 }
 
-const buildChartData = (data: CategoryData[]) =>
-  data.map((entry, index) => ({
-    ...entry,
-    fill: COLORS[index % COLORS.length],
-  }));
+const buildChartData = (data: CategoryData[]) => data;
 
 const buildChartConfig = (data: ReturnType<typeof buildChartData>, label: string) =>
   data.reduce<ChartConfig>(
     (acc, entry) => {
       acc[entry.name] = {
         label: entry.name,
-        color: entry.fill,
       };
       return acc;
     },

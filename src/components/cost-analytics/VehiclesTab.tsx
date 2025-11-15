@@ -17,7 +17,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { VehicleCostData } from "@/lib/types/cost-analytics";
-import { COLORS } from "@/lib/types/cost-analytics";
 import {
   Table,
   TableBody,
@@ -106,16 +105,12 @@ export const VehiclesTab = ({ vehicleCosts }: VehiclesTabProps) => {
     });
   }
 
-  const pieChartData = pieData.map((entry, index) => ({
-    ...entry,
-    fill: COLORS[index % COLORS.length],
-  }));
+  const pieChartData = pieData;
 
   const costChartConfig = pieChartData.reduce<ChartConfig>(
     (acc, entry) => {
       acc[entry.name] = {
         label: entry.name,
-        color: entry.fill,
       };
       return acc;
     },
