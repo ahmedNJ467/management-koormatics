@@ -39,7 +39,7 @@ export function MaintenanceCostsChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height={height}>
       <BarChart
         data={data}
         margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
