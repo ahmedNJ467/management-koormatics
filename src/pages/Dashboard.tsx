@@ -1301,18 +1301,8 @@ export default function Dashboard() {
             </LazyWrapper>
             </div>
           </div>
-
-          <div className="bg-card border border-border p-4">
-              <h3 className="text-sm font-medium text-foreground mb-4">
-            Fleet Availability
-          </h3>
-          <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <PerformanceMetricsChart data={performanceMetrics} compact />
-            </LazyWrapper>
-              </div>
-            </div>
-          </div>
+          {/* Fleet Availability card removed as per request */}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
           <div className="bg-card border border-border p-4">
@@ -1373,16 +1363,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-card border border-border p-4">
-                  <h3 className="text-sm font-medium text-foreground mb-4">
-                    Fleet Availability
-                  </h3>
-                  <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <PerformanceMetricsChart data={performanceMetrics} compact />
-            </LazyWrapper>
-          </div>
-        </div>
+                {/* Fleet Availability card removed as per request */}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -1525,26 +1506,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Summary Sections */}
-        <div className="space-y-6">
-          {summarySections.map((section, index) => (
-            <div key={section.title ?? `section-${index}`}>
-              {section.title ? (
-                <h2 className="text-sm font-medium text-muted-foreground mb-3">
-                  {section.title}
-                </h2>
-              ) : null}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {section.cards.map((card) => (
-                  <SummaryCard
-                    key={`${section.title ?? index}-${card.title}`}
-                    {...card}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Summary Sections removed as per request */}
 
         {/* Main Content */}
         <div className="space-y-6">
