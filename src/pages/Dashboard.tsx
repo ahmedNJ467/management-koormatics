@@ -854,13 +854,45 @@ export default function Dashboard() {
   const driverCoverage =
     totalVehicles > 0 ? Math.round((activeDrivers / totalVehicles) * 100) : 0;
 
+  // Determine unavailable vehicles using distinct vehicle IDs in active maintenance or trips
+  const vehiclesInMaintenance = useMemo(() => {
+    const set = new Set<string>();
+    (maintenance || [])
+      .filter(
+        (m: any) => m && ["scheduled", "in_progress"].includes(m.status || "")
+      )
+      .forEach((m: any) => {
+        if (m.vehicle_id) set.add(String(m.vehicle_id));
+      });
+    return set;
+  }, [maintenance]);
+
+  const vehiclesInActiveTrips = useMemo(() => {
+    const set = new Set<string>();
+    const activeTripStatuses = new Set([
+      "scheduled",
+      "in_progress",
+      "assigned",
+      "en_route",
+    ]);
+    (trips || [])
+      .filter((t: any) => t && activeTripStatuses.has(t.status || ""))
+      .forEach((t: any) => {
+        if (t.vehicle_id) set.add(String(t.vehicle_id));
+      });
+    return set;
+  }, [trips]);
+
+  const unavailableDistinct = useMemo(() => {
+    const union = new Set<string>(vehiclesInMaintenance);
+    vehiclesInActiveTrips.forEach((id) => union.add(id));
+    return union.size;
+  }, [vehiclesInMaintenance, vehiclesInActiveTrips]);
+
   // Fleet availability: clamp within 0–100 and guard against double-counts exceeding fleet size
   const fleetAvailability = (() => {
     if (totalVehicles <= 0) return 0;
-    const unavailable = Math.min(
-      totalVehicles,
-      Math.max(0, pendingMaintenance) + Math.max(0, inProgressTrips)
-    );
+    const unavailable = Math.min(totalVehicles, Math.max(0, unavailableDistinct));
     const raw = Math.round(((totalVehicles - unavailable) / totalVehicles) * 100);
     return Math.max(0, Math.min(100, raw));
   })();
