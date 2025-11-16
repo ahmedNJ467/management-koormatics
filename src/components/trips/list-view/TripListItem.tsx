@@ -213,21 +213,29 @@ export function TripListItem({
       <TableCell>
         <div className="flex items-center gap-1">
           {(() => {
-            // Debug logging to identify undefined type values
+            // Normalize trip type with sensible fallbacks
+            const normalizedType =
+              (trip.type && String(trip.type)) ||
+              (trip.ui_service_type && String(trip.ui_service_type)) ||
+              (trip.display_type && String(trip.display_type)) ||
+              "unknown";
             if (!trip.type) {
-              console.warn(
-                "TripListItem: trip.type is undefined/null for trip:",
-                {
-                  id: trip.id,
-                  service_type: trip.service_type,
-                  display_type: trip.display_type,
-                  ui_service_type: trip.ui_service_type,
-                }
-              );
+              // Log once per row to aid debugging without spamming
+              console.warn("TripListItem: trip.type missing, using fallback", {
+                id: trip.id,
+                fallback: normalizedType,
+              });
             }
-            return <TripTypeIcon type={trip.type} />;
+            return <TripTypeIcon type={normalizedType} />;
           })()}
-          {formatTripType(trip.type, trip.ui_service_type, trip.notes)}
+          {formatTripType(
+            trip.type ||
+              trip.ui_service_type ||
+              trip.display_type ||
+              "unknown",
+            trip.ui_service_type,
+            trip.notes
+          )}
         </div>
       </TableCell>
       <TableCell className="max-w-[200px]">
