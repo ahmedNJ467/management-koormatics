@@ -1007,12 +1007,7 @@ export default function Dashboard() {
                 subtitle: `${criticalIncidents} critical`,
                 icon: AlertTriangle,
               },
-              {
-                title: "In Progress",
-                value: inProgressTrips,
-                subtitle: `${scheduledTrips} scheduled`,
-                icon: TrendingUp,
-              },
+              // Removed 'In Progress' summary card for Fleet portal per request
               // Spare Parts card removed per user request
             ],
           },
@@ -1245,37 +1240,20 @@ export default function Dashboard() {
 
   const renderFleetOrOperationsCharts = () => (
     <>
-              <div className="bg-card border border-border p-4">
-                <h3 className="text-sm font-medium text-foreground mb-4">
-                  Fuel Consumption
-                </h3>
-        <div className="h-[320px] w-full">
-          <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
-                    <FuelConsumptionChart
-                      data={chartData?.fuelConsumptionData || []}
-                      compact
-                    />
-                  </LazyWrapper>
-                </div>
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="bg-card border border-border p-4">
-                  <h3 className="text-sm font-medium text-foreground mb-4">
-                    Maintenance Costs
-                  </h3>
-                  <div className="h-[250px] w-full">
-                    <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                      <MaintenanceCostsChart
-                        data={chartData?.maintenanceCostsData || []}
-                        compact
-                      />
-                    </LazyWrapper>
-                  </div>
-                </div>
-      </div>
-
       <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Maintenance Costs
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <MaintenanceCostsChart
+                data={chartData?.maintenanceCostsData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
         <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Fleet Distribution
@@ -1285,6 +1263,32 @@ export default function Dashboard() {
               <FleetDistributionChart
                 data={chartData?.fleetDistributionData || []}
               />
+            </LazyWrapper>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Fuel Consumption
+          </h3>
+          <div className="h-[320px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
+              <FuelConsumptionChart
+                data={chartData?.fuelConsumptionData || []}
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Driver Availability
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <DriverStatusChart data={driverStatusChartData} />
             </LazyWrapper>
           </div>
         </div>
