@@ -957,22 +957,10 @@ export default function Dashboard() {
                 icon: Car,
               },
               {
-                title: "Drivers",
-                value: totalDrivers,
-                subtitle: `${activeDrivers} active`,
-                icon: Users,
-              },
-              {
                 title: "Maintenance",
                 value: pendingMaintenance,
                 subtitle: "Scheduled tasks",
                 icon: Wrench,
-              },
-              {
-                title: "Fuel Logs",
-                value: totalFuelLogs,
-                subtitle: "Entries logged",
-                icon: Fuel,
               },
             ],
           },
@@ -1008,22 +996,10 @@ export default function Dashboard() {
                 icon: Car,
               },
               {
-                title: "Active Drivers",
-                value: activeDrivers,
-                subtitle: `${totalDrivers} total`,
-                icon: Users,
-              },
-              {
                 title: "Maintenance Tasks",
                 value: pendingMaintenance,
                 subtitle: "Scheduled",
                 icon: Wrench,
-              },
-              {
-                title: "Fuel Logs",
-                value: totalFuelLogs,
-                subtitle: "Entries logged",
-                icon: Fuel,
               },
               {
                 title: "Trips",
@@ -1072,22 +1048,10 @@ export default function Dashboard() {
                 icon: XCircle,
               },
               {
-                title: "Active Drivers",
-                value: activeDrivers,
-                subtitle: `${totalDrivers} total`,
-                icon: Users,
-              },
-              {
                 title: "Maintenance Tasks",
                 value: pendingMaintenance,
                 subtitle: "Scheduled",
                 icon: Wrench,
-              },
-              {
-                title: "Fuel Logs",
-                value: totalFuelLogs,
-                subtitle: "Entries logged",
-                icon: Fuel,
               },
               {
                 title: "Incidents",
@@ -1256,6 +1220,16 @@ export default function Dashboard() {
             </LazyWrapper>
           </div>
         </div>
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
+            Driver Availability
+          </h3>
+          <div className="h-[250px] w-full">
+            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+              <DriverStatusChart data={driverStatusChartData} />
+            </LazyWrapper>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -1313,6 +1287,16 @@ export default function Dashboard() {
                         data={chartData?.maintenanceCostsData || []}
                         compact
                       />
+                    </LazyWrapper>
+                  </div>
+                </div>
+                <div className="bg-card border border-border p-4">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Driver Availability
+                  </h3>
+                  <div className="h-[250px] w-full">
+                    <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                      <DriverStatusChart data={driverStatusChartData} />
                     </LazyWrapper>
                   </div>
                 </div>
