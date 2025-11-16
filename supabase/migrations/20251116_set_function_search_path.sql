@@ -13,7 +13,7 @@ BEGIN
       AND p.proname = 'update_part_notes'
       AND pg_get_function_identity_arguments(p.oid) = 'uuid, text'
   ) THEN
-    ALTER FUNCTION public.update_part_notes(uuid, text) SET search_path = public;
+    ALTER FUNCTION public.update_part_notes(uuid, text) SET search_path = pg_catalog, public;
   END IF;
 END $$;
 
@@ -26,7 +26,7 @@ BEGIN
     WHERE n.nspname = 'public' AND p.proname = 'update_maintenance_updated_at'
       AND pg_get_function_identity_arguments(p.oid) = ''
   ) THEN
-    ALTER FUNCTION public.update_maintenance_updated_at() SET search_path = public;
+    ALTER FUNCTION public.update_maintenance_updated_at() SET search_path = pg_catalog, public;
   END IF;
 END $$;
 
@@ -39,7 +39,7 @@ BEGIN
     WHERE n.nspname = 'public' AND p.proname = 'handle_new_user'
       AND pg_get_function_identity_arguments(p.oid) = ''
   ) THEN
-    ALTER FUNCTION public.handle_new_user() SET search_path = public;
+    ALTER FUNCTION public.handle_new_user() SET search_path = pg_catalog, public;
   END IF;
 END $$;
 
@@ -52,7 +52,7 @@ BEGIN
     WHERE n.nspname = 'public' AND p.proname = 'is_super_admin'
       AND position('uuid' in pg_get_function_identity_arguments(p.oid)) = 1
   ) THEN
-    ALTER FUNCTION public.is_super_admin(uuid) SET search_path = public;
+    ALTER FUNCTION public.is_super_admin(uuid) SET search_path = pg_catalog, public;
   END IF;
 END $$;
 
@@ -65,7 +65,7 @@ BEGIN
     WHERE n.nspname = 'public' AND p.proname = 'get_user_roles'
       AND position('uuid' in pg_get_function_identity_arguments(p.oid)) = 1
   ) THEN
-    ALTER FUNCTION public.get_user_roles(uuid) SET search_path = public;
+    ALTER FUNCTION public.get_user_roles(uuid) SET search_path = pg_catalog, public;
   END IF;
 END $$;
 
@@ -78,7 +78,7 @@ BEGIN
     WHERE n.nspname = 'public' AND p.proname = 'get_current_user_id'
       AND pg_get_function_identity_arguments(p.oid) = ''
   ) THEN
-    ALTER FUNCTION public.get_current_user_id() SET search_path = public;
+    ALTER FUNCTION public.get_current_user_id() SET search_path = pg_catalog, public;
   END IF;
 END $$;
 
@@ -91,7 +91,7 @@ BEGIN
     WHERE n.nspname = 'public' AND p.proname = 'update_updated_at_column'
       AND pg_get_function_identity_arguments(p.oid) = ''
   ) THEN
-    ALTER FUNCTION public.update_updated_at_column() SET search_path = public;
+    ALTER FUNCTION public.update_updated_at_column() SET search_path = pg_catalog, public;
   END IF;
 END $$;
 
