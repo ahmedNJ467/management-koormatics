@@ -854,14 +854,16 @@ export default function Dashboard() {
   const driverCoverage =
     totalVehicles > 0 ? Math.round((activeDrivers / totalVehicles) * 100) : 0;
 
-  const fleetAvailability =
-    totalVehicles > 0
-      ? Math.round(
-          ((totalVehicles - pendingMaintenance - inProgressTrips) /
-            totalVehicles) *
-            100
-        )
-      : 0;
+  // Fleet availability: clamp within 0–100 and guard against double-counts exceeding fleet size
+  const fleetAvailability = (() => {
+    if (totalVehicles <= 0) return 0;
+    const unavailable = Math.min(
+      totalVehicles,
+      Math.max(0, pendingMaintenance) + Math.max(0, inProgressTrips)
+    );
+    const raw = Math.round(((totalVehicles - unavailable) / totalVehicles) * 100);
+    return Math.max(0, Math.min(100, raw));
+  })();
 
   const performanceMetrics = [
     {
