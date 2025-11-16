@@ -227,13 +227,13 @@ export function useDashboardChartsData(
               .filter((m) =>
                 (m.description || "").toLowerCase().includes("service")
               )
-              .reduce((sum, m) => sum + safeNumber(m.cost), 0);
+              .reduce((sum, m) => sum + safeNumber((m as any).expense ?? (m as any).cost), 0);
 
             const repairsTotal = monthMaintenance
               .filter(
                 (m) => !(m.description || "").toLowerCase().includes("service")
               )
-              .reduce((sum, m) => sum + safeNumber(m.cost), 0);
+              .reduce((sum, m) => sum + safeNumber((m as any).expense ?? (m as any).cost), 0);
 
             return {
               month,
@@ -254,7 +254,7 @@ export function useDashboardChartsData(
             });
 
             const totalCost = monthMaintenance.reduce(
-              (sum, m) => sum + safeNumber(m.cost),
+              (sum, m) => sum + safeNumber((m as any).expense ?? (m as any).cost),
               0
             );
 
