@@ -980,18 +980,6 @@ export default function Dashboard() {
             title: "Financial & Operations",
             cards: [
               {
-                title: "Invoices",
-                value: totalInvoices,
-                subtitle: `${outstandingInvoices} outstanding`,
-                icon: FileText,
-              },
-              {
-                title: "Quotations",
-                value: totalQuotations,
-                subtitle: `${pendingQuotations} pending`,
-                icon: DollarSign,
-              },
-              {
                 title: "Trips",
                 value: totalTrips,
                 subtitle: `${completedTrips} completed`,
@@ -1008,24 +996,6 @@ export default function Dashboard() {
           {
             title: "Security, Leasing & Inventory",
             cards: [
-              {
-                title: "Security Guards",
-                value: totalGuards,
-                subtitle: `${activeGuards} active`,
-                icon: Shield,
-              },
-              {
-                title: "Incidents",
-                value: totalIncidents,
-                subtitle: `${criticalIncidents} critical`,
-                icon: AlertTriangle,
-              },
-              {
-                title: "Leasing",
-                value: activeLeases,
-                subtitle: `${totalLeases} total`,
-                icon: TrendingUp,
-              },
               {
                 title: "Spare Parts",
                 value: totalParts,
@@ -1288,7 +1258,7 @@ export default function Dashboard() {
           </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-          <div className="bg-card border border-border p-4">
+        <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Maintenance Costs
           </h3>
@@ -1299,9 +1269,8 @@ export default function Dashboard() {
                 compact
               />
             </LazyWrapper>
-            </div>
           </div>
-          {/* Fleet Availability card removed as per request */}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -1354,7 +1323,7 @@ export default function Dashboard() {
                     Maintenance Costs
                   </h3>
                   <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
+                    <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
                       <MaintenanceCostsChart
                         data={chartData?.maintenanceCostsData || []}
                         compact
@@ -1362,8 +1331,6 @@ export default function Dashboard() {
                     </LazyWrapper>
                   </div>
                 </div>
-
-                {/* Fleet Availability card removed as per request */}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -1416,46 +1383,22 @@ export default function Dashboard() {
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
               <MaintenanceCostsChart
                 data={chartData?.maintenanceCostsData || []}
-                      compact
-                    />
-                </LazyWrapper>
-                  </div>
-                </div>
+                compact
+              />
+            </LazyWrapper>
+          </div>
+        </div>
 
-            <div className="bg-card border border-border p-4">
-              <h3 className="text-sm font-medium text-foreground mb-4">
+        <div className="bg-card border border-border p-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">
             Fuel Consumption
-              </h3>
+          </h3>
           <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
               <FuelConsumptionChart
                 data={chartData?.fuelConsumptionData || []}
                 compact
               />
-            </LazyWrapper>
-              </div>
-            </div>
-        </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
-            Fleet Availability
-          </h3>
-          <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <PerformanceMetricsChart data={performanceMetrics} compact />
-            </LazyWrapper>
-      </div>
-    </div>
-
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
-            Driver Availability
-          </h3>
-          <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <DriverStatusChart data={driverStatusChartData} />
             </LazyWrapper>
           </div>
         </div>
@@ -1506,7 +1449,26 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Summary Sections removed as per request */}
+        {/* Summary Sections */}
+        <div className="space-y-6">
+          {summarySections.map((section, index) => (
+            <div key={section.title ?? `section-${index}`}>
+              {section.title ? (
+                <h2 className="text-sm font-medium text-muted-foreground mb-3">
+                  {section.title}
+                </h2>
+              ) : null}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {section.cards.map((card) => (
+                  <SummaryCard
+                    key={`${section.title ?? index}-${card.title}`}
+                    {...card}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Main Content */}
         <div className="space-y-6">
