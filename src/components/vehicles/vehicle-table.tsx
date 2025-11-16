@@ -91,13 +91,7 @@ export const VehicleTable = memo(
       }
     };
 
-    const getTypeIcon = (type: string) => {
-      return type === "armoured" ? (
-        <Shield className="h-4 w-4" />
-      ) : (
-        <CarIcon className="h-4 w-4" />
-      );
-    };
+    // Icons removed per request; show plain text only for type
 
     const isInsuranceExpiringSoon = (expiryDate: string | null) => {
       if (!expiryDate) return false;
@@ -265,14 +259,13 @@ export const VehicleTable = memo(
                       </div>
                     </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getTypeIcon(vehicle.type)}
-                      <span className="capitalize">
-                        {vehicle.type ? vehicle.type.replace("_", " ") : (
-                          <span className="text-muted-foreground italic">Not specified</span>
-                        )}
-                      </span>
-                    </div>
+                    <span className="capitalize">
+                      {vehicle.type ? (
+                        vehicle.type.replace("_", " ")
+                      ) : (
+                        <span className="text-muted-foreground italic">Not specified</span>
+                      )}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
