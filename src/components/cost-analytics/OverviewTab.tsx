@@ -47,7 +47,8 @@ export const OverviewTab = ({
   // Prepare data for charts
   const chartData = monthlyData.map((item) => ({
     ...item,
-    total: (item.maintenance || 0) + (item.fuel || 0),
+    total:
+      (item.maintenance || 0) + (item.fuel || 0) + (item.spareParts || 0),
   }));
 
   // Prepare revenue vs expenses data

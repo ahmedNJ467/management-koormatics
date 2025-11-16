@@ -36,7 +36,9 @@ export function calculateMonthlyData(
     completedMaintenance.forEach((item) => {
       if (item.date) {
         const month = new Date(item.date).getMonth();
-        monthlyData[month].maintenance += Number(item.cost || 0);
+        monthlyData[month].maintenance += Number(
+          (item as any).expense ?? (item as any).cost ?? 0
+        );
       }
     });
   }
@@ -52,14 +54,13 @@ export function calculateMonthlyData(
 
   if (sparePartsData && Array.isArray(sparePartsData)) {
     sparePartsData.forEach((item) => {
-      // Use last_used_date or purchase_date for spare parts
-      const dateString = item.last_used_date || item.purchase_date;
-      const quantityUsed = Number(item.quantity_used || 0);
-
-      if (dateString && quantityUsed > 0) {
+      // Use purchase_date primarily for inventory value accounting
+      const dateString = item.purchase_date || item.last_used_date;
+      if (dateString) {
         const month = new Date(dateString).getMonth();
+        const quantity = Number(item.quantity || 0);
         const costPerUnit = Number(item.unit_price || 0);
-        monthlyData[month].spareParts += quantityUsed * costPerUnit;
+        monthlyData[month].spareParts += quantity * costPerUnit;
       }
     });
   }
