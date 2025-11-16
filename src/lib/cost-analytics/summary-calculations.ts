@@ -23,13 +23,11 @@ export function calculateSummaryCosts(
 
   // Calculate maintenance costs
   const maintenanceCosts = completedMaintenance.reduce((sum, item) => {
-    const cost = Number(
-      (item as any)?.expense ?? (item as any)?.cost ?? 0
-    );
+    const cost = Number(item?.cost || 0);
     if (isNaN(cost)) {
       console.warn(
         "Invalid maintenance cost:",
-        (item as any)?.expense ?? (item as any)?.cost,
+        item?.cost,
         "for item:",
         item?.id
       );

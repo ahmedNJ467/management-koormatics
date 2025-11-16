@@ -84,11 +84,13 @@ export function calculateFinancialData(
     completedMaintenance.length
   );
 
-  // Calculate maintenance costs
-  const maintenanceCosts = completedMaintenance.reduce(
-    (sum, record) => sum + Number(record.cost || 0),
-    0
-  );
+  // Calculate maintenance costs (External Expense)
+  const maintenanceCosts = completedMaintenance.reduce((sum, record) => {
+    const externalExpense = Number(
+      (record as any).expense ?? (record as any).cost ?? 0
+    );
+    return sum + externalExpense;
+  }, 0);
 
   // Calculate fuel costs
   const fuelCosts = safeFuelData.reduce(
@@ -96,28 +98,12 @@ export function calculateFinancialData(
     0
   );
 
-  // Calculate spare parts usage costs - only include parts that have been used
+  // Calculate spare parts costs - total value from Spare Parts page (inventory value within year scope)
   const sparePartsCosts = safeSparePartsData.reduce((sum, part) => {
-    // Only include parts with usage (quantity_used > 0) regardless of status
-    const quantityUsed = Number(part.quantity_used || 0);
-    if (quantityUsed > 0) {
-      const costPerUnit = Number(part.unit_price || 0);
-      const usageCost = quantityUsed * costPerUnit;
-
-      console.log(
-        "Part usage:",
-        part.name,
-        "Quantity used:",
-        quantityUsed,
-        "Cost per unit:",
-        costPerUnit,
-        "Usage cost:",
-        usageCost
-      );
-
-      return sum + usageCost;
-    }
-    return sum;
+    const quantity = Number(part.quantity || 0);
+    const price = Number(part.unit_price || 0);
+    const value = quantity * price;
+    return sum + value;
   }, 0);
 
   // Calculate total expenses - include spare parts within maintenance costs
@@ -155,9 +141,10 @@ export function calculateFinancialData(
     averageTripRevenue,
     monthlyData,
     expenseBreakdown: {
-      maintenance: maintenanceCosts + sparePartsCosts, // Include parts in maintenance
+      // Show each category explicitly: maintenance external expense, fuel, and spare parts inventory value
+      maintenance: maintenanceCosts,
       fuel: fuelCosts,
-      spareParts: 0, // Set to 0 since included in maintenance
+      spareParts: sparePartsCosts,
     },
     revenueBreakdown: {
       trips: tripRevenue,
@@ -270,7 +257,7 @@ function calculateMonthlyFinancialData(
       });
   }
 
-  // Process maintenance expenses by month
+  // Process maintenance expenses by month (External Expense)
   if (Array.isArray(maintenanceData)) {
     maintenanceData.forEach((record) => {
       if (!record.date) return;
@@ -301,7 +288,7 @@ function calculateMonthlyFinancialData(
           };
         }
 
-        const cost = Number(record.cost || 0);
+        const cost = Number((record as any).expense ?? (record as any).cost ?? 0);
         const monthData = months[monthKey];
         if (monthData) {
           monthData.maintenance = (monthData.maintenance || 0) + cost;
@@ -356,53 +343,50 @@ function calculateMonthlyFinancialData(
     });
   }
 
-  // Process spare parts expenses by month - only include parts that have been used
+  // Process spare parts expenses by month - total value of parts (by purchase date)
   if (Array.isArray(sparePartsData)) {
     sparePartsData.forEach((part) => {
-      // Only process parts with usage (quantity_used > 0) regardless of status
-      const quantityUsed = Number(part.quantity_used || 0);
-      if (quantityUsed > 0) {
-        const dateString = part.last_used_date || part.purchase_date;
-        if (!dateString) return;
+      const dateString = part.purchase_date || part.last_used_date;
+      if (!dateString) return;
 
-        try {
-          const date = new Date(dateString);
-          if (isNaN(date.getTime())) return; // Skip invalid dates
+      try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return; // Skip invalid dates
 
-          const monthKey = `${date.getFullYear()}-${String(
-            date.getMonth() + 1
-          ).padStart(2, "0")}`;
-          const monthName = date.toLocaleString("default", {
-            month: "short",
-            year: "numeric",
-          });
+        const monthKey = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+        const monthName = date.toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        });
 
-          if (!months[monthKey]) {
-            months[monthKey] = {
-              month: monthName,
-              revenue: 0,
-              expenses: 0,
-              profit: 0,
-              maintenance: 0,
-              fuel: 0,
-              spareParts: 0,
-            };
-          }
-
-          // Calculate cost based on quantity used and cost per unit
-          const costPerUnit = Number(part.unit_price || 0);
-          const cost = quantityUsed * costPerUnit;
-
-          // Include all spare parts usage costs (maintenance cost already includes external services/parts)
-          // Spare parts usage from inventory is a separate cost category
-          const monthData = months[monthKey];
-          if (monthData) {
-            monthData.spareParts = (monthData.spareParts || 0) + cost;
-            monthData.expenses = (monthData.expenses || 0) + cost;
-          }
-        } catch (error) {
-          console.warn("Error processing spare part date:", dateString, error);
+        if (!months[monthKey]) {
+          months[monthKey] = {
+            month: monthName,
+            revenue: 0,
+            expenses: 0,
+            profit: 0,
+            maintenance: 0,
+            fuel: 0,
+            spareParts: 0,
+            tripRevenue: 0,
+            leaseRevenue: 0,
+          };
         }
+
+        // Calculate value based on quantity and unit price
+        const quantity = Number(part.quantity || 0);
+        const costPerUnit = Number(part.unit_price || 0);
+        const cost = quantity * costPerUnit;
+
+        const monthData = months[monthKey];
+        if (monthData) {
+          monthData.spareParts = (monthData.spareParts || 0) + cost;
+          monthData.expenses = (monthData.expenses || 0) + cost;
+        }
+      } catch (error) {
+        console.warn("Error processing spare part date:", dateString, error);
       }
     });
   }
