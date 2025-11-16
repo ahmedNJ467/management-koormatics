@@ -36,9 +36,7 @@ export function calculateMonthlyData(
     completedMaintenance.forEach((item) => {
       if (item.date) {
         const month = new Date(item.date).getMonth();
-        monthlyData[month].maintenance += Number(
-          (item as any).expense ?? (item as any).cost ?? 0
-        );
+        monthlyData[month].maintenance += Number(item.cost || 0);
       }
     });
   }

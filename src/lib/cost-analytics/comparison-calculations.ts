@@ -68,8 +68,7 @@ export function calculateYearComparison(
 
   // Calculate current year costs
   response.maintenance.current = completedMaintenance.reduce(
-    (sum, item) =>
-      sum + Number(((item as any)?.expense ?? (item as any)?.cost) || 0),
+    (sum, item) => sum + Number(item?.cost || 0),
     0
   );
   response.fuel.current = safeFuelData.reduce(
@@ -88,8 +87,7 @@ export function calculateYearComparison(
 
   // Calculate comparison year costs
   response.maintenance.previous = completedComparisonMaintenance.reduce(
-    (sum, item) =>
-      sum + Number(((item as any)?.expense ?? (item as any)?.cost) || 0),
+    (sum, item) => sum + Number(item?.cost || 0),
     0
   );
   response.fuel.previous = safeComparisonFuelData.reduce(
