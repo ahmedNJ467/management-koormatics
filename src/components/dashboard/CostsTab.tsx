@@ -155,7 +155,7 @@ export const CostsTab = ({ costsBreakdown, isLoading = false }: CostsTabProps) =
           <CardContent>
             <div className="h-[300px]">
               {isLoading || loading ? renderSkeletonContent() : (
-                <MaintenanceCostsChart data={chartData.maintenanceCostData} />
+                <MaintenanceCostsChart data={chartData.maintenanceCostsData} />
               )}
             </div>
           </CardContent>
