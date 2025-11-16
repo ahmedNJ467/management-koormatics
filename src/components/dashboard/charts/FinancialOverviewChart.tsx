@@ -1,5 +1,5 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface FinancialOverviewChartProps {
   data?: any[];
@@ -11,6 +11,11 @@ export const FinancialOverviewChart = ({ data = [] }: FinancialOverviewChartProp
       <LineChart data={data}>
         <XAxis dataKey="month" className="text-muted-foreground text-xs" />
         <YAxis className="text-muted-foreground text-xs" />
+        <Legend
+          verticalAlign="bottom"
+          height={24}
+          wrapperStyle={{ color: 'hsl(var(--foreground))', fontSize: '0.875rem' }}
+        />
         <Tooltip 
           contentStyle={{ 
             backgroundColor: 'hsl(var(--background))',
