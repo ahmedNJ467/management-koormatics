@@ -7,6 +7,7 @@ const nextPlugin = require("@next/eslint-plugin-next");
 
 module.exports = tseslint.config(
   {
+    // Move ignores from legacy .eslintignore into this config
     ignores: [
       "dist",
       ".next",
@@ -32,6 +33,10 @@ module.exports = tseslint.config(
       "**/.cache/**",
       "**/node_modules",
       "**/node_modules/**",
+      // Additional common artifacts
+      "coverage/**",
+      "**/*.min.js",
+      "**/*.min.css",
     ],
   },
   // Include Next.js plugin rules so Next can detect the plugin
