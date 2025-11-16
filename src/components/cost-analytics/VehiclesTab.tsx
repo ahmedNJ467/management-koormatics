@@ -84,13 +84,16 @@ export const VehiclesTab = ({ vehicleCosts }: VehiclesTabProps) => {
   const pieData = [...vehicleCosts]
     .sort((a, b) => b.total - a.total)
     .slice(0, 5)
-    .map((vehicle) => ({
-      name:
-        vehicle.vehicle_name.split(" ")[0] +
-        " " +
-        vehicle.vehicle_name.split(" ")[1], // Just make the names shorter
-      value: vehicle.total,
-    }));
+    .map((vehicle) => {
+      const fullName = (vehicle.vehicle_name || "").trim();
+      const parts = fullName.length > 0 ? fullName.split(" ") : [];
+      const shortName =
+        parts.length >= 2 ? `${parts[0]} ${parts[1]}` : fullName || "Unknown";
+      return {
+        name: shortName,
+        value: vehicle.total,
+      };
+    });
 
   // If there are more than 5 vehicles, add an "Others" category
   if (vehicleCosts.length > 5) {
