@@ -26,10 +26,11 @@ interface VehicleTableProps {
   vehicles: Vehicle[];
   onVehicleClick: (vehicle: Vehicle) => void;
   isLoading?: boolean;
+  driversById?: Record<string, { name?: string | null; status?: string | null }>;
 }
 
 export const VehicleTable = memo(
-  ({ vehicles, onVehicleClick, isLoading = false }: VehicleTableProps) => {
+  ({ vehicles, onVehicleClick, isLoading = false, driversById = {} }: VehicleTableProps) => {
     const [loadedImages, setLoadedImages] = React.useState<Set<string>>(new Set());
 
     const handleVehicleClick = useCallback(
@@ -165,9 +166,9 @@ export const VehicleTable = memo(
             <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Registration</TableHead>
-            <TableHead>Year</TableHead>
+            <TableHead>Location</TableHead>
             <TableHead>Insurance</TableHead>
-            <TableHead>VIN</TableHead>
+            <TableHead>Assigned Driver</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -290,7 +291,9 @@ export const VehicleTable = memo(
                     )}
                   </TableCell>
                   <TableCell>
-                    {vehicle.year ? vehicle.year : (
+                    {vehicle.location ? (
+                      <span className="text-sm">{vehicle.location}</span>
+                    ) : (
                       <span className="text-muted-foreground italic">Not specified</span>
                     )}
                   </TableCell>
@@ -323,9 +326,17 @@ export const VehicleTable = memo(
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {vehicle.vin ? vehicle.vin : (
-                      <span className="text-muted-foreground italic">Not specified</span>
+                  <TableCell className="text-sm">
+                    {vehicle.assigned_driver_id ? (
+                      <span>
+                        {driversById[vehicle.assigned_driver_id]?.name ||
+                          "Assigned"}
+                        {driversById[vehicle.assigned_driver_id]?.status
+                          ? ` (${driversById[vehicle.assigned_driver_id]?.status})`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground italic">Unassigned</span>
                     )}
                   </TableCell>
                 </TableRow>

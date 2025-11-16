@@ -12,6 +12,7 @@ import { VehicleTable } from "@/components/vehicles/vehicle-table";
 import { VehicleDetailsDialog } from "@/components/vehicles/vehicle-details-dialog";
 import { VehicleCards } from "@/components/vehicles/vehicle-cards";
 import { VehicleFilters } from "@/components/vehicles/vehicle-filters";
+import { useQuery as useDriversQuery } from "@tanstack/react-query";
 
 export default function Vehicles() {
   const { toast } = useToast();
@@ -163,6 +164,31 @@ export default function Vehicles() {
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Fetch drivers for assigned driver display
+  const { data: drivers = [] } = useDriversQuery({
+    queryKey: ["vehicle-form-drivers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, name, status")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const driversById = useMemo(() => {
+    const map: Record<string, { name?: string | null; status?: string | null }> = {};
+    (drivers as any[]).forEach((d) => {
+      if (d?.id) {
+        map[String(d.id)] = { name: d.name, status: d.status };
+      }
+    });
+    return map;
+  }, [drivers]);
 
   // Filter vehicles based on search and filters
   const filteredVehicles = useMemo(() => {
@@ -336,6 +362,7 @@ export default function Vehicles() {
               vehicles={paginatedVehicles}
               onVehicleClick={handleVehicleClick}
               isLoading={isLoading && vehicles.length === 0}
+              driversById={driversById}
             />
           ) : (
             <VehicleCards
