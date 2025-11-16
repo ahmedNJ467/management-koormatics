@@ -24,15 +24,28 @@ interface FleetDistributionChartProps {
 const PALETTE = ["#1D4ED8", "#60A5FA"];
 
 export function FleetDistributionChart({ data = [] }: FleetDistributionChartProps) {
+  // If real categories exist, drop the placeholder "Unspecified" slice
+  const normalizedData = React.useMemo(() => {
+    const hasNamed = (data || []).some(
+      (d) => d && d.name && d.name.toLowerCase() !== "unspecified"
+    );
+    if (hasNamed) {
+      return (data || []).filter(
+        (d) => d && d.name && d.name.toLowerCase() !== "unspecified"
+      );
+    }
+    return data || [];
+  }, [data]);
+
   const chartData = React.useMemo(
     () =>
-      data.map((entry, index) => ({
+      normalizedData.map((entry, index) => ({
         label: entry.name || `Type ${index + 1}`,
         value: entry.value ?? 0,
         fill: PALETTE[index % PALETTE.length],
         id: `fleet-${index}`,
       })),
-    [data]
+    [normalizedData]
   );
 
   const chartConfig = React.useMemo(
