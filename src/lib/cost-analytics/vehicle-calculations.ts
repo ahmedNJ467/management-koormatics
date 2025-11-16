@@ -19,9 +19,9 @@ export function calculateVehicleCosts(
       const vehicleId = item.vehicle_id;
       if (!vehicleId) return;
       
-      const vehicleName = item.vehicles ? 
-        `${item.vehicles.make} ${item.vehicles.model} - ${item.vehicles.registration}` : 
-        'Unknown Vehicle';
+      const vehicleName = item.vehicles
+        ? `${item.vehicles.make} ${item.vehicles.model} - ${item.vehicles.registration}`
+        : 'Unknown Vehicle';
       
       if (!vehicleCosts[vehicleId]) {
         vehicleCosts[vehicleId] = {
@@ -34,7 +34,7 @@ export function calculateVehicleCosts(
         };
       }
       
-      vehicleCosts[vehicleId].maintenance += Number(item.cost || 0);
+      vehicleCosts[vehicleId].maintenance += Number((item as any).expense ?? (item as any).cost ?? 0);
     });
   }
   
