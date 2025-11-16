@@ -993,17 +993,7 @@ export default function Dashboard() {
               },
             ],
           },
-          {
-            title: "Security, Leasing & Inventory",
-            cards: [
-              {
-                title: "Spare Parts",
-                value: totalParts,
-                subtitle: `${lowStockParts} low stock`,
-                icon: Package,
-              },
-            ],
-          },
+          // Removed entire 'Security, Leasing & Inventory' section per request
         ];
       }
 
@@ -1054,10 +1044,7 @@ export default function Dashboard() {
                 icon: TrendingUp,
               },
               {
-                title: "Spare Parts",
-                value: totalParts,
-                subtitle: `${lowStockParts} low stock`,
-                icon: Package,
+                // Spare Parts card removed per user request
               },
             ],
           },
@@ -1458,7 +1445,7 @@ export default function Dashboard() {
                   {section.title}
                 </h2>
               ) : null}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {section.cards.map((card) => (
                   <SummaryCard
                     key={`${section.title ?? index}-${card.title}`}
