@@ -1043,9 +1043,7 @@ export default function Dashboard() {
                 subtitle: `${scheduledTrips} scheduled`,
                 icon: TrendingUp,
               },
-              {
-                // Spare Parts card removed per user request
-              },
+              // Spare Parts card removed per user request
             ],
           },
         ];
