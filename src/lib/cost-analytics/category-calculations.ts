@@ -12,7 +12,7 @@ export function calculateMaintenanceCategories(
       if (!categories[category]) {
         categories[category] = 0;
       }
-      categories[category] += Number(item.cost);
+      categories[category] += Number((item as any).expense ?? (item as any).cost ?? 0);
     });
   }
   
