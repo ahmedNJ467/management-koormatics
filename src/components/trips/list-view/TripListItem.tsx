@@ -213,19 +213,12 @@ export function TripListItem({
       <TableCell>
         <div className="flex items-center gap-1">
           {(() => {
-            // Normalize trip type with sensible fallbacks
+            // Normalize trip type with sensible fallbacks, but do not log to console
             const normalizedType =
               (trip.type && String(trip.type)) ||
               (trip.ui_service_type && String(trip.ui_service_type)) ||
               (trip.display_type && String(trip.display_type)) ||
               "unknown";
-            if (!trip.type) {
-              // Log once per row to aid debugging without spamming
-              console.warn("TripListItem: trip.type missing, using fallback", {
-                id: trip.id,
-                fallback: normalizedType,
-              });
-            }
             return <TripTypeIcon type={normalizedType} />;
           })()}
           {formatTripType(
