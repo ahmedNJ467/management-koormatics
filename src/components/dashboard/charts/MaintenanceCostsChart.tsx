@@ -38,6 +38,18 @@ export function MaintenanceCostsChart({
     );
   }
 
+  // If all values are zero, show the same empty state instead of a flat line at 0
+  const hasNonZero = data.some((d) => Number(d.cost) > 0);
+  if (!hasNonZero) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm">No maintenance data available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
