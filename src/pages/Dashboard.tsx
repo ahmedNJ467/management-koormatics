@@ -948,8 +948,7 @@ export default function Dashboard() {
       if (isManagementDashboard) {
         return [
           {
-            // Remove section heading label
-            title: undefined as unknown as string,
+            // Single row of four cards
             cards: [
               {
                 title: "Vehicles",
@@ -963,12 +962,6 @@ export default function Dashboard() {
                 subtitle: "Scheduled tasks",
                 icon: Wrench,
               },
-            ],
-          },
-          {
-            // Remove section heading label
-            title: undefined as unknown as string,
-            cards: [
               {
                 title: "Trips",
                 value: totalTrips,
@@ -983,7 +976,6 @@ export default function Dashboard() {
               },
             ],
           },
-          // Removed entire 'Security, Leasing & Inventory' section per request
         ];
       }
 
