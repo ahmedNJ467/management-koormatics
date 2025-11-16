@@ -948,7 +948,8 @@ export default function Dashboard() {
       if (isManagementDashboard) {
         return [
           {
-            title: "Fleet Management",
+            // Remove section heading label
+            title: undefined as unknown as string,
             cards: [
               {
                 title: "Vehicles",
@@ -965,7 +966,8 @@ export default function Dashboard() {
             ],
           },
           {
-            title: "Financial & Operations",
+            // Remove section heading label
+            title: undefined as unknown as string,
             cards: [
               {
                 title: "Trips",
@@ -1220,16 +1222,6 @@ export default function Dashboard() {
             </LazyWrapper>
           </div>
         </div>
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
-            Driver Availability
-          </h3>
-          <div className="h-[250px] w-full">
-            <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <DriverStatusChart data={driverStatusChartData} />
-            </LazyWrapper>
-          </div>
-        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -1287,16 +1279,6 @@ export default function Dashboard() {
                         data={chartData?.maintenanceCostsData || []}
                         compact
                       />
-                    </LazyWrapper>
-                  </div>
-                </div>
-                <div className="bg-card border border-border p-4">
-                  <h3 className="text-sm font-medium text-foreground mb-4">
-                    Driver Availability
-                  </h3>
-                  <div className="h-[250px] w-full">
-                    <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-                      <DriverStatusChart data={driverStatusChartData} />
                     </LazyWrapper>
                   </div>
                 </div>
@@ -1427,7 +1409,7 @@ export default function Dashboard() {
                   {section.title}
                 </h2>
               ) : null}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-4 grid-cols-4">
                 {section.cards.map((card) => (
                   <SummaryCard
                     key={`${section.title ?? index}-${card.title}`}
