@@ -49,7 +49,6 @@ export default function Drivers() {
   const [driverToDelete, setDriverToDelete] = useState<Driver | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [licenseTypeFilter, setLicenseTypeFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const driversPerPage = 20;
@@ -65,7 +64,7 @@ export default function Drivers() {
       const { data, error } = await supabase
         .from("drivers")
         .select(
-          "id, name, contact, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
+          "id, name, contact, location, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
         )
         .order("created_at", { ascending: false });
 
@@ -370,13 +369,9 @@ export default function Drivers() {
       const matchesStatus =
         statusFilter === "all" || driver.status === statusFilter;
 
-      const matchesLicenseType =
-        licenseTypeFilter === "all" ||
-        driver.license_type === licenseTypeFilter;
-
-      return matchesSearch && matchesStatus && matchesLicenseType;
+      return matchesSearch && matchesStatus;
     });
-  }, [drivers, searchTerm, statusFilter, licenseTypeFilter]);
+  }, [drivers, searchTerm, statusFilter]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredDrivers.length / driversPerPage);
@@ -387,15 +382,7 @@ export default function Drivers() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, licenseTypeFilter]);
-
-  // Get unique license types for filter
-  const licenseTypes = useMemo(() => {
-    if (!drivers) return [];
-    return Array.from(
-      new Set(drivers.map((d) => d.license_type).filter(Boolean))
-    ).sort();
-  }, [drivers]);
+  }, [searchTerm, statusFilter]);
 
   // Check if license is expiring soon
   const isLicenseExpiringSoon = (expiryDate: string) => {
@@ -494,26 +481,6 @@ export default function Drivers() {
                     <SelectItem value="on_leave">On Leave</SelectItem>
                   </SelectContent>
                 </Select>
-
-                <Select
-                  value={licenseTypeFilter}
-                  onValueChange={setLicenseTypeFilter}
-                >
-                  <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
-                    <SelectValue placeholder="License Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {licenseTypes.map((type, index) => (
-                      <SelectItem
-                        key={type || `license-type-${index}`}
-                        value={type}
-                      >
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               {/* View Toggle */}
@@ -551,9 +518,7 @@ export default function Drivers() {
           </div>
 
           {/* Active Filters Display */}
-          {(searchTerm ||
-            statusFilter !== "all" ||
-            licenseTypeFilter !== "all") && (
+          {(searchTerm || statusFilter !== "all") && (
             <div className="flex items-center justify-between">
               <div className="flex flex-wrap gap-2">
                 {searchTerm && (
@@ -577,19 +542,6 @@ export default function Drivers() {
                       size="sm"
                       className="h-4 w-4 p-0 hover:bg-transparent"
                       onClick={() => setStatusFilter("all")}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
-                {licenseTypeFilter !== "all" && (
-                  <Badge variant="secondary" className="gap-1">
-                    Type: {licenseTypeFilter}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => setLicenseTypeFilter("all")}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -752,8 +704,8 @@ export default function Drivers() {
                 <TableRow>
                   <TableHead>Driver</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>License Number</TableHead>
-                  <TableHead>License Type</TableHead>
                   <TableHead>Expiry Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>VIP Driver</TableHead>
@@ -798,13 +750,13 @@ export default function Drivers() {
                         <div className="text-sm">{driver.contact}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">
-                          {driver.license_number || "N/A"}
+                        <div className="text-sm">
+                          {driver.location || "N/A"}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
-                          {driver.license_type || "N/A"}
+                        <div className="font-medium">
+                          {driver.license_number || "N/A"}
                         </div>
                       </TableCell>
                       <TableCell>
