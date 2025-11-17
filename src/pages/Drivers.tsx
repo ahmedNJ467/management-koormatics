@@ -61,23 +61,49 @@ export default function Drivers() {
   } = useQuery({
     queryKey: ["drivers"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("drivers")
-        .select(
-          "id, name, contact, location, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
-        )
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("drivers")
+          .select(
+            "id, name, contact, location, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
+          )
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        toast({
-          title: "Error fetching drivers",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
+        if (error) {
+          console.error("Drivers query error:", error);
+          toast({
+            title: "Error fetching drivers",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error;
+        }
+
+        return safeArrayResult<Driver>(data);
+      } catch (err: any) {
+        console.error("Drivers query failed:", err);
+        // If location column doesn't exist, try without it
+        if (err?.message?.includes("location") || err?.code === "42703") {
+          console.warn("Location column not found, retrying without it");
+          const { data, error: retryError } = await supabase
+            .from("drivers")
+            .select(
+              "id, name, contact, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
+            )
+            .order("created_at", { ascending: false });
+          
+          if (retryError) {
+            toast({
+              title: "Error fetching drivers",
+              description: retryError.message,
+              variant: "destructive",
+            });
+            throw retryError;
+          }
+          return safeArrayResult<Driver>(data);
+        }
+        throw err;
       }
-
-      return safeArrayResult<Driver>(data);
     },
     // Ensure the list feels responsive and stays fresh
     staleTime: 5 * 1000,
