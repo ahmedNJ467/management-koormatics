@@ -109,7 +109,18 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     try {
       for (const category of searchCategories) {
         try {
-          let query = supabase.from(category.table).select("*");
+          // Define explicit column selections for each table to avoid 400 errors
+          const columnSelections: Record<string, string> = {
+            vehicles: "id, make, model, registration",
+            drivers: "id, name, contact, license_number",
+            trips: "id, pickup_location, dropoff_location, date",
+            clients: "id, name, email, contact",
+            maintenance: "id, description, service_provider",
+            fuel_logs: "id, date, cost",
+          };
+
+          const selectColumns = columnSelections[category.table] || "*";
+          let query = supabase.from(category.table).select(selectColumns);
 
           if (category.fields.length > 0) {
             // Build OR conditions for text search
