@@ -1,6 +1,7 @@
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver } from "@/lib/types";
 
@@ -13,6 +14,7 @@ interface DeleteDriverDialogProps {
 
 export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: DeleteDriverDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleDeleteDriver = async () => {
     if (!driver) return;
@@ -50,6 +52,12 @@ export function DeleteDriverDialog({ open, onOpenChange, driver, onDelete }: Del
         // Log storage cleanup errors but don't fail the deletion
         console.error("Error cleaning up storage files:", storageError);
       }
+
+      // Invalidate and refetch drivers query to update the list
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["drivers"] }),
+        queryClient.refetchQueries({ queryKey: ["drivers"] }),
+      ]);
 
       toast({
         title: "Driver deleted",

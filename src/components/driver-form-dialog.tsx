@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver } from "@/lib/types";
 import { useDriverForm } from "./driver-form/use-driver-form";
@@ -29,6 +30,7 @@ export function DriverFormDialog({
   onDriverDeleted,
 }: DriverFormDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const {
     form,
@@ -181,6 +183,12 @@ export function DriverFormDialog({
           variant: "destructive",
         });
       }
+
+      // Invalidate and refetch drivers query to update the list
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["drivers"] }),
+        queryClient.refetchQueries({ queryKey: ["drivers"] }),
+      ]);
 
       toast({
         title: `Driver ${driver ? "updated" : "created"} successfully`,
