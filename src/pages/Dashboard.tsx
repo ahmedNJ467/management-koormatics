@@ -223,7 +223,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trips")
-        .select("id, status");
+        .select("id, status, date, time, return_time, actual_pickup_time, actual_dropoff_time, vehicle_id, assigned_vehicle_ids, escort_vehicle_ids, service_type");
       if (error) {
         console.error("Dashboard trips fetch error:", {
           message: (error as any)?.message,
@@ -235,9 +235,9 @@ export default function Dashboard() {
       }
       return data || [];
     },
-    staleTime: 30 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // Reduced to 5 minutes for more accurate time-based availability
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Clients Department
@@ -870,16 +870,159 @@ export default function Dashboard() {
 
   const vehiclesInActiveTrips = useMemo(() => {
     const set = new Set<string>();
-    const activeTripStatuses = new Set([
-      "scheduled",
-      "in_progress",
-      "assigned",
-      "en_route",
-    ]);
+    const now = new Date();
+    const currentTime = now.getTime();
+    
+    // Helper function to parse time string (HH:MM or HH:MM:SS) and combine with date
+    const parseTripDateTime = (dateStr: string, timeStr: string | null): Date | null => {
+      if (!dateStr || !timeStr) return null;
+      try {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const tripDate = new Date(dateStr);
+        tripDate.setHours(hours, minutes || 0, 0, 0);
+        return tripDate;
+      } catch {
+        return null;
+      }
+    };
+    
+    // Helper function to estimate trip duration based on service type (in hours)
+    const estimateTripDuration = (serviceType: string | null | undefined): number => {
+      if (!serviceType) return 2; // Default 2 hours
+      
+      const type = serviceType.toLowerCase();
+      
+      switch (type) {
+        case "full_day":
+          return 12; // Full day = 6am to 6pm (12 hours)
+        case "half_day":
+          return 4; // Half day = 4 hours
+        case "round_trip":
+          return 3; // Round trip typically 2-4 hours, use 3 as average
+        case "airport_pickup":
+        case "airport_dropoff":
+          return 2; // Airport trips typically 1-2 hours, use 2
+        case "one_way_transfer":
+          return 2; // One way typically 1-3 hours depending on distance, use 2
+        default:
+          return 2; // Default 2 hours for unknown types
+      }
+    };
+    
+    // Helper function to get full day hire end time (6pm if start is 6am, otherwise estimate)
+    const getFullDayEndTime = (startTime: Date): Date => {
+      const startHour = startTime.getHours();
+      // If starts at 6am, end at 6pm (12 hours later)
+      if (startHour === 6) {
+        const endTime = new Date(startTime);
+        endTime.setHours(18, 0, 0, 0); // 6pm
+        return endTime;
+      }
+      // Otherwise, add 12 hours from start time
+      return new Date(startTime.getTime() + 12 * 60 * 60 * 1000);
+    };
+    
+    // Helper function to estimate trip end time (uses service type if no return_time)
+    const getTripEndTime = (trip: any): Date | null => {
+      // For in_progress trips, use actual times if available
+      if (trip.status === "in_progress") {
+        if (trip.actual_dropoff_time) {
+          return new Date(trip.actual_dropoff_time);
+        }
+        // If in progress but no dropoff time yet, estimate based on service type
+        if (trip.actual_pickup_time) {
+          const pickupTime = new Date(trip.actual_pickup_time);
+          // Special handling for full day hire
+          if (trip.service_type?.toLowerCase() === "full_day") {
+            return getFullDayEndTime(pickupTime);
+          }
+          const durationHours = estimateTripDuration(trip.service_type);
+          return new Date(pickupTime.getTime() + durationHours * 60 * 60 * 1000);
+        }
+      }
+      
+      // For scheduled trips, use return_time if available
+      if (trip.return_time && trip.date) {
+        return parseTripDateTime(trip.date, trip.return_time);
+      }
+      
+      // If no return_time, estimate based on service type
+      if (trip.time && trip.date) {
+        const startTime = parseTripDateTime(trip.date, trip.time);
+        if (startTime) {
+          // Special handling for full day hire: 6am to 6pm
+          if (trip.service_type?.toLowerCase() === "full_day") {
+            return getFullDayEndTime(startTime);
+          }
+          const durationHours = estimateTripDuration(trip.service_type);
+          return new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
+        }
+      }
+      
+      return null;
+    };
+    
     (trips || [])
-      .filter((t: any) => t && activeTripStatuses.has(t.status || ""))
+      .filter((t: any) => {
+        if (!t) return false;
+        
+        const status = t.status || "";
+        
+        // Only consider scheduled and in_progress trips
+        if (status !== "scheduled" && status !== "in_progress") {
+          return false;
+        }
+        
+        // For in_progress trips: check if currently within trip time window
+        if (status === "in_progress") {
+          // If has actual pickup time, check if we're between pickup and dropoff
+          if (t.actual_pickup_time) {
+            const pickupTime = new Date(t.actual_pickup_time).getTime();
+            const dropoffTime = t.actual_dropoff_time 
+              ? new Date(t.actual_dropoff_time).getTime()
+              : pickupTime + 2 * 60 * 60 * 1000; // Default 2 hours
+            
+            // Vehicle is unavailable if current time is between pickup and dropoff
+            return currentTime >= pickupTime && currentTime <= dropoffTime;
+          }
+          // If in_progress but no actual pickup time, assume unavailable
+          return true;
+        }
+        
+        // For scheduled trips: check if current time is within the scheduled trip window
+        if (status === "scheduled" && t.date && t.time) {
+          const tripStartTime = parseTripDateTime(t.date, t.time);
+          if (!tripStartTime) return false;
+          
+          const tripEndTime = getTripEndTime(t);
+          if (!tripEndTime) return false;
+          
+          // Vehicle is unavailable if current time is between scheduled start and end
+          const startTime = tripStartTime.getTime();
+          const endTime = tripEndTime.getTime();
+          
+          return currentTime >= startTime && currentTime <= endTime;
+        }
+        
+        return false;
+      })
       .forEach((t: any) => {
+        // Add primary vehicle
         if (t.vehicle_id) set.add(String(t.vehicle_id));
+        
+        // Add assigned vehicles (carrier vehicles)
+        if (Array.isArray(t.assigned_vehicle_ids)) {
+          t.assigned_vehicle_ids.forEach((vid: string) => {
+            if (vid) set.add(String(vid));
+          });
+        }
+        
+        // Add escort vehicles
+        if (Array.isArray(t.escort_vehicle_ids)) {
+          t.escort_vehicle_ids.forEach((vid: string) => {
+            if (vid) set.add(String(vid));
+          });
+        }
       });
     return set;
   }, [trips]);
