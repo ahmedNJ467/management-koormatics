@@ -756,6 +756,8 @@ export default function Dashboard() {
 
   // Calculate key metrics - Fleet Management
   const totalVehicles = vehicles?.length || 0;
+  // Only count vehicles with status "active" for availability calculations
+  const activeVehicles = vehicles?.filter((v) => v.status === "active")?.length || 0;
   const activeDrivers =
     drivers?.filter((d) => d.status === "active")?.length || 0;
   const totalDrivers = drivers?.length || 0;
@@ -1027,24 +1029,39 @@ export default function Dashboard() {
     return set;
   }, [trips]);
 
+  // Get set of active vehicle IDs for filtering
+  const activeVehicleIds = useMemo(() => {
+    return new Set<string>(
+      vehicles?.filter((v) => v.status === "active").map((v) => String(v.id)) || []
+    );
+  }, [vehicles]);
+
   const unavailableDistinct = useMemo(() => {
-    const union = new Set<string>(vehiclesInMaintenance);
-    vehiclesInActiveTrips.forEach((id) => union.add(id));
+    const union = new Set<string>();
+    // Only count vehicles that are active
+    vehiclesInMaintenance.forEach((id) => {
+      if (activeVehicleIds.has(id)) union.add(id);
+    });
+    vehiclesInActiveTrips.forEach((id) => {
+      if (activeVehicleIds.has(id)) union.add(id);
+    });
     return union.size;
-  }, [vehiclesInMaintenance, vehiclesInActiveTrips]);
+  }, [vehiclesInMaintenance, vehiclesInActiveTrips, activeVehicleIds]);
 
   // Calculate number of available vehicles
+  // Only vehicles with status "active" can be available
   const availableVehicles = useMemo(() => {
-    if (totalVehicles <= 0) return 0;
-    const unavailable = Math.min(totalVehicles, Math.max(0, unavailableDistinct));
-    return Math.max(0, totalVehicles - unavailable);
-  }, [totalVehicles, unavailableDistinct]);
+    if (activeVehicles <= 0) return 0;
+    const unavailable = Math.min(activeVehicles, Math.max(0, unavailableDistinct));
+    return Math.max(0, activeVehicles - unavailable);
+  }, [activeVehicles, unavailableDistinct]);
 
   // Fleet availability: clamp within 0–100 and guard against double-counts exceeding fleet size
+  // Only calculate based on active vehicles
   const fleetAvailability = (() => {
-    if (totalVehicles <= 0) return 0;
-    const unavailable = Math.min(totalVehicles, Math.max(0, unavailableDistinct));
-    const raw = Math.round(((totalVehicles - unavailable) / totalVehicles) * 100);
+    if (activeVehicles <= 0) return 0;
+    const unavailable = Math.min(activeVehicles, Math.max(0, unavailableDistinct));
+    const raw = Math.round(((activeVehicles - unavailable) / activeVehicles) * 100);
     return Math.max(0, Math.min(100, raw));
   })();
 
