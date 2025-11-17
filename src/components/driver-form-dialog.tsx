@@ -99,6 +99,7 @@ export function DriverFormDialog({
         name: values.name,
         license_number: values.license_number,
         contact: values.contact,
+        location: values.location ?? null,
         license_type: values.license_type,
         license_expiry: values.license_expiry,
         status: values.status,

@@ -20,6 +20,7 @@ export function useDriverForm(driver?: Driver) {
     defaultValues: {
       name: "",
       contact: "",
+      location: "",
       license_number: "",
       license_type: "",
       license_expiry: "",
@@ -34,6 +35,7 @@ export function useDriverForm(driver?: Driver) {
       form.reset({
         name: driver.name ?? "",
         contact: driver.contact ?? "",
+        location: (driver as any).location ?? "",
         license_number: driver.license_number ?? "",
         license_type: driver.license_type ?? "",
         license_expiry: driver.license_expiry ?? "",

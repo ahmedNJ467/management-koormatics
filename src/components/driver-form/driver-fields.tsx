@@ -48,6 +48,19 @@ export function DriverFields({ form }: DriverFieldsProps) {
       />
       <FormField
         control={form.control}
+        name="location"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Location</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. Nairobi Yard A" {...field} value={field.value ?? ""} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
         name="license_number"
         render={({ field }) => (
           <FormItem>

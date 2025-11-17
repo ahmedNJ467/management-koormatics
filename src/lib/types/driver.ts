@@ -5,6 +5,7 @@ export interface Driver {
   id: string;
   name: string;
   contact: string;
+  location?: string;
   license_number: string;
   license_type: string;
   license_expiry: string;
