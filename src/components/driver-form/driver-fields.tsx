@@ -66,7 +66,7 @@ export function DriverFields({ form }: DriverFieldsProps) {
           <FormItem>
             <FormLabel>License Number</FormLabel>
             <FormControl>
-              <Input placeholder="DL12345" {...field} />
+              <Input placeholder="DL12345" {...field} value={field.value ?? ""} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -79,7 +79,7 @@ export function DriverFields({ form }: DriverFieldsProps) {
           <FormItem>
             <FormLabel>License Type</FormLabel>
             <FormControl>
-              <Input placeholder="Commercial" {...field} />
+              <Input placeholder="Commercial" {...field} value={field.value ?? ""} />
             </FormControl>
             <FormMessage />
           </FormItem>
