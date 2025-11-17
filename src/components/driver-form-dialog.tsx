@@ -56,40 +56,48 @@ export function DriverFormDialog({
   } = useDriverForm(driver);
 
   useEffect(() => {
-    if (driver) {
-      form.reset({
-        name: driver.name,
-        contact: driver.contact,
-        license_number: driver.license_number,
-        license_type: driver.license_type,
-        license_expiry: driver.license_expiry,
-        status: driver.status,
-        is_vip: driver.is_vip || false,
-      });
-      setAvatarPreview(driver.avatar_url || null);
-      setAvatarRemoved(false);
-      setDocumentName(
-        driver.document_url ? driver.document_url.split("/").pop() || null : null
-      );
-      setAirportIdName(
-        driver.airport_id_url ? driver.airport_id_url.split("/").pop() || null : null
-      );
-    } else {
-      form.reset({
-        name: "",
-        contact: "",
-        license_number: "",
-        license_type: "",
-        license_expiry: "",
-        status: "active",
-        is_vip: false,
-      });
-      setAvatarPreview(null);
-      setAvatarRemoved(false);
-      setDocumentName(null);
-      setAirportIdName(null);
+    if (open) {
+      if (driver) {
+        form.reset({
+          name: driver.name ?? "",
+          contact: driver.contact ?? "",
+          license_number: driver.license_number ?? "",
+          license_type: driver.license_type ?? "",
+          license_expiry: driver.license_expiry ?? "",
+          location: (driver as any).location ?? "",
+          status: driver.status ?? "active",
+          is_vip: driver.is_vip || false,
+        });
+        setAvatarPreview(driver.avatar_url || null);
+        setAvatarRemoved(false);
+        setDocumentName(
+          driver.document_url ? driver.document_url.split("/").pop() || null : null
+        );
+        setAirportIdName(
+          driver.airport_id_url ? driver.airport_id_url.split("/").pop() || null : null
+        );
+      } else {
+        form.reset({
+          name: "",
+          contact: "",
+          license_number: "",
+          license_type: "",
+          license_expiry: "",
+          location: "",
+          status: "active",
+          is_vip: false,
+        });
+        setAvatarPreview(null);
+        setAvatarRemoved(false);
+        setDocumentName(null);
+        setAirportIdName(null);
+        // Clear file inputs when opening for new driver
+        clearAvatar();
+        clearDocument();
+        clearAirportId();
+      }
     }
-      }, [driver, form, setAvatarPreview, setDocumentName, setAirportIdName]);
+  }, [open, driver, form, setAvatarPreview, setDocumentName, setAirportIdName, clearAvatar, clearDocument, clearAirportId]);
 
   async function onSubmit(values: DriverFormValues) {
     setIsSubmitting(true);
@@ -189,6 +197,31 @@ export function DriverFormDialog({
         queryClient.invalidateQueries({ queryKey: ["drivers"] }),
         queryClient.refetchQueries({ queryKey: ["drivers"] }),
       ]);
+
+      // Reset form after successful submission (especially for new drivers)
+      if (!driver) {
+        form.reset({
+          name: "",
+          contact: "",
+          license_number: "",
+          license_type: "",
+          license_expiry: "",
+          location: "",
+          status: "active",
+          is_vip: false,
+        });
+        // Clear all file inputs and previews
+        clearAvatar();
+        clearDocument();
+        clearAirportId();
+        // Also clear file input elements in the DOM
+        const avatarInput = document.getElementById("avatar-upload") as HTMLInputElement;
+        const documentInput = document.getElementById("document-upload") as HTMLInputElement;
+        const airportIdInput = document.getElementById("airport-id-upload") as HTMLInputElement;
+        if (avatarInput) avatarInput.value = "";
+        if (documentInput) documentInput.value = "";
+        if (airportIdInput) airportIdInput.value = "";
+      }
 
       toast({
         title: `Driver ${driver ? "updated" : "created"} successfully`,
