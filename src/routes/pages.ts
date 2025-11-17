@@ -23,6 +23,7 @@ import VehicleInspections from "@/pages/VehicleInspections";
 import VehicleIncidentReports from "@/pages/VehicleIncidentReports";
 import VehicleLeasing from "@/pages/VehicleLeasing";
 import TripFinance from "@/pages/TripFinance";
+import Payroll from "@/pages/Payroll";
 import Auth from "@/pages/Auth";
 import Forbidden from "@/pages/Forbidden";
 import NotFound from "@/pages/NotFound";
@@ -54,6 +55,7 @@ export {
   VehicleIncidentReports,
   VehicleLeasing,
   TripFinance,
+  Payroll,
   Auth,
   Forbidden,
   NotFound,

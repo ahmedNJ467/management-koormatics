@@ -116,6 +116,10 @@ const TripFinance = dynamic(() => import("@/pages/TripFinance"), {
   ssr: false,
   loading: () => <LoadingComponent />,
 });
+const Payroll = dynamic(() => import("@/pages/Payroll"), {
+  ssr: false,
+  loading: () => <LoadingComponent />,
+});
 const Forbidden = dynamic(() => import("@/pages/Forbidden"), {
   ssr: false,
   loading: () => <LoadingComponent />,
@@ -181,6 +185,7 @@ export default function DynamicPage() {
     "vehicle-incident-reports": VehicleIncidentReports,
     "vehicle-leasing": VehicleLeasing,
     "trip-finance": TripFinance,
+    payroll: Payroll,
     settings: Settings,
     "403": Forbidden,
   };

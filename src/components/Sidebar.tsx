@@ -29,6 +29,7 @@ import {
   Shield,
   CreditCard,
   Settings,
+  Wallet,
 } from "lucide-react";
 import { usePageAccess } from "@/hooks/use-page-access";
 
@@ -79,6 +80,7 @@ const navigationGroups = [
       { name: "Quotations", href: "/quotations", icon: FileText },
       { name: "Invoices", href: "/invoices", icon: Receipt },
       { name: "Trip Finance", href: "/trip-finance", icon: Receipt },
+      { name: "Payroll", href: "/payroll", icon: Wallet },
     ],
   },
   {
@@ -120,6 +122,7 @@ const DOMAIN_ITEM_ALLOWLIST: Record<AppDomain | "*", string[] | "*"> = {
     "/quotations",
     "/invoices",
     "/trip-finance",
+    "/payroll",
     "/settings",
   ],
 };
