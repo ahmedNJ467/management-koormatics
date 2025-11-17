@@ -97,11 +97,11 @@ export function DriverFormDialog({
 
       const driverData = {
         name: values.name,
-        license_number: values.license_number,
+        license_number: values.license_number || null,
         contact: values.contact,
-        location: values.location ?? null,
-        license_type: values.license_type,
-        license_expiry: values.license_expiry,
+        location: values.location || null,
+        license_type: values.license_type || null,
+        license_expiry: values.license_expiry && values.license_expiry.trim() !== "" ? values.license_expiry : null,
         status: values.status,
         is_vip: values.is_vip,
       };
