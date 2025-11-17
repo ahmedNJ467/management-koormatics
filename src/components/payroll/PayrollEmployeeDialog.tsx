@@ -263,8 +263,8 @@ export function PayrollEmployeeDialog({
                   <FormItem>
                     <FormLabel>Link to Driver (Optional)</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value || null)}
-                      value={field.value || ""}
+                      onValueChange={(value) => field.onChange(value === "none" ? null : value)}
+                      value={field.value || "none"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -272,7 +272,7 @@ export function PayrollEmployeeDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {drivers.map((driver) => (
                           <SelectItem key={driver.id} value={driver.id}>
                             {driver.name}
