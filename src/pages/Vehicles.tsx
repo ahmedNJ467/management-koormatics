@@ -134,6 +134,7 @@ export default function Vehicles() {
           registration,
           type: normalizedType,
           status: normalizedStatus,
+          fuel_type: (v.fuel_type as "petrol" | "diesel" | undefined) || undefined,
           year:
             typeof v.year === "number" ? v.year : Number.parseInt(v.year) || null,
           color: sanitizeText(v.color),

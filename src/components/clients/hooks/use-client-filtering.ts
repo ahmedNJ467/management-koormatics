@@ -12,10 +12,14 @@ export function useClientFiltering(clients: Client[] = []) {
 
   const getFilteredClients = (clientList: Client[]) => {
     return clientList.filter((client) => {
+      if (!client) return false;
+      
+      const searchLower = searchTerm.toLowerCase();
       const matchesSearch =
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        !searchTerm ||
+        (client.name?.toLowerCase() || "").includes(searchLower) ||
+        (client.contact?.toLowerCase() || "").includes(searchLower) ||
+        (client.email?.toLowerCase() || "").includes(searchLower);
 
       const matchesType = typeFilter === "all" || client.type === typeFilter;
 
