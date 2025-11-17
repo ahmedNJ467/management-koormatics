@@ -26,23 +26,31 @@ export function VehicleFuelTypeField({ form }: VehicleFuelTypeFieldProps) {
     <FormField
       control={form.control}
       name="fuel_type"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Fuel Type</FormLabel>
-          <Select onValueChange={field.onChange} value={field.value}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select fuel type" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="petrol">Petrol</SelectItem>
-              <SelectItem value="diesel">Diesel</SelectItem>
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        const currentValue = field.value || undefined;
+        return (
+          <FormItem>
+            <FormLabel>Fuel Type</FormLabel>
+            <Select 
+              onValueChange={(value) => {
+                field.onChange(value);
+              }} 
+              value={currentValue}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select fuel type" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="petrol">Petrol</SelectItem>
+                <SelectItem value="diesel">Diesel</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 }
