@@ -889,6 +889,13 @@ export default function Dashboard() {
     return union.size;
   }, [vehiclesInMaintenance, vehiclesInActiveTrips]);
 
+  // Calculate number of available vehicles
+  const availableVehicles = useMemo(() => {
+    if (totalVehicles <= 0) return 0;
+    const unavailable = Math.min(totalVehicles, Math.max(0, unavailableDistinct));
+    return Math.max(0, totalVehicles - unavailable);
+  }, [totalVehicles, unavailableDistinct]);
+
   // Fleet availability: clamp within 0–100 and guard against double-counts exceeding fleet size
   const fleetAvailability = (() => {
     if (totalVehicles <= 0) return 0;
@@ -953,7 +960,7 @@ export default function Dashboard() {
               {
                 title: "Vehicles",
                 value: totalVehicles,
-                subtitle: `${fleetAvailability}% available`,
+                subtitle: `${availableVehicles} available`,
                 icon: Car,
               },
               {
@@ -986,7 +993,7 @@ export default function Dashboard() {
               {
                 title: "Vehicles",
                 value: totalVehicles,
-                subtitle: `${fleetAvailability}% available`,
+                subtitle: `${availableVehicles} available`,
                 icon: Car,
               },
               {
@@ -1130,6 +1137,7 @@ export default function Dashboard() {
       isOperationsDashboard,
       isFinanceDashboard,
       totalVehicles,
+      availableVehicles,
       driverCoverage,
       fleetAvailability,
       totalDrivers,
@@ -1196,7 +1204,7 @@ export default function Dashboard() {
           </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-card border border-border p-4">
+          <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Maintenance Costs
           </h3>
@@ -1207,7 +1215,7 @@ export default function Dashboard() {
                 compact
               />
             </LazyWrapper>
-          </div>
+              </div>
         </div>
         <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
@@ -1218,11 +1226,11 @@ export default function Dashboard() {
               <DriverStatusChart data={driverStatusChartData} />
             </LazyWrapper>
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-card border border-border p-4">
+          <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Fleet Distribution
           </h3>
@@ -1232,16 +1240,16 @@ export default function Dashboard() {
                 data={chartData?.fleetDistributionData || []}
               />
             </LazyWrapper>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
     </>
   );
 
   const renderFleetOrOperationsCharts = () => (
     <>
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-card border border-border p-4">
+          <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Maintenance Costs
           </h3>
@@ -1252,7 +1260,7 @@ export default function Dashboard() {
                 compact
               />
             </LazyWrapper>
-          </div>
+              </div>
         </div>
         <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
@@ -1264,21 +1272,21 @@ export default function Dashboard() {
                 data={chartData?.fleetDistributionData || []}
               />
             </LazyWrapper>
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
-            Fuel Consumption
-          </h3>
+              <div className="bg-card border border-border p-4">
+                <h3 className="text-sm font-medium text-foreground mb-4">
+                  Fuel Consumption
+                </h3>
           <div className="h-[320px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
-              <FuelConsumptionChart
-                data={chartData?.fuelConsumptionData || []}
-                compact
-              />
+                    <FuelConsumptionChart
+                      data={chartData?.fuelConsumptionData || []}
+                      compact
+                    />
             </LazyWrapper>
           </div>
         </div>
@@ -1305,39 +1313,39 @@ export default function Dashboard() {
         <div className="h-[320px] w-full">
           <LazyWrapper fallback={<ChartSkeleton height="h-[320px]" />}>
             <FinancialOverviewChart data={financialOverviewData} />
-          </LazyWrapper>
-        </div>
-      </div>
+                  </LazyWrapper>
+                </div>
+              </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
-            Maintenance Costs
-          </h3>
-          <div className="h-[250px] w-full">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="bg-card border border-border p-4">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Maintenance Costs
+                  </h3>
+                  <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
-              <MaintenanceCostsChart
-                data={chartData?.maintenanceCostsData || []}
-                compact
-              />
-            </LazyWrapper>
-          </div>
-        </div>
+                      <MaintenanceCostsChart
+                        data={chartData?.maintenanceCostsData || []}
+                        compact
+                      />
+                    </LazyWrapper>
+                  </div>
+                </div>
 
-        <div className="bg-card border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground mb-4">
+                <div className="bg-card border border-border p-4">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
             Fuel Consumption
-          </h3>
-          <div className="h-[250px] w-full">
+                  </h3>
+                  <div className="h-[250px] w-full">
             <LazyWrapper fallback={<ChartSkeleton height="h-[250px]" />}>
               <FuelConsumptionChart
                 data={chartData?.fuelConsumptionData || []}
-                compact
-              />
+                      compact
+                    />
             </LazyWrapper>
-          </div>
-        </div>
-      </div>
+                  </div>
+                </div>
+              </div>
     </>
   );
 
@@ -1358,7 +1366,7 @@ export default function Dashboard() {
           <p className="text-muted-foreground">
             You don't have permission to access this tenant.
           </p>
-        </div>
+            </div>
       </div>
     );
   }
