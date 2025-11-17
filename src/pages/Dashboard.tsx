@@ -855,11 +855,12 @@ export default function Dashboard() {
     totalVehicles > 0 ? Math.round((activeDrivers / totalVehicles) * 100) : 0;
 
   // Determine unavailable vehicles using distinct vehicle IDs in active maintenance or trips
+  // Only vehicles with maintenance status "in_progress" are unavailable (scheduled maintenance still allows availability)
   const vehiclesInMaintenance = useMemo(() => {
     const set = new Set<string>();
     (maintenance || [])
       .filter(
-        (m: any) => m && ["scheduled", "in_progress"].includes(m.status || "")
+        (m: any) => m && (m.status || "") === "in_progress"
       )
       .forEach((m: any) => {
         if (m.vehicle_id) set.add(String(m.vehicle_id));
