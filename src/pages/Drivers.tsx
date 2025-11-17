@@ -554,7 +554,6 @@ export default function Drivers() {
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
-                  setLicenseTypeFilter("all");
                 }}
                 className="shrink-0 text-muted-foreground hover:text-foreground"
               >
