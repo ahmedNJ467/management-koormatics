@@ -89,7 +89,7 @@ export function VehicleDetailsDialog({
   return (
     <>
       <Dialog open={!!selectedVehicle} onOpenChange={handleClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle className="pr-10">
               Vehicle Details - {formatVehicleId(selectedVehicle.id)}

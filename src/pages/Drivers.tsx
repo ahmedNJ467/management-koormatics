@@ -448,12 +448,12 @@ export default function Drivers() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-4 px-6 space-y-6">
+      <div className="p-3 sm:p-4 sm:px-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="border-b border-border pb-4 pt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">
+              <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
                 Drivers
               </h1>
             </div>
@@ -461,7 +461,7 @@ export default function Drivers() {
               onClick={() => setIsAddingDriver(true)}
               variant="outline"
               size="sm"
-              className="text-foreground border-border/50"
+              className="text-foreground border-border/50 w-full sm:w-auto"
             >
               Add Driver
             </Button>
@@ -493,10 +493,10 @@ export default function Drivers() {
             </div>
 
             {/* Filters Section */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="flex items-center gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50">
                     <Filter className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -514,7 +514,7 @@ export default function Drivers() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-8 px-3 rounded-md transition-all ${
+                  className={`h-8 px-2 sm:px-3 rounded-md transition-all ${
                     viewMode === "list"
                       ? "bg-background text-foreground shadow-sm border border-border/50"
                       : "text-muted-foreground hover:text-foreground"
@@ -522,13 +522,13 @@ export default function Drivers() {
                   onClick={() => setViewMode("list")}
                   aria-label="List view"
                 >
-                  <List className="h-4 w-4 mr-2" />
-                  List
+                  <List className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">List</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-8 px-3 rounded-md transition-all ${
+                  className={`h-8 px-2 sm:px-3 rounded-md transition-all ${
                     viewMode === "grid"
                       ? "bg-background text-foreground shadow-sm border border-border/50"
                       : "text-muted-foreground hover:text-foreground"
@@ -536,8 +536,8 @@ export default function Drivers() {
                   onClick={() => setViewMode("grid")}
                   aria-label="Grid view"
                 >
-                  <Grid className="h-4 w-4 mr-2" />
-                  Grid
+                  <Grid className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Grid</span>
                 </Button>
               </div>
             </div>
@@ -592,7 +592,7 @@ export default function Drivers() {
 
         {/* Drivers Grid/List */}
         {viewMode === "grid" ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedDrivers.map((driver) => {
               const tripCount = driverTripCounts[driver.id];
               const isExpiring = isLicenseExpiringSoon(driver.license_expiry);

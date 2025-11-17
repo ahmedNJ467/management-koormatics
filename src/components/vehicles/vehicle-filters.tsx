@@ -60,10 +60,10 @@ export function VehicleFilters({
         </div>
 
         {/* Filters Section */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+              <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50">
                 <Filter className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Vehicle Type" />
               </SelectTrigger>
@@ -75,7 +75,7 @@ export function VehicleFilters({
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-11 border-border/50 focus:border-primary/50">
+              <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -92,7 +92,7 @@ export function VehicleFilters({
             <Button
               variant="ghost"
               size="sm"
-              className={`h-8 px-3 rounded-md transition-all ${
+              className={`h-8 px-2 sm:px-3 rounded-md transition-all ${
                 viewMode === "table"
                   ? "bg-background text-foreground shadow-sm border border-border/50"
                   : "text-muted-foreground hover:text-foreground"
@@ -100,13 +100,13 @@ export function VehicleFilters({
               onClick={() => setViewMode("table")}
               aria-label="List view"
             >
-              <List className="h-4 w-4 mr-2" />
-              List
+              <List className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">List</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className={`h-8 px-3 rounded-md transition-all ${
+              className={`h-8 px-2 sm:px-3 rounded-md transition-all ${
                 viewMode === "cards"
                   ? "bg-background text-foreground shadow-sm border border-border/50"
                   : "text-muted-foreground hover:text-foreground"
@@ -114,8 +114,8 @@ export function VehicleFilters({
               onClick={() => setViewMode("cards")}
               aria-label="Grid view"
             >
-              <Grid className="h-4 w-4 mr-2" />
-              Grid
+              <Grid className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Grid</span>
             </Button>
           </div>
         </div>

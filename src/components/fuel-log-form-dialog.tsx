@@ -60,7 +60,7 @@ export function FuelLogFormDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>
               {fuelLog ? "Edit Fuel Log" : "Add New Fuel Log"}

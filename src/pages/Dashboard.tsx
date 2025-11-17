@@ -1094,7 +1094,7 @@ export default function Dashboard() {
         : "\u00A0";
 
     return (
-      <div className="bg-card border border-border rounded-lg p-4 h-full min-h-[130px] flex flex-col justify-between">
+      <div className="bg-card border border-border rounded-lg p-3 sm:p-4 h-full min-h-[130px] flex flex-col justify-between">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
@@ -1337,7 +1337,7 @@ export default function Dashboard() {
 
   const renderManagementCharts = () => (
     <>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Fuel Consumption
@@ -1364,7 +1364,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
           <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Maintenance Costs
@@ -1390,7 +1390,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
           <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Fleet Distribution
@@ -1409,7 +1409,7 @@ export default function Dashboard() {
 
   const renderFleetOrOperationsCharts = () => (
     <>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
           <div className="bg-card border border-border p-4">
           <h3 className="text-sm font-medium text-foreground mb-4">
             Maintenance Costs
@@ -1437,7 +1437,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
               <div className="bg-card border border-border p-4">
                 <h3 className="text-sm font-medium text-foreground mb-4">
                   Fuel Consumption
@@ -1478,7 +1478,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                 <div className="bg-card border border-border p-4">
                   <h3 className="text-sm font-medium text-foreground mb-4">
                     Maintenance Costs
@@ -1534,12 +1534,12 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-4 px-6 space-y-6">
+      <div className="p-3 sm:p-4 sm:px-6 space-y-4 sm:space-y-6">
         {/* Header Section */}
         <div className="border-b border-border pb-4 pt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">
+              <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
                 Dashboard
               </h1>
             </div>
@@ -1562,7 +1562,7 @@ export default function Dashboard() {
                   {section.title}
                 </h2>
               ) : null}
-              <div className="grid gap-4 grid-cols-4">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 {section.cards.map((card) => (
                   <SummaryCard
                     key={`${section.title ?? index}-${card.title}`}

@@ -311,12 +311,12 @@ export default function Vehicles() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-4 px-6 space-y-6">
+      <div className="p-3 sm:p-4 sm:px-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="border-b border-border pb-4 pt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">
+              <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
                 Vehicles
               </h1>
               {isFetching && vehicles.length > 0 && (
@@ -328,7 +328,7 @@ export default function Vehicles() {
             <Button
               variant="outline"
               size="sm"
-              className="text-foreground border-border/50"
+              className="text-foreground border-border/50 w-full sm:w-auto"
               onClick={handleAddVehicle}
             >
               Add Vehicle
