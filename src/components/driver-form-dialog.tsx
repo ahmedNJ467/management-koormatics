@@ -97,7 +97,8 @@ export function DriverFormDialog({
         clearAirportId();
       }
     }
-  }, [open, driver, form, setAvatarPreview, setDocumentName, setAirportIdName, clearAvatar, clearDocument, clearAirportId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, driver]);
 
   async function onSubmit(values: DriverFormValues) {
     setIsSubmitting(true);
