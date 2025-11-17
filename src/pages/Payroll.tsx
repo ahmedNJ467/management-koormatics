@@ -13,15 +13,9 @@ import {
 import {
   Plus,
   Search,
-  RefreshCw,
   DollarSign,
-  Calendar,
   Users,
-  Eye,
-  Edit,
-  Trash,
   Wallet,
-  TrendingUp,
   FileText,
   CheckCircle,
   Clock,
@@ -47,6 +41,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/invoice-helpers";
 import { PayrollEmployeeDialog } from "@/components/payroll/PayrollEmployeeDialog";
 import { PayrollRecordDialog } from "@/components/payroll/PayrollRecordDialog";
+import { PayrollEmployeeDetailsDialog } from "@/components/payroll/PayrollEmployeeDetailsDialog";
+import { PayrollRecordDetailsDialog } from "@/components/payroll/PayrollRecordDetailsDialog";
 import { DeletePayrollDialog } from "@/components/payroll/DeletePayrollDialog";
 
 type EmployeeRole = "driver" | "mechanic" | "admin" | "manager" | "other";
@@ -104,6 +100,8 @@ export default function Payroll() {
   const [recordDialogOpen, setRecordDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<PayrollEmployee | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(null);
+  const [employeeDetailsOpen, setEmployeeDetailsOpen] = useState(false);
+  const [recordDetailsOpen, setRecordDetailsOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: "employee" | "record"; id: string } | null>(null);
 
@@ -476,25 +474,31 @@ export default function Payroll() {
                     <TableHead>Base Salary</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {employeesLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={6} className="text-center py-8">
                         Loading...
                       </TableCell>
                     </TableRow>
                   ) : filteredEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No employees found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredEmployees.map((employee) => (
-                      <TableRow key={employee.id}>
+                      <TableRow
+                        key={employee.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => {
+                          setSelectedEmployee(employee);
+                          setEmployeeDetailsOpen(true);
+                        }}
+                      >
                         <TableCell className="font-medium">{employee.name}</TableCell>
                         <TableCell>{employee.employee_id || "N/A"}</TableCell>
                         <TableCell>
@@ -510,27 +514,6 @@ export default function Payroll() {
                           >
                             {employee.is_active ? "Active" : "Inactive"}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedEmployee(employee);
-                                setEmployeeDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete("employee", employee.id)}
-                            >
-                              <Trash className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -552,25 +535,31 @@ export default function Payroll() {
                     <TableHead>Net Pay</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Payment Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {recordsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={6} className="text-center py-8">
                         Loading...
                       </TableCell>
                     </TableRow>
                   ) : filteredRecords.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No payroll records found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredRecords.map((record) => (
-                      <TableRow key={record.id}>
+                      <TableRow
+                        key={record.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => {
+                          setSelectedRecord(record);
+                          setRecordDetailsOpen(true);
+                        }}
+                      >
                         <TableCell className="font-medium">
                           {record.employee?.name || "Unknown"}
                         </TableCell>
@@ -595,27 +584,6 @@ export default function Payroll() {
                             ? new Date(record.payment_date).toLocaleDateString()
                             : "N/A"}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedRecord(record);
-                                setRecordDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete("record", record.id)}
-                            >
-                              <Trash className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -627,6 +595,40 @@ export default function Payroll() {
       </div>
 
       {/* Dialogs */}
+      <PayrollEmployeeDetailsDialog
+        open={employeeDetailsOpen}
+        onOpenChange={setEmployeeDetailsOpen}
+        employee={selectedEmployee}
+        onEdit={() => {
+          setEmployeeDetailsOpen(false);
+          setEmployeeDialogOpen(true);
+        }}
+        onDelete={() => {
+          if (selectedEmployee) {
+            setEmployeeDetailsOpen(false);
+            setItemToDelete({ type: "employee", id: selectedEmployee.id });
+            setDeleteDialogOpen(true);
+          }
+        }}
+      />
+
+      <PayrollRecordDetailsDialog
+        open={recordDetailsOpen}
+        onOpenChange={setRecordDetailsOpen}
+        record={selectedRecord}
+        onEdit={() => {
+          setRecordDetailsOpen(false);
+          setRecordDialogOpen(true);
+        }}
+        onDelete={() => {
+          if (selectedRecord) {
+            setRecordDetailsOpen(false);
+            setItemToDelete({ type: "record", id: selectedRecord.id });
+            setDeleteDialogOpen(true);
+          }
+        }}
+      />
+
       <PayrollEmployeeDialog
         open={employeeDialogOpen}
         onOpenChange={setEmployeeDialogOpen}
