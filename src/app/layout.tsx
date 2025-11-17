@@ -12,9 +12,12 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
   ),
   icons: {
-    icon: "/images/Koormatics-logo.png",
-    shortcut: "/images/Koormatics-logo.png",
-    apple: "/images/Koormatics-logo.png",
+    icon: [
+      { url: "/images/favicon-koormatics.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/favicon-koormatics.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/images/favicon-koormatics.png",
   },
   openGraph: {
     title: "Koormatics Management System",

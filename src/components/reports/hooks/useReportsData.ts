@@ -86,7 +86,7 @@ export function useReportsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
-        .select("*")
+        .select("id, name, contact, location, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
