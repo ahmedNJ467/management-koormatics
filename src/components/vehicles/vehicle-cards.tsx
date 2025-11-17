@@ -154,8 +154,8 @@ export const VehicleCards = memo(
 
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Year:</span>
-                        <span className="ml-1">{vehicle.year || "N/A"}</span>
+                        <span className="text-muted-foreground">Location:</span>
+                        <span className="ml-1">{vehicle.location || "N/A"}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Type:</span>
