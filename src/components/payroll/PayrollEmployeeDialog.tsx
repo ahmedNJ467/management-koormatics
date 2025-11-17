@@ -41,7 +41,13 @@ const employeeSchema = z.object({
   bank_account: z.string().optional().nullable(),
   bank_name: z.string().optional().nullable(),
   contact: z.string().optional().nullable(),
-  email: z.string().email("Invalid email").optional().nullable().or(z.literal("")),
+  email: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((val) => !val || val === "" || z.string().email().safeParse(val).success, {
+      message: "Invalid email",
+    }),
   notes: z.string().optional().nullable(),
   is_active: z.boolean().default(true),
 });
@@ -408,7 +414,7 @@ export function PayrollEmployeeDialog({
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">

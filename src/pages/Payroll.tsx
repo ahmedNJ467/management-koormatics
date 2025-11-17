@@ -111,14 +111,30 @@ export default function Payroll() {
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
     queryKey: ["payroll-employees"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payroll_employees" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("payroll_employees" as any)
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return (data || []) as unknown as PayrollEmployee[];
+        if (error) {
+          // If table doesn't exist yet, return empty array
+          if (error.code === "42P01" || error.message?.includes("does not exist")) {
+            console.warn("Payroll employees table not found. Please run the migration.");
+            return [] as PayrollEmployee[];
+          }
+          throw error;
+        }
+        return (data || []) as unknown as PayrollEmployee[];
+      } catch (error: any) {
+        // Handle any other errors gracefully
+        if (error?.code === "42P01" || error?.message?.includes("does not exist")) {
+          return [] as PayrollEmployee[];
+        }
+        throw error;
+      }
     },
+    retry: false,
   });
 
   // Fetch drivers for linking
@@ -139,20 +155,36 @@ export default function Payroll() {
   const { data: records = [], isLoading: recordsLoading } = useQuery({
     queryKey: ["payroll-records"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payroll_records" as any)
-        .select(`
-          *,
-          employee:payroll_employees(*)
-        `)
-        .order("pay_period_start", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("payroll_records" as any)
+          .select(`
+            *,
+            employee:payroll_employees(*)
+          `)
+          .order("pay_period_start", { ascending: false });
 
-      if (error) throw error;
-      return (data || []).map((r: any) => ({
-        ...r,
-        employee: r.employee as PayrollEmployee,
-      })) as PayrollRecord[];
+        if (error) {
+          // If table doesn't exist yet, return empty array
+          if (error.code === "42P01" || error.message?.includes("does not exist")) {
+            console.warn("Payroll records table not found. Please run the migration.");
+            return [] as PayrollRecord[];
+          }
+          throw error;
+        }
+        return (data || []).map((r: any) => ({
+          ...r,
+          employee: r.employee as PayrollEmployee,
+        })) as PayrollRecord[];
+      } catch (error: any) {
+        // Handle any other errors gracefully
+        if (error?.code === "42P01" || error?.message?.includes("does not exist")) {
+          return [] as PayrollRecord[];
+        }
+        throw error;
+      }
     },
+    retry: false,
   });
 
   // Filter employees
@@ -285,6 +317,7 @@ export default function Payroll() {
             <div className="flex gap-2">
               {activeTab === "employees" ? (
                 <Button
+                  type="button"
                   onClick={() => {
                     setSelectedEmployee(null);
                     setEmployeeDialogOpen(true);
@@ -296,6 +329,7 @@ export default function Payroll() {
                 </Button>
               ) : (
                 <Button
+                  type="button"
                   onClick={() => {
                     setSelectedRecord(null);
                     setRecordDialogOpen(true);
