@@ -230,7 +230,7 @@ export const VehicleTable = memo(
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="relative w-24 h-16 flex items-center justify-center bg-muted">
+                        <div className="relative w-24 h-16">
                           {/* Always show the placeholder; hide only if image is loaded */}
                           <div
                             className={`absolute inset-0 w-full h-full flex items-center justify-center rounded-none bg-muted transition-opacity duration-200 ${imgLoaded ? "opacity-0" : "opacity-100"}`}
@@ -242,7 +242,7 @@ export const VehicleTable = memo(
                             <img
                               src={vehicle.images[0]?.url || ""}
                               alt={`${safeString(vehicle.make, "Vehicle")} ${safeString(vehicle.model)}`}
-                              className={`max-w-24 max-h-16 w-auto h-auto object-contain rounded-none transition-opacity duration-200 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+                              className={`w-24 h-16 object-cover rounded-none transition-opacity duration-200 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
                               onLoad={() => handleImageLoad(vehicleId)}
                               onError={() => handleImageError(vehicleId)}
                             />
