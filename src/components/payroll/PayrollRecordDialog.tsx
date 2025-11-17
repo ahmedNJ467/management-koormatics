@@ -227,12 +227,12 @@ export function PayrollRecordDialog({
 
       if (record) {
         const { error } = await supabase
-          .from("payroll_records")
+          .from("payroll_records" as any)
           .update(data)
           .eq("id", record.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("payroll_records").insert(data);
+        const { error } = await supabase.from("payroll_records" as any).insert(data);
         if (error) throw error;
       }
     },

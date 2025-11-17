@@ -112,12 +112,12 @@ export default function Payroll() {
     queryKey: ["payroll-employees"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("payroll_employees")
+        .from("payroll_employees" as any)
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return (data || []) as PayrollEmployee[];
+      return (data || []) as unknown as PayrollEmployee[];
     },
   });
 
@@ -140,7 +140,7 @@ export default function Payroll() {
     queryKey: ["payroll-records"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("payroll_records")
+        .from("payroll_records" as any)
         .select(`
           *,
           employee:payroll_employees(*)
@@ -210,7 +210,7 @@ export default function Payroll() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async ({ type, id }: { type: "employee" | "record"; id: string }) => {
-      const table = type === "employee" ? "payroll_employees" : "payroll_records";
+      const table = (type === "employee" ? "payroll_employees" : "payroll_records") as any;
       const { error } = await supabase.from(table).delete().eq("id", id);
       if (error) throw error;
     },

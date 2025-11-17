@@ -149,12 +149,12 @@ export function PayrollEmployeeDialog({
 
       if (employee) {
         const { error } = await supabase
-          .from("payroll_employees")
+          .from("payroll_employees" as any)
           .update(data)
           .eq("id", employee.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("payroll_employees").insert(data);
+        const { error } = await supabase.from("payroll_employees" as any).insert(data);
         if (error) throw error;
       }
     },
