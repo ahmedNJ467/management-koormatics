@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Search, Paperclip } from "lucide-react";
+import { Send, Search, Paperclip, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DriverItem {
   id: string;
@@ -38,10 +39,16 @@ export function MessageCenter() {
   const [driverTrips, setDriverTrips] = useState<TripRow[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingDrivers, setLoadingDrivers] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
+  // Load drivers on mount
   useEffect(() => {
     const loadDrivers = async () => {
+      setLoadingDrivers(true);
       try {
         const { data, error } = await supabase
           .from("drivers")
@@ -51,20 +58,38 @@ export function MessageCenter() {
         setDrivers(data as any[] as DriverItem[]);
       } catch (e) {
         console.error("Error loading drivers", e);
+        toast({
+          title: "Error",
+          description: "Failed to load drivers. Please refresh the page.",
+          variant: "destructive",
+        });
         setDrivers([]);
+      } finally {
+        setLoadingDrivers(false);
       }
     };
     loadDrivers();
-  }, []);
+  }, [toast]);
 
+  // Load driver context and set up real-time subscription
   useEffect(() => {
-    const loadDriverContext = async (driverId: string) => {
+    if (!selectedDriverId) {
+      setMessages([]);
+      setDriverTrips([]);
+      return;
+    }
+
+    let messageChannel: any = null;
+    let tripsChannel: any = null;
+
+    const loadDriverContext = async () => {
+      setLoading(true);
       try {
         // Get this driver's trips (recent first)
         const { data: trips, error: tripsError } = await supabase
           .from("trips")
           .select("id, driver_id, date, status")
-          .eq("driver_id", driverId as any)
+          .eq("driver_id", selectedDriverId as any)
           .order("date", { ascending: false });
         if (tripsError) throw tripsError;
 
@@ -74,9 +99,11 @@ export function MessageCenter() {
         const tripIds = tripRows.map((t) => t.id).filter(Boolean);
         if (tripIds.length === 0) {
           setMessages([]);
+          setLoading(false);
           return;
         }
 
+        // Load initial messages
         const { data: msgs, error: msgsError } = await supabase
           .from("trip_messages")
           .select("*")
@@ -84,25 +111,141 @@ export function MessageCenter() {
           .order("timestamp", { ascending: true });
         if (msgsError) throw msgsError;
         setMessages(msgs as any[] as MessageRow[]);
+
+        // Mark messages as read
+        const unreadMessageIds = (msgs as any[])
+          .filter((m) => !m.is_read && m.sender_type !== "admin")
+          .map((m) => m.id);
+        
+        if (unreadMessageIds.length > 0) {
+          await supabase
+            .from("trip_messages")
+            .update({ is_read: true })
+            .in("id", unreadMessageIds);
+        }
+
+        // Set up real-time subscription for messages
+        messageChannel = supabase
+          .channel(`trip_messages_${selectedDriverId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "trip_messages",
+              filter: `trip_id=in.(${tripIds.join(",")})`,
+            },
+            async (payload) => {
+              console.log("Message update:", payload);
+              
+              if (payload.eventType === "INSERT") {
+                // New message received
+                const newMsg = payload.new as any;
+                setMessages((prev) => {
+                  // Check if message already exists
+                  if (prev.some((m) => m.id === newMsg.id)) {
+                    return prev;
+                  }
+                  return [...prev, newMsg].sort(
+                    (a, b) =>
+                      new Date(a.timestamp).getTime() -
+                      new Date(b.timestamp).getTime()
+                  );
+                });
+
+                // Mark as read if it's not from admin
+                if (newMsg.sender_type !== "admin") {
+                  await supabase
+                    .from("trip_messages")
+                    .update({ is_read: true })
+                    .eq("id", newMsg.id);
+                }
+              } else if (payload.eventType === "UPDATE") {
+                // Message updated (e.g., read status)
+                const updatedMsg = payload.new as any;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
+                );
+              }
+            }
+          )
+          .subscribe();
+
+        // Set up real-time subscription for trips (in case new trips are created)
+        tripsChannel = supabase
+          .channel(`driver_trips_${selectedDriverId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "trips",
+              filter: `driver_id=eq.${selectedDriverId}`,
+            },
+            async () => {
+              // Reload trips when they change
+              const { data: updatedTrips, error: tripsError } = await supabase
+                .from("trips")
+                .select("id, driver_id, date, status")
+                .eq("driver_id", selectedDriverId as any)
+                .order("date", { ascending: false });
+              if (!tripsError && updatedTrips) {
+                setDriverTrips(updatedTrips as any[] as TripRow[]);
+                
+                // Reload messages if trip list changed
+                const updatedTripIds = updatedTrips.map((t) => t.id).filter(Boolean);
+                if (updatedTripIds.length > 0) {
+                  const { data: updatedMsgs } = await supabase
+                    .from("trip_messages")
+                    .select("*")
+                    .in("trip_id", updatedTripIds as any)
+                    .order("timestamp", { ascending: true });
+                  if (updatedMsgs) {
+                    setMessages(updatedMsgs as any[] as MessageRow[]);
+                  }
+                }
+              }
+            }
+          )
+          .subscribe();
       } catch (e) {
         console.error("Error loading driver chat context", e);
+        toast({
+          title: "Error",
+          description: "Failed to load messages. Please try again.",
+          variant: "destructive",
+        });
         setMessages([]);
         setDriverTrips([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (selectedDriverId) {
-      loadDriverContext(selectedDriverId);
-    } else {
-      setMessages([]);
-      setDriverTrips([]);
-    }
-  }, [selectedDriverId]);
+    loadDriverContext();
+
+    // Cleanup subscriptions
+    return () => {
+      if (messageChannel) {
+        supabase.removeChannel(messageChannel);
+      }
+      if (tripsChannel) {
+        supabase.removeChannel(tripsChannel);
+      }
+    };
+  }, [selectedDriverId, toast]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        100;
+      
+      if (isNearBottom) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
     }
   }, [messages]);
 
@@ -137,34 +280,49 @@ export function MessageCenter() {
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedDriverId || !latestActiveTripId) return;
+    
+    const messageText = newMessage.trim();
+    setNewMessage("");
     setSending(true);
+    
     try {
       const payload = {
         trip_id: latestActiveTripId,
         sender_type: "admin" as const,
         sender_name: "Fleet Manager",
-        message: newMessage.trim(),
+        message: messageText,
         timestamp: new Date().toISOString(),
         is_read: false,
       };
+      
       const { error } = await supabase
         .from("trip_messages")
         .insert(payload as any);
+        
       if (error) throw error;
-      setNewMessage("");
-      // Refresh thread
-      const { data: msgs } = await supabase
-        .from("trip_messages")
-        .select("*")
-        .in("trip_id", (driverTrips || []).map((t) => t.id) as any)
-        .order("timestamp", { ascending: true });
-      setMessages(((msgs as any[]) || []) as MessageRow[]);
-    } catch (e) {
+      
+      // Message will appear via real-time subscription
+      // But we can also manually add it for instant feedback
+      const optimisticMessage: MessageRow = {
+        id: `temp-${Date.now()}`,
+        ...payload,
+        trip_id: latestActiveTripId,
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
+    } catch (e: any) {
       console.error("Error sending message", e);
+      setNewMessage(messageText); // Restore message on error
+      toast({
+        title: "Error",
+        description: e.message || "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSending(false);
     }
   };
+
+  const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
 
   return (
     <div className="h-full w-full flex">
@@ -185,9 +343,13 @@ export function MessageCenter() {
 
         {/* Drivers List - Scrollable */}
         <div className="flex-1 overflow-y-auto">
-          {filteredDrivers.length === 0 ? (
+          {loadingDrivers ? (
+            <div className="p-4 text-center">
+              <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+            </div>
+          ) : filteredDrivers.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
-              No drivers found
+              {driverSearch ? "No drivers found" : "No drivers available"}
             </div>
           ) : (
             <div>
@@ -240,9 +402,35 @@ export function MessageCenter() {
           </div>
         ) : (
           <>
+            {/* Chat Header */}
+            <div className="border-b px-4 py-3 flex-shrink-0 bg-card">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-xs">
+                    {selectedDriver?.name?.[0]?.toUpperCase() || "D"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium text-sm">{selectedDriver?.name}</div>
+                  {selectedDriver?.license_number && (
+                    <div className="text-xs text-muted-foreground">
+                      {selectedDriver.license_number}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Messages Area - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {messages.length === 0 ? (
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-4"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <p className="text-muted-foreground text-sm">
@@ -276,6 +464,11 @@ export function MessageCenter() {
                                   : "bg-muted"
                               }`}
                             >
+                              {!isAdmin && (
+                                <div className="text-xs font-medium mb-1 opacity-80">
+                                  {m.sender_name}
+                                </div>
+                              )}
                               <div className="text-sm whitespace-pre-wrap break-words">
                                 {m.message}
                               </div>
@@ -304,18 +497,26 @@ export function MessageCenter() {
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 flex-shrink-0"
+                  disabled={!latestActiveTripId}
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <Textarea
-                  placeholder="Type a message..."
+                  placeholder={
+                    latestActiveTripId
+                      ? "Type a message..."
+                      : "No active trip found for this driver"
+                  }
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   className="min-h-[36px] max-h-[120px] resize-none"
+                  disabled={!latestActiveTripId}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                       e.preventDefault();
-                      sendMessage();
+                      if (!sending && newMessage.trim() && latestActiveTripId) {
+                        sendMessage();
+                      }
                     }
                   }}
                 />
@@ -330,7 +531,11 @@ export function MessageCenter() {
                   size="icon"
                   className="h-9 w-9 flex-shrink-0"
                 >
-                  <Send className="h-4 w-4" />
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
