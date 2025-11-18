@@ -126,25 +126,6 @@ export function MessageCenter() {
     );
   }, [drivers, driverSearch]);
 
-  // Group drivers by first letter of name
-  const groupedDrivers = useMemo(() => {
-    const groups: Record<string, DriverItem[]> = {};
-    filteredDrivers.forEach((driver) => {
-      const firstLetter = (driver.name?.[0]?.toUpperCase() || "Other");
-      if (!groups[firstLetter]) {
-        groups[firstLetter] = [];
-      }
-      groups[firstLetter].push(driver);
-    });
-    // Sort groups alphabetically
-    return Object.keys(groups)
-      .sort()
-      .reduce((acc, key) => {
-        acc[key] = groups[key];
-        return acc;
-      }, {} as Record<string, DriverItem[]>);
-  }, [filteredDrivers]);
-
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedDriverId || !latestActiveTripId) return;
     setSending(true);
@@ -179,7 +160,7 @@ export function MessageCenter() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full p-0 min-h-0 max-h-full">
       {/* Left - Drivers list */}
-      <Card className="lg:col-span-4 flex flex-col rounded-none h-full max-h-full">
+      <Card className="lg:col-span-4 flex flex-col rounded-none h-full max-h-full border-r">
         <CardContent className="p-0 flex-1 flex flex-col min-h-0 max-h-full overflow-hidden">
           <div className="p-3 border-b flex-shrink-0">
             <div className="relative">
@@ -196,45 +177,36 @@ export function MessageCenter() {
             className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
             style={{ maxHeight: '100%' }}
           >
-            {Object.entries(groupedDrivers).map(([letter, driversInGroup]) => (
-              <div key={letter} className="border-b border-border/50">
-                <div className="px-3 py-1.5 bg-muted/30 sticky top-0 z-10">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase">
-                    {letter}
-                  </span>
-                </div>
-                {driversInGroup.map((d) => {
-                  const isActive = selectedDriverId === d.id;
-                  return (
-                    <div
-                      key={d.id}
-                      className={`px-3 py-2 border-b border-border/30 cursor-pointer text-sm hover:bg-muted/50 ${
-                        isActive ? "bg-muted" : ""
-                      }`}
-                      onClick={() => setSelectedDriverId(d.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-[10px]">
-                            {d.name?.[0]?.toUpperCase() || "D"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <div className="truncate font-medium text-xs">
-                            {d.name}
-                          </div>
-                          {d.license_number && (
-                            <div className="text-[11px] text-muted-foreground">
-                              {d.license_number}
-                            </div>
-                          )}
-                        </div>
+            {filteredDrivers.map((d) => {
+              const isActive = selectedDriverId === d.id;
+              return (
+                <div
+                  key={d.id}
+                  className={`px-3 py-2 border-b cursor-pointer text-sm hover:bg-muted/50 ${
+                    isActive ? "bg-muted" : ""
+                  }`}
+                  onClick={() => setSelectedDriverId(d.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px]">
+                        {d.name?.[0]?.toUpperCase() || "D"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-xs">
+                        {d.name}
                       </div>
+                      {d.license_number && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {d.license_number}
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
