@@ -8,7 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Checkbox } from "@/components/ui/checkbox";
-import { parseISO, isValid } from "date-fns";
+import { parseISO, format, isValid } from "date-fns";
 import type { UseFormReturn } from "react-hook-form";
 import type { DriverFormValues } from "./types";
 
@@ -94,14 +94,19 @@ export function DriverFields({ form }: DriverFieldsProps) {
             <FormControl>
               <DatePicker
                 date={
-                  field.value
-                    ? isValid(new Date(field.value))
-                      ? new Date(field.value)
-                      : undefined
+                  field.value && field.value.trim() !== ""
+                    ? (() => {
+                        try {
+                          const parsed = parseISO(field.value);
+                          return isValid(parsed) ? parsed : undefined;
+                        } catch {
+                          return undefined;
+                        }
+                      })()
                     : undefined
                 }
                 onDateChange={(date) => {
-                  field.onChange(date ? date.toISOString().split("T")[0] : "");
+                  field.onChange(date ? format(date, "yyyy-MM-dd") : "");
                 }}
               />
             </FormControl>
