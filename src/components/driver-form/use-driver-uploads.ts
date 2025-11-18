@@ -8,14 +8,28 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
   const fileName = `${driverId}-${fileType}.${fileExt}`;
 
   try {
-    // Check if bucket exists, create if it doesn't
-    const { data: buckets } = await supabase.storage.listBuckets();
+    // Check if bucket exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error('Error listing buckets:', listError);
+      throw new Error(`Failed to access storage: ${listError.message}`);
+    }
+    
     const bucketExists = buckets?.some(b => b.name === bucket);
     
     if (!bucketExists) {
-      await supabase.storage.createBucket(bucket, {
+      // Try to create bucket (may fail due to permissions - that's okay, buckets should be created via migration)
+      const { error: createError } = await supabase.storage.createBucket(bucket, {
         public: true
       });
+      
+      if (createError) {
+        // If bucket creation fails, it's likely a permissions issue
+        // The bucket should be created via migration instead
+        console.warn(`Bucket ${bucket} does not exist and could not be created. Please run the migration to create storage buckets.`, createError);
+        throw new Error(`Storage bucket '${bucket}' not found. Please ensure the bucket has been created in Supabase Storage.`);
+      }
     }
 
     // Remove any existing file first
