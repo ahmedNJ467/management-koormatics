@@ -6,9 +6,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Client } from "@/lib/types";
 import { UIServiceType } from "./types";
 import { DisplayTrip } from "@/lib/types/trip";
+import { ClientSearchSelect } from "./ClientSearchSelect";
+import { Client } from "@/lib/types";
 
 interface SelectsProps {
   clients?: Client[];
@@ -29,26 +30,12 @@ export function ClientServiceSelects({
 }: SelectsProps) {
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="client_id">Client</Label>
-        <Select
-          name="client_id"
-          value={selectedClientId ?? editTrip?.client_id ?? ""}
-          onValueChange={handleClientChange}
-          required
-        >
-          <SelectTrigger id="client_id">
-            <SelectValue placeholder="Select client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients?.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name} {client.type === "organization" && "🏢"}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <ClientSearchSelect
+        clients={clients}
+        value={selectedClientId ?? editTrip?.client_id ?? ""}
+        onValueChange={handleClientChange}
+        required
+      />
 
       <div className="space-y-2">
         <Label htmlFor="service_type">Service Type</Label>

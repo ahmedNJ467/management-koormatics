@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, FileSpreadsheet, List, Grid } from "lucide-react";
 import { ClientFormDialog } from "@/components/client-form-dialog";
@@ -16,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Clients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -41,6 +43,21 @@ export default function Clients() {
     contactCounts,
     memberCounts,
   } = useClientData();
+
+  // Check for create query param and auto-open form
+  useEffect(() => {
+    const createParam = searchParams.get("create");
+    if (createParam === "true" && !formOpen) {
+      setSelectedClient(null);
+      setFormOpen(true);
+      // Clean up URL by removing the query param
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("create");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }, [searchParams, formOpen]);
 
   const handleClientDeleted = () => {
     queryClient.invalidateQueries({ queryKey: ["clients"] });
