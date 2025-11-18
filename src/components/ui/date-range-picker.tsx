@@ -70,6 +70,9 @@ export function DateRangePicker({
             selected={actualValue}
             onSelect={actualOnChange}
             numberOfMonths={isMobile ? 1 : 2}
+            captionLayout="dropdown"
+            fromYear={1900}
+            toYear={new Date().getFullYear() + 10}
           />
         </PopoverContent>
       </Popover>
