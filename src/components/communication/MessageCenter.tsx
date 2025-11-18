@@ -210,15 +210,15 @@ export function MessageCenter() {
 
       {/* Right - Thread */}
       <Card className="lg:col-span-8 flex flex-col rounded-none h-full">
-        <CardContent className="p-0 flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-hidden min-h-0">
-            <ScrollArea className="h-full p-4">
+        <CardContent className="p-0 flex-1 flex flex-col min-h-0 overflow-hidden">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-4">
               {!selectedDriverId ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground min-h-[400px]">
                   Select a driver to start chatting
                 </div>
               ) : messages.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground min-h-[400px]">
                   No messages yet. Start a conversation!
                 </div>
               ) : (
@@ -259,9 +259,9 @@ export function MessageCenter() {
                   ))}
                 </div>
               )}
-            </ScrollArea>
-          </div>
-          <div className="border-t p-2 flex-shrink-0">
+            </div>
+          </ScrollArea>
+          <div className="border-t p-2 flex-shrink-0 bg-background">
             <div className="flex gap-2 items-end">
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Paperclip className="h-4 w-4" />
