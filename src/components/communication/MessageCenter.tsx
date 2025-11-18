@@ -158,10 +158,10 @@ export function MessageCenter() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full p-0">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full p-0 min-h-0">
       {/* Left - Drivers list */}
-      <Card className="lg:col-span-4 flex flex-col rounded-none">
-        <CardContent className="p-0 flex-1 flex flex-col">
+      <Card className="lg:col-span-4 flex flex-col rounded-none h-full">
+        <CardContent className="p-0 flex-1 flex flex-col min-h-0">
           <div className="p-3 border-b">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -209,9 +209,9 @@ export function MessageCenter() {
       </Card>
 
       {/* Right - Thread */}
-      <Card className="lg:col-span-8 flex flex-col rounded-none">
-        <CardContent className="p-0 flex-1 flex flex-col">
-          <div className="flex-1 overflow-hidden">
+      <Card className="lg:col-span-8 flex flex-col rounded-none h-full">
+        <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-hidden min-h-0">
             <ScrollArea className="h-full p-4">
               {!selectedDriverId ? (
                 <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -261,7 +261,7 @@ export function MessageCenter() {
               )}
             </ScrollArea>
           </div>
-          <div className="border-t p-2">
+          <div className="border-t p-2 flex-shrink-0">
             <div className="flex gap-2 items-end">
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Paperclip className="h-4 w-4" />
