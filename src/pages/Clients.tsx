@@ -46,6 +46,7 @@ export default function Clients() {
 
   // Check for create query param and auto-open form
   useEffect(() => {
+    if (!searchParams) return;
     const createParam = searchParams.get("create");
     if (createParam === "true" && !formOpen) {
       setSelectedClient(null);
