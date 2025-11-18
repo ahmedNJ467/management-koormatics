@@ -159,8 +159,8 @@ export function MessageCenter() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full p-0 min-h-0 max-h-full">
       {/* Left - Drivers list */}
-      <Card className="lg:col-span-4 flex flex-col rounded-none h-full max-h-full border-r">
-        <CardContent className="p-0 flex-1 flex flex-col min-h-0 max-h-full overflow-hidden">
+      <Card className="lg:col-span-4 flex flex-col rounded-none h-full border-r">
+        <CardContent className="p-0 h-full flex flex-col">
           <div className="p-3 border-b flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -172,10 +172,7 @@ export function MessageCenter() {
               />
             </div>
           </div>
-          <div 
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
-            style={{ maxHeight: '100%' }}
-          >
+          <div className="flex-1 overflow-y-auto min-h-0">
             {filteredDrivers.map((d) => {
               const isActive = selectedDriverId === d.id;
               return (
