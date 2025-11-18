@@ -8,29 +8,8 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
   const fileName = `${driverId}-${fileType}.${fileExt}`;
 
   try {
-    // Check if bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
-    if (listError) {
-      console.error('Error listing buckets:', listError);
-      throw new Error(`Failed to access storage: ${listError.message}`);
-    }
-    
-    const bucketExists = buckets?.some(b => b.name === bucket);
-    
-    if (!bucketExists) {
-      // Try to create bucket (may fail due to permissions - that's okay, buckets should be created via migration)
-      const { error: createError } = await supabase.storage.createBucket(bucket, {
-        public: true
-      });
-      
-      if (createError) {
-        // If bucket creation fails, it's likely a permissions issue
-        // The bucket should be created via migration instead
-        console.warn(`Bucket ${bucket} does not exist and could not be created. Please run the migration to create storage buckets.`, createError);
-        throw new Error(`Storage bucket '${bucket}' not found. Please ensure the bucket has been created in Supabase Storage.`);
-      }
-    }
+    // Buckets should already exist - skip creation check to avoid RLS errors
+    // If bucket doesn't exist, the upload will fail with a clear error message
 
     // Remove any existing file first
     await supabase.storage
@@ -52,6 +31,16 @@ export async function uploadDriverFile(file: File, bucket: string, driverId: str
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
+      
+      // Provide more helpful error messages
+      if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('does not exist')) {
+        throw new Error(`Storage bucket '${bucket}' not found. Please ensure the bucket exists in Supabase Storage and RLS policies are configured.`);
+      }
+      
+      if (uploadError.message?.includes('row-level security') || uploadError.message?.includes('RLS')) {
+        throw new Error(`Permission denied: RLS policies may not be configured for bucket '${bucket}'. Please run the RLS policies SQL script.`);
+      }
+      
       throw uploadError;
     }
 
