@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Search, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -214,7 +213,7 @@ export function MessageCenter() {
       {/* Right - Thread */}
       <Card className="lg:col-span-8 flex flex-col rounded-none h-full">
         <CardContent className="p-0 flex-1 flex flex-col min-h-0 overflow-hidden">
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-4">
               {!selectedDriverId ? (
                 <div className="h-full flex items-center justify-center text-sm text-muted-foreground min-h-[400px]">
@@ -263,7 +262,7 @@ export function MessageCenter() {
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
           <div className="border-t p-2 flex-shrink-0 bg-background">
             <div className="flex gap-2 items-end">
               <Button variant="ghost" size="icon" className="h-8 w-8">

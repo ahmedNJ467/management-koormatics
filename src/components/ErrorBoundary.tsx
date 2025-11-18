@@ -31,11 +31,19 @@ class ReactErrorBoundary extends Component<ErrorBoundaryProps, ErrorState> {
   }
 
   static getDerivedStateFromError(error: Error): ErrorState {
+    // Suppress benign ResizeObserver errors
+    if (error.message?.includes("ResizeObserver loop")) {
+      return { hasError: false };
+    }
     console.error("React Error Boundary caught error:", error);
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Suppress benign ResizeObserver errors
+    if (error.message?.includes("ResizeObserver loop")) {
+      return;
+    }
     console.error("React Error Boundary componentDidCatch:", error, errorInfo);
     this.setState({
       hasError: true,
@@ -143,6 +151,18 @@ export default function ErrorBoundary({ children }: ErrorBoundaryProps) {
       // Prevent infinite loops by checking if the error is from our error boundary
       if (event.filename && event.filename.includes("ErrorBoundary")) {
         console.warn("Ignoring error from ErrorBoundary itself:", event);
+        return;
+      }
+
+      // Suppress benign ResizeObserver errors - these are common with complex layouts
+      // and don't indicate actual problems
+      if (
+        event.message?.includes("ResizeObserver loop") ||
+        event.message?.includes("ResizeObserver loop completed with undelivered notifications") ||
+        (event.error?.message?.includes("ResizeObserver loop"))
+      ) {
+        // Silently ignore ResizeObserver errors - they're harmless
+        event.preventDefault();
         return;
       }
 
