@@ -12,7 +12,6 @@ interface DriverItem {
   id: string;
   name: string;
   license_number?: string | null;
-  phone?: string | null;
   contact?: string | null;
 }
 
@@ -55,7 +54,7 @@ export function MessageCenter() {
       try {
         const { data, error } = await supabase
           .from("drivers")
-          .select("id, name, license_number, phone, contact")
+          .select("id, name, license_number, contact")
           .order("name", { ascending: true });
         if (error) throw error;
         setDrivers(data as any[] as DriverItem[]);
@@ -308,7 +307,7 @@ export function MessageCenter() {
       let smsSuccess = false;
       if (sendSMS) {
         const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
-        const phoneNumber = selectedDriver?.phone || selectedDriver?.contact;
+        const phoneNumber = selectedDriver?.contact;
         
         if (phoneNumber) {
           try {
@@ -341,7 +340,7 @@ export function MessageCenter() {
           });
         } else {
           const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
-          const phoneNumber = selectedDriver?.phone || selectedDriver?.contact;
+          const phoneNumber = selectedDriver?.contact;
           toast({
             title: "Message sent",
             description: phoneNumber
@@ -545,7 +544,7 @@ export function MessageCenter() {
             <div className="border-t bg-background p-4 flex-shrink-0">
               <div className="space-y-2 max-w-4xl mx-auto">
                 {/* SMS Toggle */}
-                {selectedDriver && (selectedDriver.phone || selectedDriver.contact) && (
+                {selectedDriver && selectedDriver.contact && (
                   <div className="flex items-center gap-2 text-xs">
                     <button
                       type="button"
