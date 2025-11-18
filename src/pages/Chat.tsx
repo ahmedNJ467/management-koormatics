@@ -3,18 +3,14 @@ import { MessageCenter } from "@/components/communication/MessageCenter";
 
 export default function Chat() {
   return (
-    <div className="h-full w-full bg-background flex flex-col min-h-0 overflow-hidden">
+    <div className="h-full w-full flex flex-col">
       {/* Header */}
-      <div className="border-b border-border pb-4 pt-4 px-6 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Chat</h1>
-          </div>
-        </div>
+      <div className="border-b bg-background px-6 py-4 flex-shrink-0">
+        <h1 className="text-2xl font-semibold">Chat</h1>
       </div>
 
       {/* Message Center - Takes remaining space */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <MessageCenter />
       </div>
     </div>

@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +38,7 @@ export function MessageCenter() {
   const [driverTrips, setDriverTrips] = useState<TripRow[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadDrivers = async () => {
@@ -93,8 +93,18 @@ export function MessageCenter() {
 
     if (selectedDriverId) {
       loadDriverContext(selectedDriverId);
+    } else {
+      setMessages([]);
+      setDriverTrips([]);
     }
   }, [selectedDriverId]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const latestActiveTripId = useMemo(() => {
     if (!driverTrips || driverTrips.length === 0) return null;
@@ -157,143 +167,176 @@ export function MessageCenter() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full p-0 min-h-0 max-h-full">
-      {/* Left - Drivers list */}
-      <Card className="lg:col-span-4 flex flex-col rounded-none h-full border-r">
-        <CardContent className="p-0 h-full flex flex-col">
-          <div className="p-3 border-b flex-shrink-0">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search drivers..."
-                value={driverSearch}
-                onChange={(e) => setDriverSearch(e.target.value)}
-                className="pl-9 h-8 text-xs"
-              />
-            </div>
+    <div className="h-full w-full flex">
+      {/* Left Sidebar - Drivers List */}
+      <div className="w-full lg:w-1/3 border-r bg-card flex flex-col h-full">
+        {/* Search Header */}
+        <div className="p-4 border-b flex-shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search drivers..."
+              value={driverSearch}
+              onChange={(e) => setDriverSearch(e.target.value)}
+              className="pl-9 h-9"
+            />
           </div>
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {filteredDrivers.map((d) => {
-              const isActive = selectedDriverId === d.id;
-              return (
-                <div
-                  key={d.id}
-                  className={`px-3 py-2 border-b cursor-pointer text-sm hover:bg-muted/50 ${
-                    isActive ? "bg-muted" : ""
-                  }`}
-                  onClick={() => setSelectedDriverId(d.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-[10px]">
-                        {d.name?.[0]?.toUpperCase() || "D"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <div className="truncate font-medium text-xs">
-                        {d.name}
-                      </div>
-                      {d.license_number && (
-                        <div className="text-[11px] text-muted-foreground">
-                          {d.license_number}
+        </div>
+
+        {/* Drivers List - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          {filteredDrivers.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No drivers found
+            </div>
+          ) : (
+            <div>
+              {filteredDrivers.map((d) => {
+                const isActive = selectedDriverId === d.id;
+                return (
+                  <div
+                    key={d.id}
+                    className={`px-4 py-3 border-b cursor-pointer transition-colors ${
+                      isActive
+                        ? "bg-primary/10 border-primary/20"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => setSelectedDriverId(d.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 flex-shrink-0">
+                        <AvatarFallback className="text-sm">
+                          {d.name?.[0]?.toUpperCase() || "D"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm truncate">
+                          {d.name}
                         </div>
-                      )}
+                        {d.license_number && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {d.license_number}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Right - Thread */}
-      <Card className="lg:col-span-8 flex flex-col rounded-none h-full">
-        <CardContent className="p-0 flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="p-4">
-              {!selectedDriverId ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground min-h-[400px]">
-                  Select a driver to start chatting
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground min-h-[400px]">
-                  No messages yet. Start a conversation!
+      {/* Right Side - Chat Area */}
+      <div className="flex-1 flex flex-col h-full bg-background">
+        {!selectedDriverId ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-muted-foreground text-sm">
+                Select a driver to start chatting
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Messages Area - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">
+                      No messages yet. Start a conversation!
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-6 max-w-4xl mx-auto">
                   {Object.entries(groupedMessages).map(([dateKey, items]) => (
-                    <div key={dateKey} className="space-y-2">
-                      <div className="flex items-center justify-center">
-                        <span className="text-[11px] text-muted-foreground px-2 py-0.5 border rounded-none">
+                    <div key={dateKey} className="space-y-3">
+                      {/* Date Separator */}
+                      <div className="flex items-center justify-center py-2">
+                        <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
                           {dateKey}
                         </span>
                       </div>
-                      {items.map((m) => (
-                        <div
-                          key={m.id}
-                          className={`flex ${
-                            m.sender_type === "admin"
-                              ? "justify-end"
-                              : "justify-start"
-                          }`}
-                        >
+
+                      {/* Messages */}
+                      {items.map((m) => {
+                        const isAdmin = m.sender_type === "admin";
+                        return (
                           <div
-                            className={`max-w-[80%] rounded-none px-3 py-2 text-xs ${
-                              m.sender_type === "admin"
-                                ? "bg-primary text-primary-foreground ml-auto"
-                                : "bg-muted"
-                            }`}
+                            key={m.id}
+                            className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}
                           >
-                            <div className="whitespace-pre-wrap break-words">
-                              {m.message}
-                            </div>
-                            <div className="mt-1 opacity-70 text-[10px] text-right">
-                              {format(new Date(m.timestamp), "HH:mm")}
+                            <div
+                              className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                                isAdmin
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              }`}
+                            >
+                              <div className="text-sm whitespace-pre-wrap break-words">
+                                {m.message}
+                              </div>
+                              <div
+                                className={`mt-1 text-xs opacity-70 ${
+                                  isAdmin ? "text-right" : "text-left"
+                                }`}
+                              >
+                                {format(new Date(m.timestamp), "HH:mm")}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
-          </div>
-          <div className="border-t p-2 flex-shrink-0 bg-background">
-            <div className="flex gap-2 items-end">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              <Textarea
-                placeholder="Message"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="min-h-[36px] max-h-[120px] resize-y text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
+
+            {/* Input Area - Fixed at Bottom */}
+            <div className="border-t bg-background p-4 flex-shrink-0">
+              <div className="flex gap-2 items-end max-w-4xl mx-auto">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 flex-shrink-0"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <Textarea
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="min-h-[36px] max-h-[120px] resize-none"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={
+                    !newMessage.trim() ||
+                    !selectedDriverId ||
+                    !latestActiveTripId ||
+                    sending
                   }
-                }}
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={
-                  !newMessage.trim() ||
-                  !selectedDriverId ||
-                  !latestActiveTripId ||
-                  sending
-                }
-                size="sm"
-                className="h-8"
-              >
-                <Send className="h-3 w-3" />
-              </Button>
+                  size="icon"
+                  className="h-9 w-9 flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </>
+        )}
+      </div>
     </div>
   );
 }
