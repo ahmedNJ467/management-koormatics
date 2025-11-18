@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Search, Paperclip, Loader2 } from "lucide-react";
+import { Send, Search, Paperclip, Loader2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,6 +12,8 @@ interface DriverItem {
   id: string;
   name: string;
   license_number?: string | null;
+  phone?: string | null;
+  contact?: string | null;
 }
 
 interface TripRow {
@@ -41,6 +43,7 @@ export function MessageCenter() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingDrivers, setLoadingDrivers] = useState(true);
+  const [sendSMS, setSendSMS] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -52,7 +55,7 @@ export function MessageCenter() {
       try {
         const { data, error } = await supabase
           .from("drivers")
-          .select("id, name, license_number")
+          .select("id, name, license_number, phone, contact")
           .order("name", { ascending: true });
         if (error) throw error;
         setDrivers(data as any[] as DriverItem[]);
@@ -301,6 +304,54 @@ export function MessageCenter() {
         
       if (error) throw error;
       
+      // Send SMS if enabled and driver has phone number
+      let smsSuccess = false;
+      if (sendSMS) {
+        const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
+        const phoneNumber = selectedDriver?.phone || selectedDriver?.contact;
+        
+        if (phoneNumber) {
+          try {
+            const { error: smsError } = await supabase.functions.invoke("send-sms", {
+              body: {
+                to: phoneNumber,
+                message: messageText,
+                driver_id: selectedDriverId,
+                trip_id: latestActiveTripId,
+              },
+            });
+            
+            if (!smsError) {
+              smsSuccess = true;
+            } else {
+              console.error("SMS error:", smsError);
+            }
+          } catch (smsErr: any) {
+            console.error("SMS error:", smsErr);
+          }
+        }
+      }
+      
+      // Show success toast
+      if (sendSMS) {
+        if (smsSuccess) {
+          toast({
+            title: "Message sent",
+            description: "Message sent in app and via SMS.",
+          });
+        } else {
+          const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
+          const phoneNumber = selectedDriver?.phone || selectedDriver?.contact;
+          toast({
+            title: "Message sent",
+            description: phoneNumber
+              ? "Message sent in app, but SMS failed to send."
+              : "Message sent in app. No phone number found for SMS.",
+            variant: "default",
+          });
+        }
+      }
+      
       // Message will appear via real-time subscription
       // But we can also manually add it for instant feedback
       const optimisticMessage: MessageRow = {
@@ -492,51 +543,70 @@ export function MessageCenter() {
 
             {/* Input Area - Fixed at Bottom */}
             <div className="border-t bg-background p-4 flex-shrink-0">
-              <div className="flex gap-2 items-end max-w-4xl mx-auto">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 flex-shrink-0"
-                  disabled={!latestActiveTripId}
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Textarea
-                  placeholder={
-                    latestActiveTripId
-                      ? "Type a message..."
-                      : "No active trip found for this driver"
-                  }
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  className="min-h-[36px] max-h-[120px] resize-none"
-                  disabled={!latestActiveTripId}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                      e.preventDefault();
-                      if (!sending && newMessage.trim() && latestActiveTripId) {
-                        sendMessage();
-                      }
+              <div className="space-y-2 max-w-4xl mx-auto">
+                {/* SMS Toggle */}
+                {selectedDriver && (selectedDriver.phone || selectedDriver.contact) && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setSendSMS(!sendSMS)}
+                      className={`flex items-center gap-2 px-2 py-1 rounded transition-colors ${
+                        sendSMS
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      <span>Also send as SMS</span>
+                    </button>
+                  </div>
+                )}
+                <div className="flex gap-2 items-end">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    disabled={!latestActiveTripId}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                  <Textarea
+                    placeholder={
+                      latestActiveTripId
+                        ? "Type a message..."
+                        : "No active trip found for this driver"
                     }
-                  }}
-                />
-                <Button
-                  onClick={sendMessage}
-                  disabled={
-                    !newMessage.trim() ||
-                    !selectedDriverId ||
-                    !latestActiveTripId ||
-                    sending
-                  }
-                  size="icon"
-                  className="h-9 w-9 flex-shrink-0"
-                >
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    className="min-h-[36px] max-h-[120px] resize-none"
+                    disabled={!latestActiveTripId}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        if (!sending && newMessage.trim() && latestActiveTripId) {
+                          sendMessage();
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={sendMessage}
+                    disabled={
+                      !newMessage.trim() ||
+                      !selectedDriverId ||
+                      !latestActiveTripId ||
+                      sending
+                    }
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                  >
+                    {sending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </>
