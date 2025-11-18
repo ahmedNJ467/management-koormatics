@@ -390,7 +390,8 @@ export default function Drivers() {
         !searchTerm ||
         driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         driver.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.license_number?.toLowerCase().includes(searchTerm.toLowerCase());
+        driver.license_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.location?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === "all" || driver.status === statusFilter;
@@ -475,7 +476,7 @@ export default function Drivers() {
             <div className="flex-1 relative group">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
-                placeholder="Search drivers by name, license, or contact..."
+                placeholder="Search drivers by name, license, contact, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
