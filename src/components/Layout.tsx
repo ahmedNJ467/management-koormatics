@@ -312,8 +312,8 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
             <div className="flex-1 overflow-hidden">
               <main className="h-full overflow-y-auto bg-muted/20">
                 {/* Always render children - let components handle their own loading/access states */}
-                {/* Apply small uniform padding for all pages except dispatch (full-bleed) */}
-                {pathname === "/dispatch" ? (
+                {/* Apply small uniform padding for all pages except dispatch and chat (full-bleed) */}
+                {pathname === "/dispatch" || pathname === "/chat" ? (
                   children
                 ) : (
                   <div className="h-full p-3">{children}</div>
