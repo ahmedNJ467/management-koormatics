@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { VehicleSearchSelect } from "./VehicleSearchSelect";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { UseFormReturn } from "react-hook-form";
@@ -137,24 +138,16 @@ export function MaintenanceFormContent({
                 <FormDescription>
                   Select the vehicle that requires maintenance
                 </FormDescription>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isReadOnly}
-                >
-                  <FormControl>
-                    <SelectTrigger className={`h-11 ${isReadOnly ? "opacity-60" : ""}`}>
-                      <SelectValue placeholder="Choose a vehicle..." />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {vehicles?.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.make} {vehicle.model} - {vehicle.registration}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <VehicleSearchSelect
+                    vehicles={vehicles}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                    required
+                    placeholder="Choose a vehicle..."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
