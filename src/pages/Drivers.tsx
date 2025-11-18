@@ -65,7 +65,7 @@ export default function Drivers() {
         const { data, error } = await supabase
           .from("drivers")
           .select(
-            "id, name, contact, location, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
+            "id, name, contact, location, license_number, license_type, license_expiry, status, is_vip, avatar_url, document_url, airport_id_url, created_at"
           )
           .order("created_at", { ascending: false });
 
@@ -88,7 +88,7 @@ export default function Drivers() {
           const { data, error: retryError } = await supabase
             .from("drivers")
             .select(
-              "id, name, contact, license_number, license_type, license_expiry, status, is_vip, avatar_url, created_at"
+              "id, name, contact, license_number, license_type, license_expiry, status, is_vip, avatar_url, document_url, airport_id_url, created_at"
             )
             .order("created_at", { ascending: false });
           
