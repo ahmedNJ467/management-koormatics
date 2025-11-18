@@ -21,7 +21,7 @@ export function DocumentUploadField({
       <div className="flex items-center space-x-2">
         <Input
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
           onChange={onDocumentChange}
           className="hidden"
           id="document-upload"
