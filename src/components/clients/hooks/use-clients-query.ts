@@ -28,30 +28,34 @@ export function useClientsQuery() {
   return useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
-      // Fetch clients and active contracts in parallel
-      const [clientsResult, contractsResult] = await Promise.all([
-        supabase.from("clients").select("*").order("name"),
-        supabase
-          .from("contracts")
-          .select("client_id, clients:client_id(name)")
-          .gte("end_date", new Date().toISOString().split("T")[0])
-          .lte("start_date", new Date().toISOString().split("T")[0]),
-      ]);
+      const today = new Date().toISOString().split("T")[0];
+      
+      // Fetch clients first (don't wait for contracts if it fails)
+      const clientsResult = await supabase
+        .from("clients")
+        .select("*")
+        .order("name");
 
       if (clientsResult.error) throw clientsResult.error;
-      if (contractsResult.error) {
-        console.error(
-          "Error fetching active contracts:",
-          contractsResult.error
-        );
-      }
 
-      // Use a Set for efficient look-ups of client IDs that have active contracts
-      const clientsWithActiveContracts = new Set(
-        (contractsResult.data as any[])?.map(
-          (contract) => contract.client_id
-        ) || []
-      );
+      // Try to fetch active contracts, but don't fail if it errors
+      let clientsWithActiveContracts = new Set<string>();
+      try {
+        const contractsResult = await supabase
+          .from("contracts")
+          .select("client_id")
+          .lte("start_date", today)
+          .gte("end_date", today);
+
+        if (contractsResult.data && !contractsResult.error) {
+          clientsWithActiveContracts = new Set(
+            contractsResult.data.map((contract: any) => contract.client_id).filter(Boolean)
+          );
+        }
+      } catch (error) {
+        console.warn("Error fetching active contracts (non-critical):", error);
+        // Continue without contract data
+      }
 
       // Add has_active_contract flag to clients
       const clientsWithFlag = (clientsResult.data || []).map((client: any) => ({
@@ -61,8 +65,10 @@ export function useClientsQuery() {
 
       return clientsWithFlag as Client[];
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // Cache for 30 seconds (reduced from 5 minutes)
+    gcTime: 5 * 60 * 1000, // Keep in memory for 5 minutes
+    refetchOnMount: true, // Always refetch on mount to ensure fresh data
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
   });
 }
