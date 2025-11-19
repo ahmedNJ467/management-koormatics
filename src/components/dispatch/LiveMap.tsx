@@ -2,7 +2,7 @@ import { DisplayTrip } from "@/lib/types/trip";
 import { InterestPoint } from "@/lib/types/interest-point";
 import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps-loader";
-import { getGoogleIconUrl } from "@/lib/utils/google-icons";
+import { getLucideIconSvgUrl } from "@/lib/utils/lucide-icon-to-svg";
 
 // Helper function to get Google Material Icon for info windows
 const getCategoryIcon = (category: string): string => {
@@ -288,12 +288,12 @@ export const LiveMap = memo(function LiveMap({
       markersRef.current.push(poly as any);
     });
 
-    // Add interest point markers with Google Material Icons
+    // Add interest point markers with Lucide icons
     if (showInterestPoints && memoizedInterestPoints.length > 0) {
       memoizedInterestPoints.forEach((point) => {
         try {
-          // Create a custom marker with Google Material Icon
-          const iconUrl = getGoogleIconUrl(point.icon || "place");
+          // Create a custom marker with Lucide icon (converted to SVG)
+          const iconUrl = getLucideIconSvgUrl(point.icon || "place", point.color || "#3b82f6", 32);
 
           // Use legacy Marker API for interest points
           const marker = new g.maps.Marker({
@@ -355,7 +355,8 @@ export const LiveMap = memo(function LiveMap({
           labelOverlay.setMap(mapInstanceRef.current);
           labelOverlaysRef.current.push(labelOverlay);
 
-          // Add info window for interest points with Google Material Icons
+          // Add info window for interest points with Lucide icons
+          const iconSvgUrl = getLucideIconSvgUrl(point.icon || "place", "white", 20);
           const infoWindow = new g.maps.InfoWindow({
             content: `
                 <div style="padding: 16px; min-width: 280px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -363,10 +364,8 @@ export const LiveMap = memo(function LiveMap({
                     <div style="width: 32px; height: 32px; border-radius: 50%; background: ${
                       point.color
                     }; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
-                      <img src="https://fonts.gstatic.com/s/i/materialicons/${
-                        point.icon || "place"
-                      }/v1/24px.svg" 
-                           style="width: 20px; height: 20px; filter: invert(1);" 
+                      <img src="${iconSvgUrl}" 
+                           style="width: 20px; height: 20px;" 
                            alt="${point.icon || "place"}" />
                     </div>
                     <div style="font-weight: 600; font-size: 16px; color: #1f2937;">${

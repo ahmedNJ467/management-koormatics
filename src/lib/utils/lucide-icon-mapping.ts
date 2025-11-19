@@ -1,0 +1,330 @@
+// Mapping from Material Icon names to Lucide React icons
+// This allows us to migrate from Google Material Icons to Lucide React icons
+
+import {
+  MapPin,
+  Shield,
+  ShoppingCart,
+  Building2,
+  Home,
+  Store,
+  UtensilsCrossed,
+  Hotel,
+  Fuel,
+  Hospital,
+  School,
+  Landmark,
+  Lock,
+  AlertTriangle,
+  CheckCircle2,
+  Verified,
+  Gavel,
+  ShoppingBag,
+  Warehouse,
+  Truck,
+  Fire,
+  Droplet,
+  HeartPulse,
+  Pill,
+  Coffee,
+  Pizza,
+  IceCream,
+  Bed,
+  Waves,
+  Wifi,
+  Menu,
+  Wallet,
+  CreditCard,
+  BookOpen,
+  Computer,
+  Music,
+  Palette,
+  Brain,
+  Church,
+  Navigation,
+  Compass,
+  Route,
+  Star,
+  Heart,
+  Bookmark,
+  Flag,
+  Pin,
+  Search,
+  Map,
+  Navigation2,
+} from "lucide-react";
+import { LucideIcon } from "lucide-react";
+
+// Type for icon mapping
+export type IconName = string;
+export type LucideIconComponent = LucideIcon;
+
+// Mapping from Material Icon names to Lucide React icons
+export const MATERIAL_TO_LUCIDE_MAP: Record<string, LucideIconComponent> = {
+  // Places & Locations
+  place: MapPin,
+  location_on: MapPin,
+  location_city: Building2,
+  pin_drop: Pin,
+  my_location: Navigation,
+  near_me: Navigation2,
+  room: Home,
+  explore: Compass,
+  map: Map,
+  navigation: Navigation,
+  directions: Route,
+  
+  // Security & Checkpoints
+  security: Shield,
+  shield: Shield,
+  verified_user: Verified,
+  local_police: Shield,
+  warning: AlertTriangle,
+  check_circle: CheckCircle2,
+  verified: Verified,
+  lock: Lock,
+  lock_outline: Lock,
+  gavel: Gavel,
+  
+  // Shopping & Market
+  store: Store,
+  shopping_cart: ShoppingCart,
+  local_grocery_store: ShoppingCart,
+  storefront: Store,
+  shopping_bag: ShoppingBag,
+  local_mall: Store,
+  inventory: Warehouse,
+  warehouse: Warehouse,
+  local_shipping: Truck,
+  
+  // Fuel
+  local_gas_station: Fuel,
+  local_fire_department: Fire,
+  oil_barrel: Droplet,
+  fuel: Fuel,
+  gas_station: Fuel,
+  
+  // Health
+  local_hospital: Hospital,
+  medical_services: HeartPulse,
+  health_and_safety: HeartPulse,
+  medication: Pill,
+  local_pharmacy: Pill,
+  emergency: AlertTriangle,
+  healing: HeartPulse,
+  vaccines: Pill,
+  
+  // Restaurant
+  restaurant: UtensilsCrossed,
+  local_dining: UtensilsCrossed,
+  fastfood: UtensilsCrossed,
+  coffee: Coffee,
+  local_cafe: Coffee,
+  bakery_dining: UtensilsCrossed,
+  local_pizza: Pizza,
+  ramen_dining: UtensilsCrossed,
+  icecream: IceCream,
+  
+  // Hotel
+  hotel: Hotel,
+  bed: Bed,
+  room_service: UtensilsCrossed,
+  ac_unit: Waves,
+  pool: Waves,
+  wifi: Wifi,
+  restaurant_menu: Menu,
+  
+  // Bank & Finance
+  account_balance: Landmark,
+  savings: Wallet,
+  credit_card: CreditCard,
+  atm: CreditCard,
+  account_balance_wallet: Wallet,
+  monetization_on: Wallet,
+  attach_money: Wallet,
+  local_atm: CreditCard,
+  
+  // School
+  school: School,
+  library_books: BookOpen,
+  menu_book: BookOpen,
+  science: Computer,
+  computer: Computer,
+  sports_soccer: Computer,
+  music_note: Music,
+  palette: Palette,
+  psychology: Brain,
+  
+  // Religious
+  mosque: Church,
+  place_of_worship: Church,
+  temple_buddhist: Church,
+  church: Church,
+  synagogue: Church,
+  spa: Waves,
+  self_improvement: Brain,
+  nature_people: Heart,
+  
+  // General
+  star: Star,
+  favorite: Heart,
+  bookmark: Bookmark,
+  flag: Flag,
+  marker: Pin,
+  push_pin: Pin,
+  business: Building2,
+  park: MapPin,
+  beach_access: Waves,
+  terrain: MapPin,
+};
+
+// Get Lucide icon component from Material Icon name
+export function getLucideIcon(iconName?: string): LucideIconComponent | null {
+  if (!iconName) return null;
+  
+  const normalizedName = iconName.toLowerCase().trim();
+  return MATERIAL_TO_LUCIDE_MAP[normalizedName] || MapPin; // Default to MapPin
+}
+
+// Get all available icon names
+export function getAvailableIconNames(): string[] {
+  return Object.keys(MATERIAL_TO_LUCIDE_MAP);
+}
+
+// Icon categories for the selector
+export const ICON_CATEGORIES = {
+  places: [
+    "place",
+    "location_on",
+    "location_city",
+    "home",
+    "business",
+    "store",
+    "restaurant",
+    "hotel",
+    "local_gas_station",
+    "local_hospital",
+    "school",
+    "account_balance",
+    "local_police",
+    "park",
+    "beach_access",
+    "terrain",
+  ],
+  checkpoints: [
+    "security",
+    "shield",
+    "verified_user",
+    "gavel",
+    "local_police",
+    "warning",
+    "check_circle",
+    "verified",
+    "lock",
+    "lock_outline",
+  ],
+  market: [
+    "store",
+    "shopping_cart",
+    "local_grocery_store",
+    "storefront",
+    "shopping_bag",
+    "local_mall",
+    "inventory",
+    "warehouse",
+    "local_shipping",
+  ],
+  security: [
+    "security",
+    "shield",
+    "verified_user",
+    "gavel",
+    "local_police",
+    "warning",
+    "check_circle",
+    "verified",
+    "lock",
+    "lock_outline",
+  ],
+  fuel: [
+    "local_gas_station",
+    "local_fire_department",
+    "oil_barrel",
+    "fuel",
+    "gas_station",
+  ],
+  health: [
+    "local_hospital",
+    "medical_services",
+    "health_and_safety",
+    "medication",
+    "local_pharmacy",
+    "emergency",
+    "healing",
+    "vaccines",
+  ],
+  restaurant: [
+    "restaurant",
+    "local_dining",
+    "fastfood",
+    "coffee",
+    "local_cafe",
+    "bakery_dining",
+    "local_pizza",
+    "ramen_dining",
+    "icecream",
+  ],
+  hotel: [
+    "hotel",
+    "bed",
+    "room_service",
+    "ac_unit",
+    "pool",
+    "wifi",
+    "restaurant_menu",
+  ],
+  bank: [
+    "account_balance",
+    "savings",
+    "credit_card",
+    "atm",
+    "account_balance_wallet",
+    "monetization_on",
+    "attach_money",
+    "local_atm",
+  ],
+  school: [
+    "school",
+    "library_books",
+    "menu_book",
+    "science",
+    "computer",
+    "sports_soccer",
+    "music_note",
+    "palette",
+    "psychology",
+  ],
+  mosque: [
+    "mosque",
+    "place_of_worship",
+    "temple_buddhist",
+    "church",
+    "synagogue",
+    "spa",
+    "self_improvement",
+    "nature_people",
+  ],
+  general: [
+    "place",
+    "location_on",
+    "pin_drop",
+    "my_location",
+    "near_me",
+    "room",
+    "explore",
+    "map",
+    "navigation",
+    "directions",
+  ],
+} as const;
+

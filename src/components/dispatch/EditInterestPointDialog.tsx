@@ -24,7 +24,7 @@ import {
   INTEREST_POINT_CATEGORIES,
 } from "@/lib/types/interest-point";
 import { MapPin } from "lucide-react";
-import { SafeGoogleIconsSelector } from "@/components/SafeGoogleIconsSelector";
+import { LucideIconsSelector } from "@/components/ui/lucide-icons-selector";
 
 interface EditInterestPointDialogProps {
   open: boolean;
@@ -193,7 +193,7 @@ export function EditInterestPointDialog({
             </Select>
           </div>
 
-          <SafeGoogleIconsSelector
+          <LucideIconsSelector
             value={formData.icon}
             onChange={(iconName) =>
               setFormData((prev) => ({ ...prev, icon: iconName }))

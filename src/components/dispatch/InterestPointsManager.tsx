@@ -28,11 +28,7 @@ import {
 import { AddInterestPointDialog } from "./AddInterestPointDialog";
 import { EditInterestPointDialog } from "./EditInterestPointDialog";
 import { DeleteInterestPointDialog } from "./DeleteInterestPointDialog";
-import {
-  getGoogleIconUrl,
-  handleImageError,
-  getThemeAwareIconStyle,
-} from "@/lib/utils/google-icons";
+import { getLucideIcon } from "@/lib/utils/lucide-icon-mapping";
 
 interface InterestPointsManagerProps {
   onInterestPointSelected?: (point: InterestPoint) => void;
@@ -184,9 +180,7 @@ export function InterestPointsManager({
     );
   };
 
-  const getIconStyle = (color?: string) => {
-    return getThemeAwareIconStyle(isDark, color);
-  };
+  // Removed - no longer needed with Lucide icons
 
   const renderPointsList = (points: InterestPoint[]) => {
     if (points.length === 0) {
@@ -213,23 +207,14 @@ export function InterestPointsManager({
                   className="h-6 w-6 flex items-center justify-center"
                   style={{ color: point.color }}
                 >
-                  <img
-                    src={getGoogleIconUrl(point.icon)}
-                    alt={point.icon}
-                    className="h-6 w-6"
-                    style={getIconStyle(point.color)}
-                    onError={(e) => {
-                      const fallback = e.currentTarget
-                        .nextElementSibling as HTMLElement;
-                      handleImageError(e, fallback);
-                    }}
-                  />
-                  <span
-                    className="text-2xl hidden"
-                    style={{ color: point.color }}
-                  >
-                    {point.icon}
-                  </span>
+                  {(() => {
+                    const IconComponent = getLucideIcon(point.icon);
+                    return IconComponent ? (
+                      <IconComponent className="h-6 w-6" style={{ color: point.color }} />
+                    ) : (
+                      <MapPin className="h-6 w-6" style={{ color: point.color }} />
+                    );
+                  })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{point.name}</div>
