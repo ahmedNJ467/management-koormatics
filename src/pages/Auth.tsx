@@ -44,9 +44,10 @@ export default function Auth() {
       ])) as any;
       if (error) throw error;
 
-      // After successful authentication, check if user has access to this portal
+      // Immediately after authentication, check if user has access to this portal
+      // BEFORE showing any success message or storing session
       if (authData?.user) {
-        // Get user roles
+        // Get user roles immediately
         const userId = authData.user.id;
         let userRoles: string[] = [];
 
@@ -61,7 +62,7 @@ export default function Auth() {
         if (metaRoles.length > 0) {
           userRoles = metaRoles;
         } else {
-          // Fallback to database query
+          // Fallback to database query - this must be fast
           try {
             const { data, error: rolesError } = await supabase
               .from("vw_user_roles")
@@ -100,31 +101,32 @@ export default function Auth() {
           hasAccess = hasSuperAdmin; // Default to super_admin only
         }
 
-        // If user doesn't have access, sign them out and show invalid credentials
+        // If user doesn't have access, immediately sign them out and throw error
+        // This makes it appear as if authentication never succeeded
         if (!hasAccess) {
-          // Sign out the user immediately
+          // Sign out immediately - this invalidates the session
           await supabase.auth.signOut({ scope: "local" });
           
-          // Clear any session storage
+          // Clear ALL session and storage data immediately
           if (typeof window !== "undefined") {
             try {
               sessionStorage.removeItem("supabase.auth.token");
+              sessionStorage.clear();
               localStorage.removeItem("koormatics_saved_email");
               localStorage.removeItem("koormatics_remember_me");
+              // Also clear any cached session
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session) {
+                await supabase.auth.signOut();
+              }
             } catch (error) {
               console.warn("Failed to clear storage:", error);
             }
           }
 
-          // Show invalid credentials error (don't reveal they have valid credentials but wrong portal)
-          toast({
-            title: "Invalid credentials",
-            description: "The email or password you entered is incorrect. Please check your credentials and try again.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          setIsRedirecting(false);
-          return;
+          // Throw an error that looks like an authentication failure
+          // This prevents any success flow from executing
+          throw new Error("Invalid login credentials");
         }
       }
 
@@ -182,20 +184,26 @@ export default function Auth() {
       router.replace(dashboardPath);
     } catch (error) {
       console.error("Auth error:", error);
+      
+      // For access denied errors, show invalid credentials (don't reveal the real reason)
+      const errorMessage = error instanceof Error ? error.message : "";
+      const isAccessDenied = errorMessage === "Invalid login credentials";
+      
       toast({
-        title: "Unable to sign in",
+        title: "Invalid credentials",
         description:
           error instanceof Error
-            ? error.message.includes("timeout")
+            ? errorMessage.includes("timeout")
               ? "Connection timeout. Please check your internet connection and try again."
-              : error.message.includes("Invalid login credentials") ||
-                error.message.includes("invalid_credentials")
+              : errorMessage.includes("Invalid login credentials") ||
+                errorMessage.includes("invalid_credentials") ||
+                isAccessDenied
               ? "The email or password you entered is incorrect. Please check your credentials and try again."
-              : error.message.includes("Email not confirmed")
+              : errorMessage.includes("Email not confirmed")
               ? "Please check your email and click the confirmation link before signing in."
-              : error.message.includes("Too many requests")
+              : errorMessage.includes("Too many requests")
               ? "Too many sign-in attempts. Please wait a few minutes before trying again."
-              : "Something went wrong. Please try again in a moment."
+              : "The email or password you entered is incorrect. Please check your credentials and try again."
             : "The email or password you entered is incorrect. Please check your credentials and try again.",
         variant: "destructive",
       });
