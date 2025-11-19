@@ -1,6 +1,116 @@
 // Utility to convert Lucide React icons to SVG data URLs for use in map markers
 import { getLucideIcon } from "./lucide-icon-mapping";
-import { LucideIcon } from "lucide-react";
+import * as lucideIcons from "lucide";
+import React from "react";
+import { renderToString } from "react-dom/server";
+
+/**
+ * Mapping from Material Icon names to Lucide icon names (as strings)
+ * This allows us to get the icon data from the lucide package
+ */
+const MATERIAL_TO_LUCIDE_NAME_MAP: Record<string, string> = {
+  // Places & Locations
+  place: "MapPin",
+  location_on: "MapPin",
+  location_city: "Building2",
+  pin_drop: "Pin",
+  my_location: "Navigation",
+  near_me: "Navigation2",
+  room: "Home",
+  explore: "Compass",
+  map: "Map",
+  navigation: "Navigation",
+  directions: "Route",
+  
+  // Security & Checkpoints
+  security: "Shield",
+  shield: "Shield",
+  verified_user: "Verified",
+  local_police: "Shield",
+  warning: "AlertTriangle",
+  check_circle: "CheckCircle2",
+  verified: "Verified",
+  lock: "Lock",
+  lock_outline: "Lock",
+  gavel: "Gavel",
+  
+  // Shopping & Market
+  store: "Store",
+  shopping_cart: "ShoppingCart",
+  local_grocery_store: "ShoppingCart",
+  storefront: "Store",
+  shopping_bag: "ShoppingBag",
+  local_mall: "Store",
+  inventory: "Warehouse",
+  warehouse: "Warehouse",
+  local_shipping: "Truck",
+  
+  // Fuel
+  local_gas_station: "Fuel",
+  local_fire_department: "Flame",
+  oil_barrel: "Droplet",
+  fuel: "Fuel",
+  gas_station: "Fuel",
+  
+  // Health
+  local_hospital: "Hospital",
+  medical_services: "HeartPulse",
+  health_and_safety: "HeartPulse",
+  medication: "Pill",
+  local_pharmacy: "Pill",
+  emergency: "AlertTriangle",
+  healing: "HeartPulse",
+  vaccines: "Pill",
+  
+  // Restaurant
+  restaurant: "UtensilsCrossed",
+  local_dining: "UtensilsCrossed",
+  fastfood: "UtensilsCrossed",
+  coffee: "Coffee",
+  local_cafe: "Coffee",
+  bakery_dining: "UtensilsCrossed",
+  local_pizza: "Pizza",
+  ramen_dining: "UtensilsCrossed",
+  icecream: "IceCream",
+  
+  // Hotel
+  hotel: "Hotel",
+  bed: "Bed",
+  room_service: "UtensilsCrossed",
+  ac_unit: "Waves",
+  pool: "Waves",
+  wifi: "Wifi",
+  restaurant_menu: "Menu",
+  
+  // Bank & Finance
+  account_balance: "Landmark",
+  savings: "Wallet",
+  credit_card: "CreditCard",
+  atm: "CreditCard",
+  account_balance_wallet: "Wallet",
+  monetization_on: "Wallet",
+  attach_money: "Wallet",
+  local_atm: "CreditCard",
+  
+  // School
+  school: "School",
+  library_books: "BookOpen",
+  menu_book: "BookOpen",
+  science: "Computer",
+  computer: "Computer",
+  sports_soccer: "Computer",
+  music_note: "Music",
+  
+  // General
+  palette: "Palette",
+  brain: "Brain",
+  church: "Church",
+  star: "Star",
+  heart: "Heart",
+  bookmark: "Bookmark",
+  flag: "Flag",
+  search: "Search",
+};
 
 /**
  * Converts a Lucide icon to an SVG data URL
@@ -18,25 +128,36 @@ export function getLucideIconSvgUrl(
     iconName = "place"; // Default icon
   }
 
-  const IconComponent = getLucideIcon(iconName);
-  if (!IconComponent) {
-    // Fallback to MapPin
-    return getMapPinSvg(color, size);
-  }
-
-  // Create a temporary element to render the icon
-  // Note: This is a simplified approach. For production, you might want to use
-  // a more robust method or pre-generate SVGs
   try {
-    // For now, we'll create a simple SVG wrapper
-    // In a real implementation, you'd render the icon to SVG
-    const svgContent = `
-      <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${color}"/>
-      </svg>
-    `.trim();
+    // Get the Lucide icon name from the mapping
+    const normalizedName = iconName.toLowerCase().trim();
+    const lucideIconName = MATERIAL_TO_LUCIDE_NAME_MAP[normalizedName] || "MapPin";
+    
+    // Get the icon from lucide package
+    const IconComponent = (lucideIcons as any)[lucideIconName];
+    
+    if (!IconComponent) {
+      // Fallback to MapPin
+      return getMapPinSvg(color, size);
+    }
 
-    return `data:image/svg+xml;base64,${btoa(svgContent)}`;
+    // Render the icon to SVG string using react-dom/server
+    // This works in both server and client contexts in Next.js
+    try {
+      const iconElement = React.createElement(IconComponent, {
+        size: size,
+        color: color,
+        strokeWidth: 2,
+      });
+      
+      const svgString = renderToString(iconElement);
+      const svgDataUrl = `data:image/svg+xml;base64,${btoa(svgString)}`;
+      return svgDataUrl;
+    } catch (renderError) {
+      // If rendering fails, fallback to MapPin
+      console.warn("Failed to render Lucide icon to SVG:", renderError);
+      return getMapPinSvg(color, size);
+    }
   } catch (error) {
     console.warn("Error creating SVG from Lucide icon:", error);
     return getMapPinSvg(color, size);
