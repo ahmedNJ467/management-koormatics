@@ -19,7 +19,6 @@ export function calculateSummaryCosts(
     (item) => item?.status === "completed"
   );
 
-  console.log("Completed maintenance items:", completedMaintenance.length);
 
   // Calculate maintenance costs
   const maintenanceCosts = completedMaintenance.reduce((sum, item) => {
@@ -64,9 +63,6 @@ export function calculateSummaryCosts(
 
       const usageCost = quantityUsed * costPerUnit;
 
-      console.log(
-        `Spare part ${part.name}: ${quantityUsed} used × $${costPerUnit} = $${usageCost}`
-      );
 
       return sum + usageCost;
     }
@@ -81,16 +77,6 @@ export function calculateSummaryCosts(
   };
 
   costs.total = costs.maintenance + costs.fuel + costs.spareParts;
-  console.log(
-    "Calculated maintenance costs (including parts):",
-    costs.maintenance
-  );
-  console.log("Calculated fuel costs:", costs.fuel);
-  console.log(
-    "Calculated spare parts costs (included in maintenance):",
-    sparePartsCosts
-  );
-  console.log("Calculated total costs:", costs.total);
 
   return costs;
 }

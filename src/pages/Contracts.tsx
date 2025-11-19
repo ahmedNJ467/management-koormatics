@@ -102,7 +102,7 @@ export default function Contracts() {
   useEffect(() => {
     const checkStorage = async () => {
       try {
-        console.log("Checking storage availability...");
+        // console.log("Checking storage availability...");
         const { data, error } = await supabase.storage.from("documents").list();
 
         if (error) {
@@ -110,7 +110,7 @@ export default function Contracts() {
           setIsStorageAvailable(false);
           setStorageError(error.message);
         } else {
-          console.log("Storage is available, found", data?.length, "files");
+          // console.log("Storage is available, found", data?.length, "files");
           setIsStorageAvailable(true);
           setStorageError(null);
         }
@@ -567,11 +567,10 @@ export default function Contracts() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-8 px-3 rounded-md transition-all ${
-                    viewMode === "table"
+                  className={`h-8 px-3 rounded-md transition-all ${viewMode === "table"
                       ? "bg-background text-foreground shadow-sm border border-border/50"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                   onClick={() => setViewMode("table")}
                   aria-label="Table view"
                 >
@@ -581,11 +580,10 @@ export default function Contracts() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-8 px-3 rounded-md transition-all ${
-                    viewMode === "cards"
+                  className={`h-8 px-3 rounded-md transition-all ${viewMode === "cards"
                       ? "bg-background text-foreground shadow-sm border border-border/50"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                   onClick={() => setViewMode("cards")}
                   aria-label="Cards view"
                 >
@@ -601,70 +599,70 @@ export default function Contracts() {
             statusFilter !== "all" ||
             sortBy !== "created_at" ||
             sortOrder !== "desc") && (
-            <div className="flex items-center justify-between">
-              <div className="flex flex-wrap gap-2">
-                {searchQuery && (
-                  <Badge variant="secondary" className="gap-1">
-                    Search: "{searchQuery}"
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => setSearchQuery("")}
-                      aria-label="Clear search chip"
-                    >
-                      <XCircle className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
-                {statusFilter !== "all" && (
-                  <Badge variant="secondary" className="gap-1">
-                    Status: {statusFilter}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => setStatusFilter("all")}
-                      aria-label="Clear status chip"
-                    >
-                      <XCircle className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
-                {(sortBy !== "created_at" || sortOrder !== "desc") && (
-                  <Badge variant="secondary" className="gap-1">
-                    Sort: {sortBy.replace("_", " ")} ({sortOrder})
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => {
-                        setSortBy("created_at");
-                        setSortOrder("desc");
-                      }}
-                      aria-label="Reset sort chip"
-                    >
-                      <XCircle className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2">
+                  {searchQuery && (
+                    <Badge variant="secondary" className="gap-1">
+                      Search: "{searchQuery}"
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => setSearchQuery("")}
+                        aria-label="Clear search chip"
+                      >
+                        <XCircle className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  )}
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1">
+                      Status: {statusFilter}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => setStatusFilter("all")}
+                        aria-label="Clear status chip"
+                      >
+                        <XCircle className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  )}
+                  {(sortBy !== "created_at" || sortOrder !== "desc") && (
+                    <Badge variant="secondary" className="gap-1">
+                      Sort: {sortBy.replace("_", " ")} ({sortOrder})
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => {
+                          setSortBy("created_at");
+                          setSortOrder("desc");
+                        }}
+                        aria-label="Reset sort chip"
+                      >
+                        <XCircle className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                    setSortBy("created_at");
+                    setSortOrder("desc");
+                  }}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Clear All
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery("");
-                  setStatusFilter("all");
-                  setSortBy("created_at");
-                  setSortOrder("desc");
-                }}
-                className="shrink-0 text-muted-foreground hover:text-foreground"
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Clear All
-              </Button>
-            </div>
-          )}
+            )}
         </div>
 
         {/* Contract Display */}

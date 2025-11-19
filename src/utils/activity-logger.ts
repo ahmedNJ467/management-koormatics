@@ -76,9 +76,8 @@ export const logActivity = async ({
   let enhancedTitle = title;
   if (type === "trip" && relatedId) {
     const formattedTripId = formatTripId(relatedId);
-    enhancedTitle = `Trip ${formattedTripId} ${
-      title.toLowerCase().includes("created") ? "created" : "updated"
-    }`;
+    enhancedTitle = `Trip ${formattedTripId} ${title.toLowerCase().includes("created") ? "created" : "updated"
+      }`;
   }
 
   const newActivity: ActivityItemProps = {
@@ -94,10 +93,7 @@ export const logActivity = async ({
   try {
     // Skip database operations if activity logging is disabled
     if (!ENABLE_ACTIVITY_LOGGING) {
-      console.log(
-        "Activity logging disabled, returning local activity:",
-        enhancedTitle
-      );
+      // console.log("Activity logging disabled, returning local activity:", enhancedTitle);
       return newActivity;
     }
 
@@ -155,7 +151,7 @@ export const logActivity = async ({
       }
       // Still return the activity object for local use
     } else {
-      console.log("Activity logged successfully:", enhancedTitle);
+      // console.log("Activity logged successfully:", enhancedTitle);
     }
   } catch (err) {
     console.error("Failed to log activity to database:", err);
@@ -172,7 +168,7 @@ export const getActivities = async (
   try {
     // Skip database operations if activity logging is disabled
     if (!ENABLE_ACTIVITY_LOGGING) {
-      console.log("Activity logging disabled, returning empty activities list");
+      // console.log("Activity logging disabled, returning empty activities list");
       return [];
     }
 

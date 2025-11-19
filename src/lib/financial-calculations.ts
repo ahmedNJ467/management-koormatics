@@ -79,10 +79,6 @@ export function calculateFinancialData(
     (record) => record && record.status === "completed"
   );
 
-  console.log(
-    "Financial Calcs - Completed maintenance items:",
-    completedMaintenance.length
-  );
 
   // Calculate maintenance costs (External Expense)
   const maintenanceCosts = completedMaintenance.reduce((sum, record) => {
@@ -109,10 +105,6 @@ export function calculateFinancialData(
   // Calculate total expenses - include spare parts within maintenance costs
   const totalExpenses = maintenanceCosts + fuelCosts + sparePartsCosts;
 
-  console.log("Financial Calcs - Maintenance costs:", maintenanceCosts);
-  console.log("Financial Calcs - Fuel costs:", fuelCosts);
-  console.log("Financial Calcs - Spare parts costs:", sparePartsCosts);
-  console.log("Financial Calcs - Total expenses:", totalExpenses);
 
   // Calculate profit and margin
   const profit = totalRevenue - totalExpenses;
