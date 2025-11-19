@@ -41,7 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
- 
+
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isValid } from "date-fns";
@@ -61,12 +61,12 @@ interface VehicleIncidentReport {
   incident_date: string;
   incident_time: string;
   incident_type:
-    | "accident"
-    | "theft"
-    | "vandalism"
-    | "breakdown"
-    | "traffic_violation"
-    | "other";
+  | "accident"
+  | "theft"
+  | "vandalism"
+  | "breakdown"
+  | "traffic_violation"
+  | "other";
   severity: "minor" | "moderate" | "severe" | "critical";
   status: "reported" | "investigating" | "resolved" | "closed";
   location: string;
@@ -366,16 +366,16 @@ export default function VehicleIncidentReports() {
         ...report,
         driver: report.driver
           ? {
-              name: report.driver.name,
-              license_number: report.driver.license_number,
-            }
+            name: report.driver.name,
+            license_number: report.driver.license_number,
+          }
           : undefined,
         vehicle: report.vehicle
           ? {
-              make: report.vehicle.make,
-              model: report.vehicle.model,
-              registration: report.vehicle.registration,
-            }
+            make: report.vehicle.make,
+            model: report.vehicle.model,
+            registration: report.vehicle.registration,
+          }
           : undefined,
       } as any;
       try {
@@ -402,7 +402,7 @@ export default function VehicleIncidentReports() {
         });
       }
       await generateIncidentReportPdf(exportData, {
-        logoUrl: window.location.origin + "/images/Koormatics-logo.png",
+        logoUrl: window.location.origin + "/logo.svg",
       });
       toast({
         title: "PDF exported successfully",
@@ -501,9 +501,8 @@ export default function VehicleIncidentReports() {
 
     return (
       <Badge
-        className={`${typeColors[type as keyof typeof typeColors]} hover:${
-          typeColors[type as keyof typeof typeColors]
-        }`}
+        className={`${typeColors[type as keyof typeof typeColors]} hover:${typeColors[type as keyof typeof typeColors]
+          }`}
       >
         {typeLabels[type as keyof typeof typeLabels] || type}
       </Badge>
@@ -614,16 +613,16 @@ export default function VehicleIncidentReports() {
         ...report,
         driver: report.driver
           ? {
-              name: report.driver.name,
-              license_number: report.driver.license_number,
-            }
+            name: report.driver.name,
+            license_number: report.driver.license_number,
+          }
           : undefined,
         vehicle: report.vehicle
           ? {
-              make: report.vehicle.make,
-              model: report.vehicle.model,
-              registration: report.vehicle.registration,
-            }
+            make: report.vehicle.make,
+            model: report.vehicle.model,
+            registration: report.vehicle.registration,
+          }
           : undefined,
       }));
 
@@ -1019,11 +1018,10 @@ export default function VehicleIncidentReports() {
               <AlertDialogTitle>Delete Incident Report</AlertDialogTitle>
               <AlertDialogDescription>
                 {reportToDelete
-                  ? `Are you sure you want to delete the incident report for ${
-                      reportToDelete.vehicle
-                        ? `${reportToDelete.vehicle.make} ${reportToDelete.vehicle.model} (${reportToDelete.vehicle.registration})`
-                        : "this vehicle"
-                    }? This action cannot be undone.`
+                  ? `Are you sure you want to delete the incident report for ${reportToDelete.vehicle
+                    ? `${reportToDelete.vehicle.make} ${reportToDelete.vehicle.model} (${reportToDelete.vehicle.registration})`
+                    : "this vehicle"
+                  }? This action cannot be undone.`
                   : "Are you sure you want to delete this incident report? This action cannot be undone."}
               </AlertDialogDescription>
             </AlertDialogHeader>

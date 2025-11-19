@@ -274,7 +274,7 @@ export default function VehicleInspections() {
   const handleDownloadPdf = async (inspection: VehicleInspection) => {
     try {
       await generateVehicleInspectionPdf(inspection as any, {
-        logoUrl: window.location.origin + "/images/Koormatics-logo.png",
+        logoUrl: window.location.origin + "/logo.svg",
       });
     } catch (e) {
       console.error(e);
@@ -551,7 +551,7 @@ export default function VehicleInspections() {
                     </TableRow>
                   ) : (
                     paginatedInspections?.map((inspection: any) => (
-                      <TableRow 
+                      <TableRow
                         key={inspection.id}
                         className="hover:bg-muted/30 transition-colors cursor-pointer"
                         onClick={() => handleViewDetails(inspection)}

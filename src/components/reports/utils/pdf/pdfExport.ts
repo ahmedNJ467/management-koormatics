@@ -8,7 +8,7 @@ let CACHED_LOGO_DATA_URL: string | null = null;
 
 async function loadLogoDataUrl(): Promise<string | null> {
   if (CACHED_LOGO_DATA_URL) return CACHED_LOGO_DATA_URL;
-  const logoUrl = "/images/Koormatics-logo.png";
+  const logoUrl = "/logo.svg";
   const logoWidth = 48; // render width (mm)
   const logoHeight = 14; // render height (mm)
   try {

@@ -97,7 +97,6 @@ export function DriverFormDialog({
         clearAirportId();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, driver]);
 
   async function onSubmit(values: DriverFormValues) {
@@ -226,9 +225,8 @@ export function DriverFormDialog({
 
       toast({
         title: `Driver ${driver ? "updated" : "created"} successfully`,
-        description: `${values.name} has been ${
-          driver ? "updated" : "added"
-        } to the system.`,
+        description: `${values.name} has been ${driver ? "updated" : "added"
+          } to the system.`,
       });
       onOpenChange(false);
     } catch (error) {

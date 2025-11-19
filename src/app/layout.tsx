@@ -13,16 +13,15 @@ export const metadata: Metadata = {
   ),
   icons: {
     icon: [
-      { url: "/images/favicon-koormatics.png", sizes: "32x32", type: "image/png" },
-      { url: "/images/favicon-koormatics.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
     ],
-    shortcut: "/favicon.ico",
-    apple: "/images/favicon-koormatics.png",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
   openGraph: {
     title: "Koormatics Management System",
     description: "Fleet and operations management system for Koormatics",
-    images: ["/images/Koormatics-logo.png"],
+    images: ["/logo.svg"],
   },
 };
 

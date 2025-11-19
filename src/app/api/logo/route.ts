@@ -8,9 +8,8 @@ export async function GET(request: NextRequest) {
   try {
     // Try multiple possible paths
     const possiblePaths = [
-      path.join(process.cwd(), "public", "images", "Koormatics-logo.png"),
-      path.join(process.cwd(), "public", "Koormatics-logo.png"),
-      path.join(process.cwd(), "Koormatics-logo.png"),
+      path.join(process.cwd(), "public", "logo.svg"),
+      path.join(process.cwd(), "logo.svg"),
     ];
 
     let logoBuffer: Buffer | null = null;
@@ -41,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(arrayBuffer, {
       headers: {
-        "Content-Type": "image/png",
+        "Content-Type": "image/svg+xml",
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });

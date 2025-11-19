@@ -7,8 +7,7 @@ interface KoormaticsLogoProps {
   size?: LogoSize;
 }
 
-const LOGO_SRC =
-  "https://www.koormatics.com/wp-content/uploads/2023/09/logo.svg";
+const LOGO_SRC = "/logo.svg";
 
 const wrapperHeights: Record<LogoSize, string> = {
   sm: "h-8",

@@ -24,7 +24,7 @@ export const generateQuotationPDF = async (quotation: DisplayQuotation) => {
   doc.setFont("helvetica");
 
   // Load Koormatics logo with high-quality rendering
-  const logoUrl = "/images/Koormatics-logo.png";
+  const logoUrl = "/logo.svg";
   const logoWidth = 60; // Increased width for better visibility
   const logoHeight = 18; // Increased height proportionally
 

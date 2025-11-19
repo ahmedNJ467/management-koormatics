@@ -90,7 +90,7 @@ export const generateInvoicePDF = async (invoice: DisplayInvoice) => {
   doc.setFont("helvetica");
 
   // Koormatics branding (load PNG logo with proper error handling)
-  const logoUrl = "/images/Koormatics-logo.png";
+  const logoUrl = "/logo.svg";
   const logoWidth = 50;
   const logoHeight = 15;
   // Header ribbon metrics and logo placement just below it
@@ -251,9 +251,8 @@ export const generateInvoicePDF = async (invoice: DisplayInvoice) => {
         const serviceLabel =
           tripTypeDisplayMap[t.service_type] ||
           (t.service_type || "").replace(/_/g, " ");
-        const route = `${t.pickup_location || "N/A"} → ${
-          t.dropoff_location || "N/A"
-        }`;
+        const route = `${t.pickup_location || "N/A"} → ${t.dropoff_location || "N/A"
+          }`;
         const vehicleBits: string[] = [];
         if (t.vehicle_type)
           vehicleBits.push(
@@ -266,11 +265,9 @@ export const generateInvoicePDF = async (invoice: DisplayInvoice) => {
         const escortInfo = t.has_security_escort
           ? `${t.escort_count || 1} escort vehicle(s)`
           : "None";
-        return `Trip from ${t.pickup_location || "N/A"} to ${
-          t.dropoff_location || "N/A"
-        } on ${formatDate(t.date)} — Service: ${serviceLabel}; Vehicle: ${
-          vehicleInfo || "N/A"
-        }; Escort: ${escortInfo} (Trip ID: ${tripId})`;
+        return `Trip from ${t.pickup_location || "N/A"} to ${t.dropoff_location || "N/A"
+          } on ${formatDate(t.date)} — Service: ${serviceLabel}; Vehicle: ${vehicleInfo || "N/A"
+          }; Escort: ${escortInfo} (Trip ID: ${tripId})`;
       });
 
       const detailsBlock = tripLines.join("\n\n");
