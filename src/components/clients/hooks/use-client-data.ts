@@ -5,16 +5,17 @@ import { useClientFiltering } from "./use-client-filtering";
 
 export function useClientData() {
   // Fetch all data in parallel for better performance
-  const { data: clients, isLoading: clientsLoading } = useClientsQuery();
-  const { data: contactCounts, isLoading: contactCountsLoading } =
+  // Use placeholderData to show cached data immediately
+  const { data: clients = [], isLoading: clientsLoading, isFetching: clientsFetching } = useClientsQuery();
+  const { data: contactCounts = {}, isLoading: contactCountsLoading } =
     useContactCounts();
-  const { data: memberCounts, isLoading: memberCountsLoading } =
+  const { data: memberCounts = {}, isLoading: memberCountsLoading } =
     useMemberCounts();
 
   // Set up realtime subscriptions
   useClientRealtime();
 
-  // Handle filtering
+  // Handle filtering - use empty array as fallback to prevent errors
   const {
     searchTerm,
     setSearchTerm,
@@ -28,17 +29,18 @@ export function useClientData() {
     archivedClients,
     filteredActiveClients,
     filteredArchivedClients,
-  } = useClientFiltering(clients);
+  } = useClientFiltering(clients || []);
 
-  // Combined loading state
-  const isLoading =
-    clientsLoading || contactCountsLoading || memberCountsLoading;
+  // Only show loading on initial load, not when refetching
+  // This allows cached data to display immediately
+  const isLoading = clientsLoading && !clients;
 
   return {
-    clients,
-    clientsLoading: isLoading,
-    contactCounts,
-    memberCounts,
+    clients: clients || [],
+    clientsLoading: isLoading, // Only true on initial load
+    clientsFetching, // True when refetching in background
+    contactCounts: contactCounts || {},
+    memberCounts: memberCounts || {},
     searchTerm,
     setSearchTerm,
     typeFilter,
@@ -47,10 +49,10 @@ export function useClientData() {
     setWithContractsOnly,
     activeTab,
     setActiveTab,
-    activeClients,
-    archivedClients,
-    filteredActiveClients,
-    filteredArchivedClients,
+    activeClients: activeClients || [],
+    archivedClients: archivedClients || [],
+    filteredActiveClients: filteredActiveClients || [],
+    filteredArchivedClients: filteredArchivedClients || [],
   };
 }
 

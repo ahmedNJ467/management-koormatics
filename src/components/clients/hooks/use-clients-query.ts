@@ -65,10 +65,11 @@ export function useClientsQuery() {
 
       return clientsWithFlag as Client[];
     },
-    staleTime: 30 * 1000, // Cache for 30 seconds (reduced from 5 minutes)
-    gcTime: 5 * 60 * 1000, // Keep in memory for 5 minutes
-    refetchOnMount: true, // Always refetch on mount to ensure fresh data
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchOnReconnect: true, // Refetch when network reconnects
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - show cached data immediately
+    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnMount: false, // Use cached data first, then refetch in background
+    refetchOnWindowFocus: false, // Don't refetch on focus to avoid delays
+    refetchOnReconnect: true, // Only refetch when network reconnects
+    placeholderData: (previousData) => previousData, // Show previous data while fetching
   });
 }

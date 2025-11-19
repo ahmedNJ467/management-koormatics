@@ -24,7 +24,9 @@ export function useContactCounts() {
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnMount: false, // Use cached data first
     refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData || {}, // Show previous data while fetching
   });
 }
 
@@ -67,6 +69,8 @@ export function useMemberCounts() {
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnMount: false, // Use cached data first
     refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData || {}, // Show previous data while fetching
   });
 }

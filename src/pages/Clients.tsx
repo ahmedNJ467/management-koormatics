@@ -202,21 +202,8 @@ export default function Clients() {
     }
   };
 
-  if (clientsLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="p-4 px-6 space-y-6">
-          <div className="border-b border-border pb-4 pt-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">
-                Clients
-              </h1>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Don't block rendering - show UI immediately with cached data
+  // Only show minimal loading state if we have no data at all
 
   return (
     <div className="min-h-screen bg-background">
