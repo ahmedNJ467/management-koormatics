@@ -278,7 +278,13 @@ export default function Auth() {
           </div>
 
           {/* Login Form with Browser Credential Saving */}
-          <form onSubmit={handleAuth} className="space-y-4" autoComplete="on">
+          <form 
+            onSubmit={handleAuth} 
+            className="space-y-4" 
+            autoComplete="on"
+            method="post"
+            action="#"
+          >
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
               <Input
@@ -288,7 +294,7 @@ export default function Auth() {
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                autoComplete="username"
                 required
                 className="pl-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-400 transition-colors"
               />
