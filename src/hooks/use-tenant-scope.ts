@@ -46,13 +46,10 @@ export function useTenantScope() {
     if (domain === "fleet") return hasRole("fleet_manager");
     if (domain === "operations") return hasRole("operations_manager");
     if (domain === "finance") return hasRole("finance_manager");
-    // management: allow any domain manager too (central portal)
-    return (
-      hasRole("super_admin") ||
-      hasRole("fleet_manager") ||
-      hasRole("operations_manager") ||
-      hasRole("finance_manager")
-    );
+    // management: ONLY super_admin can access the management portal
+    if (domain === "management") return hasRole("super_admin");
+    // Default: deny access if domain doesn't match any role
+    return false;
   }, [domain, hasRole, roles.length, loading, mounted]);
 
   // Only show loading on initial mount, not on subsequent checks
