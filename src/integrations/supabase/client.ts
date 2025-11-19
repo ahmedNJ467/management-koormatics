@@ -96,11 +96,11 @@ if (typeof window !== "undefined") {
       // Clear all auth-related storage
       try {
         localStorage.removeItem(
-          "sb-" + SUPABASE_URL.split("//")[1].split(".")[0] + "-auth-token"
+          "sb-" + (SUPABASE_URL?.split("//")[1]?.split(".")[0] || "project") + "-auth-token"
         );
         sessionStorage.removeItem("supabase.auth.token");
         sessionStorage.removeItem(
-          "sb-" + SUPABASE_URL.split("//")[1].split(".")[0] + "-auth-token"
+          "sb-" + (SUPABASE_URL?.split("//")[1]?.split(".")[0] || "project") + "-auth-token"
         );
       } catch (e) {
         console.warn("Failed to clear auth storage:", e);
