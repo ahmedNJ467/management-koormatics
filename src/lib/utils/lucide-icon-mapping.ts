@@ -22,7 +22,7 @@ import {
   ShoppingBag,
   Warehouse,
   Truck,
-  Fire,
+  Flame,
   Droplet,
   HeartPulse,
   Pill,
@@ -99,7 +99,7 @@ export const MATERIAL_TO_LUCIDE_MAP: Record<string, LucideIconComponent> = {
   
   // Fuel
   local_gas_station: Fuel,
-  local_fire_department: Fire,
+  local_fire_department: Flame,
   oil_barrel: Droplet,
   fuel: Fuel,
   gas_station: Fuel,

@@ -109,8 +109,13 @@ const Settings: React.FC = () => {
     newPassword: "",
   });
 
-  // Available roles (same as AddUserDialog)
+  // Available roles - use constants
   const userRoles = [
+    {
+      value: "super_admin",
+      label: "Super Administrator",
+      description: "Full system access with all permissions",
+    },
     {
       value: "fleet_manager",
       label: "Fleet Manager",
