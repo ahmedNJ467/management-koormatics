@@ -38,11 +38,95 @@ export default function Auth() {
         setTimeout(() => reject(new Error("Request timeout")), 10000)
       );
 
-      const { error } = (await Promise.race([
+      const { data: authData, error } = (await Promise.race([
         authPromise,
         timeoutPromise,
       ])) as any;
       if (error) throw error;
+
+      // After successful authentication, check if user has access to this portal
+      if (authData?.user) {
+        // Get user roles
+        const userId = authData.user.id;
+        let userRoles: string[] = [];
+
+        // Try to get roles from user metadata first (faster)
+        const meta = (authData.user.user_metadata as any) || {};
+        const metaRoles: string[] = Array.isArray(meta?.koormatics_role)
+          ? meta.koormatics_role
+          : meta?.role
+          ? [meta.role]
+          : [];
+
+        if (metaRoles.length > 0) {
+          userRoles = metaRoles;
+        } else {
+          // Fallback to database query
+          try {
+            const { data, error: rolesError } = await supabase
+              .from("vw_user_roles")
+              .select("roles")
+              .eq("user_id", userId)
+              .maybeSingle();
+
+            if (!rolesError && data?.roles) {
+              userRoles = data.roles as string[];
+            } else if (metaRoles.length > 0) {
+              userRoles = metaRoles;
+            }
+          } catch (rolesErr) {
+            console.error("Error fetching roles:", rolesErr);
+            // If we can't fetch roles, use metadata roles if available
+            userRoles = metaRoles;
+          }
+        }
+
+        // Check if user has access to this domain
+        const hasSuperAdmin = userRoles.includes("super_admin");
+        const hasFleetManager = userRoles.includes("fleet_manager");
+        const hasOperationsManager = userRoles.includes("operations_manager");
+        const hasFinanceManager = userRoles.includes("finance_manager");
+
+        let hasAccess = false;
+        if (domain === "management") {
+          hasAccess = hasSuperAdmin; // Only super_admin can access management
+        } else if (domain === "fleet") {
+          hasAccess = hasFleetManager || hasSuperAdmin;
+        } else if (domain === "operations") {
+          hasAccess = hasOperationsManager || hasSuperAdmin;
+        } else if (domain === "finance") {
+          hasAccess = hasFinanceManager || hasSuperAdmin;
+        } else {
+          hasAccess = hasSuperAdmin; // Default to super_admin only
+        }
+
+        // If user doesn't have access, sign them out and show invalid credentials
+        if (!hasAccess) {
+          // Sign out the user immediately
+          await supabase.auth.signOut({ scope: "local" });
+          
+          // Clear any session storage
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.removeItem("supabase.auth.token");
+              localStorage.removeItem("koormatics_saved_email");
+              localStorage.removeItem("koormatics_remember_me");
+            } catch (error) {
+              console.warn("Failed to clear storage:", error);
+            }
+          }
+
+          // Show invalid credentials error (don't reveal they have valid credentials but wrong portal)
+          toast({
+            title: "Invalid credentials",
+            description: "The email or password you entered is incorrect. Please check your credentials and try again.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          setIsRedirecting(false);
+          return;
+        }
+      }
 
       // Save credentials if "Remember Me" is checked
       if (rememberMe) {

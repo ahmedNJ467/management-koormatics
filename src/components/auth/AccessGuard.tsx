@@ -3,6 +3,7 @@ import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { usePageAccess } from "@/hooks/use-page-access";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AccessGuardProps {
   children: React.ReactNode;
@@ -34,8 +35,21 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
   // Handle tenant scope redirect only when we're sure user is not allowed
   useEffect(() => {
     if (!loading && !isAllowed && user && !isDevelopment) {
-      console.log("Redirecting to /403 - User not allowed for tenant");
-      router.push("/403");
+      console.log("User not allowed for tenant - signing out and redirecting to login");
+      // Sign out the user and redirect to login
+      supabase.auth.signOut({ scope: "local" }).then(() => {
+        // Clear session storage
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.removeItem("supabase.auth.token");
+            localStorage.removeItem("koormatics_saved_email");
+            localStorage.removeItem("koormatics_remember_me");
+          } catch (error) {
+            console.warn("Failed to clear storage:", error);
+          }
+        }
+        router.replace("/auth");
+      });
     }
   }, [loading, isAllowed, user, router, isDevelopment]);
 
@@ -46,8 +60,21 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
       const normalizedPageId = pageId.startsWith('dashboard-') ? 'dashboard' : pageId;
       const hasAccess = pages.includes("*") || pages.includes(pageId) || pages.includes(normalizedPageId);
       if (!hasAccess) {
-        console.log(`Redirecting to /403 - No access to page: ${pageId}`);
-        router.push("/403");
+        console.log(`No access to page: ${pageId} - signing out and redirecting to login`);
+        // Sign out the user and redirect to login
+        supabase.auth.signOut({ scope: "local" }).then(() => {
+          // Clear session storage
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.removeItem("supabase.auth.token");
+              localStorage.removeItem("koormatics_saved_email");
+              localStorage.removeItem("koormatics_remember_me");
+            } catch (error) {
+              console.warn("Failed to clear storage:", error);
+            }
+          }
+          router.replace("/auth");
+        });
       }
     }
   }, [pageId, pages, isLoading, router, isDevelopment]);
