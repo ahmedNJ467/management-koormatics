@@ -90,7 +90,9 @@ export const usePageAccess = () => {
           return [];
         }
 
-        return (data.pages as string[]) || [];
+        // Filter out any undefined/null values and ensure all are strings
+        const pages = (data.pages as any[]) || [];
+        return pages.filter((p): p is string => typeof p === "string" && p.length > 0);
       } catch (error) {
         console.error("Unexpected error in usePageAccess:", error);
         // Strict fallback on unexpected error

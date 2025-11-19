@@ -173,16 +173,21 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
   // Function to check if user has access to a specific page
   const hasAccess = useCallback(
     (href?: string | null) => {
-      if (!href) return false;
+      if (!href || typeof href !== "string") return false;
       if (isLoading) return false;
-      if (pages.includes("*")) return true;
+      
+      // Filter out any undefined/null values from pages array
+      const validPages = (pages || []).filter((p): p is string => typeof p === "string" && p.length > 0);
+      
+      if (validPages.includes("*")) return true;
 
       const pageId = href.startsWith("/") ? href.slice(1) : href;
-      if (!pageId) return false;
+      if (!pageId || typeof pageId !== "string") return false;
 
       const firstSegment = pageId.split("/")[0] || pageId;
+      if (!firstSegment || typeof firstSegment !== "string") return false;
 
-      return pages.includes(pageId) || pages.includes(firstSegment);
+      return validPages.includes(pageId) || validPages.includes(firstSegment);
     },
     [pages, isLoading]
   );
@@ -202,10 +207,11 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
 
   // Check if a navigation item should be shown for the current domain
   const shouldShowItem = useCallback(
-    (href: string) => {
-      if (!domain) return false;
+    (href?: string | null) => {
+      if (!href || typeof href !== "string" || !domain) return false;
       const allowedItems = DOMAIN_ITEM_ALLOWLIST[domain];
-      return allowedItems === "*" || allowedItems.includes(href);
+      if (!allowedItems) return false;
+      return allowedItems === "*" || (Array.isArray(allowedItems) && allowedItems.includes(href));
     },
     [domain]
   );
@@ -213,7 +219,7 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
   // Check if a category has any visible items
   const hasVisibleItems = useCallback(
     (items: (typeof navigationGroups)[0]["items"]) => {
-      return items.some((item) => shouldShowItem(item.href));
+      return items.some((item) => item?.href && shouldShowItem(item.href));
     },
     [shouldShowItem]
   );
@@ -266,8 +272,9 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
             return (
               <div key={group.category} className="space-y-1">
                 {group.items
-                  .filter((item) => shouldShowItem(item.href))
+                  .filter((item) => item?.href && shouldShowItem(item.href))
                   .map((item) => {
+                    if (!item?.href) return null;
                     const isActive = pathname === item.href;
                     const hasPageAccess = hasAccess(item.href);
 
@@ -317,8 +324,9 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
               {isExpanded && (
                 <div className="ml-4 space-y-1">
                   {group.items
-                    .filter((item) => shouldShowItem(item.href))
+                    .filter((item) => item?.href && shouldShowItem(item.href))
                     .map((item) => {
+                      if (!item?.href) return null;
                       const isActive = pathname === item.href;
                       const hasPageAccess = hasAccess(item.href);
 
