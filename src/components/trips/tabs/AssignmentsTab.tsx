@@ -105,14 +105,6 @@ export function AssignmentsTab({
             </p>
           )}
         </div>
-        <Button 
-          onClick={handleAssignDriver} 
-          variant="outline" 
-          size="sm"
-          className="border-border bg-transparent text-foreground hover:bg-muted/80"
-        >
-          Change
-        </Button>
       </div>
     );
   };
