@@ -57,45 +57,56 @@ import {
 interface VehicleIncidentReport {
   id: string;
   vehicle_id: string;
-  driver_id?: string;
+  driver_id?: string | null;
   incident_date: string;
-  incident_time: string;
-  incident_type:
-  | "accident"
-  | "theft"
-  | "vandalism"
-  | "breakdown"
-  | "traffic_violation"
-  | "other";
+  incident_time?: string | null;
+  incident_type: "accident" | "theft" | "vandalism" | "breakdown" | "traffic_violation" | "other";
   severity: "minor" | "moderate" | "severe" | "critical";
   status: "reported" | "investigating" | "resolved" | "closed";
   location: string;
   description: string;
   injuries_reported: boolean;
-  police_report_number?: string;
-  insurance_claim_number?: string;
-  estimated_damage_cost?: number;
-  actual_repair_cost?: number;
+  police_report_number?: string | null;
+  insurance_claim_number?: string | null;
+  estimated_damage_cost?: number | null;
+  actual_repair_cost?: number | null;
   third_party_involved: boolean;
-  third_party_details?: string;
-  witness_details?: string;
+  third_party_details?: string | null;
+  witness_details?: string | null;
   photos_attached: boolean;
   reported_by: string;
   follow_up_required: boolean;
-  follow_up_date?: string;
-  notes?: string;
+  follow_up_date?: string | null;
+  notes?: string | null;
   created_at: string;
-  updated_at: string;
+  updated_at?: string | null;
   vehicle?: {
     make: string;
     model: string;
     registration: string;
-  };
+  } | null;
   driver?: {
     name: string;
     license_number: string;
-  };
+  } | null;
 }
+
+// Helper function to safely get string value
+const safeString = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  return String(value);
+};
+
+// Helper function to safely get number value
+const safeNumber = (value: unknown): number => {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
 
 export default function VehicleIncidentReports() {
   const { toast } = useToast();
@@ -104,11 +115,9 @@ export default function VehicleIncidentReports() {
   // State management
   const [formOpen, setFormOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedReport, setSelectedReport] =
-    useState<VehicleIncidentReport | null>(null);
+  const [selectedReport, setSelectedReport] = useState<VehicleIncidentReport | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [reportToDelete, setReportToDelete] =
-    useState<VehicleIncidentReport | null>(null);
+  const [reportToDelete, setReportToDelete] = useState<VehicleIncidentReport | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -116,24 +125,18 @@ export default function VehicleIncidentReports() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange>();
 
-  // Fetch incident reports
+  // Fetch incident reports with proper error handling
   const { data: incidentReports, isLoading } = useQuery({
     queryKey: ["vehicle-incident-reports"],
     queryFn: async () => {
-      // Fetch incident reports first
+      // Fetch incident reports
       const { data: reports, error: reportsError } = await supabase
         .from("vehicle_incident_reports")
         .select("*")
         .order("incident_date", { ascending: false });
 
       if (reportsError) {
-        console.error("Error fetching incident reports:", {
-          message: reportsError.message,
-          code: reportsError.code,
-          details: reportsError.details,
-          hint: reportsError.hint,
-          error: reportsError,
-        });
+        console.error("Error fetching incident reports:", reportsError);
         throw reportsError;
       }
 
@@ -142,58 +145,84 @@ export default function VehicleIncidentReports() {
         .from("vehicles")
         .select("id, make, model, registration");
 
-      if (vehiclesError) throw vehiclesError;
+      if (vehiclesError) {
+        console.error("Error fetching vehicles:", vehiclesError);
+        throw vehiclesError;
+      }
 
       // Fetch drivers data
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
         .select("id, name, license_number");
 
-      if (driversError) throw driversError;
+      if (driversError) {
+        console.error("Error fetching drivers:", driversError);
+        throw driversError;
+      }
 
-      // Create lookup maps - filter out any invalid entries
-      const vehiclesMap = new Map(
-        (vehiclesData || [])
-          .filter((v): v is NonNullable<typeof v> => v != null && v.id != null)
-          .map(v => [v.id, v])
-      );
-      const driversMap = new Map(
-        (driversData || [])
-          .filter((d): d is NonNullable<typeof d> => d != null && d.id != null)
-          .map(d => [d.id, d])
-      );
+      // Create lookup maps with proper filtering
+      const vehiclesMap = new Map<string, { make: string; model: string; registration: string }>();
+      (vehiclesData || []).forEach((v) => {
+        if (v && v.id && typeof v.id === "string") {
+          vehiclesMap.set(v.id, {
+            make: safeString(v.make),
+            model: safeString(v.model),
+            registration: safeString(v.registration),
+          });
+        }
+      });
 
-      // Combine the data - ensure all required fields have defaults and are properly typed
-      const enrichedReports = (reports || [])
-        .filter((report): report is NonNullable<typeof report> => report != null)
-        .map(report => {
-          const vehicle = report.vehicle_id ? vehiclesMap.get(report.vehicle_id) : null;
-          const driver = report.driver_id ? driversMap.get(report.driver_id) : null;
-          
+      const driversMap = new Map<string, { name: string; license_number: string }>();
+      (driversData || []).forEach((d) => {
+        if (d && d.id && typeof d.id === "string") {
+          driversMap.set(d.id, {
+            name: safeString(d.name),
+            license_number: safeString(d.license_number),
+          });
+        }
+      });
+
+      // Enrich reports with vehicle and driver data
+      const enrichedReports: VehicleIncidentReport[] = (reports || [])
+        .filter((report): report is NonNullable<typeof report> => {
+          return report != null && typeof report === "object" && typeof report.id === "string";
+        })
+        .map((report) => {
+          const vehicleId = typeof report.vehicle_id === "string" ? report.vehicle_id : null;
+          const driverId = typeof report.driver_id === "string" ? report.driver_id : null;
+
           return {
-            ...report,
-            location: typeof report.location === "string" ? report.location : "",
-            reported_by: typeof report.reported_by === "string" ? report.reported_by : "",
-            description: typeof report.description === "string" ? report.description : "",
-            incident_date: typeof report.incident_date === "string" ? report.incident_date : "",
-            incident_time: typeof report.incident_time === "string" ? report.incident_time : "",
-            vehicle: vehicle && typeof vehicle === "object" 
-              ? {
-                  make: typeof vehicle.make === "string" ? vehicle.make : "",
-                  model: typeof vehicle.model === "string" ? vehicle.model : "",
-                  registration: typeof vehicle.registration === "string" ? vehicle.registration : "",
-                }
-              : null,
-            driver: driver && typeof driver === "object"
-              ? {
-                  name: typeof driver.name === "string" ? driver.name : "",
-                  license_number: typeof driver.license_number === "string" ? driver.license_number : "",
-                }
-              : null,
+            id: safeString(report.id),
+            vehicle_id: safeString(report.vehicle_id),
+            driver_id: driverId,
+            incident_date: safeString(report.incident_date),
+            incident_time: report.incident_time ? safeString(report.incident_time) : null,
+            incident_type: (report.incident_type as VehicleIncidentReport["incident_type"]) || "other",
+            severity: (report.severity as VehicleIncidentReport["severity"]) || "minor",
+            status: (report.status as VehicleIncidentReport["status"]) || "reported",
+            location: safeString(report.location),
+            description: safeString(report.description),
+            injuries_reported: Boolean(report.injuries_reported),
+            police_report_number: report.police_report_number ? safeString(report.police_report_number) : null,
+            insurance_claim_number: report.insurance_claim_number ? safeString(report.insurance_claim_number) : null,
+            estimated_damage_cost: report.estimated_damage_cost ? safeNumber(report.estimated_damage_cost) : null,
+            actual_repair_cost: report.actual_repair_cost ? safeNumber(report.actual_repair_cost) : null,
+            third_party_involved: Boolean(report.third_party_involved),
+            third_party_details: report.third_party_details ? safeString(report.third_party_details) : null,
+            witness_details: report.witness_details ? safeString(report.witness_details) : null,
+            photos_attached: Boolean(report.photos_attached),
+            reported_by: safeString(report.reported_by),
+            follow_up_required: Boolean(report.follow_up_required),
+            follow_up_date: report.follow_up_date ? safeString(report.follow_up_date) : null,
+            notes: report.notes ? safeString(report.notes) : null,
+            created_at: safeString(report.created_at),
+            updated_at: report.updated_at ? safeString(report.updated_at) : null,
+            vehicle: vehicleId ? vehiclesMap.get(vehicleId) || null : null,
+            driver: driverId ? driversMap.get(driverId) || null : null,
           };
         });
 
-      return enrichedReports as any;
+      return enrichedReports;
     },
   });
 
@@ -206,40 +235,27 @@ export default function VehicleIncidentReports() {
         .select("id, make, model, registration")
         .order("make");
       if (error) throw error;
-      return data;
+      return (data || []).filter((v) => v && v.id);
     },
   });
 
-  // Filter incident reports
+  // Filter incident reports with defensive programming
   const filteredReports = useMemo(() => {
     if (!incidentReports || !Array.isArray(incidentReports)) return [];
 
-    return incidentReports.filter((report: any) => {
-      // Skip invalid reports
+    const searchLower = searchTerm ? safeString(searchTerm).toLowerCase().trim() : "";
+
+    return incidentReports.filter((report) => {
       if (!report || typeof report !== "object") return false;
 
       // Search filter
-      if (searchTerm && typeof searchTerm === "string") {
-        const searchLower = searchTerm.toLowerCase();
-        
-        // Safely get vehicle name
-        let vehicleName = "";
-        if (report.vehicle && typeof report.vehicle === "object") {
-          const make = typeof report.vehicle.make === "string" ? report.vehicle.make : "";
-          const model = typeof report.vehicle.model === "string" ? report.vehicle.model : "";
-          vehicleName = `${make} ${model}`.trim().toLowerCase();
-        }
-        
-        // Safely get other searchable fields
-        const registration = typeof report.vehicle?.registration === "string" 
-          ? report.vehicle.registration.toLowerCase() 
+      if (searchLower) {
+        const vehicleName = report.vehicle
+          ? `${safeString(report.vehicle.make)} ${safeString(report.vehicle.model)}`.trim().toLowerCase()
           : "";
-        const location = typeof report.location === "string" 
-          ? report.location.toLowerCase() 
-          : "";
-        const reporter = typeof report.reported_by === "string" 
-          ? report.reported_by.toLowerCase() 
-          : "";
+        const registration = report.vehicle ? safeString(report.vehicle.registration).toLowerCase() : "";
+        const location = safeString(report.location).toLowerCase();
+        const reporter = safeString(report.reported_by).toLowerCase();
 
         if (
           !vehicleName.includes(searchLower) &&
@@ -273,14 +289,14 @@ export default function VehicleIncidentReports() {
 
       // Date range filter
       if (dateRange?.from || dateRange?.to) {
-        if (!report.incident_date || typeof report.incident_date !== "string") return false;
+        const incidentDate = safeString(report.incident_date);
+        if (!incidentDate) return false;
         try {
-          const reportDate = parseISO(report.incident_date);
+          const reportDate = parseISO(incidentDate);
           if (!isValid(reportDate)) return false;
           if (dateRange.from && reportDate < dateRange.from) return false;
           if (dateRange.to && reportDate > dateRange.to) return false;
-        } catch (error) {
-          // Invalid date, skip this report
+        } catch {
           return false;
         }
       }
@@ -308,61 +324,7 @@ export default function VehicleIncidentReports() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    searchTerm,
-    vehicleFilter,
-    typeFilter,
-    severityFilter,
-    statusFilter,
-    dateRange,
-  ]);
-
-  // Calculate summary statistics
-  const summaryStats = useMemo(() => {
-    if (!filteredReports || !Array.isArray(filteredReports))
-      return {
-        total: 0,
-        thisMonth: 0,
-        severe: 0,
-        pending: 0,
-        totalCost: 0,
-      };
-
-    const thisMonth = new Date();
-    thisMonth.setDate(1);
-
-    const thisMonthReports = filteredReports.filter((r: any) => {
-      if (!r?.incident_date) return false;
-      try {
-        const reportDate = parseISO(r.incident_date);
-        return isValid(reportDate) && reportDate >= thisMonth;
-      } catch {
-        return false;
-      }
-    }).length;
-
-    const severeReports = filteredReports.filter(
-      (r: any) => r?.severity === "severe" || r?.severity === "critical"
-    ).length;
-
-    const pendingReports = filteredReports.filter(
-      (r: any) => r?.status === "reported" || r?.status === "investigating"
-    ).length;
-
-    const totalCost = filteredReports.reduce(
-      (sum: any, r: any) =>
-        sum + (Number(r?.actual_repair_cost) || Number(r?.estimated_damage_cost) || 0),
-      0
-    );
-
-    return {
-      total: filteredReports.length,
-      thisMonth: thisMonthReports,
-      severe: severeReports,
-      pending: pendingReports,
-      totalCost,
-    };
-  }, [filteredReports]);
+  }, [searchTerm, vehicleFilter, typeFilter, severityFilter, statusFilter, dateRange]);
 
   // Delete incident report mutation
   const deleteMutation = useMutation({
@@ -370,7 +332,7 @@ export default function VehicleIncidentReports() {
       const { error } = await supabase
         .from("vehicle_incident_reports")
         .delete()
-        .eq("id", id as any);
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -380,7 +342,7 @@ export default function VehicleIncidentReports() {
         description: "The incident report has been deleted successfully.",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to delete incident report",
@@ -420,47 +382,28 @@ export default function VehicleIncidentReports() {
 
   const exportSelectedReportPdf = async () => {
     if (!selectedReport) return;
-    const report = selectedReport as any;
     try {
       const exportData = {
-        ...report,
-        driver: report.driver
-          ? {
-            name: report.driver.name,
-            license_number: report.driver.license_number,
-          }
-          : undefined,
-        vehicle: report.vehicle
-          ? {
-            make: report.vehicle.make,
-            model: report.vehicle.model,
-            registration: report.vehicle.registration,
-          }
-          : undefined,
-      } as any;
+        ...selectedReport,
+        driver: selectedReport.driver || undefined,
+        vehicle: selectedReport.vehicle || undefined,
+      };
+      
       try {
         const { data: dbImages } = await supabase
           .from("vehicle_incident_images")
           .select("image_url, name")
-          .eq("incident_id", report.id as any);
+          .eq("incident_id", selectedReport.id);
         if (dbImages && dbImages.length > 0) {
-          (exportData as any).photos = dbImages.map((r: any) => ({
+          (exportData as any).photos = dbImages.map((r) => ({
             url: r.image_url,
             name: r.name ?? undefined,
           }));
         }
       } catch (imageError) {
-        console.error(
-          "Failed to load incident report photos:",
-          imageError
-        );
-        toast({
-          title: "Some photos were skipped",
-          description:
-            "We couldn’t include all incident images in the PDF export. Please try again or reload the page.",
-          variant: "destructive",
-        });
+        console.error("Failed to load incident report photos:", imageError);
       }
+      
       await generateIncidentReportPdf(exportData, {
         logoUrl: window.location.origin + "/logo.svg",
       });
@@ -472,38 +415,22 @@ export default function VehicleIncidentReports() {
       console.error("Error exporting PDF:", error);
       toast({
         title: "Export failed",
-        description:
-          "Failed to export incident report to PDF. Please try again.",
+        description: "Failed to export incident report to PDF. Please try again.",
         variant: "destructive",
       });
     }
   };
+
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case "minor":
-        return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            Minor
-          </Badge>
-        );
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Minor</Badge>;
       case "moderate":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            Moderate
-          </Badge>
-        );
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Moderate</Badge>;
       case "severe":
-        return (
-          <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">
-            Severe
-          </Badge>
-        );
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Severe</Badge>;
       case "critical":
-        return (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-            Critical
-          </Badge>
-        );
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Critical</Badge>;
       default:
         return <Badge variant="secondary">{severity}</Badge>;
     }
@@ -512,36 +439,20 @@ export default function VehicleIncidentReports() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "reported":
-        return (
-          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-            Reported
-          </Badge>
-        );
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Reported</Badge>;
       case "investigating":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            Investigating
-          </Badge>
-        );
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Investigating</Badge>;
       case "resolved":
-        return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            Resolved
-          </Badge>
-        );
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Resolved</Badge>;
       case "closed":
-        return (
-          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">
-            Closed
-          </Badge>
-        );
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Closed</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
   const getTypeBadge = (type: string) => {
-    const typeLabels = {
+    const typeLabels: Record<string, string> = {
       accident: "Accident",
       theft: "Theft",
       vandalism: "Vandalism",
@@ -550,7 +461,7 @@ export default function VehicleIncidentReports() {
       other: "Other",
     };
 
-    const typeColors = {
+    const typeColors: Record<string, string> = {
       accident: "bg-red-100 text-red-800",
       theft: "bg-purple-100 text-purple-800",
       vandalism: "bg-orange-100 text-orange-800",
@@ -560,26 +471,32 @@ export default function VehicleIncidentReports() {
     };
 
     return (
-      <Badge
-        className={`${typeColors[type as keyof typeof typeColors]} hover:${typeColors[type as keyof typeof typeColors]
-          }`}
-      >
-        {typeLabels[type as keyof typeof typeLabels] || type}
+      <Badge className={`${typeColors[type] || "bg-gray-100 text-gray-800"} hover:${typeColors[type] || "bg-gray-100 text-gray-800"}`}>
+        {typeLabels[type] || type}
       </Badge>
     );
   };
 
   const formatDate = (dateString: string) => {
-    const date = parseISO(dateString);
-    return isValid(date) ? format(date, "dd/MM/yyyy") : "Invalid Date";
+    if (!dateString) return "Invalid Date";
+    try {
+      const date = parseISO(dateString);
+      return isValid(date) ? format(date, "dd/MM/yyyy") : "Invalid Date";
+    } catch {
+      return "Invalid Date";
+    }
   };
 
-  const formatDateTime = (dateString: string, timeString?: string) => {
-    const date = parseISO(dateString);
-    if (!isValid(date)) return "Invalid Date";
-
-    const dateStr = format(date, "dd/MM/yyyy");
-    return timeString ? `${dateStr} ${timeString}` : dateStr;
+  const formatDateTime = (dateString: string, timeString?: string | null) => {
+    if (!dateString) return "Invalid Date";
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) return "Invalid Date";
+      const dateStr = format(date, "dd/MM/yyyy");
+      return timeString ? `${dateStr} ${safeString(timeString)}` : dateStr;
+    } catch {
+      return "Invalid Date";
+    }
   };
 
   const clearFilters = () => {
@@ -618,27 +535,25 @@ export default function VehicleIncidentReports() {
       "Description",
     ];
 
-    const csvData = filteredReports.map((report: any) => [
+    const csvData = filteredReports.map((report) => [
       formatDate(report.incident_date),
-      report.incident_time || "",
-      report.vehicle
-        ? `${report.vehicle.make} ${report.vehicle.model}`
-        : "Unknown",
-      report.vehicle?.registration || "",
+      safeString(report.incident_time),
+      report.vehicle ? `${safeString(report.vehicle.make)} ${safeString(report.vehicle.model)}` : "Unknown",
+      report.vehicle ? safeString(report.vehicle.registration) : "",
       report.incident_type,
       report.severity,
       report.status,
-      report.location,
-      report.reported_by,
+      safeString(report.location),
+      safeString(report.reported_by),
       report.estimated_damage_cost?.toString() || "",
       report.actual_repair_cost?.toString() || "",
-      report.police_report_number || "",
-      report.insurance_claim_number || "",
-      report.description || "",
+      safeString(report.police_report_number),
+      safeString(report.insurance_claim_number),
+      safeString(report.description),
     ]);
 
     const csvContent = [headers, ...csvData]
-      .map((row) => row.map((cell: any) => `"${cell}"`).join(","))
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -668,22 +583,10 @@ export default function VehicleIncidentReports() {
     }
 
     try {
-      // Transform the data to match the expected interface
-      const exportData = filteredReports.map((report: any) => ({
+      const exportData = filteredReports.map((report) => ({
         ...report,
-        driver: report.driver
-          ? {
-            name: report.driver.name,
-            license_number: report.driver.license_number,
-          }
-          : undefined,
-        vehicle: report.vehicle
-          ? {
-            make: report.vehicle.make,
-            model: report.vehicle.model,
-            registration: report.vehicle.registration,
-          }
-          : undefined,
+        driver: report.driver || undefined,
+        vehicle: report.vehicle || undefined,
       }));
 
       await exportIncidentReportsListToPDF(exportData);
@@ -695,8 +598,7 @@ export default function VehicleIncidentReports() {
       console.error("Error exporting PDF:", error);
       toast({
         title: "Export failed",
-        description:
-          "Failed to export incident reports to PDF. Please try again.",
+        description: "Failed to export incident reports to PDF. Please try again.",
         variant: "destructive",
       });
     }
@@ -735,8 +637,6 @@ export default function VehicleIncidentReports() {
           </div>
         </div>
 
-        {/* Summary cards removed to match Vehicle Inspections minimalist header */}
-
         {/* Filters */}
         <div className="space-y-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -759,12 +659,8 @@ export default function VehicleIncidentReports() {
               <SelectContent>
                 <SelectItem value="all">All Vehicles</SelectItem>
                 {vehicles?.map((vehicle) => (
-                  <SelectItem
-                    key={(vehicle as any).id}
-                    value={(vehicle as any).id}
-                  >
-                    {(vehicle as any).make} {(vehicle as any).model} (
-                    {(vehicle as any).registration})
+                  <SelectItem key={vehicle.id} value={vehicle.id}>
+                    {safeString(vehicle.make)} {safeString(vehicle.model)} ({safeString(vehicle.registration)})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -780,9 +676,7 @@ export default function VehicleIncidentReports() {
                 <SelectItem value="theft">Theft</SelectItem>
                 <SelectItem value="vandalism">Vandalism</SelectItem>
                 <SelectItem value="breakdown">Breakdown</SelectItem>
-                <SelectItem value="traffic_violation">
-                  Traffic Violation
-                </SelectItem>
+                <SelectItem value="traffic_violation">Traffic Violation</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
@@ -826,8 +720,6 @@ export default function VehicleIncidentReports() {
               </Button>
             )}
           </div>
-
-          {/* Results summary removed per request */}
         </div>
 
         {/* Reports Table */}
@@ -848,14 +740,20 @@ export default function VehicleIncidentReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedReports?.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8">
+                        Loading...
+                      </TableCell>
+                    </TableRow>
+                  ) : paginatedReports.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8">
                         No incident reports found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedReports?.map((report: any) => (
+                    paginatedReports.map((report) => (
                       <TableRow
                         key={report.id}
                         className="hover:bg-muted/50 cursor-pointer"
@@ -874,41 +772,34 @@ export default function VehicleIncidentReports() {
                               {formatDate(report.incident_date)}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {report.incident_time || "Time not specified"}
+                              {safeString(report.incident_time) || "Time not specified"}
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <span className="font-mono text-xs text-muted-foreground">
-                            {report.id
-                              ?.replace(/[^a-zA-Z0-9]/g, "")
-                              .slice(0, 8)
-                              .toUpperCase()}
+                            {report.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}
                           </span>
                         </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">
                               {report.vehicle
-                                ? `${report.vehicle.make} ${report.vehicle.model}`
+                                ? `${safeString(report.vehicle.make)} ${safeString(report.vehicle.model)}`
                                 : "Unknown Vehicle"}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {report.vehicle?.registration}
+                              {report.vehicle ? safeString(report.vehicle.registration) : ""}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {getTypeBadge(report.incident_type)}
-                        </TableCell>
-                        <TableCell>
-                          {getSeverityBadge(report.severity)}
-                        </TableCell>
+                        <TableCell>{getTypeBadge(report.incident_type)}</TableCell>
+                        <TableCell>{getSeverityBadge(report.severity)}</TableCell>
                         <TableCell>{getStatusBadge(report.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm">{report.location}</span>
+                            <span className="text-sm">{safeString(report.location)}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -919,13 +810,10 @@ export default function VehicleIncidentReports() {
                               </span>
                             ) : report.estimated_damage_cost ? (
                               <span className="text-muted-foreground">
-                                ~$
-                                {report.estimated_damage_cost.toLocaleString()}
+                                ~${report.estimated_damage_cost.toLocaleString()}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">
-                                Not assessed
-                              </span>
+                              <span className="text-muted-foreground">Not assessed</span>
                             )}
                           </div>
                         </TableCell>
@@ -937,8 +825,6 @@ export default function VehicleIncidentReports() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Pagination summary removed per request; keeping only controls below */}
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
@@ -960,9 +846,7 @@ export default function VehicleIncidentReports() {
                     return (
                       <Button
                         key={pageNum}
-                        variant={
-                          currentPage === pageNum ? "default" : "outline"
-                        }
+                        variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
                         className="h-8 w-8 p-0"
@@ -972,7 +856,6 @@ export default function VehicleIncidentReports() {
                     );
                   }
 
-                  // Show first page, last page, current page, and pages around current
                   if (
                     pageNum === 1 ||
                     pageNum === totalPages ||
@@ -981,9 +864,7 @@ export default function VehicleIncidentReports() {
                     return (
                       <Button
                         key={pageNum}
-                        variant={
-                          currentPage === pageNum ? "default" : "outline"
-                        }
+                        variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
                         className="h-8 w-8 p-0"
@@ -993,15 +874,9 @@ export default function VehicleIncidentReports() {
                     );
                   }
 
-                  if (
-                    pageNum === currentPage - 2 ||
-                    pageNum === currentPage + 2
-                  ) {
+                  if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
                     return (
-                      <span
-                        key={pageNum}
-                        className="px-2 text-muted-foreground"
-                      >
+                      <span key={pageNum} className="px-2 text-muted-foreground">
                         ...
                       </span>
                     );
@@ -1013,9 +888,7 @@ export default function VehicleIncidentReports() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="h-8 px-3"
               >
@@ -1023,7 +896,6 @@ export default function VehicleIncidentReports() {
               </Button>
             </div>
 
-            {/* Timestamp at bottom */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>•</span>
               <span>Last updated: {new Date().toLocaleTimeString()}</span>
@@ -1036,9 +908,7 @@ export default function VehicleIncidentReports() {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {selectedReport
-                  ? "Edit Incident Report"
-                  : "New Incident Report"}
+                {selectedReport ? "Edit Incident Report" : "New Incident Report"}
               </DialogTitle>
               <DialogDescription>
                 {selectedReport
@@ -1051,9 +921,7 @@ export default function VehicleIncidentReports() {
               onSuccess={() => {
                 setFormOpen(false);
                 setSelectedReport(null);
-                queryClient.invalidateQueries({
-                  queryKey: ["vehicle-incident-reports"],
-                });
+                queryClient.invalidateQueries({ queryKey: ["vehicle-incident-reports"] });
               }}
               onCancel={() => {
                 setFormOpen(false);
@@ -1064,32 +932,22 @@ export default function VehicleIncidentReports() {
         </Dialog>
 
         {/* Delete confirmation dialog */}
-        <AlertDialog
-          open={deleteDialogOpen}
-          onOpenChange={(open) => {
-            setDeleteDialogOpen(open);
-            if (!open) {
-              setReportToDelete(null);
-            }
-          }}
-        >
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Incident Report</AlertDialogTitle>
               <AlertDialogDescription>
                 {reportToDelete
-                  ? `Are you sure you want to delete the incident report for ${reportToDelete.vehicle
-                    ? `${reportToDelete.vehicle.make} ${reportToDelete.vehicle.model} (${reportToDelete.vehicle.registration})`
-                    : "this vehicle"
-                  }? This action cannot be undone.`
+                  ? `Are you sure you want to delete the incident report for ${
+                      reportToDelete.vehicle
+                        ? `${safeString(reportToDelete.vehicle.make)} ${safeString(reportToDelete.vehicle.model)} (${safeString(reportToDelete.vehicle.registration)})`
+                        : "this vehicle"
+                    }? This action cannot be undone.`
                   : "Are you sure you want to delete this incident report? This action cannot be undone."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel
-                onClick={() => closeDeleteDialog()}
-                disabled={deleteMutation.isPending}
-              >
+              <AlertDialogCancel onClick={closeDeleteDialog} disabled={deleteMutation.isPending}>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
@@ -1109,10 +967,10 @@ export default function VehicleIncidentReports() {
           open={detailsOpen}
           onOpenChange={setDetailsOpen}
           onEdit={() => {
-            if (selectedReport) handleEditReport(selectedReport as any);
+            if (selectedReport) handleEditReport(selectedReport);
           }}
           onDelete={() => {
-            if (selectedReport) openDeleteDialog(selectedReport as any);
+            if (selectedReport) openDeleteDialog(selectedReport);
           }}
           onDownloadPdf={exportSelectedReportPdf}
         />
@@ -1120,3 +978,4 @@ export default function VehicleIncidentReports() {
     </div>
   );
 }
+
