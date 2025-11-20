@@ -16,34 +16,6 @@ const wrapperHeights: Record<LogoSize, string> = {
   xl: "h-16",
 };
 
-// Global logo preload to prevent flickering on navigation
-if (typeof window !== "undefined") {
-  const preloadLogo = () => {
-    // Check if already preloaded
-    if (document.querySelector(`link[href="${LOGO_SRC}"]`)) {
-      return;
-    }
-    
-    const link = document.createElement("link");
-    link.rel = "preload";
-    link.as = "image";
-    link.href = LOGO_SRC;
-    link.crossOrigin = "anonymous";
-    document.head.appendChild(link);
-    
-    // Also preload via Image object for browser cache
-    const img = new Image();
-    img.src = LOGO_SRC;
-  };
-  
-  // Preload immediately if DOM is ready, otherwise wait
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", preloadLogo);
-  } else {
-    preloadLogo();
-  }
-}
-
 const KoormaticsLogoImage = memo(function KoormaticsLogoImage({
   size,
   className,

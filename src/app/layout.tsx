@@ -33,6 +33,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (document.querySelector('link[href="/logo.svg"]')) return;
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'image';
+                link.href = '/logo.svg';
+                link.type = 'image/svg+xml';
+                link.crossOrigin = 'anonymous';
+                document.head.appendChild(link);
+              })();
+            `,
+          }}
+        />
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
