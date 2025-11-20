@@ -410,17 +410,22 @@ function FuelLogs() {
       const availableFuelTypes = Array.from(
         new Set((tanks || []).map((t) => t.fuel_type))
       );
+      // Only auto-select if no selection has been made (null, not "all")
       if (!selectedTankFuelType && availableFuelTypes.length > 0) {
+        // For initial load, auto-select first type
         const initialType = availableFuelTypes[0] as any;
         setSelectedTankFuelType(initialType);
         const firstOfType = tanks.find((t) => t.fuel_type === initialType);
         setSelectedTankId(firstOfType ? firstOfType.id : null);
-      } else if (selectedTankFuelType) {
+      } else if (selectedTankFuelType && selectedTankFuelType !== "all") {
         // Ensure selected tank id matches current type after refresh
         const firstOfType = tanks.find(
           (t) => t.fuel_type === selectedTankFuelType
         );
         if (firstOfType) setSelectedTankId(firstOfType.id);
+      } else if (selectedTankFuelType === "all") {
+        // User selected "All" - clear tank selection
+        setSelectedTankId(null);
       }
 
       // Process tanks in parallel for better performance
@@ -513,8 +518,29 @@ function FuelLogs() {
   useEffect(() => {
     if (selectedTankId) {
       getFuelFills(selectedTankId).then((fills) => setTankFills(fills as any));
+    } else if (selectedTankFuelType === "all") {
+      // When "All" is selected, fetch fills from all tanks
+      const fetchAllFills = async () => {
+        if (tanks.length === 0) {
+          setTankFills([]);
+          return;
+        }
+        const allFillsPromises = tanks.map((tank) => getFuelFills(tank.id));
+        const allFillsArrays = await Promise.all(allFillsPromises);
+        const allFills = allFillsArrays.flat() as TankFill[];
+        // Sort by date descending
+        allFills.sort((a, b) => {
+          const dateA = new Date(a.fill_date).getTime();
+          const dateB = new Date(b.fill_date).getTime();
+          return dateB - dateA;
+        });
+        setTankFills(allFills);
+      };
+      fetchAllFills();
+    } else {
+      setTankFills([]);
     }
-  }, [selectedTankId, showFillDialog]);
+  }, [selectedTankId, selectedTankFuelType, showFillDialog, tanks]);
 
   // Calculate cost analytics separated by fuel type
   const costAnalytics = useMemo(() => {
@@ -1226,11 +1252,16 @@ function FuelLogs() {
             <div className="mb-4 flex items-center gap-4">
               {/* Fuel type selector restricted to petrol/diesel */}
               <Select
-                value={selectedTankFuelType || "none"}
+                value={selectedTankFuelType || "all"}
                 onValueChange={(val) => {
-                  setSelectedTankFuelType(val);
-                  const match = tanks.find((t) => t.fuel_type === (val as any));
-                  setSelectedTankId(match ? match.id : null);
+                  if (val === "all") {
+                    setSelectedTankFuelType("all");
+                    setSelectedTankId(null);
+                  } else {
+                    setSelectedTankFuelType(val);
+                    const match = tanks.find((t) => t.fuel_type === (val as any));
+                    setSelectedTankId(match ? match.id : null);
+                  }
                 }}
                 disabled={isLoadingTanks}
               >
@@ -1255,15 +1286,18 @@ function FuelLogs() {
                       Error loading
                     </SelectItem>
                   ) : (
-                    ["petrol", "diesel"]
-                      .filter((ft) =>
-                        tanks.some((t) => t.fuel_type === (ft as any))
-                      )
-                      .map((ft) => (
-                        <SelectItem key={ft} value={ft}>
-                          {ft}
-                        </SelectItem>
-                      ))
+                    <>
+                      <SelectItem value="all">All</SelectItem>
+                      {["petrol", "diesel"]
+                        .filter((ft) =>
+                          tanks.some((t) => t.fuel_type === (ft as any))
+                        )
+                        .map((ft) => (
+                          <SelectItem key={ft} value={ft}>
+                            {ft}
+                          </SelectItem>
+                        ))}
+                    </>
                   )}
                 </SelectContent>
               </Select>
@@ -1286,7 +1320,7 @@ function FuelLogs() {
 
               <Button
                 onClick={() => setShowFillDialog(true)}
-                disabled={!selectedTankId || isLoadingTanks}
+                disabled={!selectedTankId || isLoadingTanks || selectedTankFuelType === "all"}
               >
                 Add Fill
               </Button>
@@ -1299,7 +1333,7 @@ function FuelLogs() {
                 <Download className="h-4 w-4" /> Export
               </Button>
             </div>
-            {selectedTankId && (
+            {(selectedTankId || selectedTankFuelType === "all") && (
               <div className="space-y-4">
                 {isLoadingTanks ? (
                   <div className="flex items-center justify-center py-8">
@@ -1327,6 +1361,7 @@ function FuelLogs() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        {selectedTankFuelType === "all" && <TableHead>Tank</TableHead>}
                         <TableHead>Date</TableHead>
                         <TableHead>Amount (L)</TableHead>
                         <TableHead>Cost/L</TableHead>
@@ -1339,38 +1374,48 @@ function FuelLogs() {
                       {tankFills.length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={6}
+                            colSpan={selectedTankFuelType === "all" ? 7 : 6}
                             className="text-center text-muted-foreground"
                           >
-                            No fill history for this tank.
+                            {selectedTankFuelType === "all" 
+                              ? "No fill history available."
+                              : "No fill history for this tank."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        tankFills.map((fill) => (
-                          <TableRow 
-                            key={fill.id}
-                            className="hover:bg-muted/30 transition-colors cursor-pointer"
-                            onClick={() => {
-                              setSelectedTankFill(fill);
-                              setIsTankFillDetailsDialogOpen(true);
-                            }}
-                          >
-                            <TableCell>{fill.fill_date}</TableCell>
-                            <TableCell>{fill.amount}</TableCell>
-                            <TableCell>
-                              {fill.cost_per_liter
-                                ? `$${Number(fill.cost_per_liter).toFixed(2)}`
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {fill.total_cost
-                                ? `$${Number(fill.total_cost).toFixed(2)}`
-                                : "-"}
-                            </TableCell>
-                            <TableCell>{fill.supplier || "-"}</TableCell>
-                            <TableCell>{fill.notes || "-"}</TableCell>
-                          </TableRow>
-                        ))
+                        tankFills.map((fill) => {
+                          const tank = tanks.find((t) => t.id === fill.fuel_management_id);
+                          return (
+                            <TableRow 
+                              key={fill.id}
+                              className="hover:bg-muted/30 transition-colors cursor-pointer"
+                              onClick={() => {
+                                setSelectedTankFill(fill);
+                                setIsTankFillDetailsDialogOpen(true);
+                              }}
+                            >
+                              {selectedTankFuelType === "all" && (
+                                <TableCell>
+                                  {tank ? `${tank.name || tank.fuel_type} (${tank.fuel_type})` : "-"}
+                                </TableCell>
+                              )}
+                              <TableCell>{fill.fill_date}</TableCell>
+                              <TableCell>{fill.amount}</TableCell>
+                              <TableCell>
+                                {fill.cost_per_liter
+                                  ? `$${Number(fill.cost_per_liter).toFixed(2)}`
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>
+                                {fill.total_cost
+                                  ? `$${Number(fill.total_cost).toFixed(2)}`
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>{fill.supplier || "-"}</TableCell>
+                              <TableCell>{fill.notes || "-"}</TableCell>
+                            </TableRow>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
