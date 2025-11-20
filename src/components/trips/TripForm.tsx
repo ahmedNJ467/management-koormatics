@@ -178,6 +178,7 @@ export function TripForm({
   return (
     <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
       <form onSubmit={onSubmit} className="space-y-6">
+        <input type="hidden" name="client_id" value={selectedClientId || ""} />
         <input type="hidden" name="client_type" value={selectedClientType} />
         <input
           type="hidden"
