@@ -521,9 +521,9 @@ export default function Drivers() {
 
             {/* Filters Section */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap p-1 bg-muted/30 rounded-lg border border-border/50">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50">
+                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50 bg-background">
                     <Filter className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -536,7 +536,7 @@ export default function Drivers() {
                 </Select>
 
                 <Select value={vipFilter} onValueChange={setVipFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50">
+                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50 bg-background">
                     <Crown className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="VIP" />
                   </SelectTrigger>
@@ -551,7 +551,7 @@ export default function Drivers() {
                   variant={expiredLicenseFilter ? "default" : "outline"}
                   size="sm"
                   onClick={() => setExpiredLicenseFilter(!expiredLicenseFilter)}
-                  className="h-11 border-border/50"
+                  className="h-11 border-border/50 bg-background"
                 >
                   <AlertTriangle className="mr-2 h-4 w-4" />
                   Expired License
@@ -569,7 +569,7 @@ export default function Drivers() {
                       setSortOrder(null);
                     }
                   }}
-                  className="h-11 border-border/50"
+                  className="h-11 border-border/50 bg-background"
                 >
                   {sortOrder === null && <ArrowUpDown className="mr-2 h-4 w-4" />}
                   {sortOrder === "asc" && <ArrowUp className="mr-2 h-4 w-4" />}
