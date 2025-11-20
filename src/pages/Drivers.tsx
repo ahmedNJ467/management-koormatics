@@ -10,13 +10,6 @@ import { DriverDetailsDialog } from "@/components/drivers/driver-details-dialog"
 import { DeleteDriverDialog } from "@/components/driver-form/delete-driver-dialog";
 import type { Driver } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -35,6 +28,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DriverQuickActions } from "@/components/drivers/DriverQuickActions";
 import { safeArrayResult } from "@/lib/utils/type-guards";
 
@@ -521,68 +525,84 @@ export default function Drivers() {
 
             {/* Filters Section */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="flex items-center gap-2 flex-wrap p-1 bg-muted/30 rounded-lg border border-border/50">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50 bg-background">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-11 border-border/50 bg-background"
+                  >
                     <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="on_leave">On Leave</SelectItem>
-                  </SelectContent>
-                </Select>
+                    Filters & Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel>Status</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={statusFilter}
+                    onValueChange={setStatusFilter}
+                  >
+                    <DropdownMenuRadioItem value="all">All Status</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="active">Active</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="inactive">Inactive</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="on_leave">On Leave</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
 
-                <Select value={vipFilter} onValueChange={setVipFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50 bg-background">
-                    <Crown className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="VIP" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Drivers</SelectItem>
-                    <SelectItem value="vip">VIP Only</SelectItem>
-                    <SelectItem value="non-vip">Non-VIP</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <DropdownMenuSeparator />
 
-                <Button
-                  variant={expiredLicenseFilter ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setExpiredLicenseFilter(!expiredLicenseFilter)}
-                  className="h-11 border-border/50 bg-background"
-                >
-                  <AlertTriangle className="mr-2 h-4 w-4" />
-                  Expired License
-                </Button>
+                  <DropdownMenuLabel>
+                    <Crown className="mr-2 h-4 w-4 inline" />
+                    Driver Type
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={vipFilter}
+                    onValueChange={setVipFilter}
+                  >
+                    <DropdownMenuRadioItem value="all">All Drivers</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="vip">VIP Only</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="non-vip">Non-VIP</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (sortOrder === null) {
-                      setSortOrder("asc");
-                    } else if (sortOrder === "asc") {
-                      setSortOrder("desc");
-                    } else {
-                      setSortOrder(null);
-                    }
-                  }}
-                  className="h-11 border-border/50 bg-background"
-                >
-                  {sortOrder === null && <ArrowUpDown className="mr-2 h-4 w-4" />}
-                  {sortOrder === "asc" && <ArrowUp className="mr-2 h-4 w-4" />}
-                  {sortOrder === "desc" && <ArrowDown className="mr-2 h-4 w-4" />}
-                  <span className="hidden sm:inline">
-                    {sortOrder === null
-                      ? "Sort Name"
-                      : sortOrder === "asc"
-                      ? "A-Z"
-                      : "Z-A"}
-                  </span>
-                </Button>
-              </div>
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuLabel>
+                    <AlertTriangle className="mr-2 h-4 w-4 inline" />
+                    License
+                  </DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    checked={expiredLicenseFilter}
+                    onCheckedChange={setExpiredLicenseFilter}
+                  >
+                    Expired License
+                  </DropdownMenuCheckboxItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuLabel>
+                    <ArrowUpDown className="mr-2 h-4 w-4 inline" />
+                    Sort by Name
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={sortOrder || "none"}
+                    onValueChange={(value) => {
+                      if (value === "none") {
+                        setSortOrder(null);
+                      } else {
+                        setSortOrder(value as "asc" | "desc");
+                      }
+                    }}
+                  >
+                    <DropdownMenuRadioItem value="none">No Sort</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="asc">
+                      <ArrowUp className="mr-2 h-4 w-4 inline" />
+                      A-Z
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="desc">
+                      <ArrowDown className="mr-2 h-4 w-4 inline" />
+                      Z-A
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* View Toggle */}
               <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-lg border border-border/50">
