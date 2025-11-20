@@ -151,16 +151,47 @@ export default function VehicleIncidentReports() {
 
       if (driversError) throw driversError;
 
-      // Create lookup maps
-      const vehiclesMap = new Map(vehiclesData?.map(v => [v.id, v]) || []);
-      const driversMap = new Map(driversData?.map(d => [d.id, d]) || []);
+      // Create lookup maps - filter out any invalid entries
+      const vehiclesMap = new Map(
+        (vehiclesData || [])
+          .filter((v): v is NonNullable<typeof v> => v != null && v.id != null)
+          .map(v => [v.id, v])
+      );
+      const driversMap = new Map(
+        (driversData || [])
+          .filter((d): d is NonNullable<typeof d> => d != null && d.id != null)
+          .map(d => [d.id, d])
+      );
 
-      // Combine the data
-      const enrichedReports = reports?.map(report => ({
-        ...report,
-        vehicle: report.vehicle_id ? vehiclesMap.get(report.vehicle_id) : null,
-        driver: report.driver_id ? driversMap.get(report.driver_id) : null,
-      })) || [];
+      // Combine the data - ensure all required fields have defaults and are properly typed
+      const enrichedReports = (reports || [])
+        .filter((report): report is NonNullable<typeof report> => report != null)
+        .map(report => {
+          const vehicle = report.vehicle_id ? vehiclesMap.get(report.vehicle_id) : null;
+          const driver = report.driver_id ? driversMap.get(report.driver_id) : null;
+          
+          return {
+            ...report,
+            location: typeof report.location === "string" ? report.location : "",
+            reported_by: typeof report.reported_by === "string" ? report.reported_by : "",
+            description: typeof report.description === "string" ? report.description : "",
+            incident_date: typeof report.incident_date === "string" ? report.incident_date : "",
+            incident_time: typeof report.incident_time === "string" ? report.incident_time : "",
+            vehicle: vehicle && typeof vehicle === "object" 
+              ? {
+                  make: typeof vehicle.make === "string" ? vehicle.make : "",
+                  model: typeof vehicle.model === "string" ? vehicle.model : "",
+                  registration: typeof vehicle.registration === "string" ? vehicle.registration : "",
+                }
+              : null,
+            driver: driver && typeof driver === "object"
+              ? {
+                  name: typeof driver.name === "string" ? driver.name : "",
+                  license_number: typeof driver.license_number === "string" ? driver.license_number : "",
+                }
+              : null,
+          };
+        });
 
       return enrichedReports as any;
     },
@@ -181,18 +212,34 @@ export default function VehicleIncidentReports() {
 
   // Filter incident reports
   const filteredReports = useMemo(() => {
-    if (!incidentReports) return [];
+    if (!incidentReports || !Array.isArray(incidentReports)) return [];
 
     return incidentReports.filter((report: any) => {
+      // Skip invalid reports
+      if (!report || typeof report !== "object") return false;
+
       // Search filter
-      if (searchTerm) {
+      if (searchTerm && typeof searchTerm === "string") {
         const searchLower = searchTerm.toLowerCase();
-        const vehicleName = report.vehicle
-          ? `${report.vehicle.make} ${report.vehicle.model}`.toLowerCase()
+        
+        // Safely get vehicle name
+        let vehicleName = "";
+        if (report.vehicle && typeof report.vehicle === "object") {
+          const make = typeof report.vehicle.make === "string" ? report.vehicle.make : "";
+          const model = typeof report.vehicle.model === "string" ? report.vehicle.model : "";
+          vehicleName = `${make} ${model}`.trim().toLowerCase();
+        }
+        
+        // Safely get other searchable fields
+        const registration = typeof report.vehicle?.registration === "string" 
+          ? report.vehicle.registration.toLowerCase() 
           : "";
-        const registration = report.vehicle?.registration?.toLowerCase() || "";
-        const location = report.location.toLowerCase();
-        const reporter = report.reported_by.toLowerCase();
+        const location = typeof report.location === "string" 
+          ? report.location.toLowerCase() 
+          : "";
+        const reporter = typeof report.reported_by === "string" 
+          ? report.reported_by.toLowerCase() 
+          : "";
 
         if (
           !vehicleName.includes(searchLower) &&
@@ -226,9 +273,16 @@ export default function VehicleIncidentReports() {
 
       // Date range filter
       if (dateRange?.from || dateRange?.to) {
-        const reportDate = parseISO(report.incident_date);
-        if (dateRange.from && reportDate < dateRange.from) return false;
-        if (dateRange.to && reportDate > dateRange.to) return false;
+        if (!report.incident_date || typeof report.incident_date !== "string") return false;
+        try {
+          const reportDate = parseISO(report.incident_date);
+          if (!isValid(reportDate)) return false;
+          if (dateRange.from && reportDate < dateRange.from) return false;
+          if (dateRange.to && reportDate > dateRange.to) return false;
+        } catch (error) {
+          // Invalid date, skip this report
+          return false;
+        }
       }
 
       return true;
@@ -265,7 +319,7 @@ export default function VehicleIncidentReports() {
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
-    if (!filteredReports)
+    if (!filteredReports || !Array.isArray(filteredReports))
       return {
         total: 0,
         thisMonth: 0,
@@ -277,21 +331,27 @@ export default function VehicleIncidentReports() {
     const thisMonth = new Date();
     thisMonth.setDate(1);
 
-    const thisMonthReports = filteredReports.filter(
-      (r: any) => parseISO(r.incident_date) >= thisMonth
-    ).length;
+    const thisMonthReports = filteredReports.filter((r: any) => {
+      if (!r?.incident_date) return false;
+      try {
+        const reportDate = parseISO(r.incident_date);
+        return isValid(reportDate) && reportDate >= thisMonth;
+      } catch {
+        return false;
+      }
+    }).length;
 
     const severeReports = filteredReports.filter(
-      (r: any) => r.severity === "severe" || r.severity === "critical"
+      (r: any) => r?.severity === "severe" || r?.severity === "critical"
     ).length;
 
     const pendingReports = filteredReports.filter(
-      (r: any) => r.status === "reported" || r.status === "investigating"
+      (r: any) => r?.status === "reported" || r?.status === "investigating"
     ).length;
 
     const totalCost = filteredReports.reduce(
       (sum: any, r: any) =>
-        sum + (r.actual_repair_cost || r.estimated_damage_cost || 0),
+        sum + (Number(r?.actual_repair_cost) || Number(r?.estimated_damage_cost) || 0),
       0
     );
 
