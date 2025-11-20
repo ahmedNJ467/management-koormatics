@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Filter, AlertTriangle, Check, Crown, X, List, Grid } from "lucide-react";
+import { Search, Filter, AlertTriangle, Check, Crown, X, List, Grid, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +49,9 @@ export default function Drivers() {
   const [driverToDelete, setDriverToDelete] = useState<Driver | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [vipFilter, setVipFilter] = useState<string>("all");
+  const [expiredLicenseFilter, setExpiredLicenseFilter] = useState<boolean>(false);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const driversPerPage = 20;
@@ -381,35 +384,13 @@ export default function Drivers() {
     }
   };
 
-  // Filter drivers based on search and filters
-  const filteredDrivers = useMemo(() => {
-    if (!drivers) return [];
-
-    return drivers.filter((driver) => {
-      const matchesSearch =
-        !searchTerm ||
-        driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.license_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.location?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus =
-        statusFilter === "all" || driver.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [drivers, searchTerm, statusFilter]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredDrivers.length / driversPerPage);
-  const startIndex = (currentPage - 1) * driversPerPage;
-  const endIndex = startIndex + driversPerPage;
-  const paginatedDrivers = filteredDrivers.slice(startIndex, endIndex);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  // Check if license is expired
+  const isLicenseExpired = (expiryDate: string) => {
+    if (!expiryDate) return false;
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    return expiry < now;
+  };
 
   // Check if license is expiring soon
   const isLicenseExpiringSoon = (expiryDate: string) => {
@@ -422,13 +403,58 @@ export default function Drivers() {
     return expiry <= thirtyDaysFromNow && expiry >= now;
   };
 
-  // Check if license is expired
-  const isLicenseExpired = (expiryDate: string) => {
-    if (!expiryDate) return false;
-    const now = new Date();
-    const expiry = new Date(expiryDate);
-    return expiry < now;
-  };
+  // Filter drivers based on search and filters
+  const filteredDrivers = useMemo(() => {
+    if (!drivers) return [];
+
+    let filtered = drivers.filter((driver) => {
+      const matchesSearch =
+        !searchTerm ||
+        driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.license_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.location?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" || driver.status === statusFilter;
+
+      const matchesVip =
+        vipFilter === "all" ||
+        (vipFilter === "vip" && driver.is_vip) ||
+        (vipFilter === "non-vip" && !driver.is_vip);
+
+      const matchesExpiredLicense =
+        !expiredLicenseFilter || isLicenseExpired(driver.license_expiry || "");
+
+      return matchesSearch && matchesStatus && matchesVip && matchesExpiredLicense;
+    });
+
+    // Sort alphabetically by name if sort order is set
+    if (sortOrder) {
+      filtered = [...filtered].sort((a, b) => {
+        const nameA = (a.name || "").toLowerCase();
+        const nameB = (b.name || "").toLowerCase();
+        if (sortOrder === "asc") {
+          return nameA.localeCompare(nameB);
+        } else {
+          return nameB.localeCompare(nameA);
+        }
+      });
+    }
+
+    return filtered;
+  }, [drivers, searchTerm, statusFilter, vipFilter, expiredLicenseFilter, sortOrder]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredDrivers.length / driversPerPage);
+  const startIndex = (currentPage - 1) * driversPerPage;
+  const endIndex = startIndex + driversPerPage;
+  const paginatedDrivers = filteredDrivers.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, vipFilter, expiredLicenseFilter, sortOrder]);
 
   if (error) {
     return (
@@ -495,7 +521,7 @@ export default function Drivers() {
 
             {/* Filters Section */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50">
                     <Filter className="mr-2 h-4 w-4" />
@@ -508,6 +534,54 @@ export default function Drivers() {
                     <SelectItem value="on_leave">On Leave</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Select value={vipFilter} onValueChange={setVipFilter}>
+                  <SelectTrigger className="w-full sm:w-[140px] h-11 border-border/50 focus:border-primary/50">
+                    <Crown className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="VIP" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Drivers</SelectItem>
+                    <SelectItem value="vip">VIP Only</SelectItem>
+                    <SelectItem value="non-vip">Non-VIP</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant={expiredLicenseFilter ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExpiredLicenseFilter(!expiredLicenseFilter)}
+                  className="h-11 border-border/50"
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Expired License
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (sortOrder === null) {
+                      setSortOrder("asc");
+                    } else if (sortOrder === "asc") {
+                      setSortOrder("desc");
+                    } else {
+                      setSortOrder(null);
+                    }
+                  }}
+                  className="h-11 border-border/50"
+                >
+                  {sortOrder === null && <ArrowUpDown className="mr-2 h-4 w-4" />}
+                  {sortOrder === "asc" && <ArrowUp className="mr-2 h-4 w-4" />}
+                  {sortOrder === "desc" && <ArrowDown className="mr-2 h-4 w-4" />}
+                  <span className="hidden sm:inline">
+                    {sortOrder === null
+                      ? "Sort Name"
+                      : sortOrder === "asc"
+                      ? "A-Z"
+                      : "Z-A"}
+                  </span>
+                </Button>
               </div>
 
               {/* View Toggle */}
@@ -545,7 +619,7 @@ export default function Drivers() {
           </div>
 
           {/* Active Filters Display */}
-          {(searchTerm || statusFilter !== "all") && (
+          {(searchTerm || statusFilter !== "all" || vipFilter !== "all" || expiredLicenseFilter || sortOrder) && (
             <div className="flex items-center justify-between">
               <div className="flex flex-wrap gap-2">
                 {searchTerm && (
@@ -574,6 +648,45 @@ export default function Drivers() {
                     </Button>
                   </Badge>
                 )}
+                {vipFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1">
+                    {vipFilter === "vip" ? "VIP Only" : "Non-VIP"}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setVipFilter("all")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {expiredLicenseFilter && (
+                  <Badge variant="secondary" className="gap-1">
+                    Expired License
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setExpiredLicenseFilter(false)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {sortOrder && (
+                  <Badge variant="secondary" className="gap-1">
+                    Sort: {sortOrder === "asc" ? "A-Z" : "Z-A"}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => setSortOrder(null)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
               </div>
               <Button
                 variant="outline"
@@ -581,6 +694,9 @@ export default function Drivers() {
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
+                  setVipFilter("all");
+                  setExpiredLicenseFilter(false);
+                  setSortOrder(null);
                 }}
                 className="shrink-0 text-muted-foreground hover:text-foreground"
               >
