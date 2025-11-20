@@ -57,38 +57,38 @@ import {
 interface VehicleIncidentReport {
   id: string;
   vehicle_id: string;
-  driver_id?: string | null;
+  driver_id?: string;
   incident_date: string;
-  incident_time?: string | null;
+  incident_time: string;
   incident_type: "accident" | "theft" | "vandalism" | "breakdown" | "traffic_violation" | "other";
   severity: "minor" | "moderate" | "severe" | "critical";
   status: "reported" | "investigating" | "resolved" | "closed";
   location: string;
   description: string;
   injuries_reported: boolean;
-  police_report_number?: string | null;
-  insurance_claim_number?: string | null;
-  estimated_damage_cost?: number | null;
-  actual_repair_cost?: number | null;
+  police_report_number?: string;
+  insurance_claim_number?: string;
+  estimated_damage_cost?: number;
+  actual_repair_cost?: number;
   third_party_involved: boolean;
-  third_party_details?: string | null;
-  witness_details?: string | null;
+  third_party_details?: string;
+  witness_details?: string;
   photos_attached: boolean;
   reported_by: string;
   follow_up_required: boolean;
-  follow_up_date?: string | null;
-  notes?: string | null;
+  follow_up_date?: string;
+  notes?: string;
   created_at: string;
-  updated_at?: string | null;
+  updated_at: string;
   vehicle?: {
     make: string;
     model: string;
     registration: string;
-  } | null;
+  };
   driver?: {
     name: string;
     license_number: string;
-  } | null;
+  };
 }
 
 // Helper function to safely get string value
@@ -189,36 +189,36 @@ export default function VehicleIncidentReports() {
         })
         .map((report) => {
           const vehicleId = typeof report.vehicle_id === "string" ? report.vehicle_id : null;
-          const driverId = typeof report.driver_id === "string" ? report.driver_id : null;
+          const driverId = typeof report.driver_id === "string" ? report.driver_id : undefined;
 
           return {
             id: safeString(report.id),
             vehicle_id: safeString(report.vehicle_id),
             driver_id: driverId,
             incident_date: safeString(report.incident_date),
-            incident_time: report.incident_time ? safeString(report.incident_time) : null,
+            incident_time: report.incident_time ? safeString(report.incident_time) : "",
             incident_type: (report.incident_type as VehicleIncidentReport["incident_type"]) || "other",
             severity: (report.severity as VehicleIncidentReport["severity"]) || "minor",
             status: (report.status as VehicleIncidentReport["status"]) || "reported",
             location: safeString(report.location),
             description: safeString(report.description),
             injuries_reported: Boolean(report.injuries_reported),
-            police_report_number: report.police_report_number ? safeString(report.police_report_number) : null,
-            insurance_claim_number: report.insurance_claim_number ? safeString(report.insurance_claim_number) : null,
-            estimated_damage_cost: report.estimated_damage_cost ? safeNumber(report.estimated_damage_cost) : null,
-            actual_repair_cost: report.actual_repair_cost ? safeNumber(report.actual_repair_cost) : null,
+            police_report_number: report.police_report_number ? safeString(report.police_report_number) : undefined,
+            insurance_claim_number: report.insurance_claim_number ? safeString(report.insurance_claim_number) : undefined,
+            estimated_damage_cost: report.estimated_damage_cost ? safeNumber(report.estimated_damage_cost) : undefined,
+            actual_repair_cost: report.actual_repair_cost ? safeNumber(report.actual_repair_cost) : undefined,
             third_party_involved: Boolean(report.third_party_involved),
-            third_party_details: report.third_party_details ? safeString(report.third_party_details) : null,
-            witness_details: report.witness_details ? safeString(report.witness_details) : null,
+            third_party_details: report.third_party_details ? safeString(report.third_party_details) : undefined,
+            witness_details: report.witness_details ? safeString(report.witness_details) : undefined,
             photos_attached: Boolean(report.photos_attached),
             reported_by: safeString(report.reported_by),
             follow_up_required: Boolean(report.follow_up_required),
-            follow_up_date: report.follow_up_date ? safeString(report.follow_up_date) : null,
-            notes: report.notes ? safeString(report.notes) : null,
+            follow_up_date: report.follow_up_date ? safeString(report.follow_up_date) : undefined,
+            notes: report.notes ? safeString(report.notes) : undefined,
             created_at: safeString(report.created_at),
-            updated_at: report.updated_at ? safeString(report.updated_at) : null,
-            vehicle: vehicleId ? vehiclesMap.get(vehicleId) || null : null,
-            driver: driverId ? driversMap.get(driverId) || null : null,
+            updated_at: report.updated_at ? safeString(report.updated_at) : "",
+            vehicle: vehicleId ? vehiclesMap.get(vehicleId) || undefined : undefined,
+            driver: driverId ? driversMap.get(driverId) || undefined : undefined,
           };
         });
 
@@ -385,6 +385,7 @@ export default function VehicleIncidentReports() {
     try {
       const exportData = {
         ...selectedReport,
+        incident_time: selectedReport.incident_time || undefined,
         driver: selectedReport.driver || undefined,
         vehicle: selectedReport.vehicle || undefined,
       };
@@ -487,13 +488,13 @@ export default function VehicleIncidentReports() {
     }
   };
 
-  const formatDateTime = (dateString: string, timeString?: string | null) => {
+  const formatDateTime = (dateString: string, timeString?: string) => {
     if (!dateString) return "Invalid Date";
     try {
       const date = parseISO(dateString);
       if (!isValid(date)) return "Invalid Date";
       const dateStr = format(date, "dd/MM/yyyy");
-      return timeString ? `${dateStr} ${safeString(timeString)}` : dateStr;
+      return timeString ? `${dateStr} ${timeString}` : dateStr;
     } catch {
       return "Invalid Date";
     }
@@ -585,6 +586,7 @@ export default function VehicleIncidentReports() {
     try {
       const exportData = filteredReports.map((report) => ({
         ...report,
+        incident_time: report.incident_time || undefined,
         driver: report.driver || undefined,
         vehicle: report.vehicle || undefined,
       }));
@@ -772,7 +774,7 @@ export default function VehicleIncidentReports() {
                               {formatDate(report.incident_date)}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {safeString(report.incident_time) || "Time not specified"}
+                              {report.incident_time || "Time not specified"}
                             </div>
                           </div>
                         </TableCell>
