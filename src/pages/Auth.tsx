@@ -264,29 +264,36 @@ export default function Auth() {
   }, [router, domain]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          {/* Portal-specific Branding */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-6">
-              <KoormaticsLogo size="xl" className="drop-shadow-lg" />
-            </div>
-            <div className="text-white/80 text-sm mb-2">
-              Portal: {domain.toUpperCase()}
-            </div>
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo Section */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-8">
+            <KoormaticsLogo size="xl" />
           </div>
+        </div>
 
-          {/* Login Form with Browser Credential Saving */}
+        {/* Login Card */}
+        <div className="bg-card border border-border rounded-lg shadow-sm p-8">
+          {/* Portal Badge */}
+          {domain && (
+            <div className="text-center mb-6">
+              <span className="inline-block px-3 py-1 text-xs font-medium text-muted-foreground bg-muted rounded-full">
+                Portal: {domain.toUpperCase()}
+              </span>
+            </div>
+          )}
+
+          {/* Login Form */}
           <form 
             onSubmit={handleAuth} 
-            className="space-y-4" 
+            className="space-y-5" 
             autoComplete="on"
             method="post"
             action="#"
           >
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
                 name="email"
@@ -296,7 +303,7 @@ export default function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="username"
                 required
-                className="pl-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-400 transition-colors"
+                className="pl-10 h-12 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
               />
             </div>
 
@@ -310,14 +317,14 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
-                className="pl-3 pr-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-offset-0 focus:border-purple-400 transition-colors"
+                className="pl-3 pr-10 h-12 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white h-8 w-8"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground h-8 w-8"
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
@@ -328,13 +335,13 @@ export default function Auth() {
             </div>
 
             {/* Remember Me Checkbox */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2 text-white/80 text-sm">
+            <div className="flex items-center">
+              <label className="flex items-center space-x-2 text-sm text-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-white/20 bg-white/5 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0"
                 />
                 <span>Remember me</span>
               </label>
@@ -344,17 +351,17 @@ export default function Auth() {
               type="submit"
               variant="default"
               size="lg"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium h-12 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading || isRedirecting}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin"></div>
                   Logging in...
                 </div>
               ) : isRedirecting ? (
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin"></div>
                   Redirecting...
                 </div>
               ) : (
@@ -362,16 +369,13 @@ export default function Auth() {
               )}
             </Button>
           </form>
+        </div>
 
-          {/* Footer */}
-          <div className="text-center mt-6">
-            <p className="text-white/80 text-xs drop-shadow">
-              © {currentYear} Koormatics · All rights reserved
-            </p>
-            <p className="text-white/60 text-xs mt-1">
-              Access restricted to authorized personnel
-            </p>
-          </div>
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-muted-foreground text-xs">
+            © {currentYear} Koormatics - All rights reserved
+          </p>
         </div>
       </div>
     </div>
