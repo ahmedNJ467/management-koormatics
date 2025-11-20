@@ -9,27 +9,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  Car,
-  Users,
-  Wrench,
-  Fuel,
-  Users2,
+  Truck,
+  UserCog,
+  Settings as SettingsIcon,
+  Droplet,
+  Box,
+  ClipboardCheck,
+  ShieldAlert,
+  Route,
+  MessageSquare,
+  CalendarDays,
+  Building2,
+  MailOpen,
+  TrendingUp,
+  ChartBar,
+  CreditCard,
   FileText,
-  Calendar,
   Receipt,
-  BarChart,
-  DollarSign,
-  File,
-  Package,
+  Wallet,
+  Settings,
   ChevronDown,
   ChevronRight,
-  Navigation,
-  Mail,
-  MessageCircle,
-  Shield,
-  CreditCard,
-  Settings,
-  Wallet,
 } from "lucide-react";
 import { usePageAccess } from "@/hooks/use-page-access";
 
@@ -38,32 +38,32 @@ const navigationGroups = [
   {
     category: "Fleet Management",
     items: [
-      { name: "Vehicles", href: "/vehicles", icon: Car },
-      { name: "Drivers", href: "/drivers", icon: Users },
-      { name: "Maintenance", href: "/maintenance", icon: Wrench },
-      { name: "Fuel Logs", href: "/fuel-logs", icon: Fuel },
-      { name: "Spare Parts", href: "/spare-parts", icon: Package },
+      { name: "Vehicles", href: "/vehicles", icon: Truck },
+      { name: "Drivers", href: "/drivers", icon: UserCog },
+      { name: "Maintenance", href: "/maintenance", icon: SettingsIcon },
+      { name: "Fuel Logs", href: "/fuel-logs", icon: Droplet },
+      { name: "Spare Parts", href: "/spare-parts", icon: Box },
       {
         name: "Vehicle Inspections",
         href: "/vehicle-inspections",
-        icon: FileText,
+        icon: ClipboardCheck,
       },
       {
         name: "Incident Reports",
         href: "/vehicle-incident-reports",
-        icon: Shield,
+        icon: ShieldAlert,
       },
     ],
   },
   {
     category: "Operations",
     items: [
-      { name: "Dispatch", href: "/dispatch", icon: Navigation },
-      { name: "Chat", href: "/chat", icon: MessageCircle },
-      { name: "Security Escorts", href: "/security-escorts", icon: Shield },
-      { name: "Trips", href: "/trips", icon: Calendar },
-      { name: "Clients", href: "/clients", icon: Users2 },
-      { name: "Invitation Letter", href: "/invitation-letter", icon: Mail },
+      { name: "Dispatch", href: "/dispatch", icon: Route },
+      { name: "Chat", href: "/chat", icon: MessageSquare },
+      { name: "Security Escorts", href: "/security-escorts", icon: ShieldAlert },
+      { name: "Trips", href: "/trips", icon: CalendarDays },
+      { name: "Clients", href: "/clients", icon: Building2 },
+      { name: "Invitation Letter", href: "/invitation-letter", icon: MailOpen },
     ],
   },
   {
@@ -72,11 +72,11 @@ const navigationGroups = [
       {
         name: "Analytics",
         href: "/cost-analytics",
-        icon: DollarSign,
+        icon: TrendingUp,
       },
-      { name: "Reports", href: "/reports", icon: BarChart },
+      { name: "Reports", href: "/reports", icon: ChartBar },
       { name: "Vehicle Leasing", href: "/vehicle-leasing", icon: CreditCard },
-      { name: "Contracts", href: "/contracts", icon: File },
+      { name: "Contracts", href: "/contracts", icon: FileText },
       { name: "Quotations", href: "/quotations", icon: FileText },
       { name: "Invoices", href: "/invoices", icon: Receipt },
       { name: "Trip Finance", href: "/trip-finance", icon: Receipt },
@@ -258,7 +258,7 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
           prefetch={true}
           onClick={handleLinkClick}
         >
-          <BarChart className="h-4 w-4" />
+          <ChartBar className="h-4 w-4" />
           <span>Dashboard</span>
         </Link>
 
