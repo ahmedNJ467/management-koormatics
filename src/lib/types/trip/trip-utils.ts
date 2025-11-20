@@ -42,6 +42,9 @@ export function mapDatabaseFieldsToTrip(dbTrip: any): DisplayTrip {
     type: tripData.service_type || "one_way_transfer", // Legacy field, default to valid TripType
     special_notes: tripData.notes, // Ensure notes is available as special_notes for backward compatibility
     passengers: tripData.passengers || [],
+    // Explicitly include document fields
+    passport_documents: tripData.passport_documents || [],
+    invitation_documents: tripData.invitation_documents || [],
     // Explicitly include security escort fields
     has_security_escort: tripData.has_security_escort || false,
     escort_count: tripData.escort_count || 0,
