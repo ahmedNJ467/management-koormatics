@@ -5,6 +5,7 @@ export type FuelType = "petrol" | "diesel";
 // Tank-related types
 export interface TankFill {
   id: string;
+  fuel_management_id?: string;
   fill_date: string;
   amount: number;
   cost_per_liter?: number;
@@ -19,6 +20,8 @@ export interface Tank {
   fuel_type: FuelType;
   capacity?: number;
   current_level?: number;
+  location?: string;
+  name?: string;
 }
 
 export interface TankStats {

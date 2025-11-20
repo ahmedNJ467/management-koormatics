@@ -1396,7 +1396,7 @@ function FuelLogs() {
                             >
                               {selectedTankFuelType === "all" && (
                                 <TableCell>
-                                  {tank ? `${tank.name || tank.fuel_type} (${tank.fuel_type})` : "-"}
+                                  {tank ? `${tank.location || tank.fuel_type} (${tank.fuel_type})` : "-"}
                                 </TableCell>
                               )}
                               <TableCell>{fill.fill_date}</TableCell>
