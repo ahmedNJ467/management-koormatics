@@ -66,33 +66,23 @@ export default function Drivers() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["drivers"],
+    queryKey: ["drivers", "full"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        // Try with location field first
+        let query = supabase
           .from("drivers")
           .select(
             "id, name, contact, location, license_number, license_type, license_expiry, status, is_vip, avatar_url, document_url, airport_id_url, created_at"
           )
           .order("created_at", { ascending: false });
 
-        if (error) {
-          console.error("Drivers query error:", error);
-          toast({
-            title: "Error fetching drivers",
-            description: error.message,
-            variant: "destructive",
-          });
-          throw error;
-        }
+        const { data, error } = await query;
 
-        return safeArrayResult<Driver>(data);
-      } catch (err: any) {
-        console.error("Drivers query failed:", err);
-        // If location column doesn't exist, try without it
-        if (err?.message?.includes("location") || err?.code === "42703") {
+        // If location column doesn't exist, retry without it
+        if (error && (error.code === "42703" || error.message?.includes("location") || error.message?.includes("column"))) {
           console.warn("Location column not found, retrying without it");
-          const { data, error: retryError } = await supabase
+          const { data: retryData, error: retryError } = await supabase
             .from("drivers")
             .select(
               "id, name, contact, license_number, license_type, license_expiry, status, is_vip, avatar_url, document_url, airport_id_url, created_at"
@@ -100,25 +90,54 @@ export default function Drivers() {
             .order("created_at", { ascending: false });
           
           if (retryError) {
+            console.error("Drivers query error (retry):", retryError);
+            // Only show toast for critical errors, not column missing errors
+            if (!retryError.message?.includes("column") && !retryError.message?.includes("location")) {
+              toast({
+                title: "Error fetching drivers",
+                description: retryError.message,
+                variant: "destructive",
+              });
+            }
+            // Return empty array instead of throwing to prevent UI breaking
+            return [];
+          }
+          return safeArrayResult<Driver>(retryData);
+        }
+
+        if (error) {
+          console.error("Drivers query error:", error);
+          // Only show toast for non-column errors
+          if (!error.message?.includes("column") && !error.message?.includes("location")) {
             toast({
               title: "Error fetching drivers",
-              description: retryError.message,
+              description: error.message,
               variant: "destructive",
             });
-            throw retryError;
           }
-          return safeArrayResult<Driver>(data);
+          // Return empty array instead of throwing
+          return [];
         }
-        throw err;
+
+        return safeArrayResult<Driver>(data);
+      } catch (err: any) {
+        console.error("Drivers query failed:", err);
+        // Return empty array on any error to prevent UI breaking
+        return [];
       }
     },
-    // Ensure the list feels responsive and stays fresh
     staleTime: 5 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     placeholderData: (previousData) => previousData,
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // Don't retry on column missing errors
+      if (error?.message?.includes("column") || error?.message?.includes("location") || error?.code === "42703") {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 
   // Fetch trips data for driver trip counts
@@ -271,6 +290,7 @@ export default function Drivers() {
   }, [drivers, trips]);
 
   const handleDriverDeleted = () => {
+    queryClient.invalidateQueries({ queryKey: ["drivers", "full"] });
     queryClient.invalidateQueries({ queryKey: ["drivers"] });
     setSelectedDriver(undefined);
     setDriverToDelete(undefined);
@@ -359,6 +379,7 @@ export default function Drivers() {
         "postgres_changes",
         { event: "*", schema: "public", table: "drivers" },
         () => {
+          queryClient.invalidateQueries({ queryKey: ["drivers", "full"] });
           queryClient.invalidateQueries({ queryKey: ["drivers"] });
         }
       )
