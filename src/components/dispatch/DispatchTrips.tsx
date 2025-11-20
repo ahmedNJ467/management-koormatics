@@ -17,9 +17,18 @@ import {
   Shield,
   Navigation,
   CheckCircle,
+  Info,
+  Car,
+  Users,
+  Building,
+  User,
 } from "lucide-react";
-import { formatDate, formatTime } from "@/components/trips/utils";
+import { formatDate, formatTime, parseFlightDetails, parsePassengers } from "@/components/trips/utils";
+import { tripTypeDisplayMap } from "@/lib/types/trip/base-types";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { SecurityEscortSection } from "@/components/trips/SecurityEscortSection";
 import {
   Tooltip,
   TooltipContent,
@@ -445,128 +454,248 @@ export function DispatchTrips({
 
                   {/* Details Section */}
                   <div className="space-y-4">
-                    {/* Client */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Client
-                        </span>
-                      </div>
-                      <div className="text-sm text-foreground font-medium">
-                        {safeFormatText(trip.client_name)}
-                      </div>
-                      {trip.client_type && (
-                        <Badge
-                          variant="outline"
-                          className="text-[11px] mt-1 bg-muted text-muted-foreground border-border"
-                        >
-                          {trip.client_type === "organization"
-                            ? "Organization"
-                            : "Individual"}
-                        </Badge>
-                      )}
-                    </div>
+                    {/* Client Information */}
+                    <Card className="border-border bg-card">
+                      <CardHeader className="pb-2 bg-muted/50 border-b border-border">
+                        <CardTitle className="text-sm flex items-center text-card-foreground">
+                          <Building className="h-4 w-4 mr-2 text-primary" />
+                          Client Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-3 space-y-2">
+                        <div>
+                          <div className="text-sm font-medium text-foreground">
+                            {safeFormatText(trip.client_name)}
+                          </div>
+                          {trip.client_type && (
+                            <Badge
+                              variant="outline"
+                              className="text-[11px] mt-1 bg-muted text-muted-foreground border-border"
+                            >
+                              {trip.client_type === "organization"
+                                ? "Organization"
+                                : "Individual"}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                    {/* Service Type */}
-                    <div>
-                      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                        Service
-                      </div>
-                      <div className="text-sm text-foreground font-medium">
-                        {trip.type
-                          ?.replace(/_/g, " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase()) ||
-                          "Not specified"}
-                      </div>
-                    </div>
-
-                    {/* Vehicles */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Vehicles
-                        </span>
-                      </div>
-
-                      {state === "none" && (
-                        <Badge
-                          variant="outline"
-                          className="text-[11px] bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30"
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Unassigned
-                        </Badge>
-                      )}
-
-                      {state === "partial" && (
-                        <div className="space-y-1">
-                          <Badge
-                            variant="outline"
-                            className="text-[11px] bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
-                          >
-                            {totalAssigned} of {totalNeeded} assigned
-                          </Badge>
-                          <div className="text-xs text-muted-foreground">
-                            {totalNeeded - totalAssigned} vehicle(s) needed
+                    {/* Trip Information */}
+                    <Card className="border-border bg-card">
+                      <CardHeader className="pb-2 bg-muted/50 border-b border-border">
+                        <CardTitle className="text-sm flex items-center text-card-foreground">
+                          <Info className="h-4 w-4 mr-2 text-primary" />
+                          Trip Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-3 space-y-3">
+                        {/* Date and Time */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex items-start gap-2">
+                            <Calendar className="h-4 w-4 mt-0.5 text-primary" />
+                            <div>
+                              <div className="text-xs text-muted-foreground">Date</div>
+                              <div className="text-sm text-foreground font-medium">
+                                {formatDate(trip.date)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <Clock className="h-4 w-4 mt-0.5 text-primary" />
+                            <div>
+                              <div className="text-xs text-muted-foreground">Time</div>
+                              <div className="text-sm text-foreground font-medium">
+                                {trip.time && formatTime(trip.time)}
+                                {trip.return_time && ` - ${formatTime(trip.return_time)}`}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      )}
 
-                      {state === "full" && (
-                        <div className="flex flex-wrap gap-1">
-                          {trip.assigned_vehicle_ids?.map((vehicleId) => {
-                            const assignedVehicle = vehicles.find(
-                              (v) => v.id === vehicleId
-                            );
-                            return assignedVehicle ? (
+                        <Separator />
+
+                        {/* Service Type */}
+                        <div className="flex items-start gap-2">
+                          <Info className="h-4 w-4 mt-0.5 text-primary" />
+                          <div>
+                            <div className="text-xs text-muted-foreground">Service Type</div>
+                            <div className="text-sm text-foreground font-medium">
+                              {tripTypeDisplayMap[trip.type] || trip.type || "Not specified"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Flight Details */}
+                        {(trip.type === "airport_pickup" || trip.type === "airport_dropoff") &&
+                          (trip.flight_number || trip.airline || trip.terminal) && (
+                            <div className="flex items-start gap-2">
+                              <Plane className="h-4 w-4 mt-0.5 text-primary" />
+                              <div>
+                                <div className="text-xs text-muted-foreground">Flight Details</div>
+                                <div className="text-sm text-foreground font-medium">
+                                  {parseFlightDetails(
+                                    trip.flight_number,
+                                    trip.airline,
+                                    trip.terminal
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                        <Separator />
+
+                        {/* Vehicle Requirements */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex items-start gap-2">
+                            <Car className="h-4 w-4 mt-0.5 text-primary" />
+                            <div>
+                              <div className="text-xs text-muted-foreground">Soft Skin</div>
+                              <div className="text-sm text-foreground font-medium">
+                                {(trip.soft_skin_count ?? 0) > 0
+                                  ? `${trip.soft_skin_count} required`
+                                  : "Not requested"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <Shield className="h-4 w-4 mt-0.5 text-primary" />
+                            <div>
+                              <div className="text-xs text-muted-foreground">Armoured</div>
+                              <div className="text-sm text-foreground font-medium">
+                                {(trip.armoured_count ?? 0) > 0
+                                  ? `${trip.armoured_count} required`
+                                  : "Not requested"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Vehicle Assignment Status */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Vehicle Assignment</div>
+                          {state === "none" && (
+                            <Badge
+                              variant="outline"
+                              className="text-[11px] bg-rose-500/10 text-rose-700 border-rose-500/20"
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Unassigned
+                            </Badge>
+                          )}
+                          {state === "partial" && (
+                            <div className="space-y-1">
                               <Badge
-                                key={vehicleId}
                                 variant="outline"
-                                className="text-[11px] bg-muted text-muted-foreground border-border"
+                                className="text-[11px] bg-amber-500/10 text-amber-700 border-amber-500/20"
                               >
-                                {assignedVehicle.registration}
+                                {totalAssigned} of {totalNeeded} assigned
                               </Badge>
-                            ) : null;
-                          })}
+                              <div className="text-xs text-muted-foreground">
+                                {totalNeeded - totalAssigned} vehicle(s) needed
+                              </div>
+                            </div>
+                          )}
+                          {state === "full" && (
+                            <div className="flex flex-wrap gap-1">
+                              {trip.assigned_vehicle_ids?.map((vehicleId) => {
+                                const assignedVehicle = vehicles.find(
+                                  (v) => v.id === vehicleId
+                                );
+                                return assignedVehicle ? (
+                                  <Badge
+                                    key={vehicleId}
+                                    variant="outline"
+                                    className="text-[11px] bg-muted text-muted-foreground border-border"
+                                  >
+                                    {assignedVehicle.registration}
+                                  </Badge>
+                                ) : null;
+                              })}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Driver */}
-                    <div>
-                      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                        Driver
-                      </div>
-                      {trip.driver_id ? (
-                        <div className="text-sm text-foreground font-medium">
-                          {safeFormatText(trip.driver_name, "Unknown Driver")}
+                        {/* Driver */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Driver</div>
+                          {trip.driver_id ? (
+                            <div className="text-sm text-foreground font-medium">
+                              {safeFormatText(trip.driver_name, "Unknown Driver")}
+                            </div>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-xs text-amber-600"
+                            >
+                              Unassigned
+                            </Badge>
+                          )}
                         </div>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-xs text-amber-600"
-                        >
-                          Unassigned
-                        </Badge>
-                      )}
-                    </div>
+                      </CardContent>
+                    </Card>
 
-                    {/* Security Escort */}
+                    {/* Security Escort Section */}
                     {trip.has_security_escort && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Shield className="h-4 w-4 text-rose-500" />
-                          <span className="text-sm font-medium text-rose-700 dark:text-rose-400">
-                            Security Escort
-                          </span>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="text-[11px] bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30"
-                        >
-                          {trip.escort_count || 1} escort vehicle(s) required
-                        </Badge>
+                      <div className="mt-4">
+                        <SecurityEscortSection trip={trip} />
                       </div>
+                    )}
+
+                    {/* Passengers (if organization) */}
+                    {trip.client_type === "organization" && (
+                      (() => {
+                        const notesPassengers = trip.notes ? parsePassengers(trip.notes) : [];
+                        const arrayPassengers = Array.isArray(trip.passengers) ? trip.passengers : [];
+                        const allPassengers = Array.from(new Set([...arrayPassengers, ...notesPassengers]));
+                        
+                        if (allPassengers.length > 0) {
+                          return (
+                            <Card className="border-border bg-card">
+                              <CardHeader className="pb-2 bg-muted/50 border-b border-border">
+                                <CardTitle className="text-sm flex items-center text-card-foreground">
+                                  <Users className="h-4 w-4 mr-2 text-primary" />
+                                  Passengers ({allPassengers.length})
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-3">
+                                <div className="space-y-2">
+                                  {allPassengers.map((passenger, index) => (
+                                    <div
+                                      key={index}
+                                      className="flex items-center space-x-2 p-2 rounded-md bg-muted/50 border border-border"
+                                    >
+                                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
+                                        {passenger.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div className="flex-1 text-sm text-foreground">{passenger}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        }
+                        return null;
+                      })()
+                    )}
+
+                    {/* Notes */}
+                    {trip.notes && (
+                      <Card className="border-border bg-card">
+                        <CardHeader className="pb-2 bg-muted/50 border-b border-border">
+                          <CardTitle className="text-sm flex items-center text-card-foreground">
+                            <FileText className="h-4 w-4 mr-2 text-primary" />
+                            Notes
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-3">
+                          <div className="text-sm whitespace-pre-wrap text-muted-foreground bg-muted/50 p-3 rounded-md border border-border">
+                            {trip.notes}
+                          </div>
+                        </CardContent>
+                      </Card>
                     )}
                   </div>
                 </div>
