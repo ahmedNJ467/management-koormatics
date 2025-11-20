@@ -199,24 +199,28 @@ export function AssignDriverDialog({
 
     try {
       // Create assignment record with valid status value
+      const assignmentData = {
+        trip_id: tripToAssign.id,
+        driver_id: selectedDriver,
+        status: "assigned",
+        notes: assignmentNote?.trim() || null,
+        assigned_at: new Date().toISOString(),
+      };
+
       const { error: assignmentError } = await supabase
         .from("trip_assignments")
         .upsert(
-          [
-          {
-            trip_id: tripToAssign.id,
-            driver_id: selectedDriver,
-            notes: assignmentNote,
-              status: "assigned",
-          },
-          ] as any,
+          [assignmentData] as any,
           {
             onConflict: "trip_id,driver_id",
             ignoreDuplicates: false,
           } as any
         );
 
-      if (assignmentError) throw assignmentError;
+      if (assignmentError) {
+        console.error("Assignment error details:", assignmentError);
+        throw assignmentError;
+      }
 
       // Update trip with new driver ID
       const { error: updateError } = await supabase
