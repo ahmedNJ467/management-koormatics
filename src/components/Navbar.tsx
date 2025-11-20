@@ -55,7 +55,8 @@ const Navbar = memo(function Navbar({
   const { toast } = useToast();
   const { domain } = useTenantScope();
   const { hasRole } = useRole();
-  const { data: pages = [] } = usePageAccess();
+  const { data: pagesData } = usePageAccess();
+  const pages = (pagesData || []).filter((p): p is string => typeof p === "string" && p.length > 0);
   const { signOut } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(
     () => cachedAvatarSrc
@@ -67,7 +68,11 @@ const Navbar = memo(function Navbar({
   const isPageAllowed = useCallback(
     (href?: string | null) => {
       if (!href) return false;
-      if (pages.includes("*")) return true;
+      
+      // Filter out any undefined/null values from pages array
+      const validPages = (pages || []).filter((p): p is string => typeof p === "string" && p.length > 0);
+      
+      if (validPages.includes("*")) return true;
 
       const normalized =
         typeof href === "string"
@@ -76,10 +81,12 @@ const Navbar = memo(function Navbar({
             : href
           : "";
 
-      if (!normalized) return false;
+      if (!normalized || typeof normalized !== "string") return false;
 
       const firstSegment = normalized.split("/")[0] || normalized;
-      return pages.includes(normalized) || pages.includes(firstSegment);
+      if (!firstSegment || typeof firstSegment !== "string") return false;
+      
+      return validPages.includes(normalized) || validPages.includes(firstSegment);
     },
     [pages]
   );
