@@ -24,7 +24,7 @@ export const pdfConfig = {
   format: "a4" as const,
   pageMargin: 0.6,
   companyName: "KOORMATICS",
-  logoPath: "/koormatics-logo.svg",
+  logoPath: "/logo.svg",
   logoAspectRatio: 0.3,
 };
 

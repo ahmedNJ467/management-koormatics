@@ -175,7 +175,7 @@ async function drawSimpleHeader(doc: jsPDF, pageWidth: number, title: string) {
   doc.rect(0, 0, pageWidth, 20, "F");
 
   // Load and add Koormatics logo
-  const logoUrl = "/images/Koormatics-logo.png";
+  const logoUrl = "/logo.svg";
   const logoWidth = 40;
   const logoHeight = 12;
 
