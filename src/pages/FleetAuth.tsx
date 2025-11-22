@@ -61,18 +61,35 @@ export default function FleetAuth() {
           description: "Successfully signed in to the fleet management system.",
         });
 
-        // Trigger form submission event for password manager detection
-        // This helps password managers recognize the successful login
-        const form = e.currentTarget as HTMLFormElement;
-        if (form) {
-          // Create a synthetic submit event
-          const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
-          form.dispatchEvent(submitEvent);
+        // Help password managers detect successful login
+        // Use Credential Management API if available to help password managers
+        if (typeof window !== "undefined" && "PasswordCredential" in window) {
+          try {
+            const cred = new (window as any).PasswordCredential({
+              id: email,
+              password: password,
+              name: email,
+            });
+            if ((navigator as any).credentials) {
+              await (navigator as any).credentials.store(cred);
+            }
+          } catch (err) {
+            // Credential API not supported or failed, continue with normal flow
+          }
         }
 
-        // Redirect to dashboard
-        setIsRedirecting(true);
-        router.push("/dashboard");
+        // Small delay before redirect to allow password managers to detect successful login
+        // Password managers need time to process the form submission and detect the success
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Use full page navigation instead of client-side router for password manager detection
+        // Password managers detect successful logins by monitoring full page navigations
+        if (typeof window !== "undefined") {
+          window.location.href = "/dashboard";
+        } else {
+          setIsRedirecting(true);
+          router.push("/dashboard");
+        }
       }
     } catch (error) {
       // Restore password visibility if login failed
@@ -134,11 +151,13 @@ export default function FleetAuth() {
 
           {/* Login Form */}
           <form 
+            id="login-form"
+            name="login-form"
             onSubmit={handleAuth} 
             className="space-y-4" 
             autoComplete="on"
             method="post"
-            action="#"
+            action={typeof window !== "undefined" ? window.location.href : "#"}
             noValidate
           >
             <div className="relative">
@@ -151,6 +170,9 @@ export default function FleetAuth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
                 required
                 className="pl-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-400 transition-colors"
               />
@@ -165,6 +187,9 @@ export default function FleetAuth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
                 required
                 className="pl-3 pr-10 h-12 bg-white/5 border border-white/20 text-white placeholder:text-white/70 rounded-md focus:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 focus:border-purple-offset-0 focus:border-purple-400 transition-colors"
               />

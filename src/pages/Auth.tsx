@@ -190,17 +190,38 @@ export default function Auth() {
         }
       }
 
-      // Trigger form submission event for password manager detection
-      // This helps password managers recognize the successful login
+      // Help password managers detect successful login
+      // Password managers detect successful logins by monitoring form submissions and navigation
+      // We need to ensure the form structure is visible and the navigation happens after a brief delay
       const form = e.currentTarget as HTMLFormElement;
-      if (form) {
-        // Create a synthetic submit event
-        const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
-        form.dispatchEvent(submitEvent);
+      
+      // Use Credential Management API if available to help password managers
+      if (typeof window !== "undefined" && "PasswordCredential" in window) {
+        try {
+          const cred = new (window as any).PasswordCredential({
+            id: email,
+            password: password,
+            name: email,
+          });
+          if ((navigator as any).credentials) {
+            await (navigator as any).credentials.store(cred);
+          }
+        } catch (err) {
+          // Credential API not supported or failed, continue with normal flow
+        }
       }
 
-      // Use replace instead of push for instant redirect
-      router.replace(dashboardPath);
+      // Small delay before redirect to allow password managers to detect successful login
+      // Password managers need time to process the form submission and detect the success
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Use full page navigation instead of client-side router for password manager detection
+      // Password managers detect successful logins by monitoring full page navigations
+      if (typeof window !== "undefined") {
+        window.location.href = dashboardPath;
+      } else {
+        router.replace(dashboardPath);
+      }
     } catch (error) {
       // Restore password visibility if login failed
       if (wasPasswordVisible && passwordInput) {
@@ -310,11 +331,13 @@ export default function Auth() {
 
           {/* Login Form */}
           <form 
+            id="login-form"
+            name="login-form"
             onSubmit={handleAuth} 
             className="space-y-5" 
             autoComplete="on"
             method="post"
-            action="#"
+            action={typeof window !== "undefined" ? window.location.href : "#"}
             noValidate
           >
             <div className="relative">
@@ -327,6 +350,9 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
                 required
                 className="pl-10 h-12 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
               />
@@ -341,6 +367,9 @@ export default function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
                 required
                 className="pl-3 pr-10 h-12 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
               />
