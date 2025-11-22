@@ -25,6 +25,16 @@ export default function FleetAuth() {
     e.preventDefault();
     setIsLoading(true);
 
+    // Ensure password field type is "password" for password manager detection
+    // Password managers need the field to be type="password" when form is submitted
+    const passwordInput = document.getElementById("password") as HTMLInputElement;
+    const wasPasswordVisible = showPassword;
+    if (wasPasswordVisible && passwordInput) {
+      passwordInput.type = "password";
+      // Temporarily update state to match (will be restored if login fails)
+      setShowPassword(false);
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -32,6 +42,11 @@ export default function FleetAuth() {
       });
 
       if (error) {
+        // Restore password visibility if login failed
+        if (wasPasswordVisible && passwordInput) {
+          passwordInput.type = "text";
+          setShowPassword(true);
+        }
         toast({
           title: "Authentication Failed",
           description: error.message,
@@ -46,11 +61,25 @@ export default function FleetAuth() {
           description: "Successfully signed in to the fleet management system.",
         });
 
+        // Trigger form submission event for password manager detection
+        // This helps password managers recognize the successful login
+        const form = e.currentTarget as HTMLFormElement;
+        if (form) {
+          // Create a synthetic submit event
+          const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+          form.dispatchEvent(submitEvent);
+        }
+
         // Redirect to dashboard
         setIsRedirecting(true);
         router.push("/dashboard");
       }
     } catch (error) {
+      // Restore password visibility if login failed
+      if (wasPasswordVisible && passwordInput) {
+        passwordInput.type = "text";
+        setShowPassword(true);
+      }
       console.error("Auth error:", error);
       toast({
         title: "Authentication Error",
@@ -104,7 +133,14 @@ export default function FleetAuth() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleAuth} className="space-y-4" autoComplete="on">
+          <form 
+            onSubmit={handleAuth} 
+            className="space-y-4" 
+            autoComplete="on"
+            method="post"
+            action="#"
+            noValidate
+          >
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
               <Input

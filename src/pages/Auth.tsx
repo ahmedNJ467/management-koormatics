@@ -27,6 +27,16 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
 
+    // Ensure password field type is "password" for password manager detection
+    // Password managers need the field to be type="password" when form is submitted
+    const passwordInput = document.getElementById("password") as HTMLInputElement;
+    const wasPasswordVisible = showPassword;
+    if (wasPasswordVisible && passwordInput) {
+      passwordInput.type = "password";
+      // Temporarily update state to match (will be restored if login fails)
+      setShowPassword(false);
+    }
+
     try {
       // Add timeout and better error handling
       const authPromise = supabase.auth.signInWithPassword({
@@ -180,9 +190,23 @@ export default function Auth() {
         }
       }
 
+      // Trigger form submission event for password manager detection
+      // This helps password managers recognize the successful login
+      const form = e.currentTarget as HTMLFormElement;
+      if (form) {
+        // Create a synthetic submit event
+        const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+        form.dispatchEvent(submitEvent);
+      }
+
       // Use replace instead of push for instant redirect
       router.replace(dashboardPath);
     } catch (error) {
+      // Restore password visibility if login failed
+      if (wasPasswordVisible && passwordInput) {
+        passwordInput.type = "text";
+        setShowPassword(true);
+      }
       console.error("Auth error:", error);
       
       // For access denied errors, show invalid credentials (don't reveal the real reason)
@@ -291,6 +315,7 @@ export default function Auth() {
             autoComplete="on"
             method="post"
             action="#"
+            noValidate
           >
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -301,7 +326,7 @@ export default function Auth() {
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="username"
+                autoComplete="email"
                 required
                 className="pl-10 h-12 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
               />
