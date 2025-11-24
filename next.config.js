@@ -103,6 +103,20 @@ const nextConfig = {
   // Security + Cache headers (avoid aggressive page caching)
   async headers() {
     return [
+      // Ensure CSS files are served with correct Content-Type FIRST (before other rules)
+      {
+        source: "/_next/static/css/:path*",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "text/css; charset=utf-8",
+          },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
       // Default security headers for all routes
       {
         source: "/(.*)",
@@ -118,23 +132,10 @@ const nextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
       },
       // Cache static assets aggressively (hashed filenames)
+      // Note: CSS files are handled above with explicit Content-Type
       {
         source: "/_next/static/:path*",
         headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      // Ensure CSS files are served with correct Content-Type and not executed as scripts
-      {
-        source: "/_next/static/css/:path*",
-        headers: [
-          {
-            key: "Content-Type",
-            value: "text/css; charset=utf-8",
-          },
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
