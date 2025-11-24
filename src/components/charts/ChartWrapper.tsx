@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/loading-states";
 import { cn } from "@/lib/utils";
 
 interface ChartWrapperProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   isLoading?: boolean;
   error?: Error | null;
   className?: string;
@@ -98,6 +98,7 @@ export function createOptimizedChart<T = {}>(
         isLoading={true}
         height={options?.height}
         emptyMessage={options?.emptyMessage}
+        children={null}
       />
     ),
   });

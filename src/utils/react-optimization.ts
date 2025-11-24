@@ -11,11 +11,11 @@ import { memo, ComponentType, ComponentProps } from "react";
 export function createMemoizedComponent<T extends ComponentType<any>>(
   Component: T,
   areEqual?: (
-    prevProps: ComponentProps<T>,
-    nextProps: ComponentProps<T>
+    prevProps: Readonly<ComponentProps<T>>,
+    nextProps: Readonly<ComponentProps<T>>
   ) => boolean
-): T {
-  return memo(Component, areEqual) as T;
+): React.MemoExoticComponent<T> {
+  return memo(Component, areEqual) as React.MemoExoticComponent<T>;
 }
 
 /**

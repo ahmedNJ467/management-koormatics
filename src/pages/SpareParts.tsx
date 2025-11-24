@@ -37,7 +37,7 @@ const SpareParts = () => {
     data: spareParts = [],
     isLoading,
     isError,
-  } = useSparePartsQuery();
+  } = useSparePartsQuery({ column: "name", direction: "asc" });
   const {
     addPartMutation,
     updatePartMutation,

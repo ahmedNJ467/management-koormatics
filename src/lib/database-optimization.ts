@@ -3,26 +3,24 @@
  * Best practices for Supabase queries
  */
 
-import type { PostgrestFilterBuilder } from "@supabase/postgrest-js";
-
 /**
  * Optimize query by selecting only needed fields
  */
-export function selectFields<T>(
-  query: PostgrestFilterBuilder<any, T, any>,
+export function selectFields(
+  query: any,
   fields: string[]
-): PostgrestFilterBuilder<any, T, any> {
+): any {
   return query.select(fields.join(", "));
 }
 
 /**
  * Add pagination to query
  */
-export function withPagination<T>(
-  query: PostgrestFilterBuilder<any, T, any>,
+export function withPagination(
+  query: any,
   page: number,
   pageSize: number
-): PostgrestFilterBuilder<any, T, any> {
+): any {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   return query.range(from, to);
@@ -35,8 +33,8 @@ export const queryPatterns = {
   /**
    * Get single item by ID (optimized)
    */
-  getById: <T>(
-    query: PostgrestFilterBuilder<any, T, any>,
+  getById: (
+    query: any,
     id: string,
     fields?: string[]
   ) => {
@@ -50,8 +48,8 @@ export const queryPatterns = {
   /**
    * Get list with pagination (optimized)
    */
-  getList: <T>(
-    query: PostgrestFilterBuilder<any, T, any>,
+  getList: (
+    query: any,
     options?: {
       page?: number;
       pageSize?: number;
@@ -61,7 +59,7 @@ export const queryPatterns = {
       filters?: Record<string, any>;
     }
   ) => {
-    let q = query;
+    let q: any = query;
     
     // Select only needed fields
     if (options?.fields) {
@@ -95,8 +93,8 @@ export const queryPatterns = {
   /**
    * Count records (optimized)
    */
-  getCount: <T>(
-    query: PostgrestFilterBuilder<any, T, any>,
+  getCount: (
+    query: any,
     filters?: Record<string, any>
   ) => {
     let q = query.select("id", { count: "exact", head: true });
