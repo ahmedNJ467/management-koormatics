@@ -12,6 +12,7 @@ import { debugDomainDetection } from "@/utils/subdomain";
 import { cn } from "@/lib/utils";
 import { useInactivityTimeout } from "@/hooks/use-inactivity-timeout";
 import { useAuth } from "@/hooks/useAuth";
+import { SkipLink } from "@/components/ui/skip-link";
 
 let sidebarStateRef = false;
 
@@ -276,6 +277,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     <ErrorBoundary>
       <ChunkErrorBoundary>
         <div className="h-screen bg-background">
+          {/* Skip to main content link for accessibility */}
+          <SkipLink href="#main-content" />
+          
           {/* Always render the main layout structure */}
           {/* Navbar - Fixed at top */}
           <div className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-40">
@@ -310,7 +314,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
 
             {/* Main Content - Naturally expands/contracts */}
             <div className="flex-1 overflow-hidden">
-              <main className="h-full overflow-y-auto bg-muted/20">
+              <main id="main-content" className="h-full overflow-y-auto bg-muted/20" tabIndex={-1}>
                 {/* Always render children - let components handle their own loading/access states */}
                 {/* Apply small uniform padding for all pages except dispatch and chat (full-bleed) */}
                 {pathname === "/dispatch" || pathname === "/chat" ? (

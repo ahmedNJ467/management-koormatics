@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
   // Next.js 15 optimizations - simplified to prevent chunk issues
   // Disable optimizePackageImports for lucide-react on Webpack to avoid import-time errors in Pages Router
@@ -43,13 +47,15 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
-  // Bundle optimization - simplified to avoid chunk loading issues
+  // Bundle optimization - enhanced for better code splitting
   webpack: (config, { dev, isServer }) => {
     // Only apply optimizations in production
     if (!dev && !isServer) {
-      // Use Next.js default splitChunks with minimal customization
+      // Enhanced splitChunks for better code splitting
       config.optimization.splitChunks = {
         chunks: "all",
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           default: {
             minChunks: 2,
@@ -60,6 +66,28 @@ const nextConfig = {
             test: /[\\/]node_modules[\\/]/,
             name: "vendors",
             priority: -10,
+            chunks: "all",
+            enforce: true,
+          },
+          // Separate chunk for large libraries
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            name: "react",
+            priority: 20,
+            chunks: "all",
+          },
+          // Separate chunk for UI libraries
+          ui: {
+            test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+            name: "ui",
+            priority: 15,
+            chunks: "all",
+          },
+          // Separate chunk for charts
+          charts: {
+            test: /[\\/]node_modules[\\/](recharts|@react-pdf)[\\/]/,
+            name: "charts",
+            priority: 15,
             chunks: "all",
           },
         },
@@ -134,4 +162,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

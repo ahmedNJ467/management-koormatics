@@ -1,70 +1,53 @@
-import {
-  useQuery,
-  UseQueryOptions,
-  UseQueryResult,
-} from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
+import { QueryKey } from "@tanstack/react-query";
 
-// Define custom options type that extends UseQueryOptions but omits the queryKey and queryFn
-// We'll add our own custom properties
-type OptimizedQueryOptions<TData, TError> = Omit<
-  UseQueryOptions<TData, TError, TData, unknown[]>,
-  "queryKey" | "queryFn"
-> & {
-  errorMessage?: string;
-  customErrorHandler?: (error: TError) => void;
-};
-
-export function useOptimizedQuery<TData, TError>(
-  queryKey: unknown[],
-  queryFn: () => Promise<TData>,
-  options?: OptimizedQueryOptions<TData, TError>
-): UseQueryResult<TData, TError> {
-  const { toast } = useToast();
-  const {
-    errorMessage = "An error occurred while fetching data",
-    customErrorHandler,
-    ...queryOptions
-  } = options || {};
-
-  // Create a modified query function that handles errors
-  const wrappedQueryFn = async (): Promise<TData> => {
-    try {
-      return await queryFn();
-    } catch (error) {
-      // Log the error
-      console.error(`Query error (${queryKey.join("/")}):`, error);
-
-      // Show error toast
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-
-      // Call custom error handler if provided
-      if (customErrorHandler) {
-        customErrorHandler(error as TError);
-      }
-
-      // Re-throw to let React Query handle it
-      throw error;
-    }
-  };
-
-  return useQuery({
-    queryKey,
-    queryFn: wrappedQueryFn,
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    gcTime: 60 * 60 * 1000, // 1 hour
-    refetchOnMount: false,
+/**
+ * Optimized query hook with better defaults for performance
+ * - Stale time: 5 minutes (data considered fresh)
+ * - Cache time: 30 minutes (data kept in cache)
+ * - Refetch on window focus: false (reduces unnecessary requests)
+ * - Retry: 1 (faster failure on network errors)
+ */
+export function useOptimizedQuery<TData = unknown, TError = Error>(
+  options: Omit<UseQueryOptions<TData, TError>, "staleTime" | "cacheTime" | "refetchOnWindowFocus" | "retry">
+) {
+  return useQuery<TData, TError>({
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
     refetchOnWindowFocus: false,
-    retry: 2, // Retry failed requests twice (default is 3)
-    ...queryOptions,
-    meta: {
-      ...(queryOptions.meta || {}),
-      errorMessage,
-      customErrorHandler,
-    },
+    retry: 1,
+    ...options,
+  });
+}
+
+/**
+ * Hook for queries that should be refetched more frequently
+ * Useful for real-time data that changes often
+ */
+export function useFrequentQuery<TData = unknown, TError = Error>(
+  options: Omit<UseQueryOptions<TData, TError>, "staleTime" | "cacheTime" | "refetchOnWindowFocus" | "retry">
+) {
+  return useQuery<TData, TError>({
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    retry: 2,
+    ...options,
+  });
+}
+
+/**
+ * Hook for queries that rarely change
+ * Useful for reference data, settings, etc.
+ */
+export function useStableQuery<TData = unknown, TError = Error>(
+  options: Omit<UseQueryOptions<TData, TError>, "staleTime" | "cacheTime" | "refetchOnWindowFocus" | "retry">
+) {
+  return useQuery<TData, TError>({
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours
+    refetchOnWindowFocus: false,
+    retry: 1,
+    ...options,
   });
 }

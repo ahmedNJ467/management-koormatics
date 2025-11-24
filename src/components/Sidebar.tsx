@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
@@ -30,8 +30,11 @@ import {
   CreditCard,
   Settings,
   Wallet,
+  Search,
+  X,
 } from "lucide-react";
 import { usePageAccess } from "@/hooks/use-page-access";
+import { Input } from "@/components/ui/input";
 
 // Navigation structure with categories
 const navigationGroups = [
@@ -140,6 +143,7 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: pages = [], isLoading } = usePageAccess();
 
   // Handle link click to close sidebar on mobile
@@ -242,28 +246,79 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
     }
   }, [pathname]);
 
+  // Filter navigation items based on search
+  const filteredNavigationGroups = useMemo(() => {
+    if (!searchQuery.trim()) return navigationGroups;
+
+    const query = searchQuery.toLowerCase();
+    return navigationGroups.map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        item.name.toLowerCase().includes(query)
+      ),
+    })).filter((group) => group.items.length > 0);
+  }, [searchQuery]);
+
+  // Get all visible items for keyboard navigation
+  const allVisibleItems = useMemo(() => {
+    const items: Array<{ href: string; name: string }> = [];
+    filteredNavigationGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        if (item?.href && shouldShowItem(item.href) && hasAccess(item.href)) {
+          items.push({ href: item.href, name: item.name });
+        }
+      });
+    });
+    return items;
+  }, [filteredNavigationGroups, shouldShowItem, hasAccess]);
+
   return (
     <div className="flex h-full flex-col bg-background border-r">
+      {/* Search Bar */}
+      <div className="p-4 border-b">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search navigation..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9 h-9 text-sm"
+            aria-label="Search navigation"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-4" aria-label="Main navigation">
         {/* Dashboard - Single link, no menu */}
         <Link
           href="/dashboard"
           className={cn(
-            "flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors",
+            "flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
             pathname === "/dashboard"
-              ? "bg-primary text-primary-foreground"
+              ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground hover:bg-accent"
           )}
           prefetch={true}
           onClick={handleLinkClick}
+          aria-current={pathname === "/dashboard" ? "page" : undefined}
         >
-          <BarChart className="h-4 w-4" />
+          <BarChart className="h-4 w-4 flex-shrink-0" />
           <span>Dashboard</span>
         </Link>
 
         {/* Other navigation categories */}
-        {navigationGroups.map((group) => {
+        {filteredNavigationGroups.map((group) => {
           // Only show categories that have visible items
           if (!hasVisibleItems(group.items)) return null;
 
@@ -285,9 +340,9 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors",
+                          "flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                           isActive
-                            ? "bg-primary text-primary-foreground"
+                            ? "bg-primary text-primary-foreground shadow-sm"
                             : "text-muted-foreground hover:text-foreground hover:bg-accent"
                         )}
                         prefetch={true}
@@ -295,8 +350,9 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
                           item.href === "/vehicles" ? prefetchVehicles : undefined
                         }
                         onClick={handleLinkClick}
+                        aria-current={isActive ? "page" : undefined}
                       >
-                        <item.icon className="h-4 w-4" />
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
                         <span>{item.name}</span>
                       </Link>
                     );
@@ -311,18 +367,25 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
             <div key={group.category} className="space-y-2">
               <button
                 onClick={() => toggleCategory(group.category)}
-                className="flex w-full items-center justify-between px-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
+                className="flex w-full items-center justify-between px-2 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
+                aria-expanded={isExpanded}
+                aria-controls={`category-${group.category}`}
               >
                 <span>{group.category}</span>
                 {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 transition-transform" />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 transition-transform" />
                 )}
               </button>
 
               {isExpanded && (
-                <div className="ml-4 space-y-1">
+                <div 
+                  id={`category-${group.category}`}
+                  className="ml-4 space-y-1"
+                  role="group"
+                  aria-label={`${group.category} navigation items`}
+                >
                   {group.items
                     .filter((item) => item?.href && shouldShowItem(item.href))
                     .map((item) => {
@@ -337,9 +400,9 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
                           key={item.href}
                           href={item.href}
                           className={cn(
-                            "flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors",
+                            "flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                             isActive
-                              ? "bg-primary text-primary-foreground"
+                              ? "bg-primary text-primary-foreground shadow-sm"
                               : "text-muted-foreground hover:text-foreground hover:bg-accent"
                           )}
                           prefetch={true}
@@ -348,8 +411,10 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
                               ? prefetchVehicles
                               : undefined
                           }
+                          onClick={handleLinkClick}
+                          aria-current={isActive ? "page" : undefined}
                         >
-                          <item.icon className="h-4 w-4" />
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
                           <span>{item.name}</span>
                         </Link>
                       );
