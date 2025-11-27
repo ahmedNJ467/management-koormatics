@@ -49,6 +49,29 @@ const nextConfig = {
 
   // Bundle optimization - enhanced for better code splitting
   webpack: (config, { dev, isServer }) => {
+    // Ensure CSS files are never treated as JavaScript modules
+    if (!isServer) {
+      // Prevent CSS from being processed as JS modules
+      config.module.rules.forEach((rule) => {
+        if (rule.test && rule.test.toString().includes('css')) {
+          // Ensure CSS loader is properly configured
+          if (Array.isArray(rule.use)) {
+            rule.use.forEach((loader) => {
+              if (typeof loader === 'object' && loader.loader) {
+                // Ensure CSS loader doesn't treat files as JS
+                if (loader.loader.includes('css-loader')) {
+                  loader.options = {
+                    ...loader.options,
+                    esModule: false,
+                  };
+                }
+              }
+            });
+          }
+        }
+      });
+    }
+
     // Only apply optimizations in production
     if (!dev && !isServer) {
       // Enhanced splitChunks for better code splitting
