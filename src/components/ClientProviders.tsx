@@ -118,14 +118,20 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
   }, []);
 
 
-  // Only clear critical auth caches on page load - keep data caches for instant loading
+  // Aggressively clear service workers and caches to prevent CSS MIME type errors
   useEffect(() => {
     (async () => {
       try {
-        // Only clear service workers if they exist
+        // Aggressively unregister ALL service workers to prevent CSS execution errors
         if ("serviceWorker" in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();
           await Promise.all(regs.map((r) => r.unregister()));
+          
+          // Also clear all caches to prevent stale CSS files
+          if ("caches" in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map((name) => caches.delete(name)));
+          }
         }
 
         // Clear only auth-related queries on page load for fresh authentication state

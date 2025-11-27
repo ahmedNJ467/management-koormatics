@@ -104,12 +104,17 @@ const nextConfig = {
   async headers() {
     return [
       // Ensure CSS files are served with correct Content-Type FIRST (before other rules)
+      // This prevents CSS from being executed as scripts
       {
         source: "/_next/static/css/:path*",
         headers: [
           {
             key: "Content-Type",
             value: "text/css; charset=utf-8",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
             key: "Cache-Control",
