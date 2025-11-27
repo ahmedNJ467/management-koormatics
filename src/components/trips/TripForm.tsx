@@ -178,8 +178,8 @@ export function TripForm({
   return (
     <ScrollArea className="pr-4 max-h-[calc(90vh-8rem)]">
       <form onSubmit={onSubmit} className="space-y-6">
-        <input type="hidden" name="client_id" value={selectedClientId || ""} />
-        <input type="hidden" name="client_type" value={selectedClientType} />
+        <input type="hidden" id="client_id" name="client_id" value={selectedClientId || ""} />
+        <input type="hidden" id="client_type" name="client_type" value={selectedClientType} />
         <input
           type="hidden"
           name="passengers"
@@ -253,7 +253,7 @@ export function TripForm({
                   className={!softSkinEnabled ? "opacity-60" : undefined}
                 />
                 {!softSkinEnabled && (
-                  <input type="hidden" name="soft_skin_count" value="0" />
+                  <input type="hidden" id="soft_skin_count" name="soft_skin_count" value="0" />
                 )}
               </div>
               <div className="space-y-2">
@@ -292,7 +292,7 @@ export function TripForm({
                   className={!armouredEnabled ? "opacity-60" : undefined}
                 />
                 {!armouredEnabled && (
-                  <input type="hidden" name="armoured_count" value="0" />
+                  <input type="hidden" id="armoured_count" name="armoured_count" value="0" />
                 )}
               </div>
             </div>
@@ -307,7 +307,7 @@ export function TripForm({
         />
 
         {/* Hidden input for client_type */}
-        <input type="hidden" name="client_type" value={selectedClientType} />
+        <input type="hidden" id="client_type_alt" name="client_type" value={selectedClientType} />
 
         <PassengerManagement
           passengers={passengers}

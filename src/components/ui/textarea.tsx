@@ -8,7 +8,11 @@ export interface TextareaProps
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, id, name, ...props }, ref) => {
+    // Ensure id is present when name is present (for browser autofill)
+    // If id is not provided but name is, use name as id
+    const textareaId = id || (name ? name : undefined);
+
     return (
       <textarea
         className={cn(
@@ -16,6 +20,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         ref={ref}
+        id={textareaId}
+        name={name}
         {...props}
       />
     );

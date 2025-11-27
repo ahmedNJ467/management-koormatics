@@ -144,11 +144,13 @@ export function LocationFields({ editTrip, serviceType }: LocationFieldsProps) {
         {/* Hidden coords populated by Places */}
         <input
           type="hidden"
+          id="pickup_lat"
           name="pickup_lat"
           defaultValue={"" + (editTrip as any)?.pickup_lat || ""}
         />
         <input
           type="hidden"
+          id="pickup_lng"
           name="pickup_lng"
           defaultValue={"" + (editTrip as any)?.pickup_lng || ""}
         />

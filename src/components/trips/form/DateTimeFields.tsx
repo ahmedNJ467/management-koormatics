@@ -94,7 +94,7 @@ export function DateTimeFields({
             step={60}
             required
           />
-          <input type="hidden" name="time" value={time || ""} required />
+          <input type="hidden" id="time" name="time" value={time || ""} required />
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export function DateTimeFields({
             className="h-11"
             step={60}
           />
-          <input type="hidden" name="return_time" value={returnTime || ""} />
+          <input type="hidden" id="return_time" name="return_time" value={returnTime || ""} />
         </div>
       )}
     </>

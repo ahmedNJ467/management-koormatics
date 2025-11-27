@@ -22,6 +22,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       showRemoveButton,
       addButtonLabel,
       removeButtonLabel,
+      id,
+      name,
       ...props
     },
     ref
@@ -33,6 +35,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         onAddItem();
       }
     };
+
+    // Ensure id is present when name is present (for browser autofill)
+    // If id is not provided but name is, use name as id
+    const inputId = id || (name ? name : undefined);
 
     return (
       <div
@@ -48,6 +54,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           ref={ref}
           onKeyDown={onAddItem ? handleKeyDown : undefined}
+          id={inputId}
+          name={name}
           {...props}
         />
 
