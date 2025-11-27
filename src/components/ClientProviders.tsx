@@ -117,32 +117,6 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // Prevent CSS files from being executed as scripts (client-side safeguard)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Monitor for script execution errors related to CSS
-    const originalError = window.console.error;
-    window.console.error = (...args) => {
-      const message = args.join(" ");
-      if (
-        message.includes("Refused to execute script") &&
-        message.includes(".css")
-      ) {
-        console.warn(
-          "CSS MIME type error detected. This is usually caused by:",
-          "1. Browser cache - Clear cache and hard refresh (Ctrl+Shift+R)",
-          "2. Service worker - Unregister in DevTools → Application",
-          "3. Browser extension - Disable extensions temporarily"
-        );
-      }
-      originalError.apply(window.console, args);
-    };
-
-    return () => {
-      window.console.error = originalError;
-    };
-  }, []);
 
   // Only clear critical auth caches on page load - keep data caches for instant loading
   useEffect(() => {
