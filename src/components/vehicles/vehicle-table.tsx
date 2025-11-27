@@ -161,7 +161,7 @@ export const VehicleTable = memo(
             <TableHead>Status</TableHead>
             <TableHead>Registration</TableHead>
             <TableHead>Location</TableHead>
-            <TableHead>Insurance</TableHead>
+            <TableHead>Tax</TableHead>
             <TableHead>Assigned Driver</TableHead>
           </TableRow>
         </TableHeader>

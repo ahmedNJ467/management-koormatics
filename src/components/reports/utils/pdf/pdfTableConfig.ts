@@ -101,7 +101,7 @@ function getEnhancedColumnStyles(filename: string): any {
         2: { ...commonStyles, cellWidth: 1.2, halign: "center" }, // Type
         3: { ...commonStyles, cellWidth: 0.8, halign: "center" }, // Year
         4: { ...commonStyles, cellWidth: 1.0, halign: "center" }, // Status
-        5: { ...commonStyles, cellWidth: 1.6, halign: "center" }, // Insurance Expiry
+        5: { ...commonStyles, cellWidth: 1.6, halign: "center" }, // Tax Expiry
       };
 
     case "drivers-report":

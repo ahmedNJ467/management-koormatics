@@ -33,7 +33,7 @@ export function useFrequentQuery<TData = unknown, TError = Error>(
     refetchOnWindowFocus: true,
     retry: 2,
     ...options,
-  });
+      });
 }
 
 /**

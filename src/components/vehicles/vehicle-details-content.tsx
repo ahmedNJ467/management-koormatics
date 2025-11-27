@@ -362,10 +362,10 @@ export const VehicleDetailsContent = memo(
             </CardContent>
           </Card>
 
-          {/* Status & Insurance */}
+          {/* Status & Tax */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Status & Insurance</CardTitle>
+              <CardTitle className="text-lg">Status & Tax</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -389,7 +389,7 @@ export const VehicleDetailsContent = memo(
 
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Insurance Expiry
+                  Tax Expiry
                 </label>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />

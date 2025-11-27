@@ -220,7 +220,7 @@ export default function Auth() {
       if (typeof window !== "undefined") {
         window.location.href = dashboardPath;
       } else {
-        router.replace(dashboardPath);
+      router.replace(dashboardPath);
       }
     } catch (error) {
       // Restore password visibility if login failed

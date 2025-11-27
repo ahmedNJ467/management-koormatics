@@ -87,8 +87,8 @@ export default function FleetAuth() {
         if (typeof window !== "undefined") {
           window.location.href = "/dashboard";
         } else {
-          setIsRedirecting(true);
-          router.push("/dashboard");
+        setIsRedirecting(true);
+        router.push("/dashboard");
         }
       }
     } catch (error) {

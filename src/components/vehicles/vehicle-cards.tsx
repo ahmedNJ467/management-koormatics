@@ -131,7 +131,7 @@ export const VehicleCards = memo(
                     >
                       <Car className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    {/* Insurance Warning */}
+                    {/* Tax Warning */}
                     {(insuranceExpiringSoon || insuranceExpired) && (
                       <div className="absolute top-2 right-2">
                         <Badge variant="destructive" className="text-xs">
@@ -168,7 +168,7 @@ export const VehicleCards = memo(
                     {vehicle.insurance_expiry && (
                       <div className="text-sm">
                         <span className="text-muted-foreground">
-                          Insurance expires:{" "}
+                          Tax expires:{" "}
                         </span>
                         <span
                           className={

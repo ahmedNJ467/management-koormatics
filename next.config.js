@@ -104,6 +104,7 @@ const nextConfig = {
   async headers() {
     return [
       // Ensure CSS files are served with correct Content-Type FIRST (before other rules)
+      // Explicitly exclude CSS from nosniff to prevent execution attempts
       {
         source: "/_next/static/css/:path*",
         headers: [
@@ -115,11 +116,13 @@ const nextConfig = {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
           },
+          // Explicitly set X-Content-Type-Options for CSS to prevent script execution
+          { key: "X-Content-Type-Options", value: "nosniff" },
         ],
       },
-      // Default security headers for all routes
+      // Default security headers for all routes (excluding CSS which is handled above)
       {
-        source: "/(.*)",
+        source: "/((?!_next/static/css).*)",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
