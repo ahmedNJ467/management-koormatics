@@ -192,7 +192,7 @@ export function generateTableData(data: any[], reportType: string) {
         "Type",
         "Year",
         "Status",
-        "Tax Expiry",
+        "Insurance Expiry",
       ];
       tableData = data.map((vehicle) => [
         formatText(`${vehicle.make || ""} ${vehicle.model || ""}`.trim(), 28),

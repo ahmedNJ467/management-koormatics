@@ -66,7 +66,7 @@ export function VehicleDetailsFields({ form }: VehicleDetailsFieldsProps) {
         name="insurance_expiry"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Tax Expiry</FormLabel>
+            <FormLabel>Insurance Expiry</FormLabel>
             <FormControl>
               <DatePicker
                 date={field.value ? parseISO(field.value) : undefined}
