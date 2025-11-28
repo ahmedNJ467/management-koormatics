@@ -119,7 +119,42 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
 
 
   // Aggressively clear service workers and caches to prevent CSS MIME type errors
+  // This runs immediately on mount, before any other code executes
   useEffect(() => {
+    // Run synchronously to clear caches before any scripts load
+    try {
+      // Unregister ALL service workers immediately
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((r) => r.unregister().catch(() => {}));
+        });
+      }
+      
+      // Clear all caches immediately
+      if ("caches" in window) {
+        caches.keys().then((cacheNames) => {
+          cacheNames.forEach((name) => caches.delete(name).catch(() => {}));
+        });
+      }
+      
+      // Clear localStorage and sessionStorage of old build references
+      try {
+        const buildId = (window as any).__NEXT_DATA__?.buildId || "dev";
+        const storedBuildId = localStorage.getItem("koormatics-build-id");
+        if (storedBuildId && storedBuildId !== buildId) {
+          // New build detected - clear everything
+          localStorage.clear();
+          sessionStorage.clear();
+          localStorage.setItem("koormatics-build-id", buildId);
+        }
+      } catch (e) {
+        // Ignore storage errors
+      }
+    } catch (error) {
+      console.warn("Initial cache clearing failed:", error);
+    }
+
+    // Also run async cleanup
     (async () => {
       try {
         // Aggressively unregister ALL service workers to prevent CSS execution errors
