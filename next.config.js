@@ -10,6 +10,16 @@ const nextConfig = {
   //   optimizePackageImports: ["lucide-react"],
   // },
 
+  // Force a new build ID to invalidate cache and generate new CSS files
+  // This ensures the old CSS file (7e7d96b1e6991756.css) is not reused
+  generateBuildId: async () => {
+    // Generate a unique build ID based on timestamp and version
+    // This forces Next.js to create new static files instead of reusing cached ones
+    const timestamp = Math.floor(Date.now() / 1000);
+    const version = require("./package.json").version;
+    return `${version}-${timestamp}-${Math.random().toString(36).substring(2, 9)}`;
+  },
+
   // Use custom build directory to avoid OneDrive file locking issues
   // distDir: ".next-build", // Disabled for Vercel deployment
 

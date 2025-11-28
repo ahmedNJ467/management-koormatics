@@ -1,8 +1,10 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:clean",
   "installCommand": "npm install --legacy-peer-deps",
   "env": {
     "CI": "true"
   },
-  "version": 2
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false
 }
