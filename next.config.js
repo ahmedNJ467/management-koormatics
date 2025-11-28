@@ -59,6 +59,11 @@ const nextConfig = {
 
   // Bundle optimization - enhanced for better code splitting
   webpack: (config, { dev, isServer }) => {
+    // Disable webpack cache to force CSS regeneration and prevent old CSS file reuse
+    if (!isServer && !dev) {
+      config.cache = false;
+    }
+
     // Ensure CSS files are never treated as JavaScript modules
     if (!isServer) {
       // Prevent CSS from being processed as JS modules
@@ -73,6 +78,16 @@ const nextConfig = {
                   loader.options = {
                     ...loader.options,
                     esModule: false,
+                    // Force new hash generation by adding a unique identifier
+                    modules: false,
+                  };
+                }
+                // Disable caching for MiniCssExtractPlugin
+                if (loader.loader && loader.loader.includes('mini-css-extract')) {
+                  loader.options = {
+                    ...loader.options,
+                    filename: '[name].[contenthash:16].css',
+                    chunkFilename: '[name].[contenthash:16].css',
                   };
                 }
               }
