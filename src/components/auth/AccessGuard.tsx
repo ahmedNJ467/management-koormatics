@@ -2,6 +2,7 @@ import { useRouter } from "next/navigation";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { usePageAccess } from "@/hooks/use-page-access";
 import { useAuth } from "@/hooks/useAuth";
+import { useRole } from "@/hooks/useRole";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,6 +16,7 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
   const { isAllowed, loading } = useTenantScope();
   const { data: pages = [], isLoading } = usePageAccess();
   const { user } = useAuth();
+  const { loading: rolesLoading } = useRole();
 
   // Debug logging to understand what's happening
   console.log("AccessGuard Debug:", {
@@ -33,8 +35,21 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
   const isDevelopment = process.env.NODE_ENV === "development";
 
   // Handle tenant scope redirect only when we're sure user is not allowed
+  // Wait for roles to actually load before making access decisions
   useEffect(() => {
-    if (!loading && !isAllowed && user && !isDevelopment) {
+    // Don't check access until roles have finished loading
+    // This prevents false negatives during initial role loading after login
+    if (rolesLoading || loading) {
+      // Still loading roles - don't make access decisions yet
+      return;
+    }
+
+    // Only sign out if:
+    // 1. Not in development
+    // 2. Roles have finished loading (not just tenant scope)
+    // 3. User is authenticated
+    // 4. User is definitely not allowed (roles loaded and access denied)
+    if (!isAllowed && user && !isDevelopment) {
       console.log("User not allowed for tenant - signing out and redirecting to login");
       // Sign out the user and redirect to login
       supabase.auth.signOut({ scope: "local" }).then(() => {
@@ -51,7 +66,7 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
         router.replace("/auth");
       });
     }
-  }, [loading, isAllowed, user, router, isDevelopment]);
+  }, [loading, rolesLoading, isAllowed, user, router, isDevelopment]);
 
   // Handle page access redirect only when we have page data
   useEffect(() => {
