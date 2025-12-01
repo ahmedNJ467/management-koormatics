@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getCachedSession } from "@/lib/session-cache";
+import { getCachedSession, sessionCache } from "@/lib/session-cache";
 import { useTenantScope } from "@/hooks/use-tenant-scope";
 import { User, Eye, EyeOff, Car } from "lucide-react";
 import KoormaticsLogo from "@/components/ui/koormatics-logo";
@@ -173,17 +173,20 @@ export default function Auth() {
       setIsLoading(false);
       setIsRedirecting(true);
 
-      // Store session in sessionStorage for instant access
+      // Store session in sessionStorage and cache for instant access
       if (typeof window !== "undefined") {
         try {
           const {
             data: { session },
           } = await supabase.auth.getSession();
           if (session) {
+            // Store in sessionStorage
             sessionStorage.setItem(
               "supabase.auth.token",
               JSON.stringify(session)
             );
+            // Also update the session cache
+            sessionCache.setCachedSession(session);
           }
         } catch (error) {
           console.warn("Failed to store session:", error);

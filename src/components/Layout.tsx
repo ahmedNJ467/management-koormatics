@@ -62,6 +62,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
   // Check authentication status
   useEffect(() => {
     let mounted = true;
+    let initialCheckComplete = false;
 
     const checkAuth = async () => {
       try {
@@ -75,6 +76,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                 const now = Math.floor(Date.now() / 1000);
                 if (!session.expires_at || session.expires_at > now) {
                   setIsAuthenticated(true);
+                  initialCheckComplete = true;
                   return;
                 }
               }
@@ -92,8 +94,11 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         if (!mounted) return;
 
         if (!session?.user) {
-          console.log("No valid session found, redirecting to auth");
-          router.push("/auth");
+          // Only redirect if initial check is complete (to avoid race conditions)
+          if (initialCheckComplete) {
+            console.log("No valid session found, redirecting to auth");
+            router.push("/auth");
+          }
           return;
         }
 
@@ -108,6 +113,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         }
 
         setIsAuthenticated(true);
+        initialCheckComplete = true;
       } catch (error) {
         console.error("Auth check error:", error);
 
@@ -115,9 +121,12 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         const { handleAuthError } = await import("@/lib/auth-error-handler");
         await handleAuthError(error);
 
-        if (mounted) {
+        // Only redirect if initial check is complete to avoid race conditions
+        if (mounted && initialCheckComplete) {
           router.push("/auth");
         }
+      } finally {
+        initialCheckComplete = true;
       }
     };
 
@@ -134,15 +143,50 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
       // Update cache when auth state changes
       sessionCache.setCachedSession(session);
 
-      if (event === "SIGNED_OUT" || !session?.user) {
+      // Check if we have a cached session before logging out
+      // This prevents false negatives during initial session restoration
+      const hasCachedSession = (() => {
+        if (typeof window === "undefined") return false;
+        try {
+          const cached = sessionStorage.getItem("supabase.auth.token");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed?.user) {
+              const now = Math.floor(Date.now() / 1000);
+              return !parsed.expires_at || parsed.expires_at > now;
+            }
+          }
+        } catch {
+          return false;
+        }
+        return false;
+      })();
+
+      if (event === "SIGNED_OUT") {
+        // Explicit sign out - always handle
         setIsAuthenticated(false);
-        // Clear sessionStorage on logout
         if (typeof window !== "undefined") {
           sessionStorage.removeItem("supabase.auth.token");
         }
-        // Only redirect if we're not already on auth page to prevent loops
         if (window.location.pathname !== "/auth") {
           router.push("/auth");
+        }
+      } else if (!session?.user && initialCheckComplete) {
+        // Only log out if we have no session AND no cached session AND initial check is complete
+        // This prevents false negatives during initial load when Supabase hasn't restored session yet
+        if (!hasCachedSession) {
+          setIsAuthenticated(false);
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("supabase.auth.token");
+          }
+          if (window.location.pathname !== "/auth") {
+            router.push("/auth");
+          }
+        } else {
+          // We have a cached session but Supabase says no session - this is likely a false negative
+          // during initial load, so keep the user authenticated
+          console.log("No session from Supabase but cached session exists - keeping authenticated");
+          setIsAuthenticated(true);
         }
       } else if (session?.user) {
         setIsAuthenticated(true);
