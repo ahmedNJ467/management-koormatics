@@ -30,11 +30,8 @@ import {
   CreditCard,
   Settings,
   Wallet,
-  Search,
-  X,
 } from "lucide-react";
 import { usePageAccess } from "@/hooks/use-page-access";
-import { Input } from "@/components/ui/input";
 
 // Navigation structure with categories
 const navigationGroups = [
@@ -143,7 +140,6 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
-  const [searchQuery, setSearchQuery] = useState("");
   const { data: pages = [], isLoading } = usePageAccess();
 
   // Handle link click to close sidebar on mobile
@@ -246,23 +242,10 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
     }
   }, [pathname]);
 
-  // Filter navigation items based on search
-  const filteredNavigationGroups = useMemo(() => {
-    if (!searchQuery.trim()) return navigationGroups;
-
-    const query = searchQuery.toLowerCase();
-    return navigationGroups.map((group) => ({
-      ...group,
-      items: group.items.filter((item) =>
-        item.name.toLowerCase().includes(query)
-      ),
-    })).filter((group) => group.items.length > 0);
-  }, [searchQuery]);
-
   // Get all visible items for keyboard navigation
   const allVisibleItems = useMemo(() => {
     const items: Array<{ href: string; name: string }> = [];
-    filteredNavigationGroups.forEach((group) => {
+    navigationGroups.forEach((group) => {
       group.items.forEach((item) => {
         if (item?.href && shouldShowItem(item.href) && hasAccess(item.href)) {
           items.push({ href: item.href, name: item.name });
@@ -270,34 +253,10 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
       });
     });
     return items;
-  }, [filteredNavigationGroups, shouldShowItem, hasAccess]);
+  }, [shouldShowItem, hasAccess]);
 
   return (
     <div className="flex h-full flex-col bg-background border-r">
-      {/* Search Bar */}
-      <div className="p-4 border-b">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search navigation..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9 h-9 text-sm"
-            aria-label="Search navigation"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-4" aria-label="Main navigation">
         {/* Dashboard - Single link, no menu */}
@@ -318,7 +277,7 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
         </Link>
 
         {/* Other navigation categories */}
-        {filteredNavigationGroups.map((group) => {
+        {navigationGroups.map((group) => {
           // Only show categories that have visible items
           if (!hasVisibleItems(group.items)) return null;
 
