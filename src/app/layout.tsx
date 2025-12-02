@@ -49,24 +49,28 @@ export default function RootLayout({
                 // This must run synchronously, before any other scripts
                 function removeCSSScripts() {
                   // Check head first (where Next.js usually puts scripts)
-                  const headScripts = document.head.querySelectorAll('script[src]');
-                  headScripts.forEach(function(script) {
-                    const src = script.getAttribute('src') || script.src;
-                    if (src && src.includes('.css')) {
-                      console.warn('REMOVED: Script tag with CSS src found in head:', src);
-                      script.remove();
-                    }
-                  });
+                  if (document.head) {
+                    const headScripts = document.head.querySelectorAll('script[src]');
+                    headScripts.forEach(function(script) {
+                      const src = script.getAttribute('src') || script.src;
+                      if (src && src.includes('.css')) {
+                        console.warn('REMOVED: Script tag with CSS src found in head:', src);
+                        script.remove();
+                      }
+                    });
+                  }
                   
                   // Check body
-                  const bodyScripts = document.body ? document.body.querySelectorAll('script[src]') : [];
-                  bodyScripts.forEach(function(script) {
-                    const src = script.getAttribute('src') || script.src;
-                    if (src && src.includes('.css')) {
-                      console.warn('REMOVED: Script tag with CSS src found in body:', src);
-                      script.remove();
-                    }
-                  });
+                  if (document.body) {
+                    const bodyScripts = document.body.querySelectorAll('script[src]');
+                    bodyScripts.forEach(function(script) {
+                      const src = script.getAttribute('src') || script.src;
+                      if (src && src.includes('.css')) {
+                        console.warn('REMOVED: Script tag with CSS src found in body:', src);
+                        script.remove();
+                      }
+                    });
+                  }
                   
                   // Check document (all scripts)
                   const allScripts = document.querySelectorAll('script[src]');
@@ -80,7 +84,48 @@ export default function RootLayout({
                 }
                 
                 // Remove immediately - don't wait for anything
+                // Use requestAnimationFrame to ensure we run before browser executes scripts
+                if (typeof requestAnimationFrame !== 'undefined') {
+                  requestAnimationFrame(function() {
+                    removeCSSScripts();
+                  });
+                }
                 removeCSSScripts();
+                
+                // Use MutationObserver to catch scripts as they're added
+                if (typeof MutationObserver !== 'undefined') {
+                  const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                      mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeName === 'SCRIPT' && node.src) {
+                          if (node.src.includes('.css')) {
+                            console.warn('BLOCKED: Script with CSS src detected via MutationObserver:', node.src);
+                            node.remove();
+                          }
+                        }
+                        // Also check children
+                        if (node.querySelectorAll) {
+                          const scripts = node.querySelectorAll('script[src*=".css"]');
+                          scripts.forEach(function(script) {
+                            console.warn('BLOCKED: Script with CSS src found in added node:', script.src);
+                            script.remove();
+                          });
+                        }
+                      });
+                    });
+                  });
+                  
+                  // Observe head and body for script additions
+                  if (document.head) {
+                    observer.observe(document.head, { childList: true, subtree: true });
+                  }
+                  if (document.body) {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                  } else {
+                    // If body doesn't exist yet, observe document
+                    observer.observe(document.documentElement, { childList: true, subtree: true });
+                  }
+                }
                 
                 // Also remove when DOM is ready (in case scripts are added later)
                 if (document.readyState === 'loading') {
