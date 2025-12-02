@@ -173,21 +173,26 @@ export default function Auth() {
       setIsLoading(false);
       setIsRedirecting(true);
 
+      // Ensure session is properly stored before redirecting
+      // Get the session from the auth response
+      let sessionToStore = authData?.session;
+      
+      // If not in authData, get it from Supabase
+      if (!sessionToStore) {
+        const { data: { session } } = await supabase.auth.getSession();
+        sessionToStore = session;
+      }
+
       // Store session in sessionStorage and cache for instant access
-      if (typeof window !== "undefined") {
+      if (sessionToStore && typeof window !== "undefined") {
         try {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (session) {
-            // Store in sessionStorage
-            sessionStorage.setItem(
-              "supabase.auth.token",
-              JSON.stringify(session)
-            );
-            // Also update the session cache
-            sessionCache.setCachedSession(session);
-          }
+          // Store in sessionStorage
+          sessionStorage.setItem(
+            "supabase.auth.token",
+            JSON.stringify(sessionToStore)
+          );
+          // Also update the session cache
+          sessionCache.setCachedSession(sessionToStore);
         } catch (error) {
           console.warn("Failed to store session:", error);
         }
@@ -214,17 +219,12 @@ export default function Auth() {
         }
       }
 
-      // Small delay before redirect to allow password managers to detect successful login
-      // Password managers need time to process the form submission and detect the success
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Small delay before redirect to ensure session is fully persisted
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Use full page navigation instead of client-side router for password manager detection
-      // Password managers detect successful logins by monitoring full page navigations
-      if (typeof window !== "undefined") {
-        window.location.href = dashboardPath;
-      } else {
+      // Use router.replace to avoid full page reload which causes session restoration issues
+      // The session is already stored in sessionStorage and cache, so no need for full reload
       router.replace(dashboardPath);
-      }
     } catch (error) {
       // Restore password visibility if login failed
       if (wasPasswordVisible && passwordInput) {

@@ -63,6 +63,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
   useEffect(() => {
     let mounted = true;
     let initialCheckComplete = false;
+    let sessionRestoreTimeout: NodeJS.Timeout | null = null;
 
     const checkAuth = async () => {
       try {
@@ -76,7 +77,11 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                 const now = Math.floor(Date.now() / 1000);
                 if (!session.expires_at || session.expires_at > now) {
                   setIsAuthenticated(true);
-                  initialCheckComplete = true;
+                  // Give Supabase time to restore session from localStorage
+                  // Don't mark as complete immediately to prevent premature logout
+                  sessionRestoreTimeout = setTimeout(() => {
+                    initialCheckComplete = true;
+                  }, 1000);
                   return;
                 }
               }
@@ -87,6 +92,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         }
 
         // Fallback to Supabase session check
+        // Wait a bit for Supabase to restore session from localStorage after page reload
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         const {
           data: { session },
         } = await (getCachedSession as any)(supabase);
@@ -94,6 +102,40 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         if (!mounted) return;
 
         if (!session?.user) {
+          // Check if we have a session in localStorage (Supabase's storage)
+          // This might not be restored yet after page reload
+          if (typeof window !== "undefined") {
+            try {
+              const supabaseStorageKey = `sb-${(process.env.NEXT_PUBLIC_SUPABASE_URL || "").split("//")[1]?.split(".")[0] || "project"}-auth-token`;
+              const stored = localStorage.getItem(supabaseStorageKey);
+              if (stored) {
+                // Session exists in localStorage but not restored yet - wait a bit more
+                console.log("Session found in localStorage, waiting for Supabase to restore...");
+                setTimeout(async () => {
+                  if (!mounted) return;
+                  const { data: { session: restoredSession } } = await supabase.auth.getSession();
+                  if (restoredSession?.user) {
+                    setIsAuthenticated(true);
+                    sessionCache.setCachedSession(restoredSession);
+                    if (typeof window !== "undefined") {
+                      sessionStorage.setItem("supabase.auth.token", JSON.stringify(restoredSession));
+                    }
+                    initialCheckComplete = true;
+                    return;
+                  }
+                  // Still no session after waiting - redirect
+                  if (initialCheckComplete) {
+                    console.log("No valid session found after restore attempt, redirecting to auth");
+                    router.push("/auth");
+                  }
+                }, 500);
+                return;
+              }
+            } catch (e) {
+              // Ignore errors checking localStorage
+            }
+          }
+          
           // Only redirect if initial check is complete (to avoid race conditions)
           if (initialCheckComplete) {
             console.log("No valid session found, redirecting to auth");
@@ -126,19 +168,71 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           router.push("/auth");
         }
       } finally {
-        initialCheckComplete = true;
+        // Mark as complete after a delay to allow session restoration
+        setTimeout(() => {
+          initialCheckComplete = true;
+        }, 1500);
       }
     };
 
     checkAuth();
 
+    return () => {
+      if (sessionRestoreTimeout) {
+        clearTimeout(sessionRestoreTimeout);
+      }
+    };
+
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
       console.log("Auth state change:", event, session?.user?.email);
+
+      // Handle INITIAL_SESSION event - Supabase is restoring session from storage
+      // During this event, session might be null initially, so we need to wait
+      if (event === "INITIAL_SESSION") {
+        // Give Supabase time to restore the session
+        // If session is null, wait a bit and check again
+        if (!session?.user) {
+          setTimeout(async () => {
+            if (!mounted) return;
+            const { data: { session: restoredSession } } = await supabase.auth.getSession();
+            if (restoredSession?.user) {
+              console.log("Session restored after INITIAL_SESSION");
+              sessionCache.setCachedSession(restoredSession);
+              setIsAuthenticated(true);
+              if (typeof window !== "undefined") {
+                try {
+                  sessionStorage.setItem(
+                    "supabase.auth.token",
+                    JSON.stringify(restoredSession)
+                  );
+                } catch (error) {
+                  console.warn("Failed to store session in sessionStorage:", error);
+                }
+              }
+            }
+          }, 100);
+        } else {
+          // Session was restored immediately
+          sessionCache.setCachedSession(session);
+          setIsAuthenticated(true);
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(
+                "supabase.auth.token",
+                JSON.stringify(session)
+              );
+            } catch (error) {
+              console.warn("Failed to store session in sessionStorage:", error);
+            }
+          }
+        }
+        return;
+      }
 
       // Update cache when auth state changes
       sessionCache.setCachedSession(session);
