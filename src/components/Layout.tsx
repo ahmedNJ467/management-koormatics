@@ -64,6 +64,8 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     let mounted = true;
     let initialCheckComplete = false;
     let sessionRestoreTimeout: NodeJS.Timeout | null = null;
+    let finallyBlockTimeout: NodeJS.Timeout | null = null;
+    const mountTime = Date.now();
 
     const checkAuth = async () => {
       try {
@@ -169,7 +171,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         }
       } finally {
         // Mark as complete after a delay to allow session restoration
-        setTimeout(() => {
+        finallyBlockTimeout = setTimeout(() => {
           initialCheckComplete = true;
         }, 1500);
       }
@@ -259,10 +261,15 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         if (window.location.pathname !== "/auth") {
           router.push("/auth");
         }
-      } else if (!session?.user && initialCheckComplete) {
-        // Only log out if we have no session AND no cached session AND initial check is complete
+      } else if (!session?.user) {
+        // Check if we're past the initial restoration window (2 seconds) OR initial check is complete
+        // This ensures we catch legitimate logouts even during the initial check window
+        const timeSinceMount = Date.now() - mountTime;
+        const pastInitialWindow = timeSinceMount > 2000 || initialCheckComplete;
+        
+        // Only log out if we have no session AND no cached session AND we're past initial window
         // This prevents false negatives during initial load when Supabase hasn't restored session yet
-        if (!hasCachedSession) {
+        if (pastInitialWindow && !hasCachedSession) {
           setIsAuthenticated(false);
           if (typeof window !== "undefined") {
             sessionStorage.removeItem("supabase.auth.token");
@@ -270,7 +277,10 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           if (window.location.pathname !== "/auth") {
             router.push("/auth");
           }
-        } else {
+        } else if (!pastInitialWindow && !hasCachedSession) {
+          // Still in initial window and no cached session - wait a bit more
+          console.log("No session during initial window, waiting for restoration...");
+        } else if (hasCachedSession) {
           // We have a cached session but Supabase says no session - this is likely a false negative
           // during initial load, so keep the user authenticated
           console.log("No session from Supabase but cached session exists - keeping authenticated");
@@ -297,6 +307,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
       mounted = false;
       if (sessionRestoreTimeout) {
         clearTimeout(sessionRestoreTimeout);
+      }
+      if (finallyBlockTimeout) {
+        clearTimeout(finallyBlockTimeout);
       }
       subscription.unsubscribe();
     };
