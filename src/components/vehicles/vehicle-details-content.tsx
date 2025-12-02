@@ -158,14 +158,14 @@ export const VehicleDetailsContent = memo(
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-3">
         {/* Header with Status */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between pb-2">
           <div>
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-xl font-bold">
               {selectedVehicle.make} {selectedVehicle.model}
             </h2>
-            <p className="text-muted-foreground font-mono">
+            <p className="text-sm text-muted-foreground font-mono">
               {selectedVehicle.registration}
             </p>
           </div>
@@ -195,7 +195,7 @@ export const VehicleDetailsContent = memo(
           <Card>
             <CardContent className="p-0">
               <div className="relative">
-                <div className="w-full h-[360px] md:h-[480px] bg-background rounded-t-xl overflow-hidden relative border border-border shadow-sm flex items-center justify-center">
+                <div className="w-full h-[280px] md:h-[360px] bg-background rounded-t-xl overflow-hidden relative border border-border shadow-sm flex items-center justify-center">
                   {currentImage && (
                     <img
                       src={currentImage}
@@ -226,8 +226,8 @@ export const VehicleDetailsContent = memo(
                 </div>
 
                 {selectedVehicle.images.length > 1 && (
-                  <ScrollArea className="w-full h-24 border-t">
-                    <div className="flex gap-2 p-2">
+                  <ScrollArea className="w-full h-20 border-t">
+                    <div className="flex gap-1.5 p-1.5">
                       {selectedVehicle.images.map((image, index) => (
                         <div
                           key={`thumb-${index}`}
@@ -253,35 +253,35 @@ export const VehicleDetailsContent = memo(
           </Card>
         ) : (
           <Card>
-            <CardContent className="flex items-center justify-center w-full h-80 bg-muted rounded-lg">
-              <Car className="h-16 w-16 text-muted-foreground" />
+            <CardContent className="flex items-center justify-center w-full h-48 bg-muted rounded-lg">
+              <Car className="h-12 w-12 text-muted-foreground" />
             </CardContent>
           </Card>
         )}
 
         {/* Vehicle Information Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Basic Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Basic Information</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Basic Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Make
                   </label>
                   <p className="text-sm font-medium">{selectedVehicle.make}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Model
                   </label>
                   <p className="text-sm font-medium">{selectedVehicle.model}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Year
                   </label>
                   <p className="text-sm font-medium">
@@ -289,7 +289,7 @@ export const VehicleDetailsContent = memo(
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Color
                   </label>
                   <p className="text-sm font-medium">
@@ -297,11 +297,11 @@ export const VehicleDetailsContent = memo(
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Fuel Type
                   </label>
-                  <div className="flex items-center gap-2">
-                    <Fuel className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-1.5">
+                    <Fuel className="h-3.5 w-3.5 text-muted-foreground" />
                     <p
                       className={`text-sm font-medium ${getFuelTypeColor(
                         selectedVehicle.fuel_type
@@ -312,9 +312,9 @@ export const VehicleDetailsContent = memo(
                   </div>
                 </div>
               </div>
-              <Separator />
+              <Separator className="my-2" />
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs font-medium text-muted-foreground">
                   Registration
                 </label>
                 <p className="text-sm font-mono font-medium">
@@ -322,7 +322,7 @@ export const VehicleDetailsContent = memo(
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs font-medium text-muted-foreground">
                   VIN
                 </label>
                 <p className="text-sm font-mono font-medium">
@@ -330,7 +330,7 @@ export const VehicleDetailsContent = memo(
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs font-medium text-muted-foreground">
                   Location
                 </label>
                 <p className="text-sm font-medium">
@@ -338,7 +338,7 @@ export const VehicleDetailsContent = memo(
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs font-medium text-muted-foreground">
                   Assigned Driver
                 </label>
                 {selectedVehicle.assigned_driver_id ? (
@@ -364,15 +364,15 @@ export const VehicleDetailsContent = memo(
 
           {/* Status & Insurance */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Status & Insurance</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Status & Insurance</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs font-medium text-muted-foreground">
                   Current Status
                 </label>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-1.5 mt-0.5">
                   {getStatusIcon(selectedVehicle.status)}
                   <Badge
                     variant="outline"
@@ -385,13 +385,13 @@ export const VehicleDetailsContent = memo(
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="my-2" />
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs font-medium text-muted-foreground">
                   Insurance Expiry
                 </label>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-1.5 mt-0.5">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   {selectedVehicle.insurance_expiry ? (
                     <div className="flex items-center gap-2">
@@ -441,8 +441,8 @@ export const VehicleDetailsContent = memo(
         {/* Notes Section */}
         {selectedVehicle.notes && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Notes</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Notes</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
@@ -453,7 +453,7 @@ export const VehicleDetailsContent = memo(
         )}
 
         {/* Actions */}
-        <div className="flex justify-end gap-4 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-2 border-t">
           <Button variant="outline" onClick={() => setViewMode("edit")}>
             <Edit className="mr-2 h-4 w-4" />
             Edit Vehicle

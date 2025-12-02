@@ -91,11 +91,11 @@ export function VehicleDetailsDialog({
     <>
       <Dialog open={!!selectedVehicle} onOpenChange={handleClose}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
-          <DialogHeader>
-            <DialogTitle className="pr-10">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="pr-10 text-lg">
               Vehicle Details - {formatVehicleId(selectedVehicle.id)}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs">
               View and manage vehicle information, images, and details.
             </DialogDescription>
           </DialogHeader>
@@ -111,7 +111,7 @@ export function VehicleDetailsDialog({
                 setViewMode={setViewMode}
                 setShowDeleteConfirm={handleDeleteConfirm}
               />
-              <DialogFooter>
+              <DialogFooter className="pt-2">
                 <Button variant="outline" onClick={handleClose}>
                   Cancel
                 </Button>
