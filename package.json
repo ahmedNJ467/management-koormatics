@@ -1,7 +1,7 @@
 {
   "name": "management-koormatics",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "scripts": {
     "dev": "next dev --port 8080",
     "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/kill-port-8080.ps1; npm run dev",
