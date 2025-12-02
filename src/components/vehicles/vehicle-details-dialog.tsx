@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -100,15 +101,22 @@ export function VehicleDetailsDialog({
           </DialogHeader>
 
           {viewMode === "view" && (
-            <VehicleDetailsContent
-              selectedVehicle={selectedVehicle}
-              currentImageIndex={currentImageIndex}
-              handlePrevImage={handlePrevImage}
-              handleNextImage={handleNextImage}
-              selectThumbnail={selectThumbnail}
-              setViewMode={setViewMode}
-              setShowDeleteConfirm={handleDeleteConfirm}
-            />
+            <>
+              <VehicleDetailsContent
+                selectedVehicle={selectedVehicle}
+                currentImageIndex={currentImageIndex}
+                handlePrevImage={handlePrevImage}
+                handleNextImage={handleNextImage}
+                selectThumbnail={selectThumbnail}
+                setViewMode={setViewMode}
+                setShowDeleteConfirm={handleDeleteConfirm}
+              />
+              <DialogFooter>
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </>
           )}
 
           {viewMode === "edit" && (
