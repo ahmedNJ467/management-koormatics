@@ -177,12 +177,6 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
 
     checkAuth();
 
-    return () => {
-      if (sessionRestoreTimeout) {
-        clearTimeout(sessionRestoreTimeout);
-      }
-    };
-
     // Listen for auth changes
     const {
       data: { subscription },
@@ -298,8 +292,12 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
       }
     });
 
+    // Cleanup function - must be returned at the end
     return () => {
       mounted = false;
+      if (sessionRestoreTimeout) {
+        clearTimeout(sessionRestoreTimeout);
+      }
       subscription.unsubscribe();
     };
   }, []);
