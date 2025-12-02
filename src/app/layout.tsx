@@ -45,52 +45,76 @@ export default function RootLayout({
               (function() {
                 'use strict';
                 
-                // CRITICAL: Remove script tags with CSS src IMMEDIATELY before browser tries to execute them
-                // This must run synchronously, before any other scripts
-                function removeCSSScripts() {
-                  // Check head first (where Next.js usually puts scripts)
+                // CRITICAL: Remove script tags with CSS src IMMEDIATELY - run synchronously
+                // This must execute before ANY other scripts can run
+                (function removeCSSScriptsImmediate() {
+                  // Use a synchronous approach - check document immediately
+                  var scripts = [];
+                  
+                  // Get all script elements that exist right now
                   if (document.head) {
-                    const headScripts = document.head.querySelectorAll('script[src]');
-                    headScripts.forEach(function(script) {
-                      const src = script.getAttribute('src') || script.src;
-                      if (src && src.includes('.css')) {
-                        console.warn('REMOVED: Script tag with CSS src found in head:', src);
-                        script.remove();
-                      }
-                    });
-                  }
-                  
-                  // Check body
-                  if (document.body) {
-                    const bodyScripts = document.body.querySelectorAll('script[src]');
-                    bodyScripts.forEach(function(script) {
-                      const src = script.getAttribute('src') || script.src;
-                      if (src && src.includes('.css')) {
-                        console.warn('REMOVED: Script tag with CSS src found in body:', src);
-                        script.remove();
-                      }
-                    });
-                  }
-                  
-                  // Check document (all scripts)
-                  const allScripts = document.querySelectorAll('script[src]');
-                  allScripts.forEach(function(script) {
-                    const src = script.getAttribute('src') || script.src;
-                    if (src && src.includes('.css')) {
-                      console.warn('REMOVED: Script tag with CSS src found:', src);
-                      script.remove();
+                    var headScripts = document.head.getElementsByTagName('script');
+                    for (var i = 0; i < headScripts.length; i++) {
+                      scripts.push(headScripts[i]);
                     }
-                  });
+                  }
+                  
+                  if (document.body) {
+                    var bodyScripts = document.body.getElementsByTagName('script');
+                    for (var i = 0; i < bodyScripts.length; i++) {
+                      scripts.push(bodyScripts[i]);
+                    }
+                  }
+                  
+                  // Remove any script with CSS in src - do this synchronously
+                  for (var i = 0; i < scripts.length; i++) {
+                    var script = scripts[i];
+                    var src = script.getAttribute('src') || script.src || '';
+                    if (src && src.indexOf('.css') !== -1) {
+                      // Remove immediately before browser can execute
+                      script.parentNode && script.parentNode.removeChild(script);
+                    }
+                  }
+                })();
+                
+                // Also intercept at the DOM level before scripts are added
+                var originalAppendChild = Node.prototype.appendChild;
+                var originalInsertBefore = Node.prototype.insertBefore;
+                
+                Node.prototype.appendChild = function(child) {
+                  if (child && child.tagName === 'SCRIPT') {
+                    var src = child.getAttribute('src') || child.src || '';
+                    if (src && src.indexOf('.css') !== -1) {
+                      return child; // Don't append
+                    }
+                  }
+                  return originalAppendChild.call(this, child);
+                };
+                
+                Node.prototype.insertBefore = function(newNode, refNode) {
+                  if (newNode && newNode.tagName === 'SCRIPT') {
+                    var src = newNode.getAttribute('src') || newNode.src || '';
+                    if (src && src.indexOf('.css') !== -1) {
+                      return newNode; // Don't insert
+                    }
+                  }
+                  return originalInsertBefore.call(this, newNode, refNode);
+                };
+                
+                // Function to remove CSS scripts (for later use)
+                function removeCSSScripts() {
+                  var scripts = document.querySelectorAll('script[src*=".css"]');
+                  for (var i = 0; i < scripts.length; i++) {
+                    scripts[i].parentNode && scripts[i].parentNode.removeChild(scripts[i]);
+                  }
                 }
                 
-                // Remove immediately - don't wait for anything
-                // Use requestAnimationFrame to ensure we run before browser executes scripts
-                if (typeof requestAnimationFrame !== 'undefined') {
-                  requestAnimationFrame(function() {
-                    removeCSSScripts();
-                  });
-                }
+                // Remove immediately and repeatedly
                 removeCSSScripts();
+                setTimeout(removeCSSScripts, 0);
+                setTimeout(removeCSSScripts, 10);
+                setTimeout(removeCSSScripts, 50);
+                setTimeout(removeCSSScripts, 100);
                 
                 // Use MutationObserver to catch scripts as they're added
                 if (typeof MutationObserver !== 'undefined') {
