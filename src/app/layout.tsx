@@ -38,14 +38,57 @@ export default function RootLayout({
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
         
-        {/* Prevent CSS files from being executed as scripts - MUST run first */}
+        {/* Prevent CSS files from being executed as scripts - MUST run first and synchronously */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 'use strict';
                 
-                // Run immediately before any other scripts
+                // CRITICAL: Remove script tags with CSS src IMMEDIATELY before browser tries to execute them
+                // This must run synchronously, before any other scripts
+                function removeCSSScripts() {
+                  // Check head first (where Next.js usually puts scripts)
+                  const headScripts = document.head.querySelectorAll('script[src]');
+                  headScripts.forEach(function(script) {
+                    const src = script.getAttribute('src') || script.src;
+                    if (src && src.includes('.css')) {
+                      console.warn('REMOVED: Script tag with CSS src found in head:', src);
+                      script.remove();
+                    }
+                  });
+                  
+                  // Check body
+                  const bodyScripts = document.body ? document.body.querySelectorAll('script[src]') : [];
+                  bodyScripts.forEach(function(script) {
+                    const src = script.getAttribute('src') || script.src;
+                    if (src && src.includes('.css')) {
+                      console.warn('REMOVED: Script tag with CSS src found in body:', src);
+                      script.remove();
+                    }
+                  });
+                  
+                  // Check document (all scripts)
+                  const allScripts = document.querySelectorAll('script[src]');
+                  allScripts.forEach(function(script) {
+                    const src = script.getAttribute('src') || script.src;
+                    if (src && src.includes('.css')) {
+                      console.warn('REMOVED: Script tag with CSS src found:', src);
+                      script.remove();
+                    }
+                  });
+                }
+                
+                // Remove immediately - don't wait for anything
+                removeCSSScripts();
+                
+                // Also remove when DOM is ready (in case scripts are added later)
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', removeCSSScripts);
+                } else {
+                  removeCSSScripts();
+                }
+                
                 // Intercept ALL script tag creation to prevent CSS files from being loaded as scripts
                 const originalCreateElement = document.createElement;
                 const originalAppendChild = Node.prototype.appendChild;
@@ -60,7 +103,7 @@ export default function RootLayout({
                     const originalSetAttribute = element.setAttribute;
                     element.setAttribute = function(name, value) {
                       if (name === 'src' && typeof value === 'string' && value.includes('.css')) {
-                        console.error('BLOCKED: Attempt to load CSS file as script:', value);
+                        console.warn('BLOCKED: Attempt to load CSS file as script:', value);
                         // Don't set the src - this prevents the browser from trying to execute CSS
                         return;
                       }
@@ -71,14 +114,15 @@ export default function RootLayout({
                     Object.defineProperty(element, 'src', {
                       set: function(value) {
                         if (typeof value === 'string' && value.includes('.css')) {
-                          console.error('BLOCKED: Attempt to set CSS file as script src:', value);
+                          console.warn('BLOCKED: Attempt to set CSS file as script src:', value);
                           return; // Don't set src for CSS files
                         }
                         originalSetAttribute.call(this, 'src', value);
                       },
                       get: function() {
                         return this.getAttribute('src');
-                      }
+                      },
+                      configurable: true
                     });
                   }
                   
@@ -87,18 +131,24 @@ export default function RootLayout({
                 
                 // Intercept appendChild to check for script tags with CSS src
                 Node.prototype.appendChild = function(child) {
-                  if (child && child.tagName === 'SCRIPT' && child.src && child.src.includes('.css')) {
-                    console.error('BLOCKED: Attempt to append script with CSS src:', child.src);
-                    return child; // Return without appending
+                  if (child && child.tagName === 'SCRIPT') {
+                    const src = child.getAttribute('src') || child.src;
+                    if (src && src.includes('.css')) {
+                      console.warn('BLOCKED: Attempt to append script with CSS src:', src);
+                      return child; // Return without appending
+                    }
                   }
                   return originalAppendChild.call(this, child);
                 };
                 
                 // Intercept insertBefore to check for script tags with CSS src
                 Node.prototype.insertBefore = function(newNode, referenceNode) {
-                  if (newNode && newNode.tagName === 'SCRIPT' && newNode.src && newNode.src.includes('.css')) {
-                    console.error('BLOCKED: Attempt to insert script with CSS src:', newNode.src);
-                    return newNode; // Return without inserting
+                  if (newNode && newNode.tagName === 'SCRIPT') {
+                    const src = newNode.getAttribute('src') || newNode.src;
+                    if (src && src.includes('.css')) {
+                      console.warn('BLOCKED: Attempt to insert script with CSS src:', src);
+                      return newNode; // Return without inserting
+                    }
                   }
                   return originalInsertBefore.call(this, newNode, referenceNode);
                 };
@@ -119,15 +169,6 @@ export default function RootLayout({
                     });
                   });
                 }
-                
-                // Remove any existing script tags that reference CSS files
-                document.addEventListener('DOMContentLoaded', function() {
-                  const scripts = document.querySelectorAll('script[src*=".css"]');
-                  scripts.forEach(function(script) {
-                    console.error('REMOVED: Script tag with CSS src found:', script.src);
-                    script.remove();
-                  });
-                });
               })();
             `,
           }}
