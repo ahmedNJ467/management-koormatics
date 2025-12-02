@@ -5,7 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -91,32 +90,26 @@ export function VehicleDetailsDialog({
     <>
       <Dialog open={!!selectedVehicle} onOpenChange={handleClose}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="pr-10 text-lg">
+          <DialogHeader>
+            <DialogTitle className="pr-10">
               Vehicle Details - {formatVehicleId(selectedVehicle.id)}
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription>
               View and manage vehicle information, images, and details.
             </DialogDescription>
           </DialogHeader>
 
           {viewMode === "view" && (
-            <>
-              <VehicleDetailsContent
-                selectedVehicle={selectedVehicle}
-                currentImageIndex={currentImageIndex}
-                handlePrevImage={handlePrevImage}
-                handleNextImage={handleNextImage}
-                selectThumbnail={selectThumbnail}
-                setViewMode={setViewMode}
-                setShowDeleteConfirm={handleDeleteConfirm}
-              />
-              <DialogFooter className="pt-2">
-                <Button variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-              </DialogFooter>
-            </>
+            <VehicleDetailsContent
+              selectedVehicle={selectedVehicle}
+              currentImageIndex={currentImageIndex}
+              handlePrevImage={handlePrevImage}
+              handleNextImage={handleNextImage}
+              selectThumbnail={selectThumbnail}
+              setViewMode={setViewMode}
+              setShowDeleteConfirm={handleDeleteConfirm}
+              onCancel={handleClose}
+            />
           )}
 
           {viewMode === "edit" && (
