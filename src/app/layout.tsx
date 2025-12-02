@@ -77,31 +77,7 @@ export default function RootLayout({
                   }
                 })();
                 
-                // Also intercept at the DOM level before scripts are added
-                var originalAppendChild = Node.prototype.appendChild;
-                var originalInsertBefore = Node.prototype.insertBefore;
-                
-                Node.prototype.appendChild = function(child) {
-                  if (child && child.tagName === 'SCRIPT') {
-                    var src = child.getAttribute('src') || child.src || '';
-                    if (src && src.indexOf('.css') !== -1) {
-                      return child; // Don't append
-                    }
-                  }
-                  return originalAppendChild.call(this, child);
-                };
-                
-                Node.prototype.insertBefore = function(newNode, refNode) {
-                  if (newNode && newNode.tagName === 'SCRIPT') {
-                    var src = newNode.getAttribute('src') || newNode.src || '';
-                    if (src && src.indexOf('.css') !== -1) {
-                      return newNode; // Don't insert
-                    }
-                  }
-                  return originalInsertBefore.call(this, newNode, refNode);
-                };
-                
-                // Function to remove CSS scripts (for later use)
+                // Function to remove CSS scripts
                 function removeCSSScripts() {
                   var scripts = document.querySelectorAll('script[src*=".css"]');
                   for (var i = 0; i < scripts.length; i++) {
@@ -159,9 +135,12 @@ export default function RootLayout({
                 }
                 
                 // Intercept ALL script tag creation to prevent CSS files from being loaded as scripts
-                const originalCreateElement = document.createElement;
-                const originalAppendChild = Node.prototype.appendChild;
-                const originalInsertBefore = Node.prototype.insertBefore;
+                // Check if already intercepted to avoid redeclaration errors
+                if (!window._cssProtectionInstalled) {
+                  window._cssProtectionInstalled = true;
+                  var originalCreateElement = document.createElement;
+                  var originalAppendChild = Node.prototype.appendChild;
+                  var originalInsertBefore = Node.prototype.insertBefore;
                 
                 // Override createElement to intercept script tags
                 document.createElement = function(tagName, options) {
@@ -198,29 +177,28 @@ export default function RootLayout({
                   return element;
                 };
                 
-                // Intercept appendChild to check for script tags with CSS src
-                Node.prototype.appendChild = function(child) {
-                  if (child && child.tagName === 'SCRIPT') {
-                    const src = child.getAttribute('src') || child.src;
-                    if (src && src.includes('.css')) {
-                      console.warn('BLOCKED: Attempt to append script with CSS src:', src);
-                      return child; // Return without appending
+                  // Intercept appendChild to check for script tags with CSS src
+                  Node.prototype.appendChild = function(child) {
+                    if (child && child.tagName === 'SCRIPT') {
+                      var src = child.getAttribute('src') || child.src || '';
+                      if (src && src.indexOf('.css') !== -1) {
+                        return child; // Return without appending
+                      }
                     }
-                  }
-                  return originalAppendChild.call(this, child);
-                };
-                
-                // Intercept insertBefore to check for script tags with CSS src
-                Node.prototype.insertBefore = function(newNode, referenceNode) {
-                  if (newNode && newNode.tagName === 'SCRIPT') {
-                    const src = newNode.getAttribute('src') || newNode.src;
-                    if (src && src.includes('.css')) {
-                      console.warn('BLOCKED: Attempt to insert script with CSS src:', src);
-                      return newNode; // Return without inserting
+                    return originalAppendChild.call(this, child);
+                  };
+                  
+                  // Intercept insertBefore to check for script tags with CSS src
+                  Node.prototype.insertBefore = function(newNode, referenceNode) {
+                    if (newNode && newNode.tagName === 'SCRIPT') {
+                      var src = newNode.getAttribute('src') || newNode.src || '';
+                      if (src && src.indexOf('.css') !== -1) {
+                        return newNode; // Return without inserting
+                      }
                     }
-                  }
-                  return originalInsertBefore.call(this, newNode, referenceNode);
-                };
+                    return originalInsertBefore.call(this, newNode, referenceNode);
+                  };
+                }
                 
                 // Aggressively clear service workers and caches on page load
                 if ('serviceWorker' in navigator) {
