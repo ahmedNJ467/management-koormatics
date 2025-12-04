@@ -225,20 +225,27 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
   );
 
   // Auto-expand categories that contain the current active page
+  // Run on mount and when pathname changes to restore state after refresh
   useEffect(() => {
     if (pathname) {
+      const categoriesToExpand = new Set<string>();
       navigationGroups.forEach((group) => {
         const hasActiveItem = group.items.some(
           (item) => pathname === item.href
         );
         if (hasActiveItem) {
-          setExpandedCategories((prev) => {
-            const newSet = new Set(prev);
-            newSet.add(group.category);
-            return newSet;
-          });
+          categoriesToExpand.add(group.category);
         }
       });
+      
+      // Only update if there are categories to expand
+      if (categoriesToExpand.size > 0) {
+        setExpandedCategories((prev) => {
+          const newSet = new Set(prev);
+          categoriesToExpand.forEach((cat) => newSet.add(cat));
+          return newSet;
+        });
+      }
     }
   }, [pathname]);
 

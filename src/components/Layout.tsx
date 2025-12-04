@@ -65,7 +65,17 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     let initialCheckComplete = false;
     let sessionRestoreTimeout: NodeJS.Timeout | null = null;
     let finallyBlockTimeout: NodeJS.Timeout | null = null;
+    let maxWaitTimeout: NodeJS.Timeout | null = null;
     const mountTime = Date.now();
+
+    // Safety timeout: ensure we never wait more than 5 seconds
+    maxWaitTimeout = setTimeout(() => {
+      if (mounted && isAuthenticated === null) {
+        console.warn("Auth check timeout - defaulting to unauthenticated");
+        setIsAuthenticated(false);
+        initialCheckComplete = true;
+      }
+    }, 5000);
 
     const checkAuth = async () => {
       try {
@@ -83,6 +93,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                   // Don't mark as complete immediately to prevent premature logout
                   sessionRestoreTimeout = setTimeout(() => {
                     initialCheckComplete = true;
+                    if (maxWaitTimeout) {
+                      clearTimeout(maxWaitTimeout);
+                    }
                   }, 1000);
                   return;
                 }
@@ -123,6 +136,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                       sessionStorage.setItem("supabase.auth.token", JSON.stringify(restoredSession));
                     }
                     initialCheckComplete = true;
+                    if (maxWaitTimeout) {
+                      clearTimeout(maxWaitTimeout);
+                    }
                     return;
                   }
                   // Still no session after waiting - redirect
@@ -158,6 +174,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
 
         setIsAuthenticated(true);
         initialCheckComplete = true;
+        if (maxWaitTimeout) {
+          clearTimeout(maxWaitTimeout);
+        }
       } catch (error) {
         console.error("Auth check error:", error);
 
@@ -173,6 +192,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         // Mark as complete after a delay to allow session restoration
         finallyBlockTimeout = setTimeout(() => {
           initialCheckComplete = true;
+          if (maxWaitTimeout) {
+            clearTimeout(maxWaitTimeout);
+          }
         }, 1500);
       }
     };
@@ -310,6 +332,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
       }
       if (finallyBlockTimeout) {
         clearTimeout(finallyBlockTimeout);
+      }
+      if (maxWaitTimeout) {
+        clearTimeout(maxWaitTimeout);
       }
       subscription.unsubscribe();
     };
