@@ -109,15 +109,25 @@ export function PayrollEmployeeDialog({
     queryKey: ["driver", selectedDriverId],
     queryFn: async () => {
       if (!selectedDriverId) return null;
-      const { data, error } = await supabase
-        .from("drivers")
-        .select("id, name, contact, phone")
-        .eq("id", selectedDriverId)
-        .single();
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("drivers")
+          .select("id, name, contact, phone")
+          .eq("id", selectedDriverId)
+          .maybeSingle();
+        
+        if (error) {
+          console.warn("Failed to fetch driver details:", error);
+          return null;
+        }
+        return data;
+      } catch (error) {
+        console.warn("Error fetching driver details:", error);
+        return null;
+      }
     },
     enabled: !!selectedDriverId && !employee, // Only fetch when adding new employee
+    retry: false, // Don't retry on error to avoid spam
   });
 
   // Populate form fields when driver is selected
