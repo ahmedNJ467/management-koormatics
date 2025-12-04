@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -101,6 +101,45 @@ export function PayrollEmployeeDialog({
       is_active: true,
     },
   });
+
+  const selectedDriverId = form.watch("driver_id");
+
+  // Fetch driver details when a driver is selected
+  const { data: selectedDriver } = useQuery({
+    queryKey: ["driver", selectedDriverId],
+    queryFn: async () => {
+      if (!selectedDriverId) return null;
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, name, contact, phone")
+        .eq("id", selectedDriverId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedDriverId && !employee, // Only fetch when adding new employee
+  });
+
+  // Populate form fields when driver is selected
+  useEffect(() => {
+    if (selectedDriver && !employee && open) {
+      const currentValues = form.getValues();
+      // Populate name if empty
+      if (!currentValues.name || currentValues.name.trim() === "") {
+        form.setValue("name", selectedDriver.name || "", {
+          shouldValidate: true,
+        });
+      }
+      // Populate contact if empty (use contact or phone as fallback)
+      if (!currentValues.contact || currentValues.contact.trim() === "") {
+        form.setValue(
+          "contact",
+          selectedDriver.contact || selectedDriver.phone || "",
+          { shouldValidate: true }
+        );
+      }
+    }
+  }, [selectedDriver, employee, open, form]);
 
   useEffect(() => {
     if (employee && open) {
