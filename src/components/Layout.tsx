@@ -89,14 +89,30 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                 const now = Math.floor(Date.now() / 1000);
                 if (!session.expires_at || session.expires_at > now) {
                   setIsAuthenticated(true);
-                  // Give Supabase time to restore session from localStorage
-                  // Don't mark as complete immediately to prevent premature logout
-                  sessionRestoreTimeout = setTimeout(() => {
-                    initialCheckComplete = true;
-                    if (maxWaitTimeout) {
-                      clearTimeout(maxWaitTimeout);
+                  initialCheckComplete = true;
+                  if (maxWaitTimeout) {
+                    clearTimeout(maxWaitTimeout);
+                  }
+                  // Verify with Supabase in background, but don't wait
+                  setTimeout(async () => {
+                    if (!mounted) return;
+                    try {
+                      const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+                      if (supabaseSession?.user) {
+                        // Update cache with fresh session from Supabase
+                        sessionCache.setCachedSession(supabaseSession);
+                        if (typeof window !== "undefined") {
+                          try {
+                            sessionStorage.setItem("supabase.auth.token", JSON.stringify(supabaseSession));
+                          } catch (error) {
+                            console.warn("Failed to update session:", error);
+                          }
+                        }
+                      }
+                    } catch (error) {
+                      console.warn("Background session verification failed:", error);
                     }
-                  }, 1000);
+                  }, 500);
                   return;
                 }
               }
@@ -152,7 +168,8 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                     router.push("/auth");
                   }
                 }, 500);
-                // Don't return here - let the finally block handle completion
+                // Return here - the timeout will handle setting the state
+                // Don't set initialCheckComplete here as we're waiting for async operation
                 return;
               }
             } catch (e) {
@@ -208,17 +225,20 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         }
       } finally {
         // Mark as complete after a delay to allow session restoration
-        // But only if we haven't already set a state
+        // But only if we haven't already set a state and initial check isn't complete
         finallyBlockTimeout = setTimeout(() => {
-          if (mounted && isAuthenticated === null) {
+          if (mounted && !initialCheckComplete && isAuthenticated === null) {
             console.warn("Auth check completed but state not set - defaulting to false");
             setIsAuthenticated(false);
+            initialCheckComplete = true;
+          } else if (!initialCheckComplete) {
+            // Mark as complete even if state was set
+            initialCheckComplete = true;
           }
-          initialCheckComplete = true;
           if (maxWaitTimeout) {
             clearTimeout(maxWaitTimeout);
           }
-        }, 1500);
+        }, 2000);
       }
     };
 
