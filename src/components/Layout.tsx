@@ -141,12 +141,18 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                     }
                     return;
                   }
-                  // Still no session after waiting - redirect
-                  if (initialCheckComplete) {
+                  // Still no session after waiting - set to false and redirect
+                  setIsAuthenticated(false);
+                  initialCheckComplete = true;
+                  if (maxWaitTimeout) {
+                    clearTimeout(maxWaitTimeout);
+                  }
+                  if (mounted) {
                     console.log("No valid session found after restore attempt, redirecting to auth");
                     router.push("/auth");
                   }
                 }, 500);
+                // Don't return here - let the finally block handle completion
                 return;
               }
             } catch (e) {
@@ -154,8 +160,15 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
             }
           }
           
-          // Only redirect if initial check is complete (to avoid race conditions)
-          if (initialCheckComplete) {
+          // No session found - set to false
+          setIsAuthenticated(false);
+          initialCheckComplete = true;
+          if (maxWaitTimeout) {
+            clearTimeout(maxWaitTimeout);
+          }
+          
+          // Only redirect if we're sure there's no session
+          if (mounted) {
             console.log("No valid session found, redirecting to auth");
             router.push("/auth");
           }
@@ -184,13 +197,23 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         const { handleAuthError } = await import("@/lib/auth-error-handler");
         await handleAuthError(error);
 
-        // Only redirect if initial check is complete to avoid race conditions
-        if (mounted && initialCheckComplete) {
+        // Always set authentication state, even on error
+        if (mounted) {
+          setIsAuthenticated(false);
+          initialCheckComplete = true;
+          if (maxWaitTimeout) {
+            clearTimeout(maxWaitTimeout);
+          }
           router.push("/auth");
         }
       } finally {
         // Mark as complete after a delay to allow session restoration
+        // But only if we haven't already set a state
         finallyBlockTimeout = setTimeout(() => {
+          if (mounted && isAuthenticated === null) {
+            console.warn("Auth check completed but state not set - defaulting to false");
+            setIsAuthenticated(false);
+          }
           initialCheckComplete = true;
           if (maxWaitTimeout) {
             clearTimeout(maxWaitTimeout);

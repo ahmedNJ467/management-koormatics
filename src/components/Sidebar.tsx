@@ -201,7 +201,8 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
       } else {
         newSet.add(category);
       }
-      return newSet;
+      // Force a new Set instance to ensure React detects the change
+      return new Set(newSet);
     });
   }, []);
 
@@ -227,25 +228,31 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
   // Auto-expand categories that contain the current active page
   // Run on mount and when pathname changes to restore state after refresh
   useEffect(() => {
-    if (pathname) {
-      const categoriesToExpand = new Set<string>();
-      navigationGroups.forEach((group) => {
-        const hasActiveItem = group.items.some(
-          (item) => pathname === item.href
-        );
-        if (hasActiveItem) {
-          categoriesToExpand.add(group.category);
-        }
-      });
-      
-      // Only update if there are categories to expand
-      if (categoriesToExpand.size > 0) {
-        setExpandedCategories((prev) => {
-          const newSet = new Set(prev);
-          categoriesToExpand.forEach((cat) => newSet.add(cat));
-          return newSet;
-        });
+    if (!pathname) return;
+    
+    const categoriesToExpand = new Set<string>();
+    navigationGroups.forEach((group) => {
+      const hasActiveItem = group.items.some(
+        (item) => pathname === item.href
+      );
+      if (hasActiveItem) {
+        categoriesToExpand.add(group.category);
       }
+    });
+    
+    // Always update state to ensure categories are expanded, even if Set appears unchanged
+    if (categoriesToExpand.size > 0) {
+      setExpandedCategories((prev) => {
+        // Check if we need to update
+        const needsUpdate = Array.from(categoriesToExpand).some(
+          (cat) => !prev.has(cat)
+        );
+        if (!needsUpdate) return prev; // Return same reference if no change needed
+        
+        const newSet = new Set(prev);
+        categoriesToExpand.forEach((cat) => newSet.add(cat));
+        return newSet;
+      });
     }
   }, [pathname]);
 
@@ -332,7 +339,12 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
           return (
             <div key={group.category} className="space-y-2">
               <button
-                onClick={() => toggleCategory(group.category)}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleCategory(group.category);
+                }}
                 className="flex w-full items-center justify-between px-2 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
                 aria-expanded={isExpanded}
                 aria-controls={`category-${group.category}`}
