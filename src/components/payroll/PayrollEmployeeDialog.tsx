@@ -110,6 +110,7 @@ export function PayrollEmployeeDialog({
     queryFn: async () => {
       if (!selectedDriverId) return null;
       try {
+        // First try with all fields
         const { data, error } = await supabase
           .from("drivers")
           .select("id, name, contact, phone")
@@ -117,12 +118,36 @@ export function PayrollEmployeeDialog({
           .maybeSingle();
         
         if (error) {
-          console.warn("Failed to fetch driver details:", error);
+          // If phone column doesn't exist, try without it
+          if (error.code === "42703" || error.message?.includes("phone") || error.message?.includes("column")) {
+            console.log("Phone column not found, retrying without it");
+            const { data: retryData, error: retryError } = await supabase
+              .from("drivers")
+              .select("id, name, contact")
+              .eq("id", selectedDriverId)
+              .maybeSingle();
+            
+            if (retryError) {
+              console.warn("Failed to fetch driver details (retry):", retryError);
+              return null;
+            }
+            return retryData;
+          }
+          
+          console.warn("Failed to fetch driver details:", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+          });
           return null;
         }
         return data;
-      } catch (error) {
-        console.warn("Error fetching driver details:", error);
+      } catch (error: any) {
+        console.warn("Error fetching driver details:", {
+          message: error?.message || "Unknown error",
+          error,
+        });
         return null;
       }
     },
@@ -142,11 +167,8 @@ export function PayrollEmployeeDialog({
       }
       // Populate contact if empty (use contact or phone as fallback)
       if (!currentValues.contact || currentValues.contact.trim() === "") {
-        form.setValue(
-          "contact",
-          selectedDriver.contact || selectedDriver.phone || "",
-          { shouldValidate: true }
-        );
+        const contactValue = selectedDriver.contact || (selectedDriver as any).phone || "";
+        form.setValue("contact", contactValue, { shouldValidate: true });
       }
     }
   }, [selectedDriver, employee, open, form]);
