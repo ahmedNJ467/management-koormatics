@@ -107,8 +107,8 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         }
 
         // Fallback to Supabase session check
-        // Wait a bit for Supabase to restore session from localStorage after page reload
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Wait longer for Supabase to restore session from localStorage after page reload
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         const {
           data: { session },
@@ -235,38 +235,88 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
       // Handle INITIAL_SESSION event - Supabase is restoring session from storage
       // During this event, session might be null initially, so we need to wait
       if (event === "INITIAL_SESSION") {
-        // Give Supabase time to restore the session
-        // If session is null, wait a bit and check again
+        // Give Supabase more time to restore the session
+        // If session is null, wait longer and check multiple times
         if (!session?.user) {
-          setTimeout(async () => {
+          // Check for cached session first
+          const cachedSession = (() => {
+            if (typeof window === "undefined") return null;
+            try {
+              const cached = sessionStorage.getItem("supabase.auth.token");
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                if (parsed?.user) {
+                  const now = Math.floor(Date.now() / 1000);
+                  if (!parsed.expires_at || parsed.expires_at > now) {
+                    return parsed;
+                  }
+                }
+              }
+            } catch {
+              return null;
+            }
+            return null;
+          })();
+
+          if (cachedSession) {
+            // We have a cached session, use it and wait for Supabase to catch up
+            console.log("Using cached session during INITIAL_SESSION");
+            setIsAuthenticated(true);
+            sessionCache.setCachedSession(cachedSession);
+          }
+
+          // Wait and check multiple times for Supabase to restore
+          const checkSession = async (attempt: number = 1) => {
             if (!mounted) return;
+            if (attempt > 5) {
+              // After 5 attempts (2.5 seconds), give up
+              if (!cachedSession) {
+                console.log("Session not restored after INITIAL_SESSION, checking one more time...");
+                const { data: { session: finalCheck } } = await supabase.auth.getSession();
+                if (finalCheck?.user) {
+                  setIsAuthenticated(true);
+                  sessionCache.setCachedSession(finalCheck);
+                  if (typeof window !== "undefined") {
+                    try {
+                      sessionStorage.setItem("supabase.auth.token", JSON.stringify(finalCheck));
+                    } catch (error) {
+                      console.warn("Failed to store session:", error);
+                    }
+                  }
+                }
+              }
+              return;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!mounted) return;
+
             const { data: { session: restoredSession } } = await supabase.auth.getSession();
             if (restoredSession?.user) {
-              console.log("Session restored after INITIAL_SESSION");
+              console.log("Session restored after INITIAL_SESSION (attempt", attempt, ")");
               sessionCache.setCachedSession(restoredSession);
               setIsAuthenticated(true);
               if (typeof window !== "undefined") {
                 try {
-                  sessionStorage.setItem(
-                    "supabase.auth.token",
-                    JSON.stringify(restoredSession)
-                  );
+                  sessionStorage.setItem("supabase.auth.token", JSON.stringify(restoredSession));
                 } catch (error) {
                   console.warn("Failed to store session in sessionStorage:", error);
                 }
               }
+            } else {
+              // Try again
+              checkSession(attempt + 1);
             }
-          }, 100);
+          };
+
+          checkSession();
         } else {
           // Session was restored immediately
           sessionCache.setCachedSession(session);
           setIsAuthenticated(true);
           if (typeof window !== "undefined") {
             try {
-              sessionStorage.setItem(
-                "supabase.auth.token",
-                JSON.stringify(session)
-              );
+              sessionStorage.setItem("supabase.auth.token", JSON.stringify(session));
             } catch (error) {
               console.warn("Failed to store session in sessionStorage:", error);
             }
@@ -307,10 +357,34 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           router.push("/auth");
         }
       } else if (!session?.user) {
-        // Check if we're past the initial restoration window (2 seconds) OR initial check is complete
-        // This ensures we catch legitimate logouts even during the initial check window
+        // Check if we're past the initial restoration window (5 seconds) OR initial check is complete
+        // Increased window to give Supabase more time to restore
         const timeSinceMount = Date.now() - mountTime;
-        const pastInitialWindow = timeSinceMount > 2000 || initialCheckComplete;
+        const pastInitialWindow = timeSinceMount > 5000 || initialCheckComplete;
+        
+        // Always check for cached session first - if we have one, keep user authenticated
+        if (hasCachedSession) {
+          // We have a cached session but Supabase says no session - this is likely a false negative
+          // during initial load, so keep the user authenticated
+          console.log("No session from Supabase but cached session exists - keeping authenticated");
+          setIsAuthenticated(true);
+          // Try to restore Supabase session in background
+          setTimeout(async () => {
+            if (!mounted) return;
+            const { data: { session: backgroundSession } } = await supabase.auth.getSession();
+            if (backgroundSession?.user) {
+              sessionCache.setCachedSession(backgroundSession);
+              if (typeof window !== "undefined") {
+                try {
+                  sessionStorage.setItem("supabase.auth.token", JSON.stringify(backgroundSession));
+                } catch (error) {
+                  console.warn("Failed to store session:", error);
+                }
+              }
+            }
+          }, 1000);
+          return;
+        }
         
         // Only log out if we have no session AND no cached session AND we're past initial window
         // This prevents false negatives during initial load when Supabase hasn't restored session yet
@@ -325,11 +399,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         } else if (!pastInitialWindow && !hasCachedSession) {
           // Still in initial window and no cached session - wait a bit more
           console.log("No session during initial window, waiting for restoration...");
-        } else if (hasCachedSession) {
-          // We have a cached session but Supabase says no session - this is likely a false negative
-          // during initial load, so keep the user authenticated
-          console.log("No session from Supabase but cached session exists - keeping authenticated");
-          setIsAuthenticated(true);
+          // Don't change authentication state yet
         }
       } else if (session?.user) {
         setIsAuthenticated(true);
