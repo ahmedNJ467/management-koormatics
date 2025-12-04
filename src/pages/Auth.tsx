@@ -312,127 +312,169 @@ export default function Auth() {
   }, [router, domain]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        {/* Logo Section */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-8">
-            <KoormaticsLogo size="xl" />
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, currentColor 35px, currentColor 70px)`,
+        }} />
+      </div>
+
+      <div className="relative min-h-screen flex">
+        {/* Left Side - Branding (hidden on mobile) */}
+        <div className="hidden lg:flex lg:w-2/5 xl:w-2/5 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent items-center justify-center p-12 relative">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_50%,rgba(59,130,246,0.1),transparent_50%)]" />
+          <div className="relative z-10 max-w-sm">
+            <div className="mb-6">
+              <KoormaticsLogo size="xl" />
+            </div>
+            <h1 className="text-3xl font-bold mb-3 tracking-tight">
+              Welcome back
+            </h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Sign in to access your dashboard and manage your operations.
+            </p>
+            {domain && (
+              <div className="mt-6 inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-md">
+                <span className="text-xs font-medium text-primary">{domain.toUpperCase()} Portal</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-card border border-border rounded-lg shadow-sm p-8">
-          {/* Portal Badge */}
-          {domain && (
-            <div className="text-center mb-6">
-              <span className="inline-block px-3 py-1 text-xs font-medium text-muted-foreground bg-muted rounded-full">
-                Portal: {domain.toUpperCase()}
-              </span>
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form 
-            id="login-form"
-            name="login-form"
-            onSubmit={handleAuth} 
-            className="space-y-5" 
-            autoComplete="on"
-            method="post"
-            action={typeof window !== "undefined" ? window.location.href : "#"}
-            noValidate
-          >
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Email Address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck="false"
-                required
-                className="pl-10 h-12 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
-              />
+        {/* Right Side - Login Form */}
+        <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+          <div className="w-full max-w-[420px]">
+            {/* Mobile Logo */}
+            <div className="lg:hidden mb-10">
+              <div className="mb-6">
+                <KoormaticsLogo size="lg" />
+              </div>
+              {domain && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-md mb-4">
+                  <span className="text-xs font-medium text-primary">{domain.toUpperCase()} Portal</span>
+                </div>
+              )}
             </div>
 
-            <div className="relative">
-              <Input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck="false"
-                required
-                className="pl-3 pr-10 h-12 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
-              />
+            {/* Desktop Title */}
+            <div className="hidden lg:block mb-8">
+              <h2 className="text-2xl font-semibold mb-2">Sign in</h2>
+              <p className="text-sm text-muted-foreground">Enter your credentials to continue</p>
+            </div>
+
+            {/* Login Form */}
+            <form 
+              id="login-form"
+              name="login-form"
+              onSubmit={handleAuth} 
+              className="space-y-4" 
+              autoComplete="on"
+              method="post"
+              action={typeof window !== "undefined" ? window.location.href : "#"}
+              noValidate
+            >
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium mb-1.5 text-foreground">
+                  Email
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    required
+                    className="pl-10 h-11 bg-background border-border/60 text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium mb-1.5 text-foreground">
+                  Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    required
+                    className="pl-3 pr-10 h-11 bg-background border-border/60 text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground h-8 w-8 hover:bg-transparent"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-1 focus:ring-primary/20 focus:ring-offset-0 cursor-pointer"
+                  />
+                  <span className="group-hover:text-foreground/80 transition-colors">Remember me</span>
+                </label>
+              </div>
+
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground h-8 w-8"
+                type="submit"
+                variant="default"
+                size="lg"
+                className="w-full h-11 font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading || isRedirecting}
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    <span>Signing in...</span>
+                  </div>
+                ) : isRedirecting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    <span>Redirecting...</span>
+                  </div>
                 ) : (
-                  <Eye className="h-4 w-4" />
+                  "Sign in"
                 )}
               </Button>
+            </form>
+
+            {/* Footer */}
+            <div className="mt-12 pt-6 border-t border-border/40">
+              <p className="text-xs text-muted-foreground/70 text-center">
+                © {currentYear} Koormatics. All rights reserved.
+              </p>
             </div>
-
-            {/* Remember Me Checkbox */}
-            <div className="flex items-center">
-              <label className="flex items-center space-x-2 text-sm text-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0"
-                />
-                <span>Remember me</span>
-              </label>
-            </div>
-
-            <Button
-              type="submit"
-              variant="default"
-              size="lg"
-              className="w-full h-12 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading || isRedirecting}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin"></div>
-                  Logging in...
-                </div>
-              ) : isRedirecting ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin"></div>
-                  Redirecting...
-                </div>
-              ) : (
-                "Log in"
-              )}
-            </Button>
-          </form>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-muted-foreground text-xs">
-            © {currentYear} Koormatics - All rights reserved
-          </p>
+          </div>
         </div>
       </div>
     </div>
