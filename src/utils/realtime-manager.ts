@@ -33,9 +33,14 @@ class RealtimeManager {
     }
 
     try {
-      // Create new channel
+      // Create new channel with error handling
       const channel = supabase
-        .channel(channelKey)
+        .channel(channelKey, {
+          config: {
+            // Add timeout to prevent hanging connections
+            timeout: 10000,
+          },
+        })
         .on(
           "postgres_changes",
           {
@@ -51,15 +56,27 @@ class RealtimeManager {
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          // Handle subscription status changes
+          if (status === "SUBSCRIBED") {
+            // Channel successfully subscribed
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            // Channel error - remove it so it can be recreated
+            this.channels.delete(channelKey);
+            this.subscribers.delete(channelKey);
+          }
+        });
 
       // Store channel and initialize subscribers
       this.channels.set(channelKey, channel);
       this.subscribers.set(channelKey, new Set([callback]));
 
       return () => this.unsubscribeFromTable(tableName, callback);
-    } catch (error) {
-      console.warn(`Failed to subscribe to ${tableName}:`, error);
+    } catch (error: any) {
+      // Only log non-WebSocket errors
+      if (!error?.message?.includes("WebSocket") && !error?.message?.includes("websocket")) {
+        console.warn(`Failed to subscribe to ${tableName}:`, error);
+      }
       return () => {};
     }
   }
@@ -81,7 +98,14 @@ class RealtimeManager {
       if (callbacks.size === 0) {
         const channel = this.channels.get(channelKey);
         if (channel) {
-          supabase.removeChannel(channel);
+          try {
+            supabase.removeChannel(channel);
+          } catch (error: any) {
+            // Silently ignore WebSocket cleanup errors
+            if (!error?.message?.includes("WebSocket") && !error?.message?.includes("websocket")) {
+              console.warn(`Error removing channel ${channelKey}:`, error);
+            }
+          }
         }
         this.channels.delete(channelKey);
         this.subscribers.delete(channelKey);

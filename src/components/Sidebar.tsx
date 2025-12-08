@@ -231,27 +231,27 @@ const Sidebar = memo(function Sidebar({ onLinkClick }: SidebarComponentProps) {
     if (!pathname) return;
     
     const categoriesToExpand = new Set<string>();
-    navigationGroups.forEach((group) => {
-      const hasActiveItem = group.items.some(
-        (item) => pathname === item.href
-      );
-      if (hasActiveItem) {
+      navigationGroups.forEach((group) => {
+        const hasActiveItem = group.items.some(
+          (item) => pathname === item.href
+        );
+        if (hasActiveItem) {
         categoriesToExpand.add(group.category);
       }
     });
     
     // Always update state to ensure categories are expanded, even if Set appears unchanged
     if (categoriesToExpand.size > 0) {
-      setExpandedCategories((prev) => {
+          setExpandedCategories((prev) => {
         // Check if we need to update
         const needsUpdate = Array.from(categoriesToExpand).some(
           (cat) => !prev.has(cat)
         );
         if (!needsUpdate) return prev; // Return same reference if no change needed
         
-        const newSet = new Set(prev);
+            const newSet = new Set(prev);
         categoriesToExpand.forEach((cat) => newSet.add(cat));
-        return newSet;
+            return newSet;
       });
     }
   }, [pathname]);

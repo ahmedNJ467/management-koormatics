@@ -187,10 +187,10 @@ export default function Auth() {
       if (sessionToStore && typeof window !== "undefined") {
         try {
           // Store in sessionStorage
-          sessionStorage.setItem(
-            "supabase.auth.token",
+            sessionStorage.setItem(
+              "supabase.auth.token",
             JSON.stringify(sessionToStore)
-          );
+            );
           // Also update the session cache
           sessionCache.setCachedSession(sessionToStore);
         } catch (error) {
@@ -326,7 +326,7 @@ export default function Auth() {
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_50%,rgba(59,130,246,0.1),transparent_50%)]" />
           <div className="relative z-10 max-w-sm">
             <div className="mb-6">
-              <KoormaticsLogo size="xl" />
+            <KoormaticsLogo size="xl" />
             </div>
             <h1 className="text-3xl font-bold mb-3 tracking-tight">
               Welcome back
@@ -350,7 +350,7 @@ export default function Auth() {
               <div className="mb-6">
                 <KoormaticsLogo size="lg" />
               </div>
-              {domain && (
+          {domain && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-md mb-4">
                   <span className="text-xs font-medium text-primary">{domain.toUpperCase()} Portal</span>
                 </div>
@@ -363,116 +363,116 @@ export default function Auth() {
               <p className="text-sm text-muted-foreground">Enter your credentials to continue</p>
             </div>
 
-            {/* Login Form */}
-            <form 
-              id="login-form"
-              name="login-form"
-              onSubmit={handleAuth} 
+          {/* Login Form */}
+          <form 
+            id="login-form"
+            name="login-form"
+            onSubmit={handleAuth} 
               className="space-y-4" 
-              autoComplete="on"
-              method="post"
-              action={typeof window !== "undefined" ? window.location.href : "#"}
-              noValidate
-            >
+            autoComplete="on"
+            method="post"
+            action={typeof window !== "undefined" ? window.location.href : "#"}
+            noValidate
+          >
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-1.5 text-foreground">
                   Email
                 </label>
-                <div className="relative">
+            <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
+              <Input
+                id="email"
+                name="email"
+                type="email"
                     placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    spellCheck="false"
-                    required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
+                required
                     className="pl-10 h-11 bg-background border-border/60 text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-                  />
+              />
                 </div>
-              </div>
+            </div>
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium mb-1.5 text-foreground">
                   Password
                 </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    spellCheck="false"
-                    required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
+                required
                     className="pl-3 pr-10 h-11 bg-background border-border/60 text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground h-8 w-8 hover:bg-transparent"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Remember Me Checkbox */}
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-1 focus:ring-primary/20 focus:ring-offset-0 cursor-pointer"
-                  />
-                  <span className="group-hover:text-foreground/80 transition-colors">Remember me</span>
-                </label>
-              </div>
-
+              />
               <Button
-                type="submit"
-                variant="default"
-                size="lg"
-                className="w-full h-11 font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isLoading || isRedirecting}
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground h-8 w-8 hover:bg-transparent"
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
-                  </div>
-                ) : isRedirecting ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    <span>Redirecting...</span>
-                  </div>
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
                 ) : (
-                  "Sign in"
+                  <Eye className="h-4 w-4" />
                 )}
               </Button>
-            </form>
+                </div>
+            </div>
 
-            {/* Footer */}
+            {/* Remember Me Checkbox */}
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-1 focus:ring-primary/20 focus:ring-offset-0 cursor-pointer"
+                />
+                  <span className="group-hover:text-foreground/80 transition-colors">Remember me</span>
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              variant="default"
+              size="lg"
+                className="w-full h-11 font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || isRedirecting}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    <span>Signing in...</span>
+                </div>
+              ) : isRedirecting ? (
+                <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    <span>Redirecting...</span>
+                </div>
+              ) : (
+                  "Sign in"
+              )}
+            </Button>
+          </form>
+
+        {/* Footer */}
             <div className="mt-12 pt-6 border-t border-border/40">
               <p className="text-xs text-muted-foreground/70 text-center">
                 © {currentYear} Koormatics. All rights reserved.
-              </p>
+          </p>
             </div>
           </div>
         </div>

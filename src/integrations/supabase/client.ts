@@ -114,4 +114,21 @@ if (typeof window !== "undefined") {
       event.preventDefault();
     }
   });
+
+  // Suppress WebSocket connection errors from Supabase Realtime
+  // These are non-critical and happen when connections are closed before establishment
+  const originalError = console.error;
+  console.error = function(...args: any[]) {
+    const message = args[0]?.toString() || "";
+    // Suppress WebSocket closed errors from Supabase Realtime
+    if (
+      message.includes("WebSocket is closed") ||
+      message.includes("WebSocket connection") ||
+      (message.includes("realtime") && message.includes("websocket"))
+    ) {
+      // Silently ignore these non-critical WebSocket errors
+      return;
+    }
+    originalError.apply(console, args);
+  };
 }

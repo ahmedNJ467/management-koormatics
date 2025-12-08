@@ -186,8 +186,8 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           
           // Only redirect if we're sure there's no session
           if (mounted) {
-            console.log("No valid session found, redirecting to auth");
-            router.push("/auth");
+          console.log("No valid session found, redirecting to auth");
+          router.push("/auth");
           }
           return;
         }
@@ -368,6 +368,45 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
       })();
 
       if (event === "SIGNED_OUT") {
+        // Guard against false sign-outs during initial restoration
+        const timeSinceMount = Date.now() - mountTime;
+        const pastInitialWindow = timeSinceMount > 5000 || initialCheckComplete;
+
+        if (hasCachedSession && !pastInitialWindow) {
+          console.log("SIGNED_OUT received but cached session exists during initial window - attempting restore");
+          setIsAuthenticated(true);
+          // Try to restore Supabase session in background
+          setTimeout(async () => {
+            if (!mounted) return;
+            try {
+              const { data: { session: restored } } = await supabase.auth.getSession();
+              if (restored?.user) {
+                sessionCache.setCachedSession(restored);
+                if (typeof window !== "undefined") {
+                  try {
+                    sessionStorage.setItem("supabase.auth.token", JSON.stringify(restored));
+                  } catch (error) {
+                    console.warn("Failed to store session:", error);
+                  }
+                }
+                return;
+              }
+            } catch (error) {
+              console.warn("Background restore after SIGNED_OUT failed:", error);
+            }
+
+            // If restore failed, only then treat as real sign-out
+            setIsAuthenticated(false);
+            if (typeof window !== "undefined") {
+              sessionStorage.removeItem("supabase.auth.token");
+            }
+            if (window.location.pathname !== "/auth") {
+              router.push("/auth");
+            }
+          }, 500);
+          return;
+        }
+
         // Explicit sign out - always handle
         setIsAuthenticated(false);
         if (typeof window !== "undefined") {
