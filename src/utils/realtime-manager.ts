@@ -35,12 +35,8 @@ class RealtimeManager {
     try {
       // Create new channel with error handling
       const channel = supabase
-        .channel(channelKey, {
-          config: {
-            // Add timeout to prevent hanging connections
-            timeout: 10000,
-          },
-        })
+        // Use default channel configuration; custom timeout isn't supported in the typed options
+        .channel(channelKey)
         .on(
           "postgres_changes",
           {
