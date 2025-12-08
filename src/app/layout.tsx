@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   },
 };
 
+// Force dynamic rendering to avoid stale cached HTML referencing old CSS bundles
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: {
