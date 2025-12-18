@@ -15,8 +15,8 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
   const router = useRouter();
   const { isAllowed, loading } = useTenantScope();
   const { data: pages = [], isLoading } = usePageAccess();
-  const { user } = useAuth();
-  const { loading: rolesLoading } = useRole();
+  const { user, loading: authLoading } = useAuth();
+  const { loading: rolesLoading, roles } = useRole();
 
   // Debug logging to understand what's happening
   console.log("AccessGuard Debug:", {
@@ -24,8 +24,11 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
     isAllowed,
     loading,
     isLoading,
+    authLoading,
+    rolesLoading,
     pages: pages.length > 0 ? pages : "No pages loaded",
     user: user ? "User authenticated" : "No user",
+    roles: roles.length > 0 ? roles : "No roles yet",
     hasWildcardAccess: pages.includes("*"),
     hasSpecificAccess: pageId ? pages.includes(pageId) : "No pageId",
     isDevelopment: process.env.NODE_ENV === "development",
@@ -37,20 +40,39 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
   // Handle tenant scope redirect only when we're sure user is not allowed
   // Wait for roles to actually load before making access decisions
   useEffect(() => {
-    // Don't check access until roles have finished loading
+    // Don't check access until ALL of these are ready:
+    // 1. Auth is not loading (session is restored)
+    // 2. Roles are not loading (roles query completed)
+    // 3. Tenant scope is not loading
     // This prevents false negatives during initial role loading after login
-    if (rolesLoading || loading) {
-      // Still loading roles - don't make access decisions yet
+    if (authLoading || rolesLoading || loading) {
+      // Still loading - don't make access decisions yet
+      console.log("AccessGuard: Still loading, not making access decisions", {
+        authLoading,
+        rolesLoading,
+        loading
+      });
+      return;
+    }
+
+    // If we have a user but no roles after loading completed, this might be a timing issue
+    // Give it a bit more time before making decisions
+    if (user && roles.length === 0 && !rolesLoading) {
+      console.log("AccessGuard: User exists but no roles loaded yet, waiting...");
       return;
     }
 
     // Only sign out if:
     // 1. Not in development
-    // 2. Roles have finished loading (not just tenant scope)
+    // 2. All loading is complete (auth, roles, tenant scope)
     // 3. User is authenticated
     // 4. User is definitely not allowed (roles loaded and access denied)
-    if (!isAllowed && user && !isDevelopment) {
-      console.log("User not allowed for tenant - signing out and redirecting to login");
+    if (!isAllowed && user && !isDevelopment && !authLoading && !rolesLoading) {
+      console.log("User not allowed for tenant - signing out and redirecting to login", {
+        isAllowed,
+        user: user?.email,
+        roles,
+      });
       // Sign out the user and redirect to login
       supabase.auth.signOut({ scope: "local" }).then(() => {
         // Clear session storage
@@ -66,7 +88,7 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
         router.replace("/auth");
       });
     }
-  }, [loading, rolesLoading, isAllowed, user, router, isDevelopment]);
+  }, [loading, rolesLoading, authLoading, isAllowed, user, router, isDevelopment, roles]);
 
   // Handle page access redirect only when we have page data
   useEffect(() => {

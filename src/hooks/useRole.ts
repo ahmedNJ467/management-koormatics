@@ -3,7 +3,45 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useRole = () => {
+  const [sessionReady, setSessionReady] = useState(false);
+
+  // Wait for session to be ready before fetching roles
+  useEffect(() => {
+    let mounted = true;
+    
+    const checkSession = async () => {
+      // Check if we have a session in sessionStorage (our cache)
+      if (typeof window !== "undefined") {
+        const cached = sessionStorage.getItem("supabase.auth.token");
+        if (cached) {
+          try {
+            const session = JSON.parse(cached);
+            if (session?.user && mounted) {
+              setSessionReady(true);
+              return;
+            }
+          } catch (e) {
+            // Invalid cache, continue to Supabase check
+          }
+        }
+      }
+
+      // Check Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (mounted && session?.user) {
+        setSessionReady(true);
+      }
+    };
+
+    checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Use React Query for better caching and performance
+  // Only enable the query when session is ready
   const { data: roles = [], isLoading: queryLoading } = useQuery({
     queryKey: ["user_roles"],
     queryFn: async () => {
@@ -41,6 +79,7 @@ export const useRole = () => {
         return metaRoles; // Return metadata roles as fallback
       }
     },
+    enabled: sessionReady, // Only run query when session is ready
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
     gcTime: 30 * 60 * 1000, // Keep in memory for 30 minutes
     refetchOnWindowFocus: false,
@@ -59,7 +98,7 @@ export const useRole = () => {
 
   return {
     roles,
-    loading: queryLoading,
+    loading: !sessionReady || queryLoading, // Loading if session not ready OR query is running
     hasRole: (role: string) => roles.includes(role),
   };
 };
