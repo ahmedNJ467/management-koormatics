@@ -371,7 +371,6 @@ export default function Auth() {
               className="space-y-4" 
             autoComplete="on"
             method="post"
-            action={typeof window !== "undefined" ? window.location.href : "#"}
             noValidate
           >
               <div>
