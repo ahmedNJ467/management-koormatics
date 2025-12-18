@@ -108,11 +108,19 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                             console.warn("Failed to update session:", error);
                           }
                         }
+                      } else {
+                        // Background check found no session - log out
+                        console.log("Background verification found no session - logging out");
+                        setIsAuthenticated(false);
+                        sessionStorage.removeItem("supabase.auth.token");
+                        if (window.location.pathname !== "/auth") {
+                          router.push("/auth");
+                        }
                       }
                     } catch (error) {
                       console.warn("Background session verification failed:", error);
                     }
-                  }, 500);
+                  }, 1000);
                   return;
                 }
               }
@@ -122,72 +130,56 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           }
         }
 
-        // Fallback to Supabase session check
-        // Wait longer for Supabase to restore session from localStorage after page reload
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        // No valid sessionStorage cache - check Supabase directly
+        // Don't add artificial delays - trust Supabase's session restoration
         const {
           data: { session },
-        } = await (getCachedSession as any)(supabase);
+        } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
         if (!session?.user) {
           // Check if we have a session in localStorage (Supabase's storage)
-          // This might not be restored yet after page reload
           if (typeof window !== "undefined") {
             try {
               const supabaseStorageKey = `sb-${(process.env.NEXT_PUBLIC_SUPABASE_URL || "").split("//")[1]?.split(".")[0] || "project"}-auth-token`;
               const stored = localStorage.getItem(supabaseStorageKey);
               if (stored) {
-                // Session exists in localStorage but not restored yet - wait a bit more
-                console.log("Session found in localStorage, waiting for Supabase to restore...");
-                setTimeout(async () => {
-                  if (!mounted) return;
-                  const { data: { session: restoredSession } } = await supabase.auth.getSession();
-                  if (restoredSession?.user) {
-                    setIsAuthenticated(true);
-                    sessionCache.setCachedSession(restoredSession);
-                    if (typeof window !== "undefined") {
-                      sessionStorage.setItem("supabase.auth.token", JSON.stringify(restoredSession));
-                    }
-                    initialCheckComplete = true;
-                    if (maxWaitTimeout) {
-                      clearTimeout(maxWaitTimeout);
-                    }
-                    return;
+                // Session exists in localStorage - give Supabase one more chance
+                console.log("Session found in localStorage, giving Supabase one more chance to restore...");
+                // Wait a bit for Supabase to restore
+                await new Promise(resolve => setTimeout(resolve, 800));
+                if (!mounted) return;
+                
+                const { data: { session: restoredSession } } = await supabase.auth.getSession();
+                if (restoredSession?.user) {
+                  setIsAuthenticated(true);
+                  sessionCache.setCachedSession(restoredSession);
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("supabase.auth.token", JSON.stringify(restoredSession));
                   }
-                  // Still no session after waiting - set to false and redirect
-                  setIsAuthenticated(false);
                   initialCheckComplete = true;
                   if (maxWaitTimeout) {
                     clearTimeout(maxWaitTimeout);
                   }
-                  if (mounted) {
-                    console.log("No valid session found after restore attempt, redirecting to auth");
-                    router.push("/auth");
-                  }
-                }, 500);
-                // Return here - the timeout will handle setting the state
-                // Don't set initialCheckComplete here as we're waiting for async operation
-                return;
+                  return;
+                }
               }
             } catch (e) {
               // Ignore errors checking localStorage
             }
           }
           
-          // No session found - set to false
+          // No session found anywhere - redirect to auth
           setIsAuthenticated(false);
           initialCheckComplete = true;
           if (maxWaitTimeout) {
             clearTimeout(maxWaitTimeout);
           }
           
-          // Only redirect if we're sure there's no session
-          if (mounted) {
-          console.log("No valid session found, redirecting to auth");
-          router.push("/auth");
+          if (mounted && window.location.pathname !== "/auth") {
+            console.log("No valid session found, redirecting to auth");
+            router.push("/auth");
           }
           return;
         }
@@ -203,6 +195,10 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         }
 
         setIsAuthenticated(true);
+        sessionCache.setCachedSession(session);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("supabase.auth.token", JSON.stringify(session));
+        }
         initialCheckComplete = true;
         if (maxWaitTimeout) {
           clearTimeout(maxWaitTimeout);
