@@ -68,10 +68,17 @@ export default function AccessGuard({ children, pageId }: AccessGuardProps) {
     // 3. User is authenticated
     // 4. User is definitely not allowed (roles loaded and access denied)
     if (!isAllowed && user && !isDevelopment && !authLoading && !rolesLoading) {
-      console.log("User not allowed for tenant - signing out and redirecting to login", {
+      console.log("❌ LOGOUT TRIGGERED BY ACCESSGUARD:", {
+        reason: "User not allowed for tenant",
+        pageId,
         isAllowed,
         user: user?.email,
         roles,
+        authLoading,
+        rolesLoading,
+        loading,
+        isDevelopment,
+        timestamp: new Date().toISOString(),
       });
       // Sign out the user and redirect to login
       supabase.auth.signOut({ scope: "local" }).then(() => {

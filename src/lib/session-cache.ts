@@ -61,14 +61,9 @@ class SessionCache {
         : Date.now() + this.MAX_AGE,
     };
 
-    // Also store in sessionStorage for immediate access
-    if (typeof window !== "undefined") {
-      try {
-        sessionStorage.setItem("supabase.auth.token", JSON.stringify(session));
-      } catch (error) {
-        console.warn("Failed to store session in sessionStorage:", error);
-      }
-    }
+    // DO NOT manually store session - Supabase handles persistence automatically
+    // with persistSession: true in the client config
+    console.log("✅ Session cached in memory (Supabase handles localStorage persistence)");
   }
 
   clearCache(): void {

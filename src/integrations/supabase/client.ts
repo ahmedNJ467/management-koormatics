@@ -94,6 +94,10 @@ if (typeof window !== "undefined") {
       );
 
       // Clear all auth-related storage
+      console.log("🔥 GLOBAL ERROR HANDLER CLEARING AUTH STORAGE:", {
+        error: error?.message,
+        timestamp: new Date().toISOString(),
+      });
       try {
         localStorage.removeItem(
           "sb-" + (SUPABASE_URL?.split("//")[1]?.split(".")[0] || "project") + "-auth-token"

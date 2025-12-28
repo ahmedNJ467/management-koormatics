@@ -59,14 +59,6 @@ export function useTenantScope() {
     typeof window !== "undefined" && loading && !mounted && roles.length === 0;
 
   // Debug logging
-  console.log("useTenantScope Debug:", {
-    domain,
-    roles: roles.length > 0 ? roles : "No roles",
-    loading,
-    mounted,
-    isAllowed,
-    isLoading,
-  });
 
   return { domain, isAllowed, loading: isLoading };
 }

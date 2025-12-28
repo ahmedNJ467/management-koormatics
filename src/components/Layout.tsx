@@ -79,12 +79,29 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
 
     const checkAuth = async () => {
       try {
+        // DEBUG: Check what's in localStorage before checking session
+        if (typeof window !== "undefined") {
+          const keys = Object.keys(localStorage).filter(k => k.includes('sb-') || k.includes('supabase'));
+          console.log("🔍 Checking localStorage on reload:", {
+            supabaseKeys: keys.length,
+            keys: keys,
+            pathname: window.location.pathname,
+          });
+        }
+        
         // Check Supabase session directly - let Supabase handle its own persistence
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
         if (!mounted) return;
+        
+        console.log("📊 Supabase session check result:", {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          expiresAt: session?.expires_at,
+        });
 
         if (session?.user) {
           // Validate session is still valid
@@ -100,15 +117,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
           }
 
           // Valid session found
+          console.log("✅ Valid session found, user authenticated");
           setIsAuthenticated(true);
           sessionCache.setCachedSession(session);
-          if (typeof window !== "undefined") {
-            try {
-              sessionStorage.setItem("supabase.auth.token", JSON.stringify(session));
-            } catch (error) {
-              console.warn("Failed to store session:", error);
-            }
-          }
           initialCheckComplete = true;
           if (maxWaitTimeout) {
             clearTimeout(maxWaitTimeout);
@@ -139,16 +150,9 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
                 const { data: { session: restoredSession } } = await supabase.auth.getSession();
                 
                 if (restoredSession?.user) {
-                  console.log(`Session restored successfully (attempt ${attempts})`);
+                  console.log(`✅ Session restored successfully (attempt ${attempts}/${maxAttempts})`);
                   setIsAuthenticated(true);
                   sessionCache.setCachedSession(restoredSession);
-                  if (typeof window !== "undefined") {
-                    try {
-                      sessionStorage.setItem("supabase.auth.token", JSON.stringify(restoredSession));
-                    } catch (error) {
-                      console.warn("Failed to store session:", error);
-                    }
-                  }
                   initialCheckComplete = true;
                   if (maxWaitTimeout) {
                     clearTimeout(maxWaitTimeout);
@@ -186,7 +190,11 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
         }
         
         if (mounted && window.location.pathname !== "/auth") {
-          console.log("No valid session found, redirecting to auth");
+          console.log("❌ LOGOUT TRIGGERED:", {
+            reason: "No valid session found",
+            pathname: window.location.pathname,
+            timestamp: new Date().toISOString(),
+          });
           router.push("/auth");
         }
       } catch (error) {

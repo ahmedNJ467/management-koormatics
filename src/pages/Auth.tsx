@@ -173,29 +173,27 @@ export default function Auth() {
       setIsLoading(false);
       setIsRedirecting(true);
 
-      // Ensure session is properly stored before redirecting
-      // Get the session from the auth response
-      let sessionToStore = authData?.session;
-      
-      // If not in authData, get it from Supabase
-      if (!sessionToStore) {
-        const { data: { session } } = await supabase.auth.getSession();
-        sessionToStore = session;
-      }
-
-      // Store session in sessionStorage and cache for instant access
-      if (sessionToStore && typeof window !== "undefined") {
-        try {
-          // Store in sessionStorage
-            sessionStorage.setItem(
-              "supabase.auth.token",
-            JSON.stringify(sessionToStore)
-            );
-          // Also update the session cache
-          sessionCache.setCachedSession(sessionToStore);
-        } catch (error) {
-          console.warn("Failed to store session:", error);
-        }
+      // Cache the session for instant access (Supabase handles localStorage persistence)
+      if (authData?.session) {
+        console.log("✅ Login successful, session will be persisted by Supabase");
+        sessionCache.setCachedSession(authData.session);
+        
+        // Verify session is in localStorage
+        setTimeout(() => {
+          const keys = Object.keys(localStorage).filter(k => k.includes('sb-') || k.includes('supabase'));
+          console.log("📦 Supabase localStorage keys after login:", keys);
+          keys.forEach(key => {
+            const value = localStorage.getItem(key);
+            if (value) {
+              try {
+                const parsed = JSON.parse(value);
+                console.log(`  ${key}:`, { hasAccessToken: !!parsed?.access_token, expiresAt: parsed?.expires_at });
+              } catch {
+                console.log(`  ${key}: [non-JSON value]`);
+              }
+            }
+          });
+        }, 500);
       }
 
       // Help password managers detect successful login
